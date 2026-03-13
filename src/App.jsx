@@ -62,8 +62,45 @@ function getVP(){const a=voiceProfile.age,s=voiceProfile.sex;if(a<=9)return{rate
 function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena/i,m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre/i;cachedVoice=voiceProfile.sex==='f'?es.find(x=>f.test(x.name))||es[0]:es.find(x=>m.test(x.name))||es[0]}
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,200);setTimeout(pickVoice,800)}
 function unlockAudio(){if(audioUnlocked)return;audioUnlocked=true;if(window.speechSynthesis){const u=new SpeechSynthesisUtterance('');u.volume=0;window.speechSynthesis.speak(u)}}
-function speak(text,exId){return new Promise(res=>{if(exId){const a=new Audio(`/audio/${voiceProfile.sex}/${exId}.mp3`);a.onended=res;a.onerror=()=>tts(text).then(res);a.play().catch(()=>tts(text).then(res));return}tts(text).then(res)})}
-function tts(text){return new Promise(res=>{if(!window.speechSynthesis){res();return}window.speechSynthesis.cancel();if(!cachedVoice)pickVoice();const p=getVP(),u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=p.rate;u.pitch=p.pitch;if(cachedVoice)u.voice=cachedVoice;u.onend=res;u.onerror=res;window.speechSynthesis.speak(u);setTimeout(res,6000)})}
+// Simple reliable TTS - one thing at a time
+function say(text){
+  return new Promise(res=>{
+    if(!window.speechSynthesis||!text){res();return}
+    window.speechSynthesis.cancel();
+    if(!cachedVoice)pickVoice();
+    const p=getVP(),u=new SpeechSynthesisUtterance(text);
+    u.lang='es-ES';u.rate=p.rate;u.pitch=p.pitch;
+    if(cachedVoice)u.voice=cachedVoice;
+    let done=false;
+    const finish=()=>{if(!done){done=true;res()}};
+    u.onend=finish;u.onerror=finish;
+    window.speechSynthesis.speak(u);
+    // Safety: max 5s per utterance
+    setTimeout(finish,Math.max(2000,text.length*200));
+  });
+}
+// Say phrase, then say prompt, then callback
+function sayThenPrompt(text,cb){
+  say(text).then(()=>{
+    setTimeout(()=>{
+      const p=rnd(PROMPT);
+      say(p).then(()=>{if(cb)cb()});
+    },300);
+  });
+}
+// Try MP3 first, fallback to TTS
+function speak(text,exId){
+  return new Promise(res=>{
+    if(exId){
+      const a=new Audio('/audio/'+voiceProfile.sex+'/'+exId+'.mp3');
+      a.onended=res;
+      a.onerror=()=>say(text).then(res);
+      a.play().catch(()=>say(text).then(res));
+      return;
+    }
+    say(text).then(res);
+  });
+}
 
 // ===== MIC =====
 let gRec=null,gRecOk=false;
@@ -103,9 +140,9 @@ function useIdle(name,active){
     if(!active)return;
     timer.current=setInterval(()=>{const s=step.current;
       if(s===0)sMsg('¿Estás ahí? 👀');
-      else if(s===1){sMsg((name||'¡Hola')+'?? 👋');tts((name||'hola')+'?')}
+      else if(s===1){sMsg((name||'¡Hola')+'?? 👋');say((name||'hola')+'?')}
       else if(s===2)sMsg('¿Hola? ¿Hay alguien? 🤔');
-      else if(s>=3){sMsg('Me aburro... 😢 ¡Juega conmigo!');tts('juega conmigo')}
+      else if(s>=3){sMsg('Me aburro... 😢 ¡Juega conmigo!');say('juega conmigo')}
       step.current=s+1;
     },6000);
     return()=>clearInterval(timer.current);
@@ -119,31 +156,47 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name}){
   const[sf,sSf]=useState(null);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[started,setStarted]=useState(false);
   const sr=useSR();
   const{idleMsg,poke}=useIdle(name,!sf&&!sr.on&&started);
+  const activeRef=useRef(true);
 
-  useEffect(()=>{sSf(null);sAtt(0);sMsg('');setStarted(false);
-    const t=setTimeout(()=>{unlockAudio();playAndListen()},800);
-    return()=>clearTimeout(t)
+  useEffect(()=>{sSf(null);sAtt(0);sMsg('');setStarted(false);activeRef.current=true;
+    const t=setTimeout(()=>{
+      if(!activeRef.current)return;
+      unlockAudio();
+      // Step 1: say the phrase, Step 2: say prompt, Step 3: activate mic
+      speak(text,exId).then(()=>{
+        if(!activeRef.current)return;
+        setTimeout(()=>{
+          const p=rnd(PROMPT);sMsg(p);
+          say(p).then(()=>{
+            if(!activeRef.current)return;
+            setStarted(true);setTimeout(()=>sr.go(),250);
+          });
+        },250);
+      });
+    },800);
+    return()=>{activeRef.current=false;clearTimeout(t);window.speechSynthesis&&window.speechSynthesis.cancel()}
   },[text,exId]);
 
-  function playAndListen(){
+  function playAgain(){
+    poke();unlockAudio();window.speechSynthesis&&window.speechSynthesis.cancel();
     speak(text,exId).then(()=>{
-      const p=rnd(PROMPT);sMsg(p);tts(p).then(()=>{setStarted(true);setTimeout(()=>sr.go(),200)})
-    })
+      const p=rnd(PROMPT);sMsg(p);
+      say(p).then(()=>{setTimeout(()=>sr.go(),250)});
+    });
   }
 
   useEffect(()=>{if(!sr.res||!started)return;poke();
     const b=Math.max(...sr.res.split('|').map(a=>score(a,text)));
-    if(b>=3){const m=rnd(sex==='f'?PERFECT_F:PERFECT_M);sMsg(m);sSf('perfect');tts(m);setTimeout(onOk,2000)}
-    else if(b>=2){const m=rnd(GOOD_MSG);sMsg(m);sSf('ok');tts(m);setTimeout(onOk,1500)}
+    if(b>=3){const m=rnd(sex==='f'?PERFECT_F:PERFECT_M);sMsg(m);sSf('perfect');say(m).then(()=>setTimeout(onOk,500))}
+    else if(b>=2){const m=rnd(GOOD_MSG);sMsg(m);sSf('ok');say(m).then(()=>setTimeout(onOk,500))}
     else{const na=att+1;sAtt(na);
-      if(na>=2){const m=rnd(FAIL_MSG);sMsg(m);sSf('fail');tts(m);setTimeout(onSkip,2500)}
-      else{const m=rnd(RETRY_MSG);sMsg(m);sSf('retry');tts(m).then(()=>{
-        setTimeout(()=>{sSf(null);sMsg('');playAndListen()},800)
+      if(na>=2){const m=rnd(FAIL_MSG);sMsg(m);sSf('fail');say(m).then(()=>setTimeout(onSkip,800))}
+      else{const m=rnd(RETRY_MSG);sMsg(m);sSf('retry');say(m).then(()=>{
+        setTimeout(()=>{sSf(null);sMsg('');playAgain()},500)
       })}
     }
   },[sr.res]);
 
-  function hearAgain(){poke();unlockAudio();playAndListen()}
   const fbColor=sf==='perfect'?GOLD:sf==='ok'?GREEN:sf==='fail'?'#E67E22':RED;
 
   return <div style={{textAlign:'center'}} onClick={poke}>
@@ -158,7 +211,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name}){
     </div>}
     {!sf&&sr.on&&<div style={{padding:20}}><span className="ap" style={{display:'inline-block',fontSize:56}}>🎤</span></div>}
     <div style={{display:'flex',gap:10,marginTop:16}}>
-      <button className="btn btn-b btn-half" onClick={hearAgain}>🔊 Otra vez</button>
+      <button className="btn btn-b btn-half" onClick={playAgain}>🔊 Otra vez</button>
       <button className="btn btn-ghost btn-half" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>
@@ -184,7 +237,8 @@ function ExFrases({ex,onOk,onSkip,sex,name}){
 
   function place(item){poke();unlockAudio();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));
     if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');
-      if(built===target){sBf('ok');const m=rnd(BUILD_OK);tts(m).then(()=>speak(ex.fu,ex.id).then(()=>{const p=rnd(PROMPT);tts(p).then(()=>sPh('speak'))}))}
+      if(built===target){sBf('ok');const m=rnd(BUILD_OK);
+        say(m).then(()=>speak(ex.fu,ex.id).then(()=>{const p=rnd(PROMPT);say(p).then(()=>sPh('speak'))}))}
       else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
   function undo(){poke();let li=-1;pl.forEach((p,i)=>{if(p)li=i});if(li===-1)return;const it=pl[li];const np=[...pl];np[li]=null;sPl(np);sAv(a=>a.map(x=>x.i===it.i?{...x,u:false}:x))}
 
@@ -221,7 +275,7 @@ function ExSit({ex,onOk,onSkip,sex,name}){
       {cf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:12,padding:12,marginBottom:12}}><p style={{fontSize:17,color:GOLD,margin:0}}>Piensa... 🤔</p></div>}
       {idleMsg&&!cf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       <div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>{poke();unlockAudio();if(o===ex.op[0]){const m=rnd(BUILD_OK);tts(m).then(()=>speak(ex.su,ex.id).then(()=>{const p=rnd(PROMPT);tts(p).then(()=>sPh('speak'))}))}else{sCf('no');setTimeout(()=>sCf(null),1000)}}} style={{textAlign:'left',fontSize:18}}>{o}</button>)}
+        {shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>{poke();unlockAudio();if(o===ex.op[0]){const m=rnd(BUILD_OK);say(m).then(()=>speak(ex.su,ex.id).then(()=>{const p=rnd(PROMPT);say(p).then(()=>sPh('speak'))}))}else{sCf('no');setTimeout(()=>sCf(null),1000)}}} style={{textAlign:'left',fontSize:18}}>{o}</button>)}
       </div>
       <div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div>
     </div>}
