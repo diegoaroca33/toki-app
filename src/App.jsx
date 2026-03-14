@@ -6,7 +6,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
-
 const CSS=`
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:'Fredoka',sans-serif;background:${BG};color:${TXT};min-height:100vh}
@@ -55,18 +54,17 @@ function lev(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<
 function score(said,tgt){const c=s=>s.toLowerCase().replace(/[^a-záéíóúñü\s]/g,'').trim();const a=c(said),b=c(tgt);if(a===b)return 3;const sw=a.split(/\s+/),tw=b.split(/\s+/);let mt=0;tw.forEach(t=>{if(sw.some(s=>s===t||lev(s,t)<=1))mt++});const r=mt/tw.length;return r>=.8?3:r>=.55?2:r>=.3?1:0}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
 
-// ===== VOICE =====
-let voiceProfile={age:12,sex:'m'},cachedVoice=null,audioUnlocked=false;
+// ===== VOICE QUEUE — sequential, never overlapping =====
+let voiceProfile={age:12,sex:'m'},cachedVoice=null;
 function setVoiceProfile(a,s){voiceProfile={age:a||12,sex:s||'m'};cachedVoice=null;pickVoice()}
 function getVP(){const a=voiceProfile.age,s=voiceProfile.sex;if(a<=9)return{rate:.6,pitch:s==='f'?1.35:1.2};if(a<=13)return{rate:.65,pitch:s==='f'?1.15:.92};if(a<=17)return{rate:.7,pitch:s==='f'?1.05:.82};return{rate:.75,pitch:s==='f'?1.0:.78}}
 function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena/i,m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre/i;cachedVoice=voiceProfile.sex==='f'?es.find(x=>f.test(x.name))||es[0]:es.find(x=>m.test(x.name))||es[0]}
-if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,200);setTimeout(pickVoice,800)}
-function unlockAudio(){if(audioUnlocked)return;audioUnlocked=true;if(window.speechSynthesis){const u=new SpeechSynthesisUtterance('');u.volume=0;window.speechSynthesis.speak(u)}}
-// Simple reliable TTS - one thing at a time
+if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,100);setTimeout(pickVoice,500);setTimeout(pickVoice,1500)}
+
+// KEY FIX: Don't cancel! Queue utterances. SpeechSynthesis handles queue natively.
 function say(text){
   return new Promise(res=>{
-    if(!window.speechSynthesis||!text){res();return}
-    window.speechSynthesis.cancel();
+    if(!window.speechSynthesis||!text||!text.trim()){res();return}
     if(!cachedVoice)pickVoice();
     const p=getVP(),u=new SpeechSynthesisUtterance(text);
     u.lang='es-ES';u.rate=p.rate;u.pitch=p.pitch;
@@ -75,31 +73,17 @@ function say(text){
     const finish=()=>{if(!done){done=true;res()}};
     u.onend=finish;u.onerror=finish;
     window.speechSynthesis.speak(u);
-    // Safety: max 5s per utterance
-    setTimeout(finish,Math.max(2000,text.length*200));
+    setTimeout(finish,Math.max(3000,text.length*250));
   });
 }
-// Say phrase, then say prompt, then callback
-function sayThenPrompt(text,cb){
-  say(text).then(()=>{
-    setTimeout(()=>{
-      const p=rnd(PROMPT);
-      say(p).then(()=>{if(cb)cb()});
-    },300);
-  });
-}
-// Try MP3 first, fallback to TTS
-function speak(text,exId){
-  return new Promise(res=>{
-    if(exId){
-      const a=new Audio('/audio/'+voiceProfile.sex+'/'+exId+'.mp3');
-      a.onended=res;
-      a.onerror=()=>say(text).then(res);
-      a.play().catch(()=>say(text).then(res));
-      return;
-    }
-    say(text).then(res);
-  });
+function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel()}
+// Sequence: say phrase, pause, say prompt, then call back
+async function saySequence(texts,cb){
+  for(const t of texts){
+    if(t==='__pause__'){await new Promise(r=>setTimeout(r,300));continue}
+    await say(t);
+  }
+  if(cb)cb();
 }
 
 // ===== MIC =====
@@ -112,6 +96,10 @@ function useSR(){
   return{on,res,ok:gRecOk,go}
 }
 
+// ===== PERSIST =====
+function saveData(key,val){try{localStorage.setItem('toki_'+key,JSON.stringify(val))}catch(e){}}
+function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
+
 // ===== SRS =====
 function srsUp(id,ok,u){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();d.srs[id].lv=ok?Math.min(d.srs[id].lv+1,5):Math.max(d.srs[id].lv-1,0);return d}
 function needsRev(id,u){const s=u.srs&&u.srs[id];if(!s)return true;const g=[0,30000,120000,600000,3600000,86400000];return(Date.now()-s.t)>=g[Math.min(s.lv,5)]}
@@ -123,12 +111,11 @@ const tdy=()=>new Date().toLocaleDateString('es-ES');
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const PROMPT=['¡Ahora tú!','¡Te toca!','¡Repite!','¡Vamos, dilo tú!','¡Te toca a ti!','¡Venga, dilo!','¡A ver cómo suena!','¡Dale!'];
 const BUILD_OK=['¡Sí señor!','¡Eso es!','¡Bien hecho!','¡Perfecto!','¡Así se hace!','¡Genial!'];
-const PERFECT_M=['¡Muy bien campeón! 🌟','¡Espectacular campeón! 🏆','¡Increíble campeón! ✨','¡Bravo campeón! 🎉'];
-const PERFECT_F=['¡Muy bien campeona! 🌟','¡Espectacular campeona! 🏆','¡Increíble campeona! ✨','¡Bravo campeona! 🎉'];
-const GOOD_MSG=['¡Bien hecho! 👏','¡Genial! ⭐','¡Muy bien! 🔥','¡Así se habla! 💪','¡Fenomenal! ✨'];
-const RETRY_MSG=['Inténtalo otra vez','Escucha bien y repite','Otra vez, tú puedes','Casi casi, una más'];
-const FAIL_MSG=['Poco a poco lo conseguirás 💪','No te rindas, otro día te saldrá 🌟','¡Ánimo, vas mejorando! ⭐','Tranquilo, la próxima vez seguro 👏'];
-const IDLE=['¿Estás ahí? 👀','','','Me aburro... 😢 ¡Juega conmigo!'];
+const PERFECT_M=['¡Muy bien campeón!','¡Espectacular campeón!','¡Increíble campeón!','¡Bravo campeón!'];
+const PERFECT_F=['¡Muy bien campeona!','¡Espectacular campeona!','¡Increíble campeona!','¡Bravo campeona!'];
+const GOOD_MSG=['¡Bien hecho!','¡Genial!','¡Muy bien!','¡Así se habla!','¡Fenomenal!'];
+const RETRY_MSG=['Inténtalo otra vez','Escucha bien y repite','Otra vez, tú puedes'];
+const FAIL_MSG=['Poco a poco lo conseguirás','No te rindas, otro día te saldrá','Ánimo, vas mejorando'];
 function Confetti({show}){const[pts,sP]=useState([]);useEffect(()=>{if(show){sP(Array.from({length:24},(_,i)=>({i,x:Math.random()*100,c:CLS[i%7],s:6+Math.random()*10,d:Math.random()*.5,du:.8+Math.random()*.8})));setTimeout(()=>sP([]),2800)}},[show]);if(!pts.length)return null;return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:999}}>{pts.map(p=><div key={p.i} style={{position:'absolute',left:p.x+'%',top:'-5%',width:p.s,height:p.s,background:p.c,borderRadius:3,animation:`confDrop ${p.du}s ease-in ${p.d}s forwards`}}/>)}</div>}
 function Ring({p,sz=80,sw=6,c=GREEN}){const r=(sz-sw)/2,ci=2*Math.PI*r;return <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={BG3} strokeWidth={sw}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={c} strokeWidth={sw} strokeDasharray={ci} strokeDashoffset={ci-(p||0)*ci} strokeLinecap="round" style={{transition:'stroke-dashoffset .6s'}}/></svg>}
 function Tower({placed,total}){const cells=21,filled=Math.min(Math.floor((placed/Math.max(total,1))*cells),cells);return <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,maxWidth:220,margin:'0 auto'}}>{Array.from({length:cells},(_,i)=>{const row=Math.floor(i/7),inv=(2-row)*7+(i%7),on=inv<filled;return <div key={i} style={{aspectRatio:'1',borderRadius:4,transition:'all .3s cubic-bezier(.34,1.56,.64,1)',background:on?CLS[inv%7]:BG3+'44',border:on?'2px solid rgba(0,0,0,.2)':'2px solid '+BG3,transform:on?'scale(1)':'scale(.75)',opacity:on?1:.3}}/>})}</div>}
@@ -140,63 +127,53 @@ function useIdle(name,active){
     if(!active)return;
     timer.current=setInterval(()=>{const s=step.current;
       if(s===0)sMsg('¿Estás ahí? 👀');
-      else if(s===1){sMsg((name||'¡Hola')+'?? 👋');say((name||'hola')+'?')}
+      else if(s===1){const n=name||'Hola';sMsg(n+'?? 👋');say(n+'?')}
       else if(s===2)sMsg('¿Hola? ¿Hay alguien? 🤔');
       else if(s>=3){sMsg('Me aburro... 😢 ¡Juega conmigo!');say('juega conmigo')}
       step.current=s+1;
     },6000);
     return()=>clearInterval(timer.current);
   },[active,name]);
-  function poke(){step.current=0;sMsg('');clearInterval(timer.current)}
+  function poke(){step.current=0;sMsg('');if(timer.current){clearInterval(timer.current);timer.current=null}}
   return{idleMsg:msg,poke}
 }
 
-// ===== SPEAK PANEL — fully automatic =====
+// ===== SPEAK PANEL — fully automatic, sequential voice =====
 function SpeakPanel({text,exId,onOk,onSkip,sex,name}){
-  const[sf,sSf]=useState(null);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[started,setStarted]=useState(false);
-  const sr=useSR();
-  const{idleMsg,poke}=useIdle(name,!sf&&!sr.on&&started);
-  const activeRef=useRef(true);
+  const[sf,sSf]=useState(null);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[listening,setListening]=useState(false);
+  const sr=useSR();const alive=useRef(true);
+  const{idleMsg,poke}=useIdle(name,!sf&&!sr.on&&listening);
 
-  useEffect(()=>{sSf(null);sAtt(0);sMsg('');setStarted(false);activeRef.current=true;
-    const t=setTimeout(()=>{
-      if(!activeRef.current)return;
-      unlockAudio();
-      // Step 1: say the phrase, Step 2: say prompt, Step 3: activate mic
-      speak(text,exId).then(()=>{
-        if(!activeRef.current)return;
-        setTimeout(()=>{
-          const p=rnd(PROMPT);sMsg(p);
-          say(p).then(()=>{
-            if(!activeRef.current)return;
-            setStarted(true);setTimeout(()=>sr.go(),250);
-          });
-        },250);
-      });
-    },800);
-    return()=>{activeRef.current=false;clearTimeout(t);window.speechSynthesis&&window.speechSynthesis.cancel()}
-  },[text,exId]);
-
-  function playAgain(){
-    poke();unlockAudio();window.speechSynthesis&&window.speechSynthesis.cancel();
-    speak(text,exId).then(()=>{
-      const p=rnd(PROMPT);sMsg(p);
-      say(p).then(()=>{setTimeout(()=>sr.go(),250)});
+  function doPlay(){
+    if(!alive.current)return;
+    stopVoice();sMsg('');
+    const prompt=rnd(PROMPT);
+    // Say the PHRASE first, then the PROMPT, then activate mic
+    saySequence([text,'__pause__',prompt],()=>{
+      if(!alive.current)return;
+      sMsg(prompt);setListening(true);
+      setTimeout(()=>{if(alive.current)sr.go()},200);
     });
   }
 
-  useEffect(()=>{if(!sr.res||!started)return;poke();
+  useEffect(()=>{alive.current=true;sSf(null);sAtt(0);sMsg('');setListening(false);
+    const t=setTimeout(doPlay,900);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice()}
+  },[text,exId]);
+
+  useEffect(()=>{if(!sr.res||!listening)return;poke();
     const b=Math.max(...sr.res.split('|').map(a=>score(a,text)));
-    if(b>=3){const m=rnd(sex==='f'?PERFECT_F:PERFECT_M);sMsg(m);sSf('perfect');say(m).then(()=>setTimeout(onOk,500))}
-    else if(b>=2){const m=rnd(GOOD_MSG);sMsg(m);sSf('ok');say(m).then(()=>setTimeout(onOk,500))}
+    if(b>=3){const m=rnd(sex==='f'?PERFECT_F:PERFECT_M);sMsg(m+' 🌟');sSf('perfect');say(m).then(()=>{if(alive.current)setTimeout(onOk,400)})}
+    else if(b>=2){const m=rnd(GOOD_MSG);sMsg(m+' ⭐');sSf('ok');say(m).then(()=>{if(alive.current)setTimeout(onOk,400)})}
     else{const na=att+1;sAtt(na);
-      if(na>=2){const m=rnd(FAIL_MSG);sMsg(m);sSf('fail');say(m).then(()=>setTimeout(onSkip,800))}
-      else{const m=rnd(RETRY_MSG);sMsg(m);sSf('retry');say(m).then(()=>{
-        setTimeout(()=>{sSf(null);sMsg('');playAgain()},500)
-      })}
+      if(na>=2){const m=rnd(FAIL_MSG);sMsg(m+' 💪');sSf('fail');say(m).then(()=>{if(alive.current)setTimeout(onSkip,600)})}
+      else{const m=rnd(RETRY_MSG);sMsg(m);sSf('retry');
+        say(m).then(()=>{if(!alive.current)return;setTimeout(()=>{sSf(null);setListening(false);doPlay()},500)})
+      }
     }
   },[sr.res]);
 
+  function hearAgain(){poke();stopVoice();sSf(null);setListening(false);doPlay()}
   const fbColor=sf==='perfect'?GOLD:sf==='ok'?GREEN:sf==='fail'?'#E67E22':RED;
 
   return <div style={{textAlign:'center'}} onClick={poke}>
@@ -209,15 +186,15 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name}){
     {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:16,marginBottom:14}}>
       <p style={{fontSize:20,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p>
     </div>}
-    {!sf&&sr.on&&<div style={{padding:20}}><span className="ap" style={{display:'inline-block',fontSize:56}}>🎤</span></div>}
-    <div style={{display:'flex',gap:10,marginTop:16}}>
-      <button className="btn btn-b btn-half" onClick={playAgain}>🔊 Otra vez</button>
-      <button className="btn btn-ghost btn-half" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button>
+    {sr.on&&<div style={{padding:16}}><span className="ap" style={{display:'inline-block',fontSize:56}}>🎤</span></div>}
+    <div style={{display:'flex',gap:10,marginTop:14}}>
+      <button className="btn btn-b btn-half" onClick={hearAgain}>🔊 Otra vez</button>
+      <button className="btn btn-ghost btn-half" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>
 }
 
-// ===== EXERCISE: FLUIDEZ =====
+// ===== EXERCISE: FLUIDEZ — just emoji + auto speak panel =====
 function ExFlu({ex,onOk,onSkip,sex,name}){
   return <div style={{textAlign:'center',padding:18}}>
     <div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
@@ -235,10 +212,11 @@ function ExFrases({ex,onOk,onSkip,sex,name}){
     const d=['el','un','muy','y','más','eso'].filter(w=>!words.map(x=>x.toLowerCase()).includes(w));
     sAv([...words,...d.slice(0,2)].sort(()=>Math.random()-.5).map((w,i)=>({w,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
 
-  function place(item){poke();unlockAudio();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));
+  function place(item){poke();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));
     if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');
-      if(built===target){sBf('ok');const m=rnd(BUILD_OK);
-        say(m).then(()=>speak(ex.fu,ex.id).then(()=>{const p=rnd(PROMPT);say(p).then(()=>sPh('speak'))}))}
+      if(built===target){sBf('ok');
+        const ok=rnd(BUILD_OK);const prompt=rnd(PROMPT);
+        saySequence([ok,'__pause__',ex.fu,'__pause__',prompt],()=>sPh('speak'))}
       else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
   function undo(){poke();let li=-1;pl.forEach((p,i)=>{if(p)li=i});if(li===-1)return;const it=pl[li];const np=[...pl];np[li]=null;sPl(np);sAv(a=>a.map(x=>x.i===it.i?{...x,u:false}:x))}
 
@@ -253,9 +231,9 @@ function ExFrases({ex,onOk,onSkip,sex,name}){
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
       <div style={{display:'flex',gap:10}}>
         {!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}
-        <button className="btn btn-p btn-half" onClick={()=>{poke();unlockAudio();speak(ex.fu,ex.id)}}>🔊 Pista</button>
+        <button className="btn btn-p btn-half" onClick={()=>{poke();say(ex.fu)}}>🔊 Pista</button>
       </div>
-      <div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div>
+      <div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div>
     </div>}
     {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name}/>}
   </div>
@@ -267,6 +245,10 @@ function ExSit({ex,onOk,onSkip,sex,name}){
   const shuf=useMemo(()=>[...ex.op].sort(()=>Math.random()-.5),[ex]);
   const{idleMsg,poke}=useIdle(name,ph==='choose'&&!cf);
   useEffect(()=>{sPh('choose');sCf(null)},[ex]);
+  function pick(o){poke();
+    if(o===ex.op[0]){const ok=rnd(BUILD_OK);const prompt=rnd(PROMPT);
+      saySequence([ok,'__pause__',ex.su,'__pause__',prompt],()=>sPh('speak'))}
+    else{sCf('no');setTimeout(()=>sCf(null),1000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div style={{fontSize:72,marginBottom:16}}>{ex.em}</div>
     <div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:20,fontWeight:600,margin:0,lineHeight:1.4}}>{ex.si}</p></div>
@@ -275,7 +257,7 @@ function ExSit({ex,onOk,onSkip,sex,name}){
       {cf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:12,padding:12,marginBottom:12}}><p style={{fontSize:17,color:GOLD,margin:0}}>Piensa... 🤔</p></div>}
       {idleMsg&&!cf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       <div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>{poke();unlockAudio();if(o===ex.op[0]){const m=rnd(BUILD_OK);say(m).then(()=>speak(ex.su,ex.id).then(()=>{const p=rnd(PROMPT);say(p).then(()=>sPh('speak'))}))}else{sCf('no');setTimeout(()=>sCf(null),1000)}}} style={{textAlign:'left',fontSize:18}}>{o}</button>)}
+        {shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>pick(o)} style={{textAlign:'left',fontSize:18}}>{o}</button>)}
       </div>
       <div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div>
     </div>}
@@ -283,14 +265,21 @@ function ExSit({ex,onOk,onSkip,sex,name}){
   </div>
 }
 
-// ===== MAIN APP =====
+// ===== MAIN APP with localStorage persistence =====
 export default function App(){
-  const[profs,setProfs]=useState([]);const[user,setUser]=useState(null);const[scr,setScr]=useState('login');const[ov,setOv]=useState(null);
+  const[profs,setProfs]=useState(()=>loadData('profiles',[]));
+  const[user,setUser]=useState(null);const[scr,setScr]=useState('login');const[ov,setOv]=useState(null);
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pg,setPg]=useState(8);
   const[pi,setPi]=useState('');const[pe,setPe]=useState(false);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);
+  // Unlock audio on first user touch
+  const[audioReady,setAudioReady]=useState(false);
+  function touchUnlock(){if(audioReady)return;setAudioReady(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}}
+
+  // Save profiles whenever they change
+  useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
 
   function getRem(){if(!user)return 0;const g=user.goal||8;const d=(user.hist||[]).filter(h=>h.dt===tdy()).reduce((s,h)=>s+h.ok,0);return Math.max(0,g-d)}
   function buildQ(u){const goal=u.goal||8,done=(u.hist||[]).filter(h=>h.dt===tdy()).reduce((s,h)=>s+h.ok,0),need=Math.max(goal-done,4);const uLv=u.maxLv||u.level||1,seen=u.seen||[];let pool=EX.filter(e=>e.lv<=uLv&&!seen.includes(e.id));if(pool.length<need){u.seen=[];pool=EX.filter(e=>e.lv<=uLv)}const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));const sh=a=>[...a].sort(()=>Math.random()-.5);let sel=[...sh(rev).slice(0,Math.ceil(need*.6)),...sh(fresh).slice(0,Math.ceil(need*.3)),...sh(rest).slice(0,Math.ceil(need*.1))];while(sel.length<need){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return sel.slice(0,need).sort(()=>Math.random()-.5)}
@@ -300,22 +289,22 @@ export default function App(){
   function onSkip(){const e=queue[idx];const up=srsUp(e.id,false,user);if(!up.seen)up.seen=[];if(!up.seen.includes(e.id))up.seen.push(e.id);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1){setShowLvAdj(true)}else{if(idx+1>=queue.length)finish({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
   function doLevelDown(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)finish(st);else setIdx(idx+1)}
   function finish(s){const f=s||st;const rec={ok:f.ok,sk:f.sk,dt:tdy()};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setOv('done')}
-  function tryExit(){if(getRem()>0&&user.pin){setOv('pin');setPi('')}else setScr('goals')}
+  function tryExit(){stopVoice();if(getRem()>0&&user.pin){setOv('pin');setPi('')}else setScr('goals')}
   const cur=queue[idx];
 
-  return <div onClick={unlockAudio}>
+  return <div onClick={touchUnlock} onTouchStart={touchUnlock}>
     <style>{CSS}</style>
     <Confetti show={conf}/>
 
     {showLvAdj&&<div className="ov"><div className="ovp">
       <div style={{fontSize:48,marginBottom:12}}>🤔</div>
-      <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Quieres que bajemos el nivel?</p>
+      <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p>
       <p style={{fontSize:15,color:DIM,margin:'0 0 20px'}}>Así será un poco más fácil</p>
-      <div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLevelDown}>Sí, bájalo</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)finish(st);else setIdx(idx+1)}}>No, sigo así</button></div>
+      <div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLevelDown}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)finish(st);else setIdx(idx+1)}}>No</button></div>
     </div></div>}
 
     {ov==='pin'&&<div className="ov"><div className="ovp">
-      <div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>¡Todavía no!</p><p style={{fontSize:16,color:DIM,margin:'0 0 18px'}}>Termina los ejercicios o pide el PIN</p>
+      <div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>¡Todavía no!</p><p style={{fontSize:16,color:DIM,margin:'0 0 18px'}}>Termina o pide el PIN</p>
       <input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER,animation:pe?'shake .4s':'none'}}/>
       <div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===user.pin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div>
     </div></div>}
@@ -324,7 +313,7 @@ export default function App(){
       <div style={{fontSize:64,marginBottom:8}}>{rem<=0?'🏆':'⭐'}</div><p style={{fontSize:24,color:GOLD,fontWeight:700,margin:'0 0 16px'}}>{rem<=0?'¡MISIÓN CUMPLIDA!':'¡Buen trabajo!'}</p>
       <div style={{display:'flex',justifyContent:'space-around',marginBottom:20}}><div><div style={{fontSize:32,color:GREEN,fontWeight:700}}>{st.ok}</div><div style={{fontSize:14,color:DIM}}>Bien</div></div><div><div style={{fontSize:32,color:BLUE,fontWeight:700}}>{pct}%</div><div style={{fontSize:14,color:DIM}}>Acierto</div></div></div>
       {rem<=0&&<p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 16px'}}>🎮 ¡Ya puedes usar la tablet!</p>}
-      <button className={'btn '+(rem<=0?'btn-gold':'btn-b')} onClick={()=>{setOv(null);setScr('goals')}} style={{fontSize:22}}>{rem<=0?'¡Salir! 🎉':'Seguir →'}</button>
+      <button className={'btn '+(rem<=0?'btn-gold':'btn-b')} onClick={()=>{setOv(null);setScr('goals')}} style={{fontSize:22}}>{rem<=0?'¡Genial! 🎉':'Seguir →'}</button>
     </div>})()}</div></div>}
 
     {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}>
@@ -351,13 +340,13 @@ export default function App(){
       {profs.length>0&&!creating&&<div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>{profs.map(p=><button key={p.id} className="profcard" onClick={()=>{setUser(p);setPp(p.pin||'');setPg(p.goal||8);setVoiceProfile(p.age,p.sex);setScr('goals')}}>
         <div style={{fontSize:40}}>{p.av}</div><div style={{flex:1}}><div style={{fontSize:22,fontWeight:700}}>{p.name}</div><div style={{fontSize:14,color:DIM}}>{p.age} años · Nivel {p.maxLv||p.level||1}</div></div>
       </button>)}</div>}
-      {!creating?<button className="btn btn-p" onClick={()=>setCreating(true)} style={{fontSize:22}}>➕ Nuevo Jugador</button>:
-      <div className="card af" style={{padding:24,textAlign:'left'}}>
+      {profs.length<4&&!creating&&<button className="btn btn-p" onClick={()=>setCreating(true)} style={{fontSize:22}}>➕ Nuevo Jugador</button>}
+      {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}>
         <p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
         <label style={{fontSize:15,color:DIM}}>Nombre</label>
         <input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Guillermo" style={{marginBottom:14,marginTop:6}}/>
-        <label style={{fontSize:15,color:DIM}}>Edad</label>
-        <input className="inp" value={fa} onChange={e=>setFa(e.target.value.replace(/\D/g,''))} type="tel" placeholder="12" style={{marginBottom:14,marginTop:6}}/>
+        <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label>
+        <input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Sexo (voz)</label>
         <div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
         <label style={{fontSize:15,color:DIM}}>Nivel</label>
@@ -365,12 +354,13 @@ export default function App(){
         <label style={{fontSize:15,color:DIM}}>🔒 PIN (opcional)</label>
         <input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="Sin PIN" style={{marginBottom:14,marginTop:6,textAlign:'center',letterSpacing:12}}/>
         <label style={{fontSize:15,color:DIM}}>Avatar</label>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.filter(a=>!profs.some(p=>p.av===a)).map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
         <div style={{display:'flex',gap:10}}>
           <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button>
           <button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{
-            const p={id:Date.now()+'',name:cap(fn.trim()),age:+fa,sex:fsex,av:fav,hist:[],srs:{},level:flv,maxLv:flv,pin:pp,goal:8,seen:[]};
-            setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setPp('');setVoiceProfile(+fa,fsex);setScr('goals')
+            const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);
+            const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:flv,maxLv:flv,pin:pp,goal:8,seen:[]};
+            setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setPp('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')
           }}>Crear ✓</button>
         </div>
       </div>}
@@ -392,7 +382,7 @@ export default function App(){
             <p style={{fontSize:16,color:DIM,margin:0}}>¡Termínalos y la tablet es tuya! 🎮</p></div>
             <button className="btn btn-g" onClick={startGame} style={{fontSize:24}}>🚀 ¡A por ello!</button></div>;
           return <div><div style={{background:GOLD+'0C',border:`2px solid ${GOLD}22`,borderRadius:18,padding:24,margin:'20px 0'}}>
-            <div style={{fontSize:64,marginBottom:8}}>🏆</div><p style={{fontSize:24,color:GOLD,fontWeight:700,margin:'0 0 8px'}}>¡SESIÓN COMPLETADA!</p></div>
+            <div style={{fontSize:64,marginBottom:8}}>🏆</div><p style={{fontSize:24,color:GOLD,fontWeight:700,margin:'0 0 8px'}}>¡COMPLETADO!</p></div>
             <button className="btn btn-b" onClick={startGame}>Practicar más</button></div>
         })()}
       </div>
