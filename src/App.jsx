@@ -155,6 +155,48 @@ function VoiceRec({user,onBack,onSave}){const[mode,setMode]=useState('menu');con
         <div style={{display:'flex',gap:10,marginTop:10}}><button className="btn btn-ghost btn-half" onClick={()=>setMode('menu')}>← Menú</button><button className="btn btn-gold btn-half" onClick={fin}>✅ Guardar</button></div></div></div>}
   </div></div>}
 
+function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[523,659,784,1047];notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.12;o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.2)});setTimeout(()=>c.close(),1500)}catch(e){}}
+
+function DoneScreen({st,elapsed,user,onExit}){
+  const[ph,sPh]=useState('party');const[pi2,sPi2]=useState('');const[pe2,sPe2]=useState(false);const[xConf,sXConf]=useState(false);
+  const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
+  const isFem=user?.sex==='f';const champ=isFem?'campeona':'campeón';
+  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB('¡Felicidades '+champ+'! ¡Has hecho un trabajo enorme!');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'radial-gradient(ellipse at center,'+BG2+' 0%,'+BG+' 100%)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20,overflow:'hidden'}}>
+    <Confetti show={xConf}/>
+    <div style={{maxWidth:420,width:'100%',textAlign:'center'}}>
+      {ph==='party'&&<div className="ab">
+        <div style={{fontSize:100,marginBottom:4,animation:'pulse 1s infinite'}}>🏆</div>
+        <div style={{display:'flex',justifyContent:'center',gap:6,fontSize:36,marginBottom:12,animation:'bounceIn .6s .2s both'}}>{'🎉🌟⭐🎊🥳'.split('').map((e,i)=><span key={i} style={{animation:`bounceIn .4s ${.3+i*.12}s both`}}>{e}</span>)}</div>
+        <h1 style={{fontSize:28,color:GOLD,margin:'0 0 4px',animation:'fadeIn .5s .5s both'}}>¡FELICIDADES {champ.toUpperCase()}!</h1>
+        <p style={{fontSize:22,color:GREEN,fontWeight:700,margin:'0 0 20px',animation:'fadeIn .5s .7s both'}}>¡Has hecho un trabajo ENORME!</p>
+        <div style={{display:'flex',justifyContent:'center',gap:16,marginBottom:24,animation:'fadeIn .5s .9s both'}}>
+          {[{l:'Bien',v:st.ok,c:GREEN,e:'✅'},{l:'Acierto',v:pct+'%',c:BLUE,e:'🎯'},{l:'Minutos',v:elapsed,c:GOLD,e:'⏱️'}].map((s,i)=>
+            <div key={i} style={{background:CARD,border:'2px solid '+s.c+'44',borderRadius:16,padding:'14px 18px',minWidth:80}}>
+              <div style={{fontSize:24}}>{s.e}</div>
+              <div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div>
+              <div style={{fontSize:12,color:DIM}}>{s.l}</div>
+            </div>)}
+        </div>
+        <div style={{background:GREEN+'15',border:'2px solid '+GREEN+'33',borderRadius:16,padding:18,marginBottom:20,animation:'fadeIn .5s 1.1s both'}}>
+          <p style={{fontSize:20,fontWeight:700,margin:0,color:GREEN}}>🎮 ¡Misión cumplida!</p>
+          <p style={{fontSize:16,color:DIM,margin:'6px 0 0'}}>Dale la tablet a papá o mamá</p>
+        </div>
+        <button className="btn btn-gold" onClick={()=>sPh('pin')} style={{fontSize:20,animation:'fadeIn .5s 1.3s both'}}>🔒 Salir (Padres)</button>
+      </div>}
+      {ph==='pin'&&<div className="af">
+        <div style={{fontSize:56,marginBottom:12}}>🔒</div>
+        <p style={{fontSize:20,fontWeight:700,margin:'0 0 4px',color:GOLD}}>PIN de padres</p>
+        <p style={{fontSize:15,color:DIM,margin:'0 0 16px'}}>Introduce el PIN para salir</p>
+        <input className="inp" value={pi2} onChange={e=>sPi2(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe2?RED:BORDER,marginBottom:16}}/>
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{sPh('party');sPi2('')}}>Volver</button>
+          <button className="btn btn-g" style={{flex:1}} disabled={pi2.length<4} onClick={()=>{if(pi2===user.pin){onExit()}else{sPe2(true);sPi2('');setTimeout(()=>sPe2(false),1500)}}}>Salir ✓</button>
+        </div>
+      </div>}
+    </div>
+  </div>}
+
 export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState('login');const[ov,setOv]=useState(null);
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
@@ -162,25 +204,33 @@ export default function App(){
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
-  function tU(){if(audioOk)return;setAudioOk(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}}
+  const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
+  const[elapsedSt,setElapsedSt]=useState(0);
+  function pokeActive(){lastAct.current=Date.now()}
+  useEffect(()=>{if(!ss){if(actTimer.current)clearInterval(actTimer.current);return}
+    activeMs.current=0;lastAct.current=Date.now();setElapsedSt(0);
+    actTimer.current=setInterval(()=>{const now=Date.now();if(now-lastAct.current<IDLE_THRESH)activeMs.current+=1000;setElapsedSt(Math.floor(activeMs.current/60000))},1000);
+    return()=>clearInterval(actTimer.current)},[ss]);
+  function tU(){pokeActive();if(audioOk)return;setAudioOk(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}}
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
-  function timeUp(){return ss&&(Date.now()-ss)>=(sm*60000)}
+  function timeUp(){return ss&&activeMs.current>=(sm*60000)}
   function buildQ(u){const need=40;const uLv=u.maxLv||u.level||1;let pool=EX.filter(e=>e.lv<=uLv);const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));const sh=a=>[...a].sort(()=>Math.random()-.5);let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<need){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return sel.slice(0,need).sort(()=>Math.random()-.5)}
   function startGame(){setQ(buildQ(user));setIdx(0);setSt({ok:0,sk:0});setConsec(0);setSs(Date.now());setScr('game')}
+  useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp())fin(st)},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){setConf(true);setConsec(0);setTimeout(()=>setConf(false),2400);const e=queue[idx];const up=srsUp(e.id,true,user);setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));setTimeout(()=>{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
-  function onSk(){const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
+  function onOk(){pokeActive();setConf(true);setConsec(0);setTimeout(()=>setConf(false),2400);const e=queue[idx];const up=srsUp(e.id,true,user);setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));setTimeout(()=>{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
+  function onSk(){pokeActive();const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(timeUp()||idx+1>=queue.length)fin(st);else setIdx(idx+1)}
-  function fin(s){const f=s||st;const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:sm};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
-  function tryExit(){stopVoice();if(user.pin){setOv('pin');setPi('')}else setScr('goals')}
+  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
+  function tryExit(){stopVoice();setOv('pin');setPi('')}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
-  const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=ss?Math.floor((Date.now()-ss)/60000):0;
+  const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
   return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/>
     {showRec&&user&&<VoiceRec user={user} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(timeUp()||idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
     {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===user.pin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
-    {ov==='done'&&<div className="ov"><div className="ovp ab">{(()=>{const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;return <div><div style={{fontSize:64,marginBottom:8}}>🏆</div><p style={{fontSize:24,color:GOLD,fontWeight:700,margin:'0 0 16px'}}>¡Buen trabajo!</p><div style={{display:'flex',justifyContent:'space-around',marginBottom:20}}><div><div style={{fontSize:32,color:GREEN,fontWeight:700}}>{st.ok}</div><div style={{fontSize:14,color:DIM}}>Bien</div></div><div><div style={{fontSize:32,color:BLUE,fontWeight:700}}>{pct}%</div><div style={{fontSize:14,color:DIM}}>Acierto</div></div><div><div style={{fontSize:32,color:GOLD,fontWeight:700}}>{elapsed}'</div><div style={{fontSize:14,color:DIM}}>Min</div></div></div><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 16px'}}>🎮 ¡Ya puedes usar la tablet!</p><button className="btn btn-gold" onClick={()=>{setOv(null);setScr('goals')}} style={{fontSize:22}}>¡Genial! 🎉</button></div>})()}</div></div>}
+    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} onExit={()=>{setOv(null);setScr('goals')}}/>}
     {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:20,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'8px 16px'}} onClick={()=>setOv(null)}>✕</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)}>{t==='config'?'⚙️':t==='stats'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
@@ -200,9 +250,9 @@ export default function App(){
         <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label><input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Sexo</label><div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
         <label style={{fontSize:15,color:DIM}}>Nivel</label><div style={{display:'flex',gap:8,margin:'8px 0 14px'}}>{[1,2,3,4,5].map(n=><button key={n} onClick={()=>setFlv(n)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${flv===n?GOLD:BORDER}`,background:flv===n?GOLD+'22':BG3,color:flv===n?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer'}}>{n}</button>)}</div>
-        <label style={{fontSize:15,color:DIM}}>🔒 PIN</label><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="Sin PIN" style={{marginBottom:14,marginTop:6,textAlign:'center',letterSpacing:12}}/>
+        <label style={{fontSize:15,color:DIM}}>🔒 PIN (obligatorio)</label><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="4 dígitos" style={{marginBottom:14,marginTop:6,textAlign:'center',letterSpacing:12}}/>
         <label style={{fontSize:15,color:DIM}}>Avatar</label><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.filter(a=>!profs.some(p=>p.av===a)).map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
-        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:flv,maxLv:flv,pin:pp,sessionMin:25,voices:[]};setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setPp('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
+        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa||pp.length<4} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:flv,maxLv:flv,pin:pp,sessionMin:25,voices:[]};setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setPp('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setUser(null);setScr('login')}}>← Cambiar</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:GOLD,fontSize:16}} onClick={()=>setShowRec(true)}>🎙️</button><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setPp(user.pin||'');setSm(user.sessionMin||25);setPtab('config');setOv('parent')}}>⚙️</button></div></div>
@@ -210,7 +260,7 @@ export default function App(){
         <div style={{background:GREEN+'0C',border:`2px solid ${GREEN}22`,borderRadius:18,padding:24,margin:'0 0 20px'}}><div style={{fontSize:48,marginBottom:8}}>⏱️</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>Sesión de <span style={{color:GREEN}}>{sm} minutos</span></p><p style={{fontSize:16,color:DIM,margin:0}}>¡Termina y la tablet es tuya! 🎮</p></div>
         <button className="btn btn-g" onClick={startGame} style={{fontSize:24}}>🚀 ¡A por ello!</button></div></div>}
 
-    {scr==='game'&&cur&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm}'</span></div>
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm}'</span></div>
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:Math.min(100,elapsed/sm*100)+'%'}}/></div>
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
