@@ -736,7 +736,7 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
       </div>
       <QSTimeBar dur={dur} on={mic} onEnd={onTimeUp}/>
     </div>
-    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><img src={ex.picto} alt="" style={{height:55,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:8,padding:'4px 10px'}}/></div>}
+    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><img src={ex.picto} alt="" style={{height:70,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:10,padding:'6px 12px',maxWidth:'100%'}}/></div>}
     <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
       <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}}>🔊 Otra vez</button>
       <button className="btn btn-ghost btn-half" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
@@ -779,7 +779,7 @@ function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids}){
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}
     </div>
-    {cur.picto&&<div style={{margin:'6px auto',maxWidth:'95%'}}><img src={cur.picto} alt="" style={{height:55,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:8,padding:'4px 10px'}}/></div>}
+    {cur.picto&&<div style={{margin:'6px auto',maxWidth:'95%'}}><img src={cur.picto} alt="" style={{height:70,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:10,padding:'6px 12px',maxWidth:'100%'}}/></div>}
   </div>}
 
 function VoiceRec({user,onBack,onSave}){const[mode,setMode]=useState('menu');const[recLv,setRecLv]=useState(1);const[selV,setSelV]=useState(null);const[vn,setVn]=useState('');const[va,setVa]=useState('👨');const[vs,setVs]=useState('m');const[ri,setRi]=useState(0);const[rec,setRec]=useState(false);const[mr,setMr]=useState(null);const[saved,setSaved]=useState(0);const[pp,setPp]=useState(-1);const ch=useRef([]);const vid=useRef(null);const voices=user.voices||[];

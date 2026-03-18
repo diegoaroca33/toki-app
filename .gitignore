@@ -1,0 +1,4 @@
+node_modules
+dist
+.claude
+prev_session_msgs.txt
