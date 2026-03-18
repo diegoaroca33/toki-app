@@ -57,7 +57,7 @@ function cap(s){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
 let voiceProfile={age:12,sex:'m'},cachedVoice=null;
 function setVoiceProfile(a,s){voiceProfile={age:a||12,sex:s||'m'};cachedVoice=null;pickVoice()}
 function getVP(){const a=voiceProfile.age,s=voiceProfile.sex;if(a<=9)return{rate:.6,pitch:s==='f'?1.35:1.2};if(a<=13)return{rate:.65,pitch:s==='f'?1.15:.92};if(a<=17)return{rate:.7,pitch:s==='f'?1.05:.82};return{rate:.75,pitch:s==='f'?1.0:.78}}
-function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;const esES=es.filter(x=>x.lang==='es-ES');const pool=esES.length?esES:es;const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena/i,m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre/i;cachedVoice=voiceProfile.sex==='f'?pool.find(x=>f.test(x.name))||pool[0]:pool.find(x=>m.test(x.name))||pool[0]}
+function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;const esES=es.filter(x=>x.lang==='es-ES');const esOther=es.filter(x=>x.lang!=='es-ES');const pool=esES.length?esES:esOther.length?esOther:es;const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena/i,m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre/i;cachedVoice=voiceProfile.sex==='f'?pool.find(x=>f.test(x.name))||pool[0]:pool.find(x=>m.test(x.name))||pool[0]}
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,100);setTimeout(pickVoice,500);setTimeout(pickVoice,1500)}
 function say(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP(),u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=p.rate;u.pitch=p.pitch;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;window.speechSynthesis.speak(u);setTimeout(finish,Math.max(3000,text.length*250))})}
 function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=Math.min(1.0,p.rate+0.15);u.pitch=voiceProfile.sex==='m'?Math.min(1.5,p.pitch+0.4):Math.max(0.6,p.pitch-0.3);u.volume=1.0;const voices=window.speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith('es'));u.voice=voices.find(v=>v!==cachedVoice)||cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;window.speechSynthesis.speak(u);setTimeout(finish,Math.max(2500,text.length*200))})}
@@ -136,10 +136,12 @@ const GROUPS=[
     {k:'calendar',l:'Calendario',lvs:[{n:1,l:'Días'},{n:2,l:'Meses'},{n:3,l:'Antes/Desp.'},{n:4,l:'Ayer/Mañ.'}]},
     {k:'distribute',l:'Reparte y Cuenta',lvs:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}]}]},
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
-    {k:'writing',l:'Mayúsculas con guía',lvs:[{n:1,l:'Con guía'},{n:2,l:'Libre'}]},
-    {k:'writing',l:'Minúsculas con guía',lvs:[{n:3,l:'Con guía'},{n:4,l:'Libre'}]},
-    {k:'writing',l:'Palabras',lvs:[{n:5,l:'Empezar'}]},
-    {k:'writing',l:'Frases cortas',lvs:[{n:6,l:'Empezar'}]}]}
+    {k:'writing',l:'Letras MAYÚSCULAS',lvs:[{n:1,l:'Con guía'},{n:2,l:'Libre'}]},
+    {k:'writing',l:'Letras minúsculas',lvs:[{n:3,l:'Con guía'},{n:4,l:'Libre'}]},
+    {k:'writing',l:'Palabras MAYÚSCULAS',lvs:[{n:5,l:'Con guía'},{n:51,l:'Libre'}]},
+    {k:'writing',l:'Palabras minúsculas',lvs:[{n:52,l:'Con guía'},{n:53,l:'Libre'}]},
+    {k:'writing',l:'Frases cortas MAYÚSCULAS',lvs:[{n:6,l:'Con guía'},{n:61,l:'Libre'}]},
+    {k:'writing',l:'Frases cortas minúsculas',lvs:[{n:62,l:'Con guía'},{n:63,l:'Libre'}]}]}
 ];
 function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.15;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
 function Confetti({show}){const[pts,sP]=useState([]);useEffect(()=>{if(show){sP(Array.from({length:24},(_,i)=>({i,x:Math.random()*100,c:CLS[i%7],s:6+Math.random()*10,d:Math.random()*.5,du:.8+Math.random()*.8})));setTimeout(()=>sP([]),2800)}},[show]);if(!pts.length)return null;return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:999}}>{pts.map(p=><div key={p.i} style={{position:'absolute',left:p.x+'%',top:'-5%',width:p.s,height:p.s,background:p.c,borderRadius:3,animation:`confDrop ${p.du}s ease-in ${p.d}s forwards`}}/>)}</div>}
@@ -172,7 +174,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
     if(!alive.current)return;stopVoice();await new Promise(r=>setTimeout(r,150));if(!alive.current)return;
-    setMic(true);await new Promise(r=>setTimeout(r,100));if(alive.current)sr.go()}
+    await new Promise(r=>setTimeout(r,300));if(!alive.current)return;sr.go();setMic(true)}
   useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);stopVoice();sr.stop();const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);if(na>=2){const pm='¡Ánimo! Seguimos';sMsg(pm);sSf('pass');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current)onOk()},1800)}else{const pm='¿Lo intentamos?';sMsg(pm);sSf('wait');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
@@ -246,8 +248,9 @@ function genMath(lv){const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b
   else{for(let i=0;i<30;i++){if(Math.random()>.5){const a=rng(5,20),b=Math.random()>.5?5:10;ops.push({q:`${a} + ${b}`,ans:a+b})}else{const a=rng(5,20),b=Math.random()>.5?5:10;if(a>=b)ops.push({q:`${a} - ${b}`,ans:a-b});else ops.push({q:`${a} + ${b}`,ans:a+b})}}}
   return ops.sort(()=>Math.random()-.5)}
 
-function Fingers({n,color=GOLD}){const groups=[];let rem=n;while(rem>0){groups.push(Math.min(rem,5));rem-=5}
-  return <div style={{display:'flex',gap:6,justifyContent:'center',margin:'8px 0',flexWrap:'wrap'}}>{groups.map((g,gi)=><div key={gi} style={{display:'flex',gap:2}}>{Array.from({length:g},(_,i)=>{const idx=gi*5+i;return <div key={i} style={{width:n>15?10:14,height:40,borderRadius:n>15?5:7,background:gi%2===0?color:BLUE,border:'2px solid '+(gi%2===0?color:BLUE),transition:'all .5s '+(idx*.12)+'s'}}/>})}</div>)}</div>}
+function Fingers({n,color=GOLD,color2=null}){const c2=color2||(color===GOLD?BLUE:color===BLUE?GREEN:BLUE);const groups=[];let rem=n;while(rem>0){groups.push(Math.min(rem,5));rem-=5}
+  const intensities=[1,.92,.85,.95,.88];
+  return <div style={{display:'flex',gap:8,justifyContent:'center',margin:'8px 0',flexWrap:'wrap'}}>{groups.map((g,gi)=>{const baseC=gi%2===0?color:c2;return <div key={gi} style={{display:'flex',gap:2,position:'relative'}}>{g===5&&<svg width={n>15?54:74} height={48} style={{position:'absolute',top:-2,left:-2,pointerEvents:'none'}}><path d={`M2,6 Q${n>15?27:37},0 ${n>15?52:72},6`} fill="none" stroke="#8B4513" strokeWidth={2} strokeLinecap="round"/><path d={`M${n>15?27:37},0 L${n>15?27:37},4`} fill="none" stroke="#8B4513" strokeWidth={2}/></svg>}{Array.from({length:g},(_,i)=>{const idx=gi*5+i;const int=intensities[i%5];return <div key={i} style={{width:n>15?10:14,height:40,borderRadius:n>15?5:7,background:baseC,border:'2px solid rgba(0,0,0,.2)',opacity:int,transition:'all .5s '+(idx*.12)+'s'}}/>})}</div>})}</div>}
 
 function AnimCount({from,to,color=GREEN,speak=false}){const[cur,setCur]=useState(0);
   useEffect(()=>{setCur(0);let i=0;const t=setInterval(()=>{i++;setCur(i);if(speak&&i>from){stopVoice();say(NUMS_1_100[i-1]||String(i))}if(i>=to){clearInterval(t);if(speak)beep(880,150)}},speak?1200:800);return()=>{clearInterval(t);if(speak)stopVoice()}},[to,from,speak]);
@@ -266,9 +269,9 @@ function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.q} = ?</p></div>
     {!showHelp&&!fb&&<div>
       <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:12}}>
-        <div style={{textAlign:'center'}}><Fingers n={a} color={GOLD}/><p style={{fontSize:16,color:GOLD,margin:0,fontWeight:700}}>{a}</p></div>
+        <div style={{textAlign:'center'}}><Fingers n={a} color={'#E67E22'} color2={'#E67E22'}/><p style={{fontSize:16,color:'#E67E22',margin:0,fontWeight:700}}>{a}</p></div>
         <div style={{fontSize:32,color:op==='+'?GREEN:RED,fontWeight:700,alignSelf:'center'}}>{op}</div>
-        <div style={{textAlign:'center'}}><Fingers n={b} color={BLUE}/><p style={{fontSize:16,color:BLUE,margin:0,fontWeight:700}}>{b}</p></div>
+        <div style={{textAlign:'center'}}><Fingers n={b} color={BLUE} color2={BLUE}/><p style={{fontSize:16,color:BLUE,margin:0,fontWeight:700}}>{b}</p></div>
       </div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value.replace(/\D/g,''))} type="tel" placeholder="?" style={{textAlign:'center',fontSize:36,letterSpacing:8,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={check} style={{fontSize:22,maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
@@ -368,7 +371,7 @@ function ExMulti({ex,onOk,onSkip,name,uid,vids}){
   </div>}
 
 // ===== MONEDAS Y BILLETES =====
-const COINS=[{v:0.01,l:'1c',c:'#CD7F32',c2:'#A0522D',sz:32},{v:0.02,l:'2c',c:'#CD7F32',c2:'#A0522D',sz:34},{v:0.05,l:'5c',c:'#CD7F32',c2:'#A0522D',sz:36},{v:0.10,l:'10c',c:'#DAA520',c2:'#B8860B',sz:34},{v:0.20,l:'20c',c:'#DAA520',c2:'#B8860B',sz:36},{v:0.50,l:'50c',c:'#DAA520',c2:'#B8860B',sz:40},{v:1,l:'1€',c:'#C0C0C0',c2:'#DAA520',sz:42,bi:true},{v:2,l:'2€',c:'#DAA520',c2:'#C0C0C0',sz:44,bi:true}];
+const COINS=[{v:0.01,l:'1c',c:'#B87333',c2:'#8B5E3C',sz:36},{v:0.02,l:'2c',c:'#B87333',c2:'#8B5E3C',sz:38},{v:0.05,l:'5c',c:'#B87333',c2:'#8B5E3C',sz:40},{v:0.10,l:'10c',c:'#DAA520',c2:'#B8860B',sz:38},{v:0.20,l:'20c',c:'#DAA520',c2:'#B8860B',sz:40},{v:0.50,l:'50c',c:'#DAA520',c2:'#B8860B',sz:44},{v:1,l:'1€',c:'#C0C0C0',c2:'#DAA520',sz:48,bi:true},{v:2,l:'2€',c:'#DAA520',c2:'#C0C0C0',sz:50,bi:true}];
 const BILLS=[{v:5,l:'5€',c:'#7B7B7B',c2:'#9E9E9E'},{v:10,l:'10€',c:'#C0392B',c2:'#E74C3C'},{v:20,l:'20€',c:'#2471A3',c2:'#3498DB'},{v:50,l:'50€',c:'#D35400',c2:'#E67E22'}];
 
 function genMoney(lv){const items=[];
@@ -389,8 +392,23 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
     else{setFb('no');stopVoice();sayFB('La respuesta es '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setAns('')},2500)}}
   function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}}
-  const Coin=({c,onClick})=>{const sz=c.sz||36;return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',background:c.bi?`radial-gradient(circle at 50% 50%, ${c.c2} 0%, ${c.c2} 40%, ${c.c} 42%, ${c.c} 100%)`:`radial-gradient(circle at 35% 35%, ${c.c}, ${c.c2||c.c})`,border:`3px solid ${c.c2||'rgba(0,0,0,.3)'}`,color:c.c==='#C0C0C0'?'#333':'#fff',fontWeight:800,fontSize:sz>38?16:sz>34?14:12,display:'inline-flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontFamily:"'Fredoka'",boxShadow:`2px 2px 6px rgba(0,0,0,.4), inset 0 1px 2px rgba(255,255,255,.3)`,textShadow:'0 1px 1px rgba(0,0,0,.3)'}}>{c.l}</button>};
-  const Bill=({b,onClick})=><button onClick={onClick} style={{width:100,height:54,borderRadius:8,background:`linear-gradient(135deg, ${b.c2} 0%, ${b.c} 50%, ${b.c2} 100%)`,border:`2px solid ${b.c}`,color:'#fff',fontWeight:800,fontSize:18,cursor:'pointer',fontFamily:"'Fredoka'",boxShadow:'2px 2px 6px rgba(0,0,0,.4)',position:'relative',overflow:'hidden'}}><span style={{position:'relative',zIndex:1,textShadow:'0 1px 2px rgba(0,0,0,.4)'}}>{b.l}</span><span style={{position:'absolute',right:4,top:4,fontSize:8,opacity:.5}}>EUR</span><span style={{position:'absolute',left:6,bottom:2,width:16,height:20,border:'2px solid rgba(255,255,255,.2)',borderRadius:'2px 2px 8px 8px',display:'block'}}></span></button>;
+  const CoinSVG=({c,sz})=>{const copper=c.v<=0.05;const gold=c.v>=0.10&&c.v<=0.50;const bi=c.bi;const outerC=bi?'#C0C0C0':copper?'#B87333':gold?'#DAA520':'#C0C0C0';const innerC=bi?'#DAA520':outerC;const borderC=copper?'#8B5E3C':gold?'#B8860B':bi?'#A0A0A0':'#888';const txtC=copper||gold?'#fff':bi?'#333':'#333';
+    return <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
+      <defs><radialGradient id={`cg${c.v}`} cx="40%" cy="35%"><stop offset="0%" stopColor="rgba(255,255,255,.4)"/><stop offset="100%" stopColor="rgba(0,0,0,.15)"/></radialGradient></defs>
+      <circle cx={sz/2} cy={sz/2} r={sz/2-2} fill={outerC} stroke={borderC} strokeWidth={2}/>
+      {bi&&<circle cx={sz/2} cy={sz/2} r={sz/2-8} fill={innerC} stroke={borderC} strokeWidth={1}/>}
+      <circle cx={sz/2} cy={sz/2} r={sz/2-2} fill={`url(#cg${c.v})`}/>
+      <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>42?18:sz>38?16:sz>34?14:12} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 1px rgba(0,0,0,.3)'}}>{c.l}</text>
+    </svg>};
+  const Coin=({c,onClick})=>{const sz=c.sz?Math.round(c.sz*1.3):48;const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
+    return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 2px 4px rgba(0,0,0,.5))'}}>
+      {imgOk?<img src={imgSrc} alt={c.l} style={{width:sz,height:sz,borderRadius:'50%',objectFit:'cover'}} onError={()=>setImgOk(false)}/>:<CoinSVG c={c} sz={sz}/>}
+    </button>};
+  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.jpg';
+    return <button onClick={onClick} style={{width:110,height:60,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative'}}>
+      {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:
+      <div style={{width:'100%',height:'100%',borderRadius:10,background:`linear-gradient(135deg, ${b.c2} 0%, ${b.c} 50%, ${b.c2} 100%)`,border:`2px solid ${b.c}`,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:800,fontSize:20,fontFamily:"'Fredoka'",textShadow:'0 1px 2px rgba(0,0,0,.4)'}}>{b.l}</span></div>}
+    </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='recognize'&&<div>
       <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
@@ -447,7 +465,7 @@ function ClockFace({h,m,size=160}){
   </svg>}
 
 function ExClock({ex,onOk,onSkip,name,uid,vids}){
-  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=m===0?(h===1?'la una en punto':'las '+h+' en punto'):m===30?(h===1?'la una':'las '+h)+' y media':m===15?(h===1?'la una':'las '+h)+' y cuarto':(h===1?'la una':'las '+h)+' menos cuarto';if(t!==correct)pool.push(t)}}const shuf=[...pool].sort(()=>Math.random()-.5).slice(0,3);shuf.push(correct);return shuf.sort(()=>Math.random()-.5)},[ex]);
+  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=m===0?(h===1?'la una en punto':'las '+h+' en punto'):m===30?(h===1?'la una':'las '+h)+' y media':m===15?(h===1?'la una':'las '+h)+' y cuarto':(h===1?'la una':'las '+h)+' menos cuarto';if(t!==correct)pool.push(t)}}const wrong=[...pool].sort(()=>Math.random()-.5).slice(0,3);const result=[...wrong,correct];return result.sort(()=>Math.random()-.5)},[ex]);
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
   function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
@@ -477,22 +495,27 @@ function genCalendar(lv){const items=[];
 
 function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
   const[placed,setPlaced]=useState([]);const[avail,setAvail]=useState([]);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const{idleMsg,poke}=useIdle(name,!fb);
-  useEffect(()=>{setFb(null);setAns('');stopVoice();
+  const[baAns,setBaAns]=useState({before:null,after:null});const[baOpts,setBaOpts]=useState([]);
+  const[ytAns,setYtAns]=useState({ayer:null,manana:null});
+  useEffect(()=>{setFb(null);setAns('');setBaAns({before:null,after:null});setYtAns({ayer:null,manana:null});stopVoice();
     if(ex.mode==='order_days'){const s=[...DIAS].sort(()=>Math.random()-.5);setAvail(s);setPlaced([]);setTimeout(()=>say('Ordena los días de la semana'),400)}
     else if(ex.mode==='order_months'){const s=[...MESES].sort(()=>Math.random()-.5);setAvail(s);setPlaced([]);setTimeout(()=>say('Ordena los meses del año'),400)}
-    else if(ex.mode==='before_after_day'){setTimeout(()=>say('¿Qué día va antes y después de '+ex.day+'?'),400)}
-    else if(ex.mode==='before_after_month'){setTimeout(()=>say('¿Qué mes va antes y después de '+ex.month+'?'),400)}
+    else if(ex.mode==='before_after_day'){const target=DIAS;const idx=ex.dayIdx;const max=target.length;const before=target[(idx-1+max)%max];const after=target[(idx+1)%max];const distractors=target.filter(d=>d!==before&&d!==after&&d!==ex.day);const picks=[before,after,...[...distractors].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);setBaOpts(picks);setTimeout(()=>say('¿Qué día va antes y después de '+ex.day+'?'),400)}
+    else if(ex.mode==='before_after_month'){const target=MESES;const idx=ex.monthIdx;const max=target.length;const before=target[(idx-1+max)%max];const after=target[(idx+1)%max];const distractors=target.filter(d=>d!==before&&d!==after&&d!==ex.month);const picks=[before,after,...[...distractors].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);setBaOpts(picks);setTimeout(()=>say('¿Qué mes va antes y después de '+ex.month+'?'),400)}
     else{const hoy=DIAS[new Date().getDay()===0?6:new Date().getDay()-1];setTimeout(()=>say('Hoy es '+hoy+'. ¿Qué día fue ayer y cuál será mañana?'),400)}
     return()=>stopVoice()},[ex]);
   function place(item){poke();const np=[...placed,item];setPlaced(np);setAvail(a=>a.filter(x=>x!==item));const target=ex.mode==='order_days'?DIAS:MESES;
     if(np.length===target.length){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
     else{setFb('no');beep(200,200);setTimeout(()=>{setPlaced([]);setAvail([...target].sort(()=>Math.random()-.5));setFb(null)},1500)}}}
-  function checkBA(){poke();const parts=ans.split(/[,\-\/y]+/).map(s=>s.trim().toLowerCase());const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;const before=target[(idx-1+max)%max].toLowerCase();const after=target[(idx+1)%max].toLowerCase();
-    if(parts.length>=2&&parts[0]===before&&parts[1]===after){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
-    else{setFb('no');stopVoice();sayFB('Antes: '+target[(idx-1+max)%max]+'. Después: '+target[(idx+1)%max]);setTimeout(()=>{setFb(null);setAns('')},3000)}}
-  function checkYT(){poke();const parts=ans.split(/[,\-\/y]+/).map(s=>s.trim().toLowerCase());const di=new Date().getDay()===0?6:new Date().getDay()-1;const ayer=DIAS[(di-1+7)%7].toLowerCase();const man=DIAS[(di+1)%7].toLowerCase();
-    if(parts.length>=2&&parts[0]===ayer&&parts[1]===man){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
-    else{setFb('no');stopVoice();sayFB('Ayer fue '+DIAS[(di-1+7)%7]+' y mañana será '+DIAS[(di+1)%7]);setTimeout(()=>{setFb(null);setAns('')},3000)}}
+  function pickBA(slot,val){poke();const newAns={...baAns,[slot]:val};setBaAns(newAns);
+    if(newAns.before&&newAns.after){const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;
+      const correctBefore=target[(idx-1+max)%max];const correctAfter=target[(idx+1)%max];
+      if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      else{setFb('no');beep(200,200);stopVoice();sayFB('Antes: '+correctBefore+'. Después: '+correctAfter);setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},3000)}}}
+  function pickYT(slot,val){poke();const newAns={...ytAns,[slot]:val};setYtAns(newAns);
+    if(newAns.ayer&&newAns.manana){const di=new Date().getDay()===0?6:new Date().getDay()-1;const correctAyer=DIAS[(di-1+7)%7];const correctMan=DIAS[(di+1)%7];
+      if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      else{setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
       <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:0,color:GOLD}}>{ex.mode==='order_days'?'Ordena los días':'Ordena los meses'}</p></div>
@@ -500,20 +523,51 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>{avail.map(d=><button key={d} className="btn btn-b btn-word" onClick={()=>place(d)} style={{fontSize:15,padding:'10px 14px'}}>{d}</button>)}</div>
       {placed.length>0&&!fb&&<button className="btn btn-o" onClick={()=>{setPlaced([]);setAvail([...(ex.mode==='order_days'?DIAS:MESES)].sort(()=>Math.random()-.5))}} style={{fontSize:14,maxWidth:150,margin:'0 auto'}}>↩️ Borrar</button>}
     </div>}
-    {ex.mode==='before_after_day'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>¿Qué va antes y después?</p><p style={{fontSize:28,fontWeight:700,color:BLUE,margin:0}}>{ex.day}</p></div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} placeholder="Antes, Después" style={{textAlign:'center',fontSize:20,marginBottom:12}}/>
-      <button className="btn btn-g" disabled={!ans} onClick={checkBA} style={{maxWidth:200,margin:'0 auto'}}>✓</button>
-    </div>}
-    {ex.mode==='before_after_month'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>¿Qué mes va antes y después?</p><p style={{fontSize:28,fontWeight:700,color:BLUE,margin:0}}>{ex.month}</p></div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} placeholder="Antes, Después" style={{textAlign:'center',fontSize:20,marginBottom:12}}/>
-      <button className="btn btn-g" disabled={!ans} onClick={checkBA} style={{maxWidth:200,margin:'0 auto'}}>✓</button>
+    {(ex.mode==='before_after_day'||ex.mode==='before_after_month')&&<div>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{ex.mode==='before_after_day'?'¿Qué va antes y después?':'¿Qué mes va antes y después?'}</p><p style={{fontSize:28,fontWeight:700,color:BLUE,margin:0}}>{ex.mode==='before_after_day'?ex.day:ex.month}</p></div>
+      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
+        <div style={{flex:1,maxWidth:140}}>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>ANTES ←</p>
+          <div style={{minHeight:48,background:baAns.before?GREEN+'22':CARD,border:'2px solid '+(baAns.before?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
+            <span style={{fontSize:18,fontWeight:700,color:baAns.before?GREEN:DIM}}>{baAns.before||'___'}</span>
+          </div>
+        </div>
+        <div style={{flex:1,maxWidth:140}}>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>→ DESPUÉS</p>
+          <div style={{minHeight:48,background:baAns.after?GREEN+'22':CARD,border:'2px solid '+(baAns.after?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
+            <span style={{fontSize:18,fontWeight:700,color:baAns.after?GREEN:DIM}}>{baAns.after||'___'}</span>
+          </div>
+        </div>
+      </div>
+      {!fb&&<div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>
+        {baOpts.filter(o=>o!==baAns.before&&o!==baAns.after).map(o=><div key={o} style={{display:'flex',flexDirection:'column',gap:4}}>
+          <button className="btn btn-b btn-word" onClick={()=>pickBA('before',o)} style={{fontSize:15,padding:'8px 14px'}} disabled={!!baAns.before}>← {o}</button>
+          <button className="btn btn-p btn-word" onClick={()=>pickBA('after',o)} style={{fontSize:15,padding:'8px 14px'}} disabled={!!baAns.after}>{o} →</button>
+        </div>)}</div>}
+      {!fb&&(baAns.before||baAns.after)&&<button className="btn btn-o" onClick={()=>setBaAns({before:null,after:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {ex.mode==='yesterday_tomorrow'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:16,color:DIM,margin:0}}>¿Qué día fue ayer y cuál será mañana?</p></div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} placeholder="Ayer, Mañana" style={{textAlign:'center',fontSize:20,marginBottom:12}}/>
-      <button className="btn btn-g" disabled={!ans} onClick={checkYT} style={{maxWidth:200,margin:'0 auto'}}>✓</button>
+      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
+        <div style={{flex:1,maxWidth:160}}>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>AYER</p>
+          <div style={{minHeight:48,background:ytAns.ayer?GREEN+'22':CARD,border:'2px solid '+(ytAns.ayer?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
+            <span style={{fontSize:18,fontWeight:700,color:ytAns.ayer?GREEN:DIM}}>{ytAns.ayer||'___'}</span>
+          </div>
+        </div>
+        <div style={{flex:1,maxWidth:160}}>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>MAÑANA</p>
+          <div style={{minHeight:48,background:ytAns.manana?GREEN+'22':CARD,border:'2px solid '+(ytAns.manana?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
+            <span style={{fontSize:18,fontWeight:700,color:ytAns.manana?GREEN:DIM}}>{ytAns.manana||'___'}</span>
+          </div>
+        </div>
+      </div>
+      {!fb&&<div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12}}>
+        {DIAS.filter(d=>d!==ytAns.ayer&&d!==ytAns.manana).map(d=><div key={d} style={{display:'flex',flexDirection:'column',gap:3}}>
+          <button className="btn btn-b btn-word" onClick={()=>pickYT('ayer',d)} style={{fontSize:13,padding:'6px 10px'}} disabled={!!ytAns.ayer}>{d}</button>
+          <button className="btn btn-p btn-word" onClick={()=>pickYT('manana',d)} style={{fontSize:13,padding:'6px 10px'}} disabled={!!ytAns.manana}>{d}</button>
+        </div>)}</div>}
+      {!fb&&(ytAns.ayer||ytAns.manana)&&<button className="btn btn-o" onClick={()=>setYtAns({ayer:null,manana:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
@@ -602,41 +656,55 @@ const WRITE_WORDS=['CASA','MESA','SOL','PAN','LUZ','OJO','UNO','DOS','MAR','PIE'
 const WRITE_PHRASES=['ME LLAMO GUILLERMO','HOY ES LUNES','QUIERO AGUA','TENGO HAMBRE','MI CASA ES','SOL Y LUNA','PAN CON QUESO'];
 const DESCENDERS='gjpqy'.split('');const ASCENDERS='bdfhklt'.split('');
 
+const WRITE_WORDS_LOWER=['casa','mesa','sol','pan','luz','ojo','uno','dos','mar','pie','oso','ave','rio','dia','rey','mis','tus','sus','hoy'];
+const WRITE_PHRASES_LOWER=['me llamo guillermo','hoy es lunes','quiero agua','tengo hambre','mi casa es','sol y luna','pan con queso'];
 function genWriting(lv){const items=[];
   if(lv<=2){const letters=LETTERS_UPPER;const guide=lv===1;letters.forEach(l=>{items.push({ty:'writing',letter:l,guide,isUpper:true,mode:'letter',id:'wr_'+lv+'_'+l})});return items.sort(()=>Math.random()-.5).slice(0,20)}
   if(lv===3||lv===4){const letters=LETTERS_LOWER;const guide=lv===3;letters.forEach(l=>{items.push({ty:'writing',letter:l,guide,isUpper:false,mode:'letter',id:'wr_'+lv+'_'+l})});return items.sort(()=>Math.random()-.5).slice(0,20)}
-  if(lv===5){return WRITE_WORDS.sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:w,guide:true,isUpper:true,mode:'word',id:'wr_w_'+w}))}
-  return WRITE_PHRASES.sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}))}
+  if(lv===5){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:w,guide:true,isUpper:true,mode:'word',id:'wr_w_'+w}))}
+  if(lv===51){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:w,guide:false,isUpper:true,mode:'word',id:'wr_wf_'+w}))}
+  if(lv===52){return[...WRITE_WORDS_LOWER].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:w,guide:true,isUpper:false,mode:'word',id:'wr_wl_'+w}))}
+  if(lv===53){return[...WRITE_WORDS_LOWER].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:w,guide:false,isUpper:false,mode:'word',id:'wr_wlf_'+w}))}
+  if(lv===6){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}))}
+  if(lv===61){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:false,isUpper:true,mode:'phrase',id:'wr_pf_'+p.replace(/\s/g,'_')}))}
+  if(lv===62){return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:true,isUpper:false,mode:'phrase',id:'wr_pl_'+p.replace(/\s/g,'_')}))}
+  return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:false,isUpper:false,mode:'phrase',id:'wr_plf_'+p.replace(/\s/g,'_')}))}
 
 function ExWriting({ex,onOk,onSkip,name}){
   const canvasRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
-  const isWide=ex.mode==='word'||ex.mode==='phrase';const cW=isWide?600:300;const cH=isWide?200:280;
-  const baseY=isWide?140:190;const upperY=isWide?60:60;const ascY=isWide?40:30;const descY=isWide?170:230;const midY=isWide?100:120;
+  const isWide=ex.mode==='word'||ex.mode==='phrase';const cW=isWide?700:380;const cH=isWide?260:360;
+  const baseY=isWide?180:250;const upperY=isWide?70:70;const ascY=isWide?45:35;const descY=isWide?220:300;const midY=isWide?125:155;
   function drawPauta(ctx,w,h){
     ctx.fillStyle='#FAFAF5';ctx.fillRect(0,0,w,h);
-    // Descender line (light gray dashed)
-    ctx.setLineDash([4,4]);ctx.strokeStyle='#D4D4D4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,descY);ctx.lineTo(w,descY);ctx.stroke();ctx.setLineDash([]);
-    // Base line (thick blue)
-    ctx.strokeStyle='#2E75B6';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(w,baseY);ctx.stroke();
-    // Mid line (red dashed for x-height)
-    ctx.setLineDash([6,4]);ctx.strokeStyle='#E88D8D';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,midY);ctx.lineTo(w,midY);ctx.stroke();ctx.setLineDash([]);
-    // Upper/capitals line
-    ctx.strokeStyle='#2E75B6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,upperY);ctx.lineTo(w,upperY);ctx.stroke();
-    // Ascender line (light)
-    ctx.strokeStyle='#D4D4D4';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(0,ascY);ctx.lineTo(w,ascY);ctx.stroke();
+    // Pauta francesa (French calligraphy lines)
+    // Base line (thick blue - main writing line)
+    ctx.strokeStyle='#2E75B6';ctx.lineWidth=3.5;ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(w,baseY);ctx.stroke();
+    // Upper/capitals line (blue)
+    ctx.strokeStyle='#2E75B6';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,upperY);ctx.lineTo(w,upperY);ctx.stroke();
+    // Mid line (x-height, red dashed)
+    ctx.setLineDash([6,4]);ctx.strokeStyle='#E88D8D';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,midY);ctx.lineTo(w,midY);ctx.stroke();ctx.setLineDash([]);
+    // Ascender line (light blue thin)
+    ctx.strokeStyle='#2E75B6';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(0,ascY);ctx.lineTo(w,ascY);ctx.stroke();
+    // Descender line (light gray)
+    ctx.setLineDash([4,4]);ctx.strokeStyle='#AAAAAA';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,descY);ctx.lineTo(w,descY);ctx.stroke();ctx.setLineDash([]);
+    // Light fill between baseline and upper for capital zone
+    ctx.fillStyle='rgba(46,117,182,0.04)';ctx.fillRect(0,upperY,w,baseY-upperY);
+    // Light fill between midY and baseY for lowercase zone
+    ctx.fillStyle='rgba(232,141,141,0.04)';ctx.fillRect(0,midY,w,baseY-midY);
   }
   function drawGuide(ctx,w,h){
     if(!ex.guide)return;const letter=ex.letter;
     if(ex.mode==='letter'){
-      const fSz=ex.isUpper?Math.floor((baseY-upperY)*1.1):Math.floor((baseY-midY)*1.1);
-      const yPos=ex.isUpper?(upperY+baseY)/2:(midY+baseY)/2;
+      const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);
+      const fSz=Math.floor(zoneH*0.95);
+      const yBase=baseY;
       ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;
-      ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(letter,w/2,yPos);
+      ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,yBase);
       // Stroke guides for uppercase
-      if(ex.isUpper){const sg=STROKE_GUIDES[letter.toUpperCase()];if(sg){const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};sg.forEach(s=>{const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;ctx.fillStyle='#E74C3C';ctx.font='bold 14px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.n+s.d,sx,sy)})}}
+      if(ex.isUpper){const sg=STROKE_GUIDES[letter.toUpperCase()];if(sg){const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};sg.forEach(s=>{const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;ctx.fillStyle='#E74C3C';ctx.font='bold 16px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.n+s.d,sx,sy)})}}
     }else{
-      const fSz=isWide?Math.floor((baseY-upperY)*0.7):40;
-      ctx.font=`bold ${fSz}px Fredoka`;ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(letter,w/2,(upperY+baseY)/2);
+      const fSz=isWide?Math.floor((baseY-upperY)*0.65):Math.floor((baseY-upperY)*0.7);
+      ctx.font=`bold ${fSz}px Fredoka`;ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
     }
   }
   useEffect(()=>{setDone(false);setStars(0);setShowModel(false);strokePts.current=[];const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
@@ -662,8 +730,8 @@ function ExWriting({ex,onOk,onSkip,name}){
   function accept(){const s=evaluate();setDone(true);setShowModel(true);starBeep(s);
     // Overlay model in green
     const c=canvasRef.current;if(c){const ctx=c.getContext('2d');ctx.globalAlpha=0.25;ctx.fillStyle='#2ECC71';
-      if(ex.mode==='letter'){const fSz=ex.isUpper?Math.floor((baseY-upperY)*1.1):Math.floor((baseY-midY)*1.1);const yPos=ex.isUpper?(upperY+baseY)/2:(midY+baseY)/2;ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ex.letter,cW/2,yPos)}
-      else{const fSz=isWide?Math.floor((baseY-upperY)*0.7):40;ctx.font=`bold ${fSz}px Fredoka`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(ex.letter,cW/2,(upperY+baseY)/2)}
+      if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH*0.95);ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+      else{const fSz=isWide?Math.floor((baseY-upperY)*0.65):Math.floor((baseY-upperY)*0.7);ctx.font=`bold ${fSz}px Fredoka`;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
       ctx.globalAlpha=1.0}
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
     cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>setTimeout(onOk,1200))}
