@@ -6,15 +6,20 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
-const VER='v20';
+const VER='v21';
 const CSS=`
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:'Fredoka',sans-serif;background:${BG};color:${TXT};min-height:100vh;min-height:100dvh}
+body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min-height:100dvh;transition:background 2s}
+body.sky-morning{background:linear-gradient(180deg,#1a3a6a 0%,#2e6bb5 40%,#5ba3d9 100%)}
+body.sky-afternoon{background:linear-gradient(180deg,#1a2744 0%,#c0392b 30%,#e67e22 60%,#f39c12 100%)}
+body.sky-night{background:${BG}}
+body.sky-night::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(1px 1px at 10% 20%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 30% 50%,#fff6 0,transparent 100%),radial-gradient(1.5px 1.5px at 50% 10%,#fff9 0,transparent 100%),radial-gradient(1px 1px at 70% 40%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 90% 70%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 15% 80%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 45% 65%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 80% 15%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 60% 85%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 25% 35%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 85% 55%,#fff4 0,transparent 100%),radial-gradient(1.5px 1.5px at 5% 60%,#fff7 0,transparent 100%),radial-gradient(1px 1px at 95% 25%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 40% 90%,#fff6 0,transparent 100%);animation:twinkle 8s ease-in-out infinite alternate}
+@keyframes twinkle{0%{opacity:.7}100%{opacity:1}}
 button{font-family:'Fredoka',sans-serif;touch-action:manipulation;cursor:pointer}
 input{font-family:'Fredoka',sans-serif}
 input::placeholder{color:${DIM}}
-#root{max-width:600px;margin:0 auto;padding:16px 20px}
-.btn{display:block;width:100%;border:3px solid;border-radius:14px;padding:18px 24px;font-weight:700;font-size:20px;transition:transform .1s;color:#fff;text-align:center}
+#root{max-width:1100px;margin:0 auto;padding:16px 20px;position:relative;z-index:1}
+.btn{display:block;width:100%;border:3px solid;border-radius:14px;padding:22px 28px;font-weight:700;font-size:22px;transition:transform .1s;color:#fff;text-align:center;min-height:48px}
 .btn:active{transform:scale(.93)!important}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn-g{background:${GREEN};border-color:#27ae60;box-shadow:4px 4px 0 #1e8449}
@@ -48,6 +53,16 @@ input::placeholder{color:${DIM}}
 @keyframes confDrop{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
 @keyframes qsbar{0%{height:100%}100%{height:0%}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 0 8px ${GOLD}66)}50%{filter:drop-shadow(0 0 20px ${GOLD}aa)}}
+@keyframes planetPulse{0%,100%{transform:scale(.92);filter:drop-shadow(0 0 6px rgba(255,255,255,.2))}50%{transform:scale(.97);filter:drop-shadow(0 0 14px rgba(255,255,255,.4))}}
+@keyframes planetRing{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes orbitStar{0%{transform:rotate(0deg) translateX(52px) rotate(0deg)}100%{transform:rotate(360deg) translateX(52px) rotate(-360deg)}}
+@keyframes rocketFly{0%{transform:translateY(100vh) scale(1);opacity:1}60%{transform:translateY(-20vh) scale(1.1);opacity:1}100%{transform:translateY(-120vh) scale(.6);opacity:0}}
+@keyframes starPass{0%{transform:translateY(-20px);opacity:0}20%{opacity:1}100%{transform:translateY(110vh);opacity:0}}
+@keyframes countNum{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
+@keyframes mascotBounce{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-5deg)}75%{transform:translateY(-4px) rotate(5deg)}}
+@keyframes mascotShy{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
+@keyframes mascotDance{0%{transform:translateY(0) rotate(0) scale(1)}25%{transform:translateY(-6px) rotate(-10deg) scale(1.1)}50%{transform:translateY(0) rotate(0) scale(1)}75%{transform:translateY(-6px) rotate(10deg) scale(1.1)}}
+.skip-btn{display:none}body.sup-mode .skip-btn{display:inline-block}
 .af{animation:fadeIn .4s ease-out}.ab{animation:bounceIn .45s}.ap{animation:pulse 1.4s infinite}.as{animation:shake .4s}
 `;
 function lev(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
@@ -86,7 +101,11 @@ const PERFECT_T=['{N}, ¡eso ha sido perfecto!','¡Increíble, {N}!','¡{N}, qu�
 const GOOD_MSG=['¡Bien hecho!','¡Genial!','¡Muy bien!','¡Así se habla!','¡Fenomenal!','¡Estupendo!','¡Sigue así!','¡Vas muy bien!','¡Olé!','¡Qué bien suena!'];
 const RETRY_MSG=['Inténtalo otra vez','Escucha bien y repite','Otra vez, tú puedes','Venga, una más','Casi casi'];
 const FAIL_MSG=['Poco a poco lo conseguirás','No te rindas, otro día te saldrá','Ánimo, vas mejorando','Tranquilo, la próxima vez seguro','No pasa nada, seguimos'];
-function mkPerfect(name){return rnd(PERFECT_T).replace(/\{N\}/g,name||'crack')}
+const SHORT_ENCOURAGEMENT=['¡Casi!','Venga','¡Va!','Sigue','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!'];
+const MODULE_MSG={decir:['¡Dilo!','Dilo tú','Dilo otra vez','Venga, dilo'],math:['¡Cuenta!','Cuenta conmigo','Cuenta otra vez'],multi:['¡Cuenta!','Cuenta conmigo'],frac:['¡Cuenta!','Cuenta otra vez'],contar:['¡Cuenta!','Cuenta conmigo'],writing:['¡Escríbelo!','Escribe otra vez'],calendar:['¡Piensa!','Tú puedes','¡Razona!'],distribute:['¡Piensa!','Tú puedes'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','Tú puedes'],quiensoy:['¡Dilo!','Dilo tú'],razona:['¡Piensa!','Tú puedes','¡Razona!','Piensa bien'],lee:['¡Léelo!','Lee otra vez','¡Tú sabes leer!','Venga, lee']};
+let _lastMsg='';
+function pickMsg(positive,name,section){const pool=[];if(positive){if(Math.random()<0.2){const t=rnd(PERFECT_T).replace(/\{N\}/g,name||'crack');if(t!==_lastMsg){_lastMsg=t;return t}}pool.push(...SHORT_ENCOURAGEMENT);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}else{pool.push(...SHORT_ENCOURAGEMENT);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}const filtered=pool.filter(m=>m!==_lastMsg);const msg=rnd(filtered.length?filtered:pool);_lastMsg=msg;return msg}
+function mkPerfect(name){const msg=rnd(PERFECT_T).replace(/\{N\}/g,name||'crack');_lastMsg=msg;return msg}
 const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK];
 function cheerIdx(text){const clean=text.replace(/\{N\}/g,'').trim().toLowerCase();for(let i=0;i<CHEER_ALL.length;i++){if(CHEER_ALL[i].replace(/\{N\}/g,'').trim().toLowerCase()===clean)return i}return -1}
 async function cheerOrSay(text,uid,vids,_cat){const idx=cheerIdx(text);if(idx>=0){const played=await playRec(uid,vids,'cheer_'+idx);if(played)return}await sayFB(text)}
@@ -129,21 +148,77 @@ const GROUPS=[
   {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
     {k:'math',l:'Sumas y Restas',lvs:[{n:1,l:'Sumas fácil'},{n:2,l:'Sumas+'},{n:3,l:'Restas'},{n:4,l:'Mezcla'}]},
     {k:'multi',l:'Multiplicaciones',lvs:[{n:1,l:'x2/x3'},{n:2,l:'x5/x10'},{n:3,l:'Mezcla'}]},
-    {k:'frac',l:'Fracciones',lvs:[{n:1,l:'Empezar'}]}]},
-  {id:'midia',name:'MI DÍA',emoji:'🌍',color:BLUE,desc:'Habilidades de vida diaria',modules:[
+    {k:'frac',l:'Fracciones',lvs:[{n:1,l:'Reconocer'},{n:2,l:'Notación'},{n:3,l:'Equivalencias'},{n:4,l:'Sumar'},{n:5,l:'Sumar/Restar'}]}]},
+  {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
     {k:'money',l:'Monedas y Billetes',lvs:[{n:1,l:'Reconocer'},{n:2,l:'Sumar'},{n:3,l:'Pagar'},{n:4,l:'Cambio'}]},
     {k:'clock',l:'La Hora',lvs:[{n:1,l:'En punto'},{n:2,l:'Media'},{n:3,l:'Cuarto'}]},
     {k:'calendar',l:'Calendario',lvs:[{n:1,l:'Días'},{n:2,l:'Meses'},{n:3,l:'Antes/Desp.'},{n:4,l:'Ayer/Mañ.'}]},
-    {k:'distribute',l:'Reparte y Cuenta',lvs:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}]}]},
+    {k:'distribute',l:'Reparte y Cuenta',lvs:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}]},
+    {k:'razona',l:'Razona',lvs:[{n:1,l:'Posición'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'}]}]},
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
     {k:'writing',l:'Letras MAYÚSCULAS',lvs:[{n:1,l:'Con guía'},{n:2,l:'Libre'}]},
     {k:'writing',l:'Letras minúsculas',lvs:[{n:3,l:'Con guía'},{n:4,l:'Libre'}]},
     {k:'writing',l:'Palabras MAYÚSCULAS',lvs:[{n:5,l:'Con guía'},{n:51,l:'Libre'}]},
     {k:'writing',l:'Palabras minúsculas',lvs:[{n:52,l:'Con guía'},{n:53,l:'Libre'}]},
     {k:'writing',l:'Frases cortas MAYÚSCULAS',lvs:[{n:6,l:'Con guía'},{n:61,l:'Libre'}]},
-    {k:'writing',l:'Frases cortas minúsculas',lvs:[{n:62,l:'Con guía'},{n:63,l:'Libre'}]}]}
+    {k:'writing',l:'Frases cortas minúsculas',lvs:[{n:62,l:'Con guía'},{n:63,l:'Libre'}]}]},
+  {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
+    {k:'lee',l:'Lectura',lvs:[{n:1,l:'Intruso'},{n:2,l:'Palabra+Imagen'},{n:3,l:'Completa'},{n:4,l:'Ordena sílabas'},{n:5,l:'Lee y haz'}]}]}
 ];
-function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.15;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
+function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.06;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
+// Time-of-day helpers
+function getTimeOfDay(){const h=new Date().getHours();if(h>=6&&h<14)return'morning';if(h>=14&&h<20)return'afternoon';return'night'}
+function getSkyClass(){const t=getTimeOfDay();return t==='morning'?'sky-morning':t==='afternoon'?'sky-afternoon':'sky-night'}
+function getGreeting(name){const t=getTimeOfDay();const n=name||'';if(t==='morning')return'¡Buenos días'+(n?', '+n:'')+'!';if(t==='afternoon')return'¡Buenas tardes'+(n?', '+n:'')+'!';return'¡Buenas noches'+(n?', '+n:'')+'!'}
+// Streak helpers
+function getStreak(){const dates=loadData('streak_dates',[]);const today=new Date().toISOString().slice(0,10);if(!dates.includes(today)){dates.push(today);saveData('streak_dates',dates)}const sorted=[...new Set(dates)].sort().reverse();let streak=1;for(let i=0;i<sorted.length-1;i++){const d1=new Date(sorted[i]),d2=new Date(sorted[i+1]);const diff=(d1-d2)/(86400000);if(diff===1)streak++;else break}return streak}
+function getTotalStars(){const ps=loadData('profiles',[]);let total=0;ps.forEach(p=>{if(p.hist)p.hist.forEach(h=>{total+=h.ok||0})});return total}
+// Group progress helpers
+function getGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;return loadData(key,0)}
+function addGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;const cur=loadData(key,0);saveData(key,cur+1);return cur+1}
+function getGroupStatus(userId,groupId){const n=getGroupProgress(userId,groupId);if(n===0)return'new';if(n>=50)return'mastered';return'progress'}
+// Spanish syllable splitter
+function splitSyllables(text){const w=text.toLowerCase().replace(/[¿?¡!,\.;:]/g,'').trim();const words=w.split(/\s+/);const result=[];const vowels='aeiouáéíóúü';words.forEach(word=>{const syls=[];let cur='';for(let i=0;i<word.length;i++){const c=word[i];const isV=vowels.includes(c);cur+=c;if(isV){const next=word[i+1],next2=word[i+2];if(i===word.length-1){syls.push(cur);cur=''}else if(next&&!vowels.includes(next)){if(next2&&!vowels.includes(next2)){if('lrLR'.includes(next2)){syls.push(cur);cur=''}else{cur+=next;syls.push(cur);cur='';i++}}else{if(next2&&vowels.includes(next2)){syls.push(cur);cur=''}else if(!next2){/* let it continue */}else{syls.push(cur);cur=''}}}else if(next&&vowels.includes(next)){syls.push(cur);cur=''}}}if(cur)syls.push(cur);result.push(syls)});return result}
+// Countdown beep
+function countdownBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=n===0?880:440;g.gain.value=n===0?0.12:0.08;o.start();o.stop(c.currentTime+(n===0?0.4:0.15));setTimeout(()=>c.close(),600)}catch(e){}}
+// Mascot SVG component
+function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'';
+  return <svg width={size} height={size} viewBox="0 0 48 48" style={{animation:anim,display:'block'}}>
+    <polygon points="24,2 28,16 42,16 30,24 34,38 24,30 14,38 18,24 6,16 20,16" fill={GOLD} stroke="#d4ac0d" strokeWidth={1.5}/>
+    <circle cx={19} cy={18} r={2.5} fill="#1a1a2e"/><circle cx={29} cy={18} r={2.5} fill="#1a1a2e"/>
+    {mood==='happy'&&<path d="M19,24 Q24,30 29,24" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
+    {mood==='sad'&&<path d="M19,26 Q24,23 29,26" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
+    {mood==='idle'&&<path d="M20,23 L28,23" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
+    {mood==='dance'&&<path d="M18,24 Q24,31 30,24" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
+  </svg>}
+// Rocket transition overlay
+function RocketTransition({show,onDone}){const[phase,setPhase]=useState('count');const[num,setNum]=useState(3);
+  useEffect(()=>{if(!show)return;setPhase('count');setNum(3);countdownBeep(3);
+    const t1=setTimeout(()=>{setNum(2);countdownBeep(2)},800);
+    const t2=setTimeout(()=>{setNum(1);countdownBeep(1)},1600);
+    const t3=setTimeout(()=>{setNum(0);setPhase('launch');countdownBeep(0)},2400);
+    const t4=setTimeout(()=>{setPhase('fly')},2800);
+    const t5=setTimeout(()=>{if(onDone)onDone()},4200);
+    return()=>{[t1,t2,t3,t4,t5].forEach(clearTimeout)}},[show]);
+  if(!show)return null;
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200,background:'radial-gradient(ellipse,#0B1D3A 0%,#000 100%)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',overflow:'hidden'}}>
+    {phase==='count'&&<div key={num} style={{fontSize:120,fontWeight:900,color:GOLD,animation:'countNum .7s ease-out',textShadow:'0 0 40px '+GOLD}}>{num>0?num:'¡DESPEGUE!'}</div>}
+    {phase==='launch'&&<div style={{fontSize:80,fontWeight:900,color:GOLD,animation:'countNum .5s ease-out',textShadow:'0 0 40px '+GOLD}}>¡DESPEGUE!</div>}
+    {phase==='fly'&&<>
+      {Array.from({length:20},(_,i)=><div key={i} style={{position:'absolute',left:Math.random()*100+'%',top:'-5%',width:2,height:Math.random()*30+10,background:'#fff',borderRadius:2,animation:'starPass '+(0.3+Math.random()*0.5)+'s linear '+(i*0.05)+'s forwards'}}/>)}
+      <svg width="80" height="120" viewBox="0 0 80 120" style={{animation:'rocketFly 1.4s ease-in forwards'}}>
+        <ellipse cx="40" cy="50" rx="18" ry="40" fill="#ddd" stroke="#999" strokeWidth="2"/>
+        <ellipse cx="40" cy="20" rx="10" ry="16" fill={RED}/>
+        <rect x="22" y="70" width="8" height="20" rx="3" fill={BLUE} transform="rotate(-15,26,80)"/>
+        <rect x="50" y="70" width="8" height="20" rx="3" fill={BLUE} transform="rotate(15,54,80)"/>
+        <ellipse cx="40" cy="40" rx="6" ry="8" fill={BLUE+'88'}/>
+        <ellipse cx="40" cy="95" rx="12" ry="20" fill={GOLD} opacity=".8"/>
+        <ellipse cx="40" cy="100" rx="8" ry="15" fill="#E67E22" opacity=".9"/>
+      </svg>
+    </>}
+  </div>}
+// Personas helpers
+const PERSONA_RELATIONS=['Padre','Madre','Hermano','Hermana','Abuelo','Abuela','Tío','Tía','Primo','Prima','Amigo','Amiga','Compañero/a','Profe'];
 function Confetti({show}){const[pts,sP]=useState([]);useEffect(()=>{if(show){sP(Array.from({length:24},(_,i)=>({i,x:Math.random()*100,c:CLS[i%7],s:6+Math.random()*10,d:Math.random()*.5,du:.8+Math.random()*.8})));setTimeout(()=>sP([]),2800)}},[show]);if(!pts.length)return null;return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:999}}>{pts.map(p=><div key={p.i} style={{position:'absolute',left:p.x+'%',top:'-5%',width:p.s,height:p.s,background:p.c,borderRadius:3,animation:`confDrop ${p.du}s ease-in ${p.d}s forwards`}}/>)}</div>}
 function Ring({p,sz=80,sw=6,c=GREEN}){const r=(sz-sw)/2,ci=2*Math.PI*r;return <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={BG3} strokeWidth={sw}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={c} strokeWidth={sw} strokeDasharray={ci} strokeDashoffset={ci-(p||0)*ci} strokeLinecap="round" style={{transition:'stroke-dashoffset .6s'}}/></svg>}
 function Tower({placed,total}){const cells=21,filled=Math.min(Math.floor((placed/Math.max(total,1))*cells),cells);return <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,maxWidth:220,margin:'0 auto'}}>{Array.from({length:cells},(_,i)=>{const row=Math.floor(i/7),inv=(2-row)*7+(i%7),on=inv<filled;return <div key={i} style={{aspectRatio:'1',borderRadius:4,transition:'all .3s cubic-bezier(.34,1.56,.64,1)',background:on?CLS[inv%7]:BG3+'44',border:on?'2px solid rgba(0,0,0,.2)':'2px solid '+BG3,transform:on?'scale(1)':'scale(.75)',opacity:on?1:.3}}/>})}</div>}
@@ -156,38 +231,62 @@ function Stars({n,sz=32}){return <div style={{display:'flex',gap:4,justifyConten
 // ===== SPEAK PANEL — 4-star SingStar system =====
 function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
+  const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
   const alive=useRef(true);const gen=useRef(0);const{idleMsg,poke}=useIdle(name,!sf&&!mic);
   const dur=useMemo(()=>Math.max(6,Math.ceil(text.split(/\s+/).length*0.9)+4),[text]);
+  const syllables=useMemo(()=>splitSyllables(text),[text]);
+  const flatSyls=useMemo(()=>syllables.flat(),[syllables]);
   const key=text+'|'+exId;
+  async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();
+    for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
+      await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,1500)});
+      await new Promise(r=>setTimeout(r,300))}
+    setSylIdx(-1);await new Promise(r=>setTimeout(r,500));
+    if(!alive.current)return;setSylShow(false);sr.go();setMic(true)}
+  async function doSlowPlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();
+    const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.35;u.pitch=1.0;u.volume=1.0;
+    await new Promise(r=>{let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,Math.max(4000,text.length*400))});
+    if(!alive.current)return;setSylShow(false);
+    const pm='¡Buen esfuerzo! Seguimos';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk()},800)}
   function handleSR(said){if(!alive.current)return;poke();setMic(false);sr.stop();stopVoice();
     const b=Math.max(...said.split('|').map(a=>score(a,text)));
     setStars(b);starBeep(b);
     if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk()})}
     else if(b>=3){sMsg('¡Muy bien, '+name+'!');sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk()})}
     else if(b>=2){const na=att+1;sAtt(na);const rm=rnd(['¡Vas bien!','¡Casi!','¡Sigue así!']);sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=2){setTimeout(()=>{if(alive.current){const pm='¡Buen trabajo! Seguimos';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(onOk,800)}},1500)}
+      if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},1500)}
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}
     else{const na=att+1;sAtt(na);const rm=rnd(['¡Buen intento!','¡Sigue adelante!','¡Tú puedes!']);sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=2){setTimeout(()=>{if(alive.current){const pm='¡Buen esfuerzo! Vamos con otra';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(onOk,800)}},1500)}
+      if(na>=3){setTimeout(()=>{if(alive.current){sMsg('Vamos juntos, despacio...');sSf('syl');doSlowPlay()}},1500)}
+      else if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},1500)}
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
   const sr=useSR(handleSR);
-  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);
+  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
+    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
-    if(!alive.current)return;stopVoice();await new Promise(r=>setTimeout(r,150));if(!alive.current)return;
-    await new Promise(r=>setTimeout(r,300));if(!alive.current)return;sr.go();setMic(true)}
-  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);stopVoice();sr.stop();const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
+    if(!alive.current)return;
+    sr.go();setMic(true)}
+  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);stopVoice();sr.stop();const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);if(na>=2){const pm='¡Ánimo! Seguimos';sMsg(pm);sSf('pass');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current)onOk()},1800)}else{const pm='¿Lo intentamos?';sMsg(pm);sSf('wait');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
-  function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}
+  function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);setSylShow(false);doPlay()}
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
   const fc=stars>=4?GOLD:stars>=3?GREEN:stars>=2?BLUE:'#E67E22';
+  let sylFlatIdx=0;
   return <div style={{textAlign:'center'}} onClick={poke}>
     <div className="card" style={{padding:24,marginBottom:18,background:GREEN+'0C',borderColor:GREEN+'33'}}><p style={{fontSize:28,fontWeight:700,margin:0,lineHeight:1.3}}>"{text}"</p></div>
+    {sylShow&&<div className="af" style={{background:PURPLE+'15',borderRadius:14,padding:16,marginBottom:14}}>
+      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>{syllables.map((wordSyls,wi)=>{
+        const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:12}}/>);
+        wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=fi<sylIdx;
+          items.push(<span key={wi+'_'+si} style={{fontSize:24,fontWeight:700,padding:'4px 8px',borderRadius:8,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.2)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
+        return items})}</div>
+    </div>}
     {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={36}/></div>}
     {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{background:fc+'22',borderRadius:14,padding:16,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
     {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <RecBtn dur={dur} onEnd={onTimeUp} on={mic}/>
-    <div style={{display:'flex',gap:10,marginTop:14}}><button className="btn btn-b btn-half" onClick={hearAgain}>🔊 Otra vez</button><button className="btn btn-ghost btn-half" onClick={skip}>⏭️ Saltar</button></div>
+    <div style={{display:'flex',gap:10,marginTop:14}}><button className="btn btn-b btn-half" onClick={hearAgain}>🔊 Otra vez</button><button className="btn btn-ghost btn-half skip-btn" onClick={skip}>⏭️ Saltar</button></div>
   </div>}
 
 function ExFlu({ex,onOk,onSkip,sex,name,uid,vids}){return <div style={{textAlign:'center',padding:18}}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div><SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/></div>}
@@ -206,7 +305,7 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
       <div style={{display:'flex',gap:10}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}<button className="btn btn-p btn-half" onClick={()=>{poke();say(ex.fu)}}>🔊 Pista</button></div>
-      <div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
+      <div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
     {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
   </div>}
 
@@ -222,7 +321,7 @@ function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids}){
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.4}}>{ex.words.map((w,i)=>w==='___'?<span key={i} style={{color:GOLD,borderBottom:'3px solid '+GOLD,padding:'0 8px'}}>____</span>:<span key={i}>{(i>0?' ':'')+w}</span>)}</p>
       </div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} placeholder="Escribe la palabra" style={{textAlign:'center',fontSize:22,marginBottom:12}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans.trim()} onClick={check} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans.trim()} onClick={check} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
       {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
       {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
@@ -232,7 +331,7 @@ function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids}){
 
 function ExSit({ex,onOk,onSkip,sex,name,uid,vids}){const[ph,sPh]=useState('choose');const[cf,sCf]=useState(null);const shuf=useMemo(()=>[...ex.op].sort(()=>Math.random()-.5),[ex]);const{idleMsg,poke}=useIdle(name,ph==='choose'&&!cf);useEffect(()=>{sPh('choose');sCf(null)},[ex]);function pick(o){poke();if(o===ex.op[0]){(async()=>{await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));const phr=await playRec(uid,vids,textKey(ex.su));if(!phr)await say(ex.su);await new Promise(r=>setTimeout(r,400));sPh('speak')})()}else{sCf('no');setTimeout(()=>sCf(null),1000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16}}>{ex.em}</div><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:20,fontWeight:600,margin:0,lineHeight:1.4}}>{ex.si}</p></div>
-    {ph==='choose'&&<div className="af"><p style={{fontSize:20,color:GOLD,fontWeight:700,margin:'0 0 14px'}}>¿Qué dirías?</p>{cf==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:12,padding:12,marginBottom:12}}><p style={{fontSize:17,color:GOLD,margin:0}}>¡Casi! Prueba otra 💪</p></div>}{idleMsg&&!cf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}<div style={{display:'flex',flexDirection:'column',gap:12}}>{shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>pick(o)} style={{textAlign:'left',fontSize:18}}>{o}</button>)}</div><div style={{marginTop:14}}><button className="btn btn-ghost" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div></div>}
+    {ph==='choose'&&<div className="af"><p style={{fontSize:20,color:GOLD,fontWeight:700,margin:'0 0 14px'}}>¿Qué dirías?</p>{cf==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:12,padding:12,marginBottom:12}}><p style={{fontSize:17,color:GOLD,margin:0}}>¡Casi! Prueba otra 💪</p></div>}{idleMsg&&!cf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}<div style={{display:'flex',flexDirection:'column',gap:12}}>{shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>pick(o)} style={{textAlign:'left',fontSize:18}}>{o}</button>)}</div><div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div></div>}
     {ph==='speak'&&<SpeakPanel text={ex.su} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
   </div>}
 
@@ -274,7 +373,7 @@ function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
         <div style={{textAlign:'center'}}><Fingers n={b} color={BLUE} color2={BLUE}/><p style={{fontSize:16,color:BLUE,margin:0,fontWeight:700}}>{b}</p></div>
       </div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value.replace(/\D/g,''))} type="tel" placeholder="?" style={{textAlign:'center',fontSize:36,letterSpacing:8,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={check} style={{fontSize:22,maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={check} style={{fontSize:22,maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
       <Stars n={4} sz={32}/>
@@ -288,7 +387,7 @@ function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
       <Fingers n={ex.ans} color={GREEN}/>
       <p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{a} {op} {b} = {ex.ans}</p>
       <button className="btn btn-g" onClick={()=>{setAns('');setFb(null);setShowHelp(false)}} style={{marginTop:12,fontSize:18}}>🔄 Intentar otra vez</button>
-      <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
     </div>}
     {idleMsg&&!fb&&!showHelp&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}
@@ -299,42 +398,105 @@ function PieChart({num,den,size=120,color=GOLD,highlight=-1}){const slices=[];fo
 function RectChart({num,den,width=160,height=100,color=GOLD,highlight=-1}){const gap=2;const pw=(width-gap*(den-1))/den;
   return <svg width={width} height={height}>{Array.from({length:den},(_,i)=>{const filled=i<num;const hl=i===highlight;return <rect key={i} x={i*(pw+gap)} y={4} width={pw} height={height-8} rx={4} fill={filled?color:BG3} stroke={hl?'#fff':BORDER} strokeWidth={hl?3:1.5} opacity={filled?1:0.4} style={{transition:'all .3s'}}/>})}</svg>}
 
-function genFractions(){const fracs=[];const pool=[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4],[1,5],[2,5],[3,5],[4,5],[1,6],[2,6],[3,6],[4,6],[5,6]];
-  pool.forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac_'+n+'_'+d,shape:i%2===0?'circle':'rect'})});return[...fracs].sort(()=>Math.random()-.5)}
+function genFractions(lv){const fracs=[];
+  if(!lv||lv===1){const pool=[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4],[1,5],[2,5],[3,5],[4,5],[1,6],[2,6],[3,6],[4,6],[5,6]];
+    pool.forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac_'+n+'_'+d,shape:i%2===0?'circle':'rect',mode:'recognize'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===2){[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4]].forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac2_'+n+'_'+d,shape:i%2===0?'circle':'rect',mode:'notation'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===3){[[1,2,2,4],[1,3,2,6],[2,4,1,2],[2,6,1,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,id:'frac3_'+i,shape:i%2===0?'circle':'rect',mode:'equivalence'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===4){[[1,2,1,2],[1,3,1,3],[1,4,1,4],[1,3,2,3],[2,4,1,4]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1+n2,ans_d:d1,id:'frac4_'+i,shape:i%2===0?'circle':'rect',mode:'add'})});return[...fracs].sort(()=>Math.random()-.5)}
+  [[2,3,1,3],[1,2,1,2],[3,4,1,4],[2,3,2,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1-n2,ans_d:d1,id:'frac5_'+i,shape:i%2===0?'circle':'rect',mode:'subtract'})});
+  return[...fracs].sort(()=>Math.random()-.5)}
 
 function ExFraction({ex,onOk,onSkip,name}){
-  const[placed,setPlaced]=useState(0);const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
+  const[placed,setPlaced]=useState(0);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const{idleMsg,poke}=useIdle(name,!fb);
   const colors=[GOLD,BLUE,GREEN,PURPLE,'#E67E22',RED];const color=colors[ex.den%colors.length];
-  useEffect(()=>{setPlaced(0);setFb(null);say(ex.num+' de '+ex.den)},[ex]);
+  const mode=ex.mode||'recognize';
+  useEffect(()=>{setPlaced(0);setFb(null);setAns('');
+    if(mode==='recognize')say(ex.num+' de '+ex.den);
+    else if(mode==='notation')say(ex.num+' de '+ex.den+' se escribe así');
+    else if(mode==='equivalence')say('¿Son iguales?');
+    else if(mode==='add')say('Suma las fracciones');
+    else say('Resta las fracciones')},[ex]);
   function addSlice(){poke();if(placed>=ex.den)return;const np=placed+1;setPlaced(np);beep(400+np*80,80)}
   function removeSlice(){poke();if(placed>0)setPlaced(placed-1)}
   function validate(){poke();if(placed===ex.num){setFb('ok');starBeep(4);setTimeout(()=>{sayFB('¡'+ex.num+' de '+ex.den+'! ¡Perfecto!')},300);setTimeout(onOk,2000)}
     else{setFb('no');beep(200,200);sayFB('¡Casi! Necesitas '+ex.num+' porciones');setTimeout(()=>{setPlaced(0);setFb(null)},2000)}}
+  function checkMathAns(){poke();const n=parseInt(ans);const target=mode==='add'?ex.ans_n:ex.ans_n;
+    if(n===target){setFb('ok');starBeep(4);sayFB('¡Perfecto!');setTimeout(onOk,1500)}
+    else{setFb('no');beep(200,200);sayFB('La respuesta es '+target);setTimeout(()=>{setFb(null);setAns('')},2500)}}
   const isRect=ex.shape==='rect';
-  const RefChart=isRect?<RectChart num={ex.num} den={ex.den} width={100} height={70} color={color+'88'}/>:<PieChart num={ex.num} den={ex.den} size={100} color={color+'88'}/>;
-  const MainChart=isRect?<RectChart num={placed} den={ex.den} width={160} height={100} color={color} highlight={placed<ex.den?placed:-1}/>:<PieChart num={placed} den={ex.den} size={140} color={color} highlight={placed<ex.den?placed:-1}/>;
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
-      <p style={{fontSize:28,fontWeight:700,margin:0}}>Pon <span style={{color:GOLD,fontSize:36}}>{ex.num}</span> de <span style={{color:BLUE,fontSize:36}}>{ex.den}</span></p>
-      <p style={{fontSize:48,fontWeight:700,color:GOLD,margin:'4px 0 0',fontFamily:'monospace'}}><sup style={{fontSize:32}}>{ex.num}</sup>⁄<sub style={{fontSize:32}}>{ex.den}</sub></p>
-      <p style={{fontSize:13,color:DIM,margin:'4px 0 0'}}>{isRect?'🍰 Tarta':'🍕 Pizza'}</p>
-    </div>
-    <div style={{display:'flex',justifyContent:'center',gap:24,marginBottom:16,alignItems:'center'}}>
-      {RefChart}
-      <div style={{fontSize:28,color:DIM}}>→</div>
-      {MainChart}
-    </div>
-    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:700,color:GREEN,margin:'8px 0 0'}}>¡Perfecto! {ex.num}/{ex.den}</p></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Necesitas {ex.num} porciones 💪</p></div>}
-    {!fb&&<div>
-      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
-        <button className="btn btn-g" onClick={addSlice} style={{fontSize:22,maxWidth:160,padding:'16px 20px'}}>➕ Añadir</button>
-        <button className="btn btn-o" onClick={removeSlice} disabled={placed===0} style={{fontSize:22,maxWidth:160,padding:'16px 20px'}}>➖ Quitar</button>
+    {mode==='recognize'&&<div>
+      <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
+        <p style={{fontSize:28,fontWeight:700,margin:0}}>Pon <span style={{color:GOLD,fontSize:36}}>{ex.num}</span> de <span style={{color:BLUE,fontSize:36}}>{ex.den}</span></p>
+        <p style={{fontSize:48,fontWeight:700,color:GOLD,margin:'4px 0 0',fontFamily:'monospace'}}><sup style={{fontSize:32}}>{ex.num}</sup>⁄<sub style={{fontSize:32}}>{ex.den}</sub></p>
+        <p style={{fontSize:13,color:DIM,margin:'4px 0 0'}}>{isRect?'🍰 Tarta':'🍕 Pizza'}</p>
       </div>
-      <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Llevas {placed} de {ex.den}</p>
-      <button className="btn btn-gold" onClick={validate} style={{fontSize:22,maxWidth:220,margin:'0 auto 12px',display:'block'}}>✅ ¡Listo!</button>
-      <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:16}}>⏭️ Saltar</button>
+      <div style={{display:'flex',justifyContent:'center',gap:24,marginBottom:16,alignItems:'center'}}>
+        {isRect?<RectChart num={ex.num} den={ex.den} width={100} height={70} color={color+'88'}/>:<PieChart num={ex.num} den={ex.den} size={100} color={color+'88'}/>}
+        <div style={{fontSize:28,color:DIM}}>→</div>
+        {isRect?<RectChart num={placed} den={ex.den} width={160} height={100} color={color} highlight={placed<ex.den?placed:-1}/>:<PieChart num={placed} den={ex.den} size={140} color={color} highlight={placed<ex.den?placed:-1}/>}
+      </div>
+      {!fb&&<div>
+        <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
+          <button className="btn btn-g" onClick={addSlice} style={{fontSize:22,maxWidth:160,padding:'16px 20px'}}>➕ Añadir</button>
+          <button className="btn btn-o" onClick={removeSlice} disabled={placed===0} style={{fontSize:22,maxWidth:160,padding:'16px 20px'}}>➖ Quitar</button>
+        </div>
+        <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Llevas {placed} de {ex.den}</p>
+        <button className="btn btn-gold" onClick={validate} style={{fontSize:22,maxWidth:220,margin:'0 auto 12px',display:'block'}}>✅ ¡Listo!</button>
+      </div>}
     </div>}
+    {mode==='notation'&&<div>
+      <div className="card" style={{padding:24,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
+        <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>Esta fracción se escribe:</p>
+        <div style={{display:'flex',justifyContent:'center',gap:24,alignItems:'center',marginBottom:12}}>
+          {isRect?<RectChart num={ex.num} den={ex.den} width={140} height={90} color={color}/>:<PieChart num={ex.num} den={ex.den} size={120} color={color}/>}
+          <div style={{fontSize:64,fontWeight:700,color:GOLD,fontFamily:'monospace'}}><sup style={{fontSize:42}}>{ex.num}</sup>⁄<sub style={{fontSize:42}}>{ex.den}</sub></div>
+        </div>
+        <p style={{fontSize:22,color:TXT,margin:0}}>{ex.num} {ex.num===1?'trozo':'trozos'} de {ex.den} = <span style={{color:GOLD,fontWeight:700}}>{ex.num}/{ex.den}</span></p>
+      </div>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,1000)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+    </div>}
+    {mode==='equivalence'&&<div>
+      <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
+        <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¡Son iguales!</p>
+        <div style={{display:'flex',justifyContent:'center',gap:16,alignItems:'center'}}>
+          <div style={{textAlign:'center'}}>
+            {isRect?<RectChart num={ex.num} den={ex.den} width={120} height={80} color={BLUE}/>:<PieChart num={ex.num} den={ex.den} size={100} color={BLUE}/>}
+            <p style={{fontSize:24,fontWeight:700,color:BLUE,margin:'4px 0 0'}}>{ex.num}/{ex.den}</p>
+          </div>
+          <div style={{fontSize:32,color:GREEN,fontWeight:700}}>=</div>
+          <div style={{textAlign:'center'}}>
+            {isRect?<RectChart num={ex.num2} den={ex.den2} width={120} height={80} color={GREEN}/>:<PieChart num={ex.num2} den={ex.den2} size={100} color={GREEN}/>}
+            <p style={{fontSize:24,fontWeight:700,color:GREEN,margin:'4px 0 0'}}>{ex.num2}/{ex.den2}</p>
+          </div>
+        </div>
+        <p style={{fontSize:18,color:TXT,margin:'12px 0 0'}}>La mitad es lo mismo, ¡mira!</p>
+      </div>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,1000)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+    </div>}
+    {(mode==='add'||mode==='subtract')&&<div>
+      <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
+        <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{mode==='add'?'Suma':'Resta'} las fracciones</p>
+        <div style={{display:'flex',justifyContent:'center',gap:12,alignItems:'center',marginBottom:12}}>
+          <div style={{textAlign:'center'}}>
+            {isRect?<RectChart num={ex.num} den={ex.den} width={100} height={70} color={BLUE}/>:<PieChart num={ex.num} den={ex.den} size={90} color={BLUE}/>}
+            <p style={{fontSize:20,fontWeight:700,color:BLUE,margin:'4px 0 0'}}>{ex.num}/{ex.den}</p>
+          </div>
+          <div style={{fontSize:28,color:mode==='add'?GREEN:RED,fontWeight:700}}>{mode==='add'?'+':'-'}</div>
+          <div style={{textAlign:'center'}}>
+            {isRect?<RectChart num={ex.num2} den={ex.den2} width={100} height={70} color={'#E67E22'}/>:<PieChart num={ex.num2} den={ex.den2} size={90} color={'#E67E22'}/>}
+            <p style={{fontSize:20,fontWeight:700,color:'#E67E22',margin:'4px 0 0'}}>{ex.num2}/{ex.den2}</p>
+          </div>
+          <div style={{fontSize:28,color:DIM}}>=</div>
+          <div style={{fontSize:28,fontWeight:700,color:GOLD}}>?/{ex.den}</div>
+        </div>
+      </div>
+      <NumPad value={ans} onChange={setAns} onSubmit={checkMathAns} maxLen={2}/>
+    </div>}
+    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:700,color:GREEN,margin:'8px 0 0'}}>¡Perfecto!</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:16,marginTop:8}}>⏭️ Saltar</button>
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}
 
@@ -356,7 +518,7 @@ function ExMulti({ex,onOk,onSkip,name,uid,vids}){
     <div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center',marginBottom:16}}>{groups.map(g=><div key={g} style={{display:'flex',gap:2,background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'6px 10px'}}>{Array.from({length:ex.a},(_,j)=><span key={j} style={{fontSize:20}}>{em}</span>)}</div>)}</div>
     {!showHelp&&!fb&&<div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value.replace(/\D/g,''))} type="tel" placeholder="?" style={{textAlign:'center',fontSize:36,letterSpacing:8,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={check} style={{fontSize:22,maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={check} style={{fontSize:22,maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
       <Stars n={4} sz={32}/><p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{ex.a} x {ex.b} = {ex.ans}</p>
@@ -365,7 +527,7 @@ function ExMulti({ex,onOk,onSkip,name,uid,vids}){
       <p style={{fontSize:18,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¡Vamos a sumarlos!</p>
       <p style={{fontSize:20,color:TXT,margin:'0 0 8px'}}>{Array(ex.b).fill(ex.a).join(' + ')} = <span style={{color:GREEN,fontWeight:700}}>{ex.ans}</span></p>
       <button className="btn btn-g" onClick={()=>{setAns('');setFb(null);setShowHelp(false)}} style={{marginTop:12,fontSize:18}}>🔄 Intentar</button>
-      <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
     </div>}
     {idleMsg&&!fb&&!showHelp&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}
@@ -400,12 +562,12 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <circle cx={sz/2} cy={sz/2} r={sz/2-2} fill={`url(#cg${c.v})`}/>
       <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>42?18:sz>38?16:sz>34?14:12} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 1px rgba(0,0,0,.3)'}}>{c.l}</text>
     </svg>};
-  const Coin=({c,onClick})=>{const sz=c.sz?Math.round(c.sz*1.3):48;const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
+  const Coin=({c,onClick})=>{const sz=c.sz?Math.round(c.sz*1.8):64;const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
     return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 2px 4px rgba(0,0,0,.5))'}}>
       {imgOk?<img src={imgSrc} alt={c.l} style={{width:sz,height:sz,borderRadius:'50%',objectFit:'cover'}} onError={()=>setImgOk(false)}/>:<CoinSVG c={c} sz={sz}/>}
     </button>};
   const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.jpg';
-    return <button onClick={onClick} style={{width:110,height:60,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative'}}>
+    return <button onClick={onClick} style={{width:160,height:85,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative'}}>
       {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:
       <div style={{width:'100%',height:'100%',borderRadius:10,background:`linear-gradient(135deg, ${b.c2} 0%, ${b.c} 50%, ${b.c2} 100%)`,border:`2px solid ${b.c}`,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:800,fontSize:20,fontFamily:"'Fredoka'",textShadow:'0 1px 2px rgba(0,0,0,.4)'}}>{b.l}</span></div>}
     </button>};
@@ -414,13 +576,13 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
         {ex.coin.v>=5?<Bill b={ex.coin}/>:<div style={{display:'inline-block',transform:'scale(2.5)',margin:'20px 0'}}><Coin c={ex.coin}/></div>}</div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Ej: 0,50" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {ex.mode==='sum'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Cuánto hay?</p>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Total en €" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {ex.mode==='pay'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Paga: {ex.price.toFixed(2).replace('.',',')} €</p>
@@ -432,13 +594,13 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
         {COINS.filter(c=>c.v>=0.10).map((c,i)=><Coin key={i} c={c} onClick={()=>addCoin(c)}/>)}
         {BILLS.slice(0,3).map((b,i)=><Bill key={i} b={b} onClick={()=>addCoin(b)}/>)}</div>
       <button className="btn btn-ghost" onClick={()=>{setSel([])}} style={{fontSize:14,marginBottom:8}}>↩️ Borrar</button>
-      <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:14}}>⏭️ Saltar</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:14}}>⏭️ Saltar</button>
     </div>}
     {ex.mode==='change'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
         <p style={{fontSize:16,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Cambio en €" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
@@ -477,7 +639,7 @@ function ExClock({ex,onOk,onSkip,name,uid,vids}){
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
-    <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
 
 // ===== CALENDARIO / TEMPORALIDAD =====
@@ -524,27 +686,30 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       {placed.length>0&&!fb&&<button className="btn btn-o" onClick={()=>{setPlaced([]);setAvail([...(ex.mode==='order_days'?DIAS:MESES)].sort(()=>Math.random()-.5))}} style={{fontSize:14,maxWidth:150,margin:'0 auto'}}>↩️ Borrar</button>}
     </div>}
     {(ex.mode==='before_after_day'||ex.mode==='before_after_month')&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{ex.mode==='before_after_day'?'¿Qué va antes y después?':'¿Qué mes va antes y después?'}</p><p style={{fontSize:28,fontWeight:700,color:BLUE,margin:0}}>{ex.mode==='before_after_day'?ex.day:ex.month}</p></div>
-      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
-        <div style={{flex:1,maxWidth:140}}>
-          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>ANTES ←</p>
-          <div style={{minHeight:48,background:baAns.before?GREEN+'22':CARD,border:'2px solid '+(baAns.before?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
-            <span style={{fontSize:18,fontWeight:700,color:baAns.before?GREEN:DIM}}>{baAns.before||'___'}</span>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{ex.mode==='before_after_day'?'¿Qué va antes y después?':'¿Qué mes va antes y después?'}</p><p style={{fontSize:32,fontWeight:700,color:BLUE,margin:0}}>{ex.mode==='before_after_day'?ex.day:ex.month}</p></div>
+      <div style={{display:'flex',gap:16,justifyContent:'center',marginBottom:14}}>
+        <div style={{flex:1,maxWidth:180}}>
+          <p style={{fontSize:16,color:BLUE,margin:'0 0 6px',fontWeight:700}}>← ANTES</p>
+          <div style={{minHeight:60,background:baAns.before?BLUE+'22':CARD,border:'3px solid '+(baAns.before?BLUE:BORDER),borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',padding:10}}>
+            <span style={{fontSize:22,fontWeight:700,color:baAns.before?BLUE:DIM}}>{baAns.before||'___'}</span>
           </div>
         </div>
-        <div style={{flex:1,maxWidth:140}}>
-          <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>→ DESPUÉS</p>
-          <div style={{minHeight:48,background:baAns.after?GREEN+'22':CARD,border:'2px solid '+(baAns.after?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
-            <span style={{fontSize:18,fontWeight:700,color:baAns.after?GREEN:DIM}}>{baAns.after||'___'}</span>
+        <div style={{flex:1,maxWidth:180}}>
+          <p style={{fontSize:16,color:'#E67E22',margin:'0 0 6px',fontWeight:700}}>DESPUÉS →</p>
+          <div style={{minHeight:60,background:baAns.after?'#E67E22'+'22':CARD,border:'3px solid '+(baAns.after?'#E67E22':BORDER),borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',padding:10}}>
+            <span style={{fontSize:22,fontWeight:700,color:baAns.after?'#E67E22':DIM}}>{baAns.after||'___'}</span>
           </div>
         </div>
       </div>
-      {!fb&&<div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>
-        {baOpts.filter(o=>o!==baAns.before&&o!==baAns.after).map(o=><div key={o} style={{display:'flex',flexDirection:'column',gap:4}}>
-          <button className="btn btn-b btn-word" onClick={()=>pickBA('before',o)} style={{fontSize:15,padding:'8px 14px'}} disabled={!!baAns.before}>← {o}</button>
-          <button className="btn btn-p btn-word" onClick={()=>pickBA('after',o)} style={{fontSize:15,padding:'8px 14px'}} disabled={!!baAns.after}>{o} →</button>
-        </div>)}</div>}
-      {!fb&&(baAns.before||baAns.after)&&<button className="btn btn-o" onClick={()=>setBaAns({before:null,after:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
+      {!fb&&<div style={{display:'flex',gap:16,marginBottom:12}}>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
+          {baOpts.filter(o=>o!==baAns.before&&o!==baAns.after).map(o=><button key={o+'b'} className="btn btn-b btn-word" onClick={()=>pickBA('before',o)} style={{fontSize:18,padding:'14px 16px',width:'100%',background:BLUE,borderColor:'#2980b9',minHeight:52}} disabled={!!baAns.before}>← {o}</button>)}
+        </div>
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>
+          {baOpts.filter(o=>o!==baAns.before&&o!==baAns.after).map(o=><button key={o+'a'} className="btn btn-o btn-word" onClick={()=>pickBA('after',o)} style={{fontSize:18,padding:'14px 16px',width:'100%',minHeight:52}} disabled={!!baAns.after}>{o} →</button>)}
+        </div>
+      </div>}
+      {!fb&&(baAns.before||baAns.after)&&<button className="btn btn-o" onClick={()=>setBaAns({before:null,after:null})} style={{fontSize:16,maxWidth:160,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {ex.mode==='yesterday_tomorrow'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:16,color:DIM,margin:0}}>¿Qué día fue ayer y cuál será mañana?</p></div>
@@ -572,11 +737,11 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
-    <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
 
 // ===== REPARTE Y CUENTA =====
-function genDistribute(lv,user){const items=[];const friends=((user?.amigos||'Yasser,Lola,Vega,Amir,Carlos').split(',').map(s=>s.trim()).filter(Boolean));
+function genDistribute(lv,user){const items=[];const pNames=(loadData('personas',[])||[]).filter(p=>p.name).map(p=>p.name);const friends=pNames.length>=2?pNames:((user?.amigos||'Yasser,Lola,Vega,Amir,Carlos').split(',').map(s=>s.trim()).filter(Boolean));
   if(lv===1){for(let i=0;i<12;i++){const n=2+Math.floor(Math.random()*8);const f=friends[i%friends.length]||'Amigo';items.push({ty:'distribute',mode:'put',count:n,friend:f,id:'dist_put_'+i})}}
   else if(lv===2){for(let i=0;i<12;i++){const bags=2+Math.floor(Math.random()*3);const each=2+Math.floor(Math.random()*4);const total=bags*each;const names=friends.slice(0,bags);items.push({ty:'distribute',mode:'equal',total,bags,each,names,id:'dist_eq_'+i})}}
   else{for(let i=0;i<10;i++){const a=2+Math.floor(Math.random()*6);const b=2+Math.floor(Math.random()*6);const na=friends[0]||'Ana',nb=friends[1]||'Carlos';items.push({ty:'distribute',mode:'compare',a,b,nameA:na,nameB:nb,id:'dist_cmp_'+i})}}
@@ -593,16 +758,26 @@ function BagSVG({name:bagName,size=80}){return <svg width={size} height={size*1.
 </svg>}
 
 function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
-  const[count,setCount]=useState(0);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const{idleMsg,poke}=useIdle(name,!fb);
-  useEffect(()=>{setCount(0);setFb(null);setAns('');stopVoice();
-    if(ex.mode==='put')setTimeout(()=>say('Pon '+ex.count+' caramelos en la bolsa de '+ex.friend),400);
-    else if(ex.mode==='equal')setTimeout(()=>say('Reparte '+ex.total+' caramelos en '+ex.bags+' bolsas iguales'),400);
+  const[count,setCount]=useState(0);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const[att,setAtt]=useState(0);const[showCount,setShowCount]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
+  const objType=useMemo(()=>['candy','card','domino'][Math.floor(Math.random()*3)],[ex]);
+  const objEmoji=objType==='candy'?'🍬':objType==='card'?'🃏':'🁣';
+  const objName=objType==='candy'?'caramelos':objType==='card'?'cartas':'fichas';
+  const ObjSVG=objType==='card'?CardSVG:objType==='domino'?DominoSVG:null;
+  useEffect(()=>{setCount(0);setFb(null);setAns('');setAtt(0);setShowCount(false);stopVoice();
+    if(ex.mode==='put')setTimeout(()=>say('Pon '+ex.count+' '+objName),400);
+    else if(ex.mode==='equal')setTimeout(()=>say('Reparte '+ex.total+' '+objName+' en '+ex.bags+' bolsas iguales'),400);
     else setTimeout(()=>say('¿Quién tiene más?'),400);
     return()=>stopVoice()},[ex]);
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
   function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
-    else{setFb('no');beep(200,200);sayFB('¡Casi! Necesitas '+ex.count+' caramelos');setTimeout(()=>{setCount(0);setFb(null)},2000)}}
+    else{const na=att+1;setAtt(na);
+      if(na===1){setFb('retry');beep(200,200);sayFB(rnd(SHORT_ENCOURAGEMENT));setTimeout(()=>setFb(null),1500)}
+      else{setFb('no');setShowCount(true);beep(200,200);
+        // Toki counts with child
+        (async()=>{for(let i=1;i<=ex.count;i++){await say(NUMS_1_100[i-1]||String(i));await new Promise(r=>setTimeout(r,400))}
+          if(count>ex.count)sayFB('Sobran '+(count-ex.count));else if(count<ex.count)sayFB('Faltan '+(ex.count-count));
+          setTimeout(onOk,2000)})()}}}
   function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setTimeout(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
@@ -611,17 +786,23 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}>
-        <div style={{display:'flex',justifyContent:'center',marginBottom:8}}><BagSVG name={ex.friend}/></div>
-        <p style={{fontSize:16,color:DIM,margin:0}}>Pon {ex.count} caramelos 🍬</p></div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center',marginBottom:12,minHeight:48,background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:12}}>
-        {Array.from({length:count},(_,i)=><span key={i} style={{fontSize:24,animation:'bounceIn .3s '+(i*0.05)+'s both'}}>🍬</span>)}</div>
-      <p style={{fontSize:20,fontWeight:700,color:BLUE}}>{count} caramelos</p>
+        <div style={{display:'flex',justifyContent:'center',marginBottom:8}}><BagSVG name={ex.friend} size={100}/></div>
+        <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0}}>Pon {ex.count} {objName}</p></div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,minHeight:64,background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:14}}>
+        {Array.from({length:count},(_,i)=><span key={i} style={{fontSize:36,animation:'bounceIn .3s '+(i*0.05)+'s both',display:'inline-flex',alignItems:'center'}}>
+          {ObjSVG?<ObjSVG size={40}/>:objEmoji}
+        </span>)}</div>
+      {fb==='no'&&showCount&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}>
+        {count>ex.count&&<p style={{fontSize:16,color:RED,fontWeight:700,margin:0}}>Sobran {count-ex.count} — hay que quitar</p>}
+        {count<ex.count&&<p style={{fontSize:16,color:BLUE,fontWeight:700,margin:0}}>Faltan {ex.count-count} — hay que añadir</p>}
+      </div>}
+      {fb==='retry'&&<div className="as" style={{background:GOLD+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Inténtalo otra vez 💪</p></div>}
       {!fb&&<div>
         <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:10}}>
-          <button className="btn btn-g" onClick={addCandy} style={{fontSize:22,maxWidth:160,padding:'14px 20px'}}>🍬 Añadir</button>
-          <button className="btn btn-o" onClick={removeCandy} disabled={count===0} style={{fontSize:22,maxWidth:160,padding:'14px 20px'}}>➖ Quitar</button>
+          <button className="btn btn-g" onClick={addCandy} style={{fontSize:24,maxWidth:170,padding:'16px 22px'}}>{ObjSVG?'➕':'🍬'} Añadir</button>
+          <button className="btn btn-o" onClick={removeCandy} disabled={count===0} style={{fontSize:24,maxWidth:170,padding:'16px 22px'}}>➖ Quitar</button>
         </div>
-        <button className="btn btn-gold" onClick={validatePut} disabled={count===0} style={{fontSize:22,maxWidth:220,margin:'0 auto 10px',display:'block'}}>✅ ¡Listo!</button>
+        <button className="btn btn-gold" onClick={validatePut} disabled={count===0} style={{fontSize:24,maxWidth:240,margin:'0 auto 10px',display:'block'}}>✅ ¡Listo!</button>
       </div>}
     </div>}
     {ex.mode==='equal'&&<div>
@@ -644,7 +825,7 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
-    <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
 
 // ===== ESCRITURA / CALIGRAFÍA =====
@@ -672,8 +853,15 @@ function genWriting(lv){const items=[];
 
 function ExWriting({ex,onOk,onSkip,name}){
   const canvasRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
-  const isWide=ex.mode==='word'||ex.mode==='phrase';const cW=isWide?700:380;const cH=isWide?260:360;
-  const baseY=isWide?180:250;const upperY=isWide?70:70;const ascY=isWide?45:35;const descY=isWide?220:300;const midY=isWide?125:155;
+  const isWide=ex.mode==='word'||ex.mode==='phrase';
+  // Auto-size based on mode: letters=big pauta, words=medium, phrases=small
+  const cW=ex.mode==='phrase'?800:isWide?700:400;
+  const cH=ex.mode==='letter'?400:ex.mode==='word'?300:240;
+  const baseY=ex.mode==='letter'?300:ex.mode==='word'?210:170;
+  const upperY=ex.mode==='letter'?60:ex.mode==='word'?50:40;
+  const ascY=ex.mode==='letter'?30:ex.mode==='word'?25:20;
+  const descY=ex.mode==='letter'?360:ex.mode==='word'?260:210;
+  const midY=ex.mode==='letter'?175:ex.mode==='word'?130:105;
   function drawPauta(ctx,w,h){
     ctx.fillStyle='#FAFAF5';ctx.fillRect(0,0,w,h);
     // Pauta francesa (French calligraphy lines)
@@ -695,15 +883,17 @@ function ExWriting({ex,onOk,onSkip,name}){
   function drawGuide(ctx,w,h){
     if(!ex.guide)return;const letter=ex.letter;
     if(ex.mode==='letter'){
+      // Match letter height exactly to pauta zone
       const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);
-      const fSz=Math.floor(zoneH*0.95);
+      const fSz=Math.floor(zoneH*1.0);
       const yBase=baseY;
       ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;
       ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,yBase);
-      // Stroke guides for uppercase
       if(ex.isUpper){const sg=STROKE_GUIDES[letter.toUpperCase()];if(sg){const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};sg.forEach(s=>{const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;ctx.fillStyle='#E74C3C';ctx.font='bold 16px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.n+s.d,sx,sy)})}}
     }else{
-      const fSz=isWide?Math.floor((baseY-upperY)*0.65):Math.floor((baseY-upperY)*0.7);
+      // Words/phrases: size to fill pauta zone
+      const zoneH=baseY-upperY;
+      const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6):Math.floor(zoneH*0.75);
       ctx.font=`bold ${fSz}px Fredoka`;ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
     }
   }
@@ -750,7 +940,7 @@ function ExWriting({ex,onOk,onSkip,name}){
       {!done&&<div style={{display:'flex',gap:10,justifyContent:'center'}}>
         <button className="btn btn-o" onClick={clear} style={{maxWidth:120}}>🗑️ Borrar</button>
         <button className="btn btn-g" onClick={accept} style={{maxWidth:180}}>✅ Listo</button>
-        <button className="btn btn-ghost" onClick={()=>{stopVoice();onSkip()}} style={{maxWidth:100,fontSize:14}}>⏭️</button>
+        <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{maxWidth:100,fontSize:14}}>⏭️</button>
       </div>}
       {done&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:10}}><Stars n={stars} sz={36}/>
         <p style={{fontSize:16,color:stars>=3?GREEN:GOLD,fontWeight:700,margin:'8px 0 0'}}>{stars>=4?'¡Perfecto!':stars===3?'¡Muy bien!':stars===2?'¡Intenta no salirte!':'¡Buen intento! Sigue el modelo'}</p></div>}
@@ -787,9 +977,12 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
+    // Reactivate mic permissions
+    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
-    if(!alive.current)return;stopVoice();await new Promise(r=>setTimeout(r,150));if(!alive.current)return;
-    setMic(true);await new Promise(r=>setTimeout(r,100));if(alive.current)sr.go()}
+    if(!alive.current)return;
+    // Start mic immediately (overlap)
+    sr.go();setMic(true)}
   useEffect(()=>{alive.current=true;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
     const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
@@ -798,7 +991,7 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
   return <div style={{textAlign:'center'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      <img src={ex.img} alt="" style={{width:'100%',maxHeight:'65vh',objectFit:'cover',display:'block'}}/>
+      <img src={ex.img} alt="" style={{width:'100%',maxHeight:'75vh',objectFit:'cover',display:'block'}}/>
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'36px 16px 14px'}}>
         <p style={{fontSize:24,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
       </div>
@@ -807,7 +1000,7 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><img src={ex.picto} alt="" style={{height:70,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:10,padding:'6px 12px',maxWidth:'100%'}}/></div>}
     <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
       <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}}>🔊 Otra vez</button>
-      <button className="btn btn-ghost btn-half" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
+      <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>}
 
@@ -886,19 +1079,293 @@ function VoiceRec({user,onBack,onSave}){const[mode,setMode]=useState('menu');con
         <div style={{display:'flex',gap:10,marginTop:10}}><button className="btn btn-ghost btn-half" onClick={()=>setMode('menu')}>← Menú</button><button className="btn btn-gold btn-half" onClick={fin}>✅ Guardar</button></div></div></div>}
   </div></div>}
 
-function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[523,659,784,1047];notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.12;o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.2)});setTimeout(()=>c.close(),1500)}catch(e){}}
+// ===== NUMPAD — Custom numeric keypad =====
+function NumPad({value,onChange,onSubmit,maxLen=5}){
+  const press=d=>{if(String(value).length<maxLen)onChange(String(value)+d)};
+  const bksp=()=>onChange(String(value).slice(0,-1));
+  const btnSt={width:72,height:64,borderRadius:14,border:`2px solid ${BORDER}`,background:BG3,color:TXT,fontSize:28,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s'};
+  return <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'center',padding:8}}>
+    <div style={{fontSize:36,fontWeight:700,color:GOLD,minHeight:48,letterSpacing:8,marginBottom:4}}>{value||'?'}</div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,maxWidth:240}}>
+      {[1,2,3,4,5,6,7,8,9].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
+      <button style={{...btnSt,background:RED+'22',color:RED}} onClick={bksp}>⌫</button>
+      <button style={btnSt} onClick={()=>press(0)}>0</button>
+      <button style={{...btnSt,background:GREEN+'22',color:GREEN}} onClick={onSubmit} disabled={!value}>✓</button>
+    </div>
+  </div>}
+
+// ===== ABACUS HELP — Visual counting aid =====
+function AbacusHelp({a,b,op='+',result}){
+  const[step,setStep]=useState(0);const total=op==='+'?a+b:a;const showN=op==='+'?result:a;
+  useEffect(()=>{setStep(0);let i=0;const t=setInterval(()=>{i++;setStep(i);if(i<=showN){stopVoice();say(NUMS_1_100[i-1]||String(i))}if(i>=showN+2)clearInterval(t)},900);return()=>{clearInterval(t);stopVoice()}},[a,b,op]);
+  const beadSz=total>15?16:total>10?20:28;
+  return <div style={{textAlign:'center',padding:12}}>
+    <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¡Vamos a contarlo!</p>
+    <div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap',marginBottom:12,minHeight:50}}>
+      {Array.from({length:total},(_,i)=>{const isA=op==='+'?i<a:i<result;const isB=op==='+'?i>=a&&i<a+b:false;const removed=op==='-'&&i>=result;const visible=i<step;
+        return <div key={i} style={{width:beadSz,height:beadSz+8,borderRadius:beadSz/2,background:removed?RED+'44':isA?'#E67E22':isB?BLUE:GREEN,border:'2px solid '+(removed?RED+'66':'rgba(0,0,0,.2)'),opacity:visible?1:0.2,transform:visible?'scale(1)':'scale(0.4)',transition:'all .5s',textDecoration:removed?'line-through':'none'}}/>})}
+    </div>
+    {step>showN&&<p style={{fontSize:28,fontWeight:700,color:GREEN}}>{a} {op} {b} = {result}</p>}
+  </div>}
+
+// ===== RAZONA MODULE =====
+const RAZONA_SPATIAL=[
+  {scene:'estantería',obj:'libro',pos:'encima',q:'¿Dónde está el libro?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Encima'},
+  {scene:'mesa',obj:'mochila',pos:'debajo',q:'¿Dónde está la mochila?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Debajo'},
+  {scene:'caja',obj:'móvil',pos:'dentro',q:'¿Dónde está el móvil?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Dentro'},
+  {scene:'silla',obj:'gafas',pos:'encima',q:'¿Dónde están las gafas?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Encima'},
+  {scene:'armario',obj:'zapatillas',pos:'dentro',q:'¿Dónde están las zapatillas?',opts:['Encima','Debajo','Dentro','Fuera'],ans:'Dentro'},
+  {scene:'puerta',obj:'llaves',pos:'al lado',q:'¿Dónde están las llaves?',opts:['Encima','Debajo','Al lado','Dentro'],ans:'Al lado'},
+  {scene:'mochila',obj:'estuche',pos:'dentro',q:'¿Dónde está el estuche?',opts:['Encima','Debajo','Dentro','Fuera'],ans:'Dentro'},
+  {scene:'estantería',obj:'balón',pos:'debajo',q:'¿Dónde está el balón?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Debajo'},
+];
+const RAZONA_INTRUSO=[
+  {cat:'animal',words:['PERRO','GATO','PEZ','MESA'],ans:'MESA',q:'¿Cuál NO es un animal?'},
+  {cat:'fruta',words:['MANZANA','PERA','PLÁTANO','SILLA'],ans:'SILLA',q:'¿Cuál NO es una fruta?'},
+  {cat:'ropa',words:['CAMISA','PANTALÓN','ZAPATO','COCHE'],ans:'COCHE',q:'¿Cuál NO es ropa?'},
+  {cat:'mueble',words:['MESA','SILLA','ARMARIO','GATO'],ans:'GATO',q:'¿Cuál NO es un mueble?'},
+  {cat:'color',words:['ROJO','AZUL','VERDE','LIBRO'],ans:'LIBRO',q:'¿Cuál NO es un color?'},
+  {cat:'transporte',words:['COCHE','AVIÓN','TREN','MANZANA'],ans:'MANZANA',q:'¿Cuál NO es un transporte?'},
+  {cat:'cuerpo',words:['MANO','PIE','OJO','LÁPIZ'],ans:'LÁPIZ',q:'¿Cuál NO es del cuerpo?'},
+  {cat:'deporte',words:['FÚTBOL','TENIS','NATACIÓN','SOPA'],ans:'SOPA',q:'¿Cuál NO es un deporte?'},
+];
+const RAZONA_CLASSIFY=[
+  {groups:['Frutas','Animales'],items:[{w:'Manzana',g:0},{w:'Perro',g:1},{w:'Pera',g:0},{w:'Gato',g:1},{w:'Plátano',g:0},{w:'Pez',g:1}]},
+  {groups:['Ropa','Comida'],items:[{w:'Camisa',g:0},{w:'Pan',g:1},{w:'Zapato',g:0},{w:'Queso',g:1},{w:'Gorro',g:0},{w:'Leche',g:1}]},
+  {groups:['Animales','Muebles'],items:[{w:'León',g:0},{w:'Mesa',g:1},{w:'Oso',g:0},{w:'Silla',g:1},{w:'Pájaro',g:0},{w:'Cama',g:1}]},
+];
+const RAZONA_CAUSE=[
+  {q:'Si llueve... ¿qué cojo?',opts:['Paraguas','Gafas de sol'],ans:'Paraguas'},
+  {q:'Si tengo hambre... ¿qué hago?',opts:['Como','Duermo'],ans:'Como'},
+  {q:'Si hace frío... ¿qué me pongo?',opts:['Abrigo','Bañador'],ans:'Abrigo'},
+  {q:'Si está oscuro... ¿qué enciendo?',opts:['La luz','El grifo'],ans:'La luz'},
+  {q:'Si me duele la cabeza... ¿qué tomo?',opts:['Medicina','Refresco'],ans:'Medicina'},
+  {q:'Si quiero cruzar la calle... ¿qué miro?',opts:['El semáforo','El reloj'],ans:'El semáforo'},
+];
+const RAZONA_EMOTIONS=[
+  {emoji:'😊',emotion:'Contento',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
+  {emoji:'😢',emotion:'Triste',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
+  {emoji:'😠',emotion:'Enfadado',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
+  {emoji:'😨',emotion:'Asustado',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Sorprendido']},
+  {emoji:'😲',emotion:'Sorprendido',q:'¿Cómo se siente?',opts:['Contento','Sorprendido','Enfadado','Triste']},
+  {emoji:'😴',emotion:'Cansado',q:'¿Cómo se siente?',opts:['Contento','Cansado','Enfadado','Asustado']},
+];
+
+function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
+  if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
+  if(lv===2){RAZONA_INTRUSO.forEach((s,i)=>items.push({ty:'razona',mode:'intruso',data:s,id:'rz_int_'+i}));return sh(items)}
+  if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
+  if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
+  RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+
+function SceneSVG({scene,obj,pos}){const w=220,h=160;
+  const furnitureY={encima:40,debajo:130,dentro:85,al_lado:90,'al lado':90,fuera:90};
+  const objY=furnitureY[pos]||80;const objX=pos==='al lado'?170:110;
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
+    <rect x={0} y={0} width={w} height={h} rx={12} fill={BG3} stroke={BORDER} strokeWidth={2}/>
+    <rect x={60} y={60} width={100} height={70} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2}/>
+    <text x={110} y={100} textAnchor="middle" fill="#C49A6C" fontSize={12} fontWeight={700}>{scene}</text>
+    <circle cx={objX} cy={objY} r={18} fill={GOLD+'44'} stroke={GOLD} strokeWidth={2}/>
+    <text x={objX} y={objY+4} textAnchor="middle" fill={GOLD} fontSize={10} fontWeight={700}>{obj}</text>
+  </svg>}
+
+function ExRazona({ex,onOk,onSkip,name,uid,vids}){
+  const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
+  function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
+    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(onOk,600)},2500)}
+      else{setTimeout(()=>setFb(null),1200)}}}
+  function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
+    const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
+    if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
+      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+    <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+      <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
+    </div>
+    {ex.mode==='spatial'&&<div>
+      <SceneSVG scene={ex.data.scene} obj={ex.data.obj} pos={ex.data.pos}/>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:14}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:18,minHeight:64}}>{o}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='intruso'&&<div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:8}}>
+        {[...ex.data.words].sort(()=>Math.random()-.5).map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='classify'&&<div>
+      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:12}}>
+        {ex.data.groups.map((g,gi)=><div key={gi} style={{flex:1,background:gi===0?BLUE+'22':GREEN+'22',border:`2px solid ${gi===0?BLUE:GREEN}`,borderRadius:12,padding:10,minHeight:100}}>
+          <p style={{fontSize:16,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 8px'}}>{g}</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>
+            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'44':GREEN+'44',borderRadius:6,padding:'4px 8px',fontSize:14,fontWeight:700}}>{it.w}</span>)}
+          </div>
+        </div>)}
+      </div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>
+        {ex.data.items.filter(it=>placed[it.w]===undefined).map(it=><div key={it.w} style={{display:'flex',flexDirection:'column',gap:4}}>
+          {ex.data.groups.map((g,gi)=><button key={gi} className="btn btn-b btn-word" onClick={()=>classifyPick(it,gi)} style={{fontSize:14,padding:'6px 12px'}}>{it.w}→{g}</button>)}
+        </div>)}
+      </div>
+    </div>}
+    {ex.mode==='cause'&&<div>
+      <div style={{display:'flex',flexDirection:'column',gap:12,marginTop:12}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:22,padding:20,minHeight:64}}>{o}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='emotion'&&<div>
+      <div style={{fontSize:100,marginBottom:16}}>{ex.data.emoji}</div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:18,minHeight:60}}>{o}</button>)}
+      </div>
+    </div>}
+    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+  </div>}
+
+// ===== LEE MODULE =====
+const LEE_INTRUSO=[
+  {cat:'animales',words:['PERRO','GATO','PEZ','SILLA'],ans:'SILLA',q:'¿Cuál NO es un animal?'},
+  {cat:'frutas',words:['MANZANA','PERA','PLÁTANO','MESA'],ans:'MESA',q:'¿Cuál NO es una fruta?'},
+  {cat:'colores',words:['ROJO','AZUL','VERDE','COCHE'],ans:'COCHE',q:'¿Cuál NO es un color?'},
+  {cat:'ropa',words:['CAMISA','ZAPATO','GORRO','PERRO'],ans:'PERRO',q:'¿Cuál NO es ropa?'},
+  {cat:'muebles',words:['MESA','SILLA','CAMA','GATO'],ans:'GATO',q:'¿Cuál NO es un mueble?'},
+  {cat:'transportes',words:['COCHE','AVIÓN','BARCO','PAN'],ans:'PAN',q:'¿Cuál NO es un transporte?'},
+  {cat:'cuerpo',words:['MANO','OJO','PIE','LIBRO'],ans:'LIBRO',q:'¿Cuál NO es del cuerpo?'},
+  {cat:'comida',words:['PAN','LECHE','QUESO','LÁPIZ'],ans:'LÁPIZ',q:'¿Cuál NO es comida?'},
+];
+const LEE_WORD_IMG=[
+  {word:'PERRO',imgs:['🐶','🐱','🐟','🐴'],ans:0},{word:'GATO',imgs:['🐶','🐱','🐟','🐴'],ans:1},
+  {word:'SOL',imgs:['☀️','🌙','⭐','🌈'],ans:0},{word:'LUNA',imgs:['☀️','🌙','⭐','🌈'],ans:1},
+  {word:'CASA',imgs:['🏠','🏫','🏪','🏥'],ans:0},{word:'ÁRBOL',imgs:['🌳','🌸','🌵','🌻'],ans:0},
+  {word:'MANZANA',imgs:['🍎','🍐','🍌','🍊'],ans:0},{word:'COCHE',imgs:['🚗','🚂','✈️','🚢'],ans:0},
+];
+const LEE_COMPLETE=[
+  {word:'PERRO',display:'P_RRO',missing:'E',opts:['E','A','U','O']},
+  {word:'GATO',display:'G_TO',missing:'A',opts:['A','E','I','O']},
+  {word:'MESA',display:'M_SA',missing:'E',opts:['A','E','I','U']},
+  {word:'CASA',display:'C_SA',missing:'A',opts:['A','E','O','U']},
+  {word:'LUNA',display:'L_NA',missing:'U',opts:['A','E','I','U']},
+  {word:'LIBRO',display:'L_BRO',missing:'I',opts:['A','E','I','O']},
+  {word:'AGUA',display:'AG_A',missing:'U',opts:['A','E','I','U']},
+  {word:'PELO',display:'P_LO',missing:'E',opts:['A','E','I','O']},
+];
+const LEE_SYLLABLES=[
+  {word:'GATO',syllables:['GA','TO']},{word:'MESA',syllables:['ME','SA']},
+  {word:'LUNA',syllables:['LU','NA']},{word:'PERRO',syllables:['PE','RRO']},
+  {word:'CASA',syllables:['CA','SA']},{word:'PELO',syllables:['PE','LO']},
+  {word:'PATO',syllables:['PA','TO']},{word:'RANA',syllables:['RA','NA']},
+  {word:'MONO',syllables:['MO','NO']},{word:'VASO',syllables:['VA','SO']},
+];
+const LEE_READ_DO=[
+  {instruction:'TOCA EL ROJO',opts:[{l:'🔴',c:'red',correct:true},{l:'🔵',c:'blue'},{l:'🟢',c:'green'},{l:'🟡',c:'yellow'}]},
+  {instruction:'TOCA EL AZUL',opts:[{l:'🔴',c:'red'},{l:'🔵',c:'blue',correct:true},{l:'🟢',c:'green'},{l:'🟡',c:'yellow'}]},
+  {instruction:'TOCA EL VERDE',opts:[{l:'🔴',c:'red'},{l:'🔵',c:'blue'},{l:'🟢',c:'green',correct:true},{l:'🟡',c:'yellow'}]},
+  {instruction:'TOCA EL GRANDE',opts:[{l:'⭐',sz:80,correct:true},{l:'⭐',sz:30},{l:'⭐',sz:40},{l:'⭐',sz:20}]},
+  {instruction:'TOCA EL ANIMAL',opts:[{l:'🐶',correct:true},{l:'🏠'},{l:'🚗'},{l:'📚'}]},
+  {instruction:'TOCA LA FRUTA',opts:[{l:'🍎',correct:true},{l:'🐱'},{l:'🏠'},{l:'✏️'}]},
+];
+
+function genLee(lv){const sh=a=>[...a].sort(()=>Math.random()-.5);
+  if(lv===1)return sh(LEE_INTRUSO).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_'+i}));
+  if(lv===2)return sh(LEE_WORD_IMG).map((d,i)=>({ty:'lee',mode:'word_img',data:d,id:'lee_wi_'+i}));
+  if(lv===3)return sh(LEE_COMPLETE).map((d,i)=>({ty:'lee',mode:'complete',data:d,id:'lee_cmp_'+i}));
+  if(lv===4)return sh(LEE_SYLLABLES).map((d,i)=>({ty:'lee',mode:'syllables',data:d,id:'lee_syl_'+i}));
+  return sh(LEE_READ_DO).map((d,i)=>({ty:'lee',mode:'read_do',data:d,id:'lee_rd_'+i}))}
+
+function ExLee({ex,onOk,onSkip,name,uid,vids}){
+  const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState([]);const[avail,setAvail]=useState([]);const{idleMsg,poke}=useIdle(name,!fb);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced([]);
+    if(ex.mode==='syllables'){setAvail([...ex.data.syllables].sort(()=>Math.random()-.5))}
+    stopVoice();return()=>stopVoice()},[ex]);
+  function pick(ans){poke();
+    if(ex.mode==='intruso'){if(ans===ex.data.ans){setFb('ok');starBeep(4);say('¡Bien! '+ans+' no es '+ex.data.cat.replace(/s$/,'')).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La respuesta es '+ex.data.ans);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{say(ex.data.q);setTimeout(()=>setFb(null),1500)}}}
+    if(ex.mode==='word_img'){if(ans===ex.data.ans){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,600))}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2000)}else{setTimeout(()=>setFb(null),1200)}}}
+    if(ex.mode==='complete'){if(ans===ex.data.missing){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La letra es '+ex.data.missing);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{setTimeout(()=>setFb(null),1200)}}}
+    if(ex.mode==='read_do'){const isCorrect=ex.data.opts[ans]?.correct;
+      if(isCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,600))}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.instruction);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{setTimeout(()=>setFb(null),1200)}}}}
+  function placeSyl(s){poke();const np=[...placed,s];setPlaced(np);setAvail(a=>a.filter(x=>x!==s));
+    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+      else{setFb('no');beep(200,200);setTimeout(()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5));setFb(null)},1500)}}}
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+    {ex.mode==='intruso'&&<div>
+      <div className="card" style={{padding:16,marginBottom:14,background:'#E91E63'+'0C',borderColor:'#E91E63'+'33'}}><p style={{fontSize:22,fontWeight:700,margin:0,color:GOLD}}>{ex.data.q}</p></div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {[...ex.data.words].sort(()=>Math.random()-.5).map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:26,padding:22,fontWeight:700,minHeight:80}}>{w}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='word_img'&&<div>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:36,fontWeight:700,margin:0,color:GOLD,letterSpacing:4}}>{ex.data.word}</p></div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {ex.data.imgs.map((img,i)=><button key={i} className={'btn '+(fb==='ok'&&i===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:56,padding:16,minHeight:90}}>{img}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='complete'&&<div>
+      <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:42,fontWeight:700,margin:0,color:GOLD,letterSpacing:6,fontFamily:'monospace'}}>{ex.data.display}</p></div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.missing?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:32,padding:18,fontWeight:700,minHeight:70}}>{o}</button>)}
+      </div>
+    </div>}
+    {ex.mode==='syllables'&&<div>
+      <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:0,color:GOLD}}>Ordena las sílabas</p></div>
+      <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:14,minHeight:60}}>
+        {ex.data.syllables.map((_,i)=><div key={i} style={{minWidth:70,height:56,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:12,border:`3px solid ${placed[i]?GREEN:BORDER}`,background:placed[i]?GREEN+'22':BG3,fontSize:28,fontWeight:700,color:placed[i]?GREEN:DIM}}>{placed[i]||'__'}</div>)}
+      </div>
+      <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
+        {avail.map((s,i)=><button key={s+i} className="btn btn-b btn-word" onClick={()=>!fb&&placeSyl(s)} style={{fontSize:28,padding:'14px 24px',fontWeight:700}}>{s}</button>)}
+      </div>
+      {placed.length>0&&!fb&&<button className="btn btn-o" onClick={()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5))}} style={{marginTop:12,fontSize:14,maxWidth:150,margin:'12px auto 0'}}>↩️ Borrar</button>}
+    </div>}
+    {ex.mode==='read_do'&&<div>
+      <div className="card" style={{padding:24,marginBottom:14,background:GOLD+'0C',borderColor:GOLD+'33'}}><p style={{fontSize:32,fontWeight:700,margin:0,color:GOLD,letterSpacing:2}}>{ex.data.instruction}</p></div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||56,padding:20,minHeight:90}}>{o.l}</button>)}
+      </div>
+    </div>}
+    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+  </div>}
+
+// ===== CARD and DOMINO SVGs for Distribute =====
+function CardSVG({size=48}){return <svg width={size} height={size*1.4} viewBox="0 0 48 67">
+  <rect x={1} y={1} width={46} height={65} rx={6} fill="#fff" stroke="#333" strokeWidth={1.5}/>
+  <text x={8} y={18} fill="#C0392B" fontSize={14} fontWeight={700}>A</text>
+  <text x={24} y={42} fill="#C0392B" fontSize={24} textAnchor="middle">♥</text>
+</svg>}
+function DominoSVG({size=48}){return <svg width={size*1.6} height={size} viewBox="0 0 77 48">
+  <rect x={1} y={1} width={75} height={46} rx={6} fill="#F5F0E1" stroke="#333" strokeWidth={1.5}/>
+  <line x1={38} y1={4} x2={38} y2={44} stroke="#333" strokeWidth={1.5}/>
+  <circle cx={19} cy={16} r={4} fill="#333"/><circle cx={19} cy={32} r={4} fill="#333"/>
+  <circle cx={57} cy={14} r={4} fill="#333"/><circle cx={57} cy={24} r={4} fill="#333"/><circle cx={57} cy={34} r={4} fill="#333"/>
+</svg>}
+
+function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[523,659,784,880,1047,1175,1319,1568];const durations=[0.2,0.15,0.15,0.15,0.3,0.15,0.15,0.5];let t=0;notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.10;g.gain.setValueAtTime(0.10,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+durations[i]);o.start(c.currentTime+t);o.stop(c.currentTime+t+durations[i]);t+=durations[i]*0.7});setTimeout(()=>c.close(),4000)}catch(e){}}
 
 function DoneScreen({st,elapsed,user,supPin,onExit}){
-  const[ph,sPh]=useState('party');const[pi2,sPi2]=useState('');const[pe2,sPe2]=useState(false);const[xConf,sXConf]=useState(false);
+  const[ph,sPh]=useState('party');const[xConf,sXConf]=useState(false);
   const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
   const isFem=user?.sex==='f';const uname=user?.name||'crack';
-  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB('¡Felicidades '+uname+'! ¡Has hecho un trabajo enorme!');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
+  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB('¡Lo has hecho genial, '+uname+'! ¿Quieres seguir?');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'radial-gradient(ellipse at center,'+BG2+' 0%,'+BG+' 100%)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20,overflow:'hidden'}}>
     <Confetti show={xConf}/>
     <div style={{maxWidth:420,width:'100%',textAlign:'center'}}>
       {ph==='party'&&<div className="ab">
-        <div style={{fontSize:100,marginBottom:4,animation:'pulse 1s infinite'}}>🏆</div>
-        <div style={{display:'flex',justifyContent:'center',gap:6,fontSize:36,marginBottom:12,animation:'bounceIn .6s .2s both'}}>{'🎉🌟⭐🎊🥳'.split('').map((e,i)=><span key={i} style={{animation:`bounceIn .4s ${.3+i*.12}s both`}}>{e}</span>)}</div>
+        <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',gap:12,marginBottom:4}}>
+          <div style={{fontSize:100,animation:'pulse 1s infinite'}}>🏆</div>
+          <div style={{marginBottom:16}}><SpaceMascot mood="dance" size={56}/></div>
+        </div>
+        <div style={{display:'flex',justifyContent:'center',gap:6,fontSize:36,marginBottom:12,animation:'bounceIn .6s .2s both'}}>{'🎉🎊🥳'.split('').map((e,i)=><span key={i} style={{animation:`bounceIn .4s ${.3+i*.12}s both`}}>{e}</span>)}</div>
         <h1 style={{fontSize:28,color:GOLD,margin:'0 0 4px',animation:'fadeIn .5s .5s both'}}>¡FELICIDADES {uname.toUpperCase()}!</h1>
         <p style={{fontSize:22,color:GREEN,fontWeight:700,margin:'0 0 20px',animation:'fadeIn .5s .7s both'}}>¡Has hecho un trabajo ENORME!</p>
         <div style={{display:'flex',justifyContent:'center',gap:16,marginBottom:24,animation:'fadeIn .5s .9s both'}}>
@@ -910,19 +1377,11 @@ function DoneScreen({st,elapsed,user,supPin,onExit}){
             </div>)}
         </div>
         <div style={{background:GREEN+'15',border:'2px solid '+GREEN+'33',borderRadius:16,padding:18,marginBottom:20,animation:'fadeIn .5s 1.1s both'}}>
-          <p style={{fontSize:20,fontWeight:700,margin:0,color:GREEN}}>🎮 ¡Misión cumplida!</p>
-          <p style={{fontSize:16,color:DIM,margin:'6px 0 0'}}>Dale la tablet a papá o mamá</p>
+          <p style={{fontSize:22,fontWeight:700,margin:0,color:GREEN}}>¡Lo has hecho genial!</p>
         </div>
-        <button className="btn btn-gold" onClick={()=>sPh('pin')} style={{fontSize:20,animation:'fadeIn .5s 1.3s both'}}>🔒 Salir (Padres)</button>
-      </div>}
-      {ph==='pin'&&<div className="af">
-        <div style={{fontSize:56,marginBottom:12}}>🔒</div>
-        <p style={{fontSize:20,fontWeight:700,margin:'0 0 4px',color:GOLD}}>PIN de padres</p>
-        <p style={{fontSize:15,color:DIM,margin:'0 0 16px'}}>Introduce el PIN para salir</p>
-        <input className="inp" value={pi2} onChange={e=>sPi2(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe2?RED:BORDER,marginBottom:16}}/>
-        <div style={{display:'flex',gap:10}}>
-          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{sPh('party');sPi2('')}}>Volver</button>
-          <button className="btn btn-g" style={{flex:1}} disabled={pi2.length<4} onClick={()=>{if(pi2===supPin){onExit()}else{sPe2(true);sPi2('');setTimeout(()=>sPe2(false),1500)}}}>Salir ✓</button>
+        <div style={{display:'flex',gap:12,animation:'fadeIn .5s 1.3s both'}}>
+          <button className="btn btn-g" style={{flex:1,fontSize:20}} onClick={()=>onExit('repeat')}>🔄 ¡Otra ronda!</button>
+          <button className="btn btn-b" style={{flex:1,fontSize:20}} onClick={()=>onExit('menu')}>🏠 Menú principal</button>
         </div>
       </div>}
     </div>
@@ -937,12 +1396,25 @@ export default function App(){
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);
-  const[micOk,setMicOk]=useState(false);
+  const[micOk,setMicOk]=useState(false);const[supervisorMode,setSupervisorMode]=useState(false);const supervisorTimer=useRef(null);
+  useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
+  // Sky theme based on time of day
+  useEffect(()=>{function applySky(){document.body.classList.remove('sky-morning','sky-afternoon','sky-night');document.body.classList.add(getSkyClass())}applySky();const iv=setInterval(applySky,60000);return()=>clearInterval(iv)},[]);
+  const[mascotMood,setMascotMood]=useState('idle');
+  const[showRocket,setShowRocket]=useState(false);
+  const streak=useMemo(()=>getStreak(),[scr]);
+  const totalStars=useMemo(()=>getTotalStars(),[scr,st]);
+  const[showMiCielo,setShowMiCielo]=useState(false);
+  const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
+  function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
   const[sec,setSec]=useState('decir');const[secLv,setSecLv]=useState(1);const[openGroup,setOpenGroup]=useState(null);
+  const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
   const[freeChoice,setFreeChoice]=useState(()=>{const u=loadData('profiles',[]);return u[0]?.freeChoice||false});
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
+  const wakeLockRef=useRef(null);
+  useEffect(()=>{async function acquireWakeLock(){try{if('wakeLock' in navigator&&scr==='game'){wakeLockRef.current=await navigator.wakeLock.request('screen')}else if(wakeLockRef.current){wakeLockRef.current.release();wakeLockRef.current=null}}catch(e){}}acquireWakeLock();return()=>{if(wakeLockRef.current){try{wakeLockRef.current.release()}catch(e){}}wakeLockRef.current=null}},[scr]);
   function pokeActive(){lastAct.current=Date.now()}
   useEffect(()=>{if(!ss){if(actTimer.current)clearInterval(actTimer.current);return}
     activeMs.current=0;lastAct.current=Date.now();setElapsedSt(0);
@@ -967,39 +1439,69 @@ export default function App(){
         return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}})}
     if(section==='contar'){let nums=[];if(slv===1)nums=Array.from({length:20},(_,i)=>i+1);else if(slv===2)nums=Array.from({length:31},(_,i)=>i+20);else if(slv===3)nums=Array.from({length:51},(_,i)=>i+50);else nums=Array.from({length:100},(_,i)=>i+1);return nums.map(n=>({ty:'count',num:n,id:'num_'+n}))}
     if(section==='math'){return genMath(slv).slice(0,30).map((m,i)=>({ty:'math',q:m.q,ans:m.ans,id:'math_'+i}))}
-    if(section==='frac'){return genFractions().slice(0,20).map(f=>({ty:'frac',...f}))}
+    if(section==='frac'){return genFractions(slv).slice(0,20).map(f=>({ty:'frac',...f}))}
     if(section==='multi'){return genMulti(slv).slice(0,20).map((m,i)=>({ty:'multi',...m,id:'multi_'+i}))}
     if(section==='money'){return genMoney(slv)}
     if(section==='clock'){return genClock(slv)}
     if(section==='calendar'){return genCalendar(slv)}
     if(section==='distribute'){return genDistribute(slv,u)}
     if(section==='writing'){return genWriting(slv)}
+    if(section==='razona'){return genRazona(slv)}
+    if(section==='lee'){return genLee(slv)}
     if(section==='quiensoy'){return slv===2?[{ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img}]:QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:q.text,img:q.img,picto:q.picto}))}
     return[]}
-  function startGame(){setQ(buildQ(user,sec,secLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);setSs(Date.now());setScr('game');trophy8shown.current=false;setTrophy8(false)}
-  useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp())fin(st)},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
+  function startGame(){setQ(buildQ(user,sec,secLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
+  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game')}
+  // No longer auto-finish on timeUp - let kid continue freely after guided time
+  const timeUpShown=useRef(false);
+  useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=8&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){pokeActive();setConf(true);setConsec(0);setTimeout(()=>setConf(false),2400);const e=queue[idx];const up=srsUp(e.id,true,user);setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));setTimeout(()=>{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
-  function onSk(){stopVoice();pokeActive();const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(timeUp()||idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
-  function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(timeUp()||idx+1>=queue.length)fin(st);else setIdx(idx+1)}
+  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));if(user&&sec){addGroupProgress(user.id,GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
+  function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
+  function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}
   function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
   function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
-  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/>
+  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone}/>
     {showRec&&user&&<VoiceRec user={user} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡8 minutos trabajando!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo! 💪</button></div></div>}
-    {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(timeUp()||idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
+    {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
     {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setUser(null);setScr('login')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
-    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={()=>{setOv(null);setScr('goals')}}/>}
-    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={parentPin.length<4} onClick={()=>{if(parentPin===supPin){setParentPin('');setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
+    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
+    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={parentPin.length<4} onClick={()=>{if(parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),300000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
     {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:20,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'8px 16px'}} onClick={()=>setOv(null)}>✕</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
         <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>🔒 PIN del supervisor</p><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12}}/></div>
         <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></p><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer'}}>{m===0?'∞':m+"'"}</button>)}</div></div>
+        <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>⏰ Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:'pointer'}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
+        <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>📋 Módulos activos</p><p style={{fontSize:12,color:DIM,margin:'0 0 8px'}}>Desactiva niveles que no quieras mostrar</p>
+          {GROUPS.map(g=><div key={g.id} style={{marginBottom:8,border:`1px solid ${g.color+'33'}`,borderRadius:8,padding:8,background:g.color+'06'}}>
+            <p style={{fontSize:13,fontWeight:700,margin:'0 0 4px',color:g.color}}>{g.emoji} {g.name}</p>
+            {g.modules.map((m,mi)=><div key={mi} style={{marginBottom:4}}>
+              <p style={{fontSize:11,color:DIM,margin:'0 0 2px'}}>{m.l}</p>
+              <div style={{display:'flex',gap:2,flexWrap:'wrap'}}>{m.lvs.map(lv=>{const key=m.k+'_'+lv.n;const active=activeMods[key]!==false;
+                return <button key={lv.n} onClick={()=>{const nm={...activeMods,[key]:!active};setActiveMods(nm);saveData('active_mods',nm)}} style={{padding:'3px 6px',borderRadius:4,border:`1px solid ${active?g.color:BORDER}`,background:active?g.color+'22':BG3+'44',color:active?g.color:DIM+'66',fontFamily:"'Fredoka'",fontWeight:700,fontSize:10,cursor:'pointer'}}>{active?'✓':''} {lv.l}</button>})}</div>
+            </div>)}
+          </div>)}
+        </div>
+        <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>📝 Sesión de hoy</p>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>{['free','guided'].map(m=><button key={m} onClick={()=>{setSessionMode(m);saveData('session_mode',m)}} style={{flex:1,padding:'12px 0',borderRadius:10,border:`3px solid ${sessionMode===m?GOLD:BORDER}`,background:sessionMode===m?GOLD+'22':BG3,color:sessionMode===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:'pointer'}}>{m==='free'?'🆓 Libre':'📋 Guiada'}</button>)}</div>
+          {sessionMode==='guided'&&<div>
+            <p style={{fontSize:12,color:DIM,margin:'0 0 8px'}}>Elige hasta 4 tareas:</p>
+            {[0,1,2,3].map(i=>{const t=guidedTasks[i];return <div key={i} style={{display:'flex',gap:6,marginBottom:6,alignItems:'center'}}>
+              <span style={{fontSize:14,color:DIM,fontWeight:700,width:20}}>{i+1}.</span>
+              <select style={{flex:1,padding:8,borderRadius:8,border:`2px solid ${BORDER}`,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:13}} value={t?t.k+'_'+t.lv:''} onChange={e=>{const v=e.target.value;if(!v){const nt=[...guidedTasks];nt.splice(i,1);setGuidedTasks(nt);saveData('guided_tasks',nt);return}
+                const[k,lv]=v.split('_');const nt=[...guidedTasks];nt[i]={k,lv:parseInt(lv),count:10};setGuidedTasks(nt);saveData('guided_tasks',nt)}}>
+                <option value="">— vacío —</option>
+                {GROUPS.flatMap(g=>g.modules.flatMap(m=>m.lvs.map(lv=><option key={m.k+'_'+lv.n} value={m.k+'_'+lv.n}>{g.emoji} {m.l} - {lv.l}</option>)))}
+              </select>
+            </div>})}
+          </div>}
+        </div>
         <div className="card"><p style={{fontSize:16,fontWeight:700,margin:'0 0 10px'}}>🎯 Módulo de hoy</p>
           <button onClick={()=>{setFreeChoice(!freeChoice)}} style={{width:'100%',padding:'12px',borderRadius:10,border:`3px solid ${freeChoice?GREEN:BORDER}`,background:freeChoice?GREEN+'22':BG3,color:freeChoice?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',marginBottom:10}}>{freeChoice?'✅ Elección libre (el niño elige)':'❌ Elección libre'}</button>
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -1013,6 +1515,7 @@ export default function App(){
           </div>}
         </div>
         <button className="btn btn-gold" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up);setOv(null)}}>💾 Guardar</button>
+        <button className="btn btn-g" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up);setOv(null)}} style={{marginTop:8,fontSize:24}}>🎮 ¡A jugar!</button>
         <button className="btn btn-p" onClick={()=>{setOv(null);setShowRec(true)}} style={{marginTop:8}}>🎙️ Grabar voces</button>
         <div style={{marginTop:16,borderTop:'1px solid '+BORDER,paddingTop:16}}>{!delConf?<button className="btn btn-ghost" style={{color:RED,borderColor:RED+'44'}} onClick={()=>setDelConf(true)}>🗑️ Borrar perfil de {user.name}</button>:<div className="card" style={{borderColor:RED+'66',background:RED+'0C'}}><p style={{fontSize:16,fontWeight:700,color:RED,margin:'0 0 8px'}}>¿Seguro? Se perderá todo el progreso</p><div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setDelConf(false)}>Cancelar</button><button className="btn btn-g" style={{flex:1,background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21'}} onClick={()=>{setProfs(p=>p.filter(x=>x.id!==user.id));setUser(null);setOv(null);setDelConf(false);setScr('login')}}>Sí, borrar</button></div></div>}
         <button className="btn btn-ghost" style={{color:RED,borderColor:RED+'22',marginTop:12}} onClick={()=>{if(confirm('¿Borrar todos los perfiles y progreso? Las voces grabadas se conservan.')){const keep={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))keep[k]=localStorage.getItem(k)}localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));setProfs([]);setUser(null);setOv(null);setScr('setup')}}}>🔄 Resetear app (conserva voces)</button></div>
@@ -1025,6 +1528,19 @@ export default function App(){
         <div className="card"><p style={{fontSize:15,fontWeight:700,margin:'0 0 8px',color:GOLD}}>📱 Teléfono de emergencia</p><input className="inp" value={user.telefono||''} onChange={e=>{const up={...user,telefono:e.target.value};setUser(up);saveP(up)}} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8"/><p style={{fontSize:12,color:DIM,margin:'6px 0 0'}}>Con puntos para pronunciar: 6.1.2.3.4.5</p></div>
         <div className="card"><p style={{fontSize:15,fontWeight:700,margin:'0 0 8px',color:GOLD}}>🏠 Dirección de casa</p><input className="inp" value={user.direccion||''} onChange={e=>{const up={...user,direccion:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Calle Mayor 10, Madrid"/></div>
         <p style={{fontSize:13,color:DIM,margin:0}}>Estos datos se usan en frases personalizadas para que practique con su información real.</p>
+        <div className="card" style={{marginTop:16,borderColor:PURPLE+'44'}}>
+          <p style={{fontSize:16,fontWeight:700,margin:'0 0 12px',color:PURPLE}}>👥 Mis Personas</p>
+          <p style={{fontSize:12,color:DIM,margin:'0 0 10px'}}>Se usan como nombres en ejercicios de Reparte y Cuenta</p>
+          {personas.map((p,i)=><div key={i} style={{display:'flex',gap:6,alignItems:'center',marginBottom:8}}>
+            <button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:24,background:'none',border:'none',cursor:'pointer',width:36,height:36}}>{p.avatar||AVS[0]}</button>
+            <input className="inp" value={p.name||''} onChange={e=>{const np=[...personas];np[i]={...np[i],name:e.target.value};savePersonas(np)}} placeholder="Nombre" style={{fontSize:15,padding:8,flex:1}}/>
+            <select value={p.relation||''} onChange={e=>{const np=[...personas];np[i]={...np[i],relation:e.target.value};savePersonas(np)}} style={{padding:8,borderRadius:8,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:12,maxWidth:110}}>
+              <option value="">Relación</option>{PERSONA_RELATIONS.map(r=><option key={r} value={r}>{r}</option>)}
+            </select>
+            <button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np)}} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'"}}>✕</button>
+          </div>)}
+          {personas.length<10&&<button className="btn btn-ghost" onClick={()=>savePersonas([...personas,{name:'',relation:'',avatar:AVS[Math.floor(Math.random()*AVS.length)]}])} style={{fontSize:14,marginTop:4}}>➕ Añadir persona</button>}
+        </div>
       </div>}
       {ptab==='stats'&&(()=>{const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'%',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} className="sbox"><div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div><div style={{fontSize:13,color:DIM,marginTop:4}}>{s.l}</div></div>)}</div>})()}
       {ptab==='srs'&&(()=>{const mas=Object.values(user.srs||{}).filter(s=>s.lv>=4).length,lrn=Object.values(user.srs||{}).filter(s=>s.lv>0&&s.lv<4).length,nw=EX.length-mas-lrn;return <div style={{textAlign:'center',padding:'20px 0'}}><div style={{display:'flex',justifyContent:'center',gap:20}}>{[{l:'Dominadas',v:mas,c:GREEN},{l:'Aprendiendo',v:lrn,c:GOLD},{l:'Nuevas',v:nw,c:PURPLE}].map((s,i)=><div key={i}><div style={{position:'relative',display:'inline-block'}}><Ring p={s.v/EX.length} sz={80} c={s.c}/><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:20,color:s.c,fontWeight:700}}>{s.v}</div></div><div style={{fontSize:13,color:DIM,marginTop:6}}>{s.l}</div></div>)}</div></div>})()}
@@ -1046,10 +1562,10 @@ export default function App(){
         {supInp.length<4&&<p style={{fontSize:13,color:DIM,textAlign:'center',margin:'10px 0 0'}}>Escribe 4 dígitos para el PIN</p>}
         {supInp.length===4&&!micOk&&<p style={{fontSize:13,color:GOLD,textAlign:'center',margin:'10px 0 0'}}>Activa el micrófono para continuar</p>}
       </div>
-      <p style={{color:DIM+'66',fontSize:10,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}>© 2026 Toki — Diego Aroca — v20</p>
+      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
 
-    {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'66',fontSize:10,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}>© 2026 Toki — Diego Aroca — v20</p>
+    {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
       {profs.length>0&&!creating&&<div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>{profs.map(p=><button key={p.id} className="profcard" onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(p.freeChoice||false);setVoiceProfile(p.age,p.sex);setScr('goals')}}><div style={{fontSize:40}}>{avStr(p.av)}</div><div style={{flex:1}}><div style={{fontSize:22,fontWeight:700}}>{p.name}</div><div style={{fontSize:14,color:DIM}}>{p.age} años</div></div></button>)}</div>}
       {profs.length<4&&!creating&&<button className="btn btn-p" onClick={()=>setCreating(true)} style={{fontSize:22}}>➕ Nuevo Jugador</button>}
       {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}><p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
@@ -1067,32 +1583,50 @@ export default function App(){
         <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:fPadre.trim(),madre:fMadre.trim(),hermanos:fHerm.trim(),amigos:fAmigos.trim(),telefono:fTel.trim(),direccion:fDir.trim()};setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
+    {showMiCielo&&<div className="ov" onClick={()=>setShowMiCielo(false)}><div className="ovp ab" onClick={e=>e.stopPropagation()}>
+      <div style={{fontSize:72,marginBottom:8}}>🌌</div>
+      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 12px'}}>Mi Cielo</h2>
+      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center',marginBottom:16,minHeight:60}}>
+        {Array.from({length:Math.min(totalStars,100)},(_,i)=><span key={i} style={{fontSize:totalStars>50?14:20,animation:`twinkle ${1+Math.random()*2}s ease-in-out ${Math.random()*2}s infinite alternate`}}>⭐</span>)}
+        {totalStars>100&&<span style={{fontSize:16,color:GOLD,fontWeight:700}}>+{totalStars-100} mas</span>}
+      </div>
+      <p style={{fontSize:36,fontWeight:900,color:GOLD}}>{totalStars}</p>
+      <p style={{fontSize:16,color:DIM}}>estrellas conseguidas</p>
+      <button className="btn btn-ghost" onClick={()=>setShowMiCielo(false)} style={{marginTop:16}}>Cerrar</button>
+    </div></div>}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setOv('pin');setPi('')}}>← Cambiar</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp(supPin||'');setSm(user.sessionMin||25);setSec(user.sec||sec);setSecLv(user.secLv||secLv);setFreeChoice(user.freeChoice||false);setPtab('config');setDelConf(false);setOv('parentGate')}}>⚙️</button></div></div>
-      <div style={{textAlign:'center',padding:'12px 0'}}><div style={{fontSize:56,marginBottom:4}}>{avStr(user.av)}</div><h2 style={{fontSize:26,margin:'0 0 2px'}}>¡Hola {user.name}!</h2><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
-      {freeChoice?<div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {GROUPS.map(g=>{const isOpen=openGroup===g.id;const groupSelected=g.modules.some(m=>m.k===sec);
-          return <div key={g.id}>
-            <button onClick={()=>setOpenGroup(isOpen?null:g.id)} style={{width:'100%',padding:'20px 18px',borderRadius:16,border:`3px solid ${isOpen||groupSelected?g.color+'88':BORDER}`,background:isOpen||groupSelected?g.color+'0C':CARD,color:TXT,fontFamily:"'Fredoka'",cursor:'pointer',textAlign:'left',display:'flex',alignItems:'center',gap:14,transition:'all .2s'}}>
-              <span style={{fontSize:40}}>{g.emoji}</span>
-              <div style={{flex:1}}><div style={{fontSize:20,fontWeight:700}}>{g.name}</div><div style={{fontSize:13,color:DIM}}>{g.desc}</div></div>
-              <span style={{fontSize:18,color:DIM,transition:'transform .2s',transform:isOpen?'rotate(180deg)':'rotate(0)'}}>{isOpen?'▲':'▼'}</span>
-            </button>
-            {isOpen&&<div className="af" style={{display:'flex',flexDirection:'column',gap:8,marginTop:8,paddingLeft:8}}>
-              {g.modules.map((m,mi)=><div key={mi} style={{background:sec===m.k?g.color+'11':BG3,border:`2px solid ${sec===m.k?g.color+'66':BORDER}`,borderRadius:10,padding:10}}>
-                <p style={{fontSize:14,fontWeight:700,margin:'0 0 6px',color:sec===m.k?g.color:TXT}}>{m.l}</p>
-                <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>{m.lvs.map(lv=><button key={lv.n} onClick={()=>{setSec(m.k);setSecLv(lv.n)}} style={{flex:1,minWidth:50,padding:'8px 4px',borderRadius:6,border:`2px solid ${sec===m.k&&secLv===lv.n?g.color:BORDER}`,background:sec===m.k&&secLv===lv.n?g.color+'33':BG3,color:sec===m.k&&secLv===lv.n?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:12,cursor:'pointer'}}>{lv.l}</button>)}</div>
-              </div>)}
-            </div>}
-          </div>})}
+      <div style={{textAlign:'center',padding:'12px 0'}}><div style={{fontSize:56,marginBottom:4}}>{avStr(user.av)}</div><h2 style={{fontSize:22,margin:'0 0 2px',color:GOLD}}>{getGreeting(user.name)}</h2><p style={{fontSize:14,color:DIM,margin:'0 0 8px'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p>
+        <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:8}}>
+          <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'6px 14px',cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:18}}>🌌</span><span style={{fontSize:14,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
+          {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'6px 14px',display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:18}}>🔥</span><span style={{fontSize:14,color:'#E67E22',fontWeight:700}}>{streak} días</span></div>}
+        </div>
+      </div>
+      {freeChoice?<div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:12}}>
+          {GROUPS.map(g=>{const isOpen=openGroup===g.id;const groupSelected=g.modules.some(m=>m.k===sec);const status=user?getGroupStatus(user.id,g.id):'new';const isMastered=status==='mastered';const isProgress=status==='progress';const isNew=status==='new';
+            return <button key={g.id} onClick={()=>setOpenGroup(isOpen?null:g.id)} style={{padding:'14px 8px',borderRadius:'50%',border:'none',background:'radial-gradient(circle at 35% 35%,'+g.color+'cc,'+g.color+'44)',color:TXT,fontFamily:"'Fredoka'",cursor:'pointer',textAlign:'center',transition:'all .3s',aspectRatio:'1',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',position:'relative',boxShadow:(isOpen||groupSelected?'0 0 20px '+g.color+'88':'0 4px 12px rgba(0,0,0,.4)')+','+(isMastered?'0 0 24px '+GOLD+'66':''),animation:isNew?'planetPulse 3s ease-in-out infinite':'none',transform:isNew?'':'scale(1)',filter:isMastered?'brightness(1.15)':'none',overflow:'visible'}}>
+              {isProgress&&<div style={{position:'absolute',top:'-6px',left:'-6px',right:'-6px',bottom:'-6px',border:'2px dashed '+g.color,borderRadius:'50%',animation:'planetRing 8s linear infinite',pointerEvents:'none'}}/>}
+              {isMastered&&<div style={{position:'absolute',top:0,left:0,right:0,bottom:0,pointerEvents:'none'}}>{[0,1,2].map(i=><div key={i} style={{position:'absolute',top:'50%',left:'50%',width:8,height:8,animation:`orbitStar ${3+i}s linear ${i*0.5}s infinite`,pointerEvents:'none'}}>⭐</div>)}</div>}
+              <span style={{fontSize:32,display:'block',marginBottom:2}}>{g.emoji}</span>
+              <div style={{fontSize:12,fontWeight:700,lineHeight:1.1}}>{g.name}</div>
+            </button>})}
+        </div>
+        {openGroup&&GROUPS.filter(g=>g.id===openGroup).map(g=><div key={g.id} className="af" style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+          <p style={{fontSize:18,fontWeight:700,color:g.color,margin:'0 0 4px'}}>{g.emoji} {g.name}</p>
+          {g.modules.map((m,mi)=><div key={mi} style={{background:sec===m.k?g.color+'11':BG3,border:`2px solid ${sec===m.k?g.color+'66':BORDER}`,borderRadius:10,padding:10}}>
+            <p style={{fontSize:14,fontWeight:700,margin:'0 0 6px',color:sec===m.k?g.color:TXT}}>{m.l}</p>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>{m.lvs.map(lv=><button key={lv.n} onClick={()=>{setSec(m.k);setSecLv(lv.n)}} style={{flex:1,minWidth:50,padding:'8px 4px',borderRadius:6,border:`2px solid ${sec===m.k&&secLv===lv.n?g.color:BORDER}`,background:sec===m.k&&secLv===lv.n?g.color+'33':BG3,color:sec===m.k&&secLv===lv.n?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:12,cursor:'pointer'}}>{lv.l}</button>)}</div>
+          </div>)}
+        </div>)}
       </div>
       :<div className="card" style={{padding:24,textAlign:'center',borderColor:GOLD+'55',background:GOLD+'0C'}}>
-        <div style={{fontSize:56,marginBottom:8}}>{{quiensoy:'👤',decir:'🎤',frase:'🧱',contar:'🔢',math:'🧮',multi:'✖️',frac:'🍕',money:'💶',clock:'🕐',calendar:'📅',distribute:'🍬',writing:'✏️'}[sec]||'🎤'}</div>
-        <h3 style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{{quiensoy:'Quién Soy',decir:'Aprende a decirlo',frase:'Forma la frase',contar:'Cuenta conmigo',math:'Sumas y Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas y Billetes',clock:'La Hora',calendar:'Calendario',distribute:'Reparte y Cuenta',writing:'Escritura'}[sec]||sec}</h3>
+        <div style={{fontSize:56,marginBottom:8}}>{{quiensoy:'👤',decir:'🎤',frase:'🧱',contar:'🔢',math:'🧮',multi:'✖️',frac:'🍕',money:'💶',clock:'🕐',calendar:'📅',distribute:'🍬',writing:'✏️',razona:'🧠',lee:'📖'}[sec]||'🎤'}</div>
+        <h3 style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{{quiensoy:'Quién Soy',decir:'Aprende a decirlo',frase:'Forma la frase',contar:'Cuenta conmigo',math:'Sumas y Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas y Billetes',clock:'La Hora',calendar:'Calendario',distribute:'Reparte y Cuenta',writing:'Escritura',razona:'Razona',lee:'Lectura'}[sec]||sec}</h3>
       </div>}
       <button className="btn btn-g" onClick={startGame} style={{fontSize:24,marginTop:16}}>🚀 ¡A por ello!</button>
     </div>}
 
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div>
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div></div>
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,elapsed/sm*100)+'%'}}/></div>
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
@@ -1109,6 +1643,8 @@ export default function App(){
         {cur.ty==='calendar'&&<ExCalendar ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='distribute'&&<ExDistribute ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
+        {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
+        {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='quiensoy'&&secLv===1&&<ExQuienSoyEstudio ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='quiensoy'&&secLv===2&&<ExQuienSoyPres onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
       </div></div>}
