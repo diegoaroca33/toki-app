@@ -746,14 +746,12 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='recognize'&&<div>
       <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
         {ex.coin.v>=5?<Bill b={ex.coin}/>:<div style={{display:'inline-block',transform:'scale(1.6)',margin:'20px 0'}}><Coin c={ex.coin}/></div>}</div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Ej: 0,50" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
     {ex.mode==='sum'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Cuánto hay?</p>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Total en €" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
     {ex.mode==='pay'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Paga: {ex.price.toFixed(2).replace('.',',')} €</p>
@@ -770,8 +768,7 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='change'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
         <p style={{fontSize:16,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
-      <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Cambio en €" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
-      <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
+      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
@@ -972,8 +969,17 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
   function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-    else{setFb('wrong');beep(200,200);sayFB('¡Casi! Necesitas '+ex.count+' '+objName);
-      setTimeout(()=>{setFb(null);setCount(0)},2200)}}
+    else{const na=att+1;setAtt(na);
+      if(na>=2){/* 2nd fail: Toki counts WITH the child */
+        setFb('counting');setShowCount(true);beep(200,200);
+        let i=0;const target=ex.count;
+        function countNext(){if(i>=target){
+          setTimeout(()=>{if(count>target){sayFB('¡Sobran '+(count-target)+'!')}else if(count<target){sayFB('¡Faltan '+(target-count)+'!')}
+            setTimeout(()=>{setFb(null);setCount(0);setShowCount(false)},2000)},600);return}
+          i++;say(''+i,0.9);setTimeout(countNext,900)}
+        setTimeout(countNext,500)}
+      else{setFb('wrong');beep(200,200);sayFB(rnd(['¡Casi!','¡Inténtalo otra vez!','¡Cuenta bien!']));
+        setTimeout(()=>{setFb(null);setCount(0)},2000)}}}
   function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setTimeout(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
@@ -985,11 +991,14 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         <div style={{display:'flex',justifyContent:'center',marginBottom:8}}><BagSVG name={ex.friend} size={100}/></div>
         <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0}}>Pon {ex.count} {objName}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,minHeight:64,background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:14}}>
-        {Array.from({length:count},(_,i)=><span key={i} style={{fontSize:36,animation:'bounceIn .3s '+(i*0.05)+'s both',display:'inline-flex',alignItems:'center'}}>
-          {ObjSVG?<ObjSVG size={40}/>:objEmoji}
+        {Array.from({length:count},(_,i)=><span key={i} style={{fontSize:44,animation:'bounceIn .3s '+(i*0.05)+'s both',display:'inline-flex',alignItems:'center'}}>
+          {ObjSVG?<ObjSVG size={50}/>:objEmoji}
         </span>)}</div>
       {fb==='wrong'&&<div className="as" style={{background:RED+'18',borderRadius:14,padding:14,marginBottom:12}}>
-        <p style={{fontSize:20,color:RED,fontWeight:700,margin:0}}>¡Casi! Necesitas {ex.count} {objName}</p>
+        <p style={{fontSize:20,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Cuenta bien 💪</p>
+      </div>}
+      {fb==='counting'&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}>
+        <p style={{fontSize:20,color:GOLD,fontWeight:700,margin:0}}>¡Vamos a contar juntos!</p>
       </div>}
       {!fb&&<div>
         <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:14}}>
@@ -1330,16 +1339,18 @@ function VoiceRec({user,onBack,onSave}){const[mode,setMode]=useState('menu');con
   </div></div>}
 
 // ===== NUMPAD — Custom numeric keypad =====
-function NumPad({value,onChange,onSubmit,maxLen=5}){
+function NumPad({value,onChange,onSubmit,maxLen=5,decimal=false}){
   const press=d=>{if(String(value).length<maxLen)onChange(String(value)+d)};
+  const addDot=()=>{const v=String(value);if(!v.includes(',')&&v.length>0&&v.length<maxLen)onChange(v+',')};
   const bksp=()=>onChange(String(value).slice(0,-1));
   const btnSt={width:68,height:64,borderRadius:14,border:`2px solid ${BORDER}`,background:BG3,color:TXT,fontSize:28,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s'};
   return <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'center',padding:8}}>
-    <div style={{fontSize:40,fontWeight:700,color:GOLD,minHeight:52,letterSpacing:10,marginBottom:6,textAlign:'center'}}>{value||'?'}</div>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,maxWidth:260}}>
+    <div style={{fontSize:40,fontWeight:700,color:GOLD,minHeight:52,letterSpacing:6,marginBottom:6,textAlign:'center'}}>{value?(value+(decimal?' €':'')):'?'}</div>
+    <div style={{display:'grid',gridTemplateColumns:decimal?'repeat(4,1fr)':'repeat(3,1fr)',gap:8,maxWidth:decimal?340:260}}>
       {[1,2,3,4,5,6,7,8,9].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
       <button style={{...btnSt,background:RED+'33',color:RED,border:`2px solid ${RED}44`}} onClick={bksp}>⌫</button>
       <button style={btnSt} onClick={()=>press(0)}>0</button>
+      {decimal&&<button style={{...btnSt,background:BLUE+'33',color:BLUE,border:`2px solid ${BLUE}44`}} onClick={addDot}>,</button>}
       <button style={{...btnSt,background:GOLD+'33',color:GOLD,border:`2px solid ${GOLD}66`}} onClick={onSubmit} disabled={!value}>✓</button>
     </div>
   </div>}
@@ -2042,44 +2053,48 @@ export default function App(){
             }}>
               <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
             </button>
-            {/* Orbiting ring (visual — elliptical tilted) */}
-            <div style={{position:'absolute',top:'50%',left:'50%',
-              transform:`translate(-50%,-50%) rotate(${tilt}deg) scaleX(${scX}) scaleY(${scY})`,
-              width:orbitR*2,height:orbitR*2,borderRadius:'50%',
-              border:'1px dashed rgba(255,255,255,.12)',pointerEvents:'none'}}/>
-            {/* Rotating container — elliptical via scale+tilt */}
+            {/* Orbiting ring (visual — elliptical tilted via SVG) */}
+            <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
+              <ellipse cx={cW/2} cy={cH/2} rx={orbitR*scX} ry={orbitR*scY} fill="none" stroke="rgba(255,255,255,.10)" strokeWidth="1" strokeDasharray="6 4" transform={`rotate(${tilt},${cW/2},${cH/2})`}/>
+            </svg>
+            {/* Ellipse deformation wrapper (static — no animation here) */}
             <div style={{position:'absolute',top:'50%',left:'50%',
               width:orbitR*2,height:orbitR*2,
               marginLeft:-orbitR,marginTop:-orbitR,
-              transform:`rotate(${tilt}deg) scaleX(${scX}) scaleY(${scY})`,
-              animation:`orbitAll ${orbitDuration}s linear infinite`}}>
-              {allGroups.map((g,i)=>{
-                const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
-                const hasActive=g.modules.some(m=>activeMods[m.lvKey]!==false);
-                const angle=(360/n)*i - 90;
-                const rad=angle*Math.PI/180;
-                const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
-                const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
-                  position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
-                  padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
-                  display:'flex',flexDirection:'column',alignItems:'center',gap:2,
-                  animation:`counterSpin ${orbitDuration}s linear infinite`,
-                  transform:`scaleX(${1/scX}) scaleY(${1/scY}) rotate(${-tilt}deg)`,
-                  opacity:hasActive?1:0.35,filter:hasActive?'none':'grayscale(1) brightness(0.6)',
-                }}>
-                  <div style={{
-                    width:planetSize,height:planetSize,borderRadius:'50%',
-                    background:hasActive
-                      ?`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`
-                      :`radial-gradient(circle at 30% 25%,#888,#555 60%,#333)`,
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    boxShadow:hasActive?`0 4px 20px ${pc[1]}44, inset 0 -4px 12px ${pc[2]}66, inset 0 4px 8px ${pc[0]}88`:'0 2px 8px rgba(0,0,0,.3)',
+              transform:`rotate(${tilt}deg) scaleX(${scX}) scaleY(${scY})`}}>
+              {/* Rotation wrapper (animated — simple spin) */}
+              <div style={{width:'100%',height:'100%',animation:`orbitAll ${orbitDuration}s linear infinite`}}>
+                {allGroups.map((g,i)=>{
+                  const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
+                  const hasActive=g.modules.some(m=>activeMods[m.lvKey]!==false);
+                  const angle=(360/n)*i - 90;
+                  const rad=angle*Math.PI/180;
+                  const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
+                  const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
+                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
+                    position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
+                    padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
+                    display:'flex',flexDirection:'column',alignItems:'center',gap:2,
+                    animation:`counterSpin ${orbitDuration}s linear infinite`,
+                    opacity:hasActive?1:0.35,filter:hasActive?'none':'grayscale(1) brightness(0.6)',
                   }}>
-                    <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
-                  </div>
-                  <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
-                </button>})}
+                    {/* Counter-deformation wrapper (static — undoes parent scale+tilt) */}
+                    <div style={{transform:`scaleX(${(1/scX).toFixed(4)}) scaleY(${(1/scY).toFixed(4)}) rotate(${-tilt}deg)`,
+                      display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+                      <div style={{
+                        width:planetSize,height:planetSize,borderRadius:'50%',
+                        background:hasActive
+                          ?`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`
+                          :`radial-gradient(circle at 30% 25%,#888,#555 60%,#333)`,
+                        display:'flex',alignItems:'center',justifyContent:'center',
+                        boxShadow:hasActive?`0 4px 20px ${pc[1]}44, inset 0 -4px 12px ${pc[2]}66, inset 0 4px 8px ${pc[0]}88`:'0 2px 8px rgba(0,0,0,.3)',
+                      }}>
+                        <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
+                      </div>
+                      <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
+                    </div>
+                  </button>})}
+              </div>
             </div>
           </div>})()}
         {/* When a group IS open: expanded view with central planet + orbiting sub-planets */}
