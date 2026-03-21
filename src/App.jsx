@@ -1526,16 +1526,16 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const surfaceY={mesa:70,silla:120,estantería:50,caja:70,mochila:55,puerta:40,armario:25};
   const surfaceX={mesa:170,silla:170,estantería:180,caja:180,mochila:180,puerta:165,armario:175};
   const sy=surfaceY[scene]||120; const sx=surfaceX[scene]||180;
-  const posAdj={encima:{ox:0,oy:-38},debajo:{ox:0,oy:70},dentro:{ox:0,oy:10},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
+  const posAdj={encima:{ox:0,oy:-28},debajo:{ox:0,oy:70},dentro:{ox:0,oy:10},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
   const adj=posAdj[pos]||{ox:0,oy:0};
   const cx=sx+adj.ox,cy=sy+adj.oy;
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
     <FurnitureCmp/>
-    <circle cx={cx} cy={cy} r={32} fill={GOLD+'33'} stroke={GOLD} strokeWidth={3} strokeDasharray="5 3"/>
-    <text x={cx} y={cy+8} textAnchor="middle" fontSize={34}>{objEm}</text>
-    <text x={cx} y={cy+38} textAnchor="middle" fill={GOLD} fontSize={14} fontWeight={700}>{obj}</text>
+    <circle cx={cx} cy={cy} r={30} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="5 3"/>
+    <text x={cx} y={cy+8} textAnchor="middle" fontSize={32}>{objEm}</text>
+    <text x={cx+38} y={cy+6} textAnchor="start" fill={GOLD} fontSize={14} fontWeight={700}>{obj}</text>
     <text x={w/2} y={h-8} textAnchor="middle" fill={DIM} fontSize={14} fontWeight={600}>{scene}</text>
   </svg>}
 
