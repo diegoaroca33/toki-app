@@ -1590,7 +1590,7 @@ function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}
   // encima = just above surface, debajo = below, dentro = inside body, al lado = to the right
   // Per-scene position map: each scene defines exactly where the object goes for each position
   const scenePos={
-    mesa:     {encima:{x:180,y:70},debajo:{x:180,y:175},'al lado':{x:300,y:100},dentro:{x:180,y:140},fuera:{x:300,y:100}},
+    mesa:     {encima:{x:180,y:65},debajo:{x:180,y:195},'al lado':{x:310,y:100},dentro:{x:180,y:140},fuera:{x:310,y:100}},
     silla:    {encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120},fuera:{x:280,y:120}},
     estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82},fuera:{x:310,y:120}},
     caja:     {encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120},fuera:{x:295,y:120}},
@@ -1602,8 +1602,17 @@ function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}
   const normPos=pos==='al_lado'?'al lado':pos;
   const p=sp[normPos]||sp['al lado']||{x:180,y:120};
   const cx=p.x,cy=p.y;
-  // Drop zones for drag mode
-  const allPositions=['encima','debajo','dentro','al lado'];
+  // Drop zones for drag mode — only show positions that make sense per furniture
+  const validZones={
+    mesa:['encima','debajo','al lado'],
+    silla:['encima','debajo','al lado'],
+    estantería:['encima','debajo','dentro','al lado'],
+    caja:['encima','debajo','dentro','al lado'],
+    mochila:['encima','debajo','dentro'],
+    puerta:['encima','debajo','al lado'],
+    armario:['encima','debajo','dentro','al lado']
+  };
+  const allPositions=validZones[scene]||['encima','debajo','dentro','al lado'];
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
@@ -1629,13 +1638,12 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
   const objEm=objEmojis[ex.data.obj]||'📦';
   const containerRef=useRef(null);
-  const[dragPos,setDragPos]=useState(null);// {x,y} while dragging
-  const[placed,setPlaced]=useState(false);// object placed correctly
-  const[nearZone,setNearZone]=useState(null);// which zone is near
-  const startPos=useRef(null);
-  // Get SVG zone positions (matching SceneSVG scenePos)
+  const[dragPos,setDragPos]=useState(null);
+  const[placed,setPlaced]=useState(false);
+  const[nearZone,setNearZone]=useState(null);
+  const dragging=useRef(false);
   const scenePos={
-    mesa:{encima:{x:180,y:70},debajo:{x:180,y:175},'al lado':{x:300,y:100},dentro:{x:180,y:140}},
+    mesa:{encima:{x:180,y:65},debajo:{x:180,y:195},'al lado':{x:310,y:100},dentro:{x:180,y:140}},
     silla:{encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120}},
     estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82}},
     caja:{encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120}},
@@ -1644,31 +1652,45 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
     armario:{encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170}}
   };
   function getTouch(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY}}
-  function onStart(e){e.preventDefault();poke();const t=getTouch(e);startPos.current=t;setDragPos(t)}
-  function onMove(e){if(!startPos.current||placed||fb)return;e.preventDefault();const t=getTouch(e);setDragPos(t);
-    // Check proximity to drop zones
-    if(!containerRef.current)return;const rect=containerRef.current.querySelector('svg')?.getBoundingClientRect();
-    if(!rect)return;const sp=scenePos[ex.data.scene]||scenePos.mesa;
+  function checkZone(t){
+    if(!containerRef.current)return null;
+    const rect=containerRef.current.querySelector('svg')?.getBoundingClientRect();
+    if(!rect)return null;
+    const sp=scenePos[ex.data.scene]||scenePos.mesa;
     const svgX=(t.x-rect.left)/rect.width*360;const svgY=(t.y-rect.top)/rect.height*280;
     let closest=null;let minD=Infinity;
     for(const[zn,zp] of Object.entries(sp)){const d=Math.hypot(svgX-zp.x,svgY-zp.y);if(d<minD){minD=d;closest=zn}}
-    setNearZone(minD<50?closest:null)}
-  function onEnd(e){if(!startPos.current||placed||fb)return;poke();
-    const correctPos=ex.data.pos==='al_lado'?'al lado':ex.data.pos;
-    if(nearZone===correctPos){setPlaced(true);setDragPos(null);onCorrect()}
-    else if(nearZone){onWrong(correctPos);setDragPos(null);startPos.current=null;setNearZone(null)}
-    else{setDragPos(null);startPos.current=null;setNearZone(null)}}
-  useEffect(()=>{setPlaced(false);setDragPos(null);setNearZone(null);startPos.current=null},[ex]);
+    return minD<55?closest:null}
+  // Global move/end handlers
+  useEffect(()=>{
+    function handleMove(e){if(!dragging.current||placed||fb)return;
+      e.preventDefault();const t=getTouch(e);setDragPos(t);setNearZone(checkZone(t))}
+    function handleEnd(e){if(!dragging.current||placed||fb)return;poke();
+      const correctPos=ex.data.pos==='al_lado'?'al lado':ex.data.pos;
+      const zone=nearZone;
+      dragging.current=false;
+      if(zone===correctPos){setPlaced(true);setDragPos(null);onCorrect()}
+      else if(zone){onWrong(correctPos);setDragPos(null);setNearZone(null)}
+      else{setDragPos(null);setNearZone(null)}}
+    window.addEventListener('touchmove',handleMove,{passive:false});
+    window.addEventListener('touchend',handleEnd);
+    window.addEventListener('mousemove',handleMove);
+    window.addEventListener('mouseup',handleEnd);
+    return()=>{window.removeEventListener('touchmove',handleMove);window.removeEventListener('touchend',handleEnd);
+      window.removeEventListener('mousemove',handleMove);window.removeEventListener('mouseup',handleEnd)}
+  });
+  function onStart(e){e.preventDefault();poke();dragging.current=true;const t=getTouch(e);setDragPos(t)}
+  useEffect(()=>{setPlaced(false);setDragPos(null);setNearZone(null);dragging.current=false},[ex]);
   return <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
     {/* Left — draggable object */}
     <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220}}>
       {!placed&&!fb&&<div
         onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
         onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd}
-        style={{fontSize:56,cursor:'grab',userSelect:'none',touchAction:'none',
-          padding:16,borderRadius:20,background:GOLD+'22',border:`3px dashed ${GOLD}`,
-          animation:'pulse 1.5s infinite',display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-        {objEm}
+        style={{cursor:'grab',userSelect:'none',touchAction:'none',
+          padding:'14px 20px',borderRadius:20,background:GOLD+'22',border:`3px dashed ${GOLD}`,
+          animation:'pulse 1.5s infinite',display:'flex',flexDirection:'column',alignItems:'center',gap:2,overflow:'hidden'}}>
+        <span style={{fontSize:48,lineHeight:1}}>{objEm}</span>
         <span style={{fontSize:13,fontWeight:700,color:GOLD}}>{ex.data.obj}</span>
       </div>}
       {placed&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
