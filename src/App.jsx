@@ -57,7 +57,7 @@ input::placeholder{color:${DIM}}
 @keyframes planetRing{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes orbitStar{0%{transform:rotate(0deg) translateX(52px) rotate(0deg)}100%{transform:rotate(360deg) translateX(52px) rotate(-360deg)}}
 @keyframes rocketFly{0%{transform:translateY(100vh) scale(1);opacity:1}60%{transform:translateY(-20vh) scale(1.1);opacity:1}100%{transform:translateY(-120vh) scale(.6);opacity:0}}
-@keyframes rocketUp{0%{transform:translateY(0);opacity:1}20%{transform:translateY(10px);opacity:1}100%{transform:translateY(-300px);opacity:0}}
+@keyframes rocketUp{0%{transform:translate(0,0) rotate(0deg);opacity:1}15%{transform:translate(5px,15px) rotate(10deg);opacity:1}40%{transform:translate(-20px,-80px) rotate(-15deg);opacity:1}65%{transform:translate(25px,-180px) rotate(10deg);opacity:0.9}100%{transform:translate(-10px,-350px) rotate(-5deg);opacity:0}}
 @keyframes starPop{0%{transform:scale(0) rotate(-30deg);opacity:0}30%{transform:scale(2) rotate(15deg);opacity:1;filter:drop-shadow(0 0 20px #FFD700)}60%{transform:scale(0.8) rotate(-5deg)}80%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
 @keyframes starBurstRing{0%{transform:scale(0.1);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
 @keyframes starPass{0%{transform:translateY(-20px);opacity:0}20%{opacity:1}100%{transform:translateY(110vh);opacity:0}}
@@ -1409,6 +1409,16 @@ const RAZONA_SPATIAL=[
   {scene:'mochila',obj:'estuche',pos:'dentro',q:'¿Dónde está el estuche?',opts:['Encima','Debajo','Dentro','Fuera'],ans:'Dentro'},
   {scene:'estantería',obj:'balón',pos:'debajo',q:'¿Dónde está el balón?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Debajo'},
 ];
+const RAZONA_DRAG=[
+  {scene:'armario',obj:'zapatillas',pos:'dentro',q:'¡Guarda las zapatillas dentro del armario!'},
+  {scene:'mesa',obj:'libro',pos:'encima',q:'¡Pon el libro encima de la mesa!'},
+  {scene:'silla',obj:'mochila',pos:'debajo',q:'¡Pon la mochila debajo de la silla!'},
+  {scene:'estantería',obj:'balón',pos:'encima',q:'¡Pon el balón encima de la estantería!'},
+  {scene:'caja',obj:'móvil',pos:'dentro',q:'¡Mete el móvil dentro de la caja!'},
+  {scene:'puerta',obj:'llaves',pos:'al lado',q:'¡Deja las llaves al lado de la puerta!'},
+  {scene:'mesa',obj:'gafas',pos:'encima',q:'¡Pon las gafas encima de la mesa!'},
+  {scene:'armario',obj:'estuche',pos:'dentro',q:'¡Guarda el estuche dentro del armario!'},
+];
 const RAZONA_INTRUSO=[
   {cat:'animal',words:['PERRO','GATO','PEZ','MESA'],ans:'MESA',q:'¿Cuál NO es un animal?'},
   {cat:'fruta',words:['MANZANA','PERA','PLÁTANO','SILLA'],ans:'SILLA',q:'¿Cuál NO es una fruta?'},
@@ -1442,13 +1452,13 @@ const RAZONA_EMOTIONS=[
 ];
 
 function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
-  if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
+  if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
   if(lv===2){RAZONA_INTRUSO.forEach((s,i)=>items.push({ty:'razona',mode:'intruso',data:s,id:'rz_int_'+i}));return sh(items)}
   if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
   if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
-function SceneSVG({scene,obj,pos}){const w=360,h=280;
+function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
   const objEm=objEmojis[obj]||'📦';
   const posMap={encima:{ox:0,oy:-50},debajo:{ox:0,oy:75},dentro:{ox:0,oy:5},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
@@ -1493,25 +1503,34 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
     {/* Second front leg hint */}
     <rect x={148} y={118} width={8} height={112} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
   </g>}
-  function ShelfSVG(){return <g transform="translate(60,65)">
-    {/* 3 shelves */}
+  function ShelfSVG(){return <g transform="translate(60,50)">
+    {/* 3 shelves — positioned to leave room for encima (above) and debajo (below) */}
     <rect x={0} y={0} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={65} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={130} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={50} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={100} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
     {/* Side panels */}
-    <rect x={0} y={0} width={10} height={140} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={230} y={0} width={10} height={140} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={0} y={0} width={10} height={110} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={230} y={0} width={10} height={110} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
     {/* Some items on shelves for context */}
-    <rect x={20} y={75} width={30} height={55} rx={2} fill="#5B8C5A" opacity={0.4}/>{/* book */}
-    <rect x={55} y={85} width={25} height={45} rx={2} fill="#4A7AB5" opacity={0.4}/>{/* book */}
-    <circle cx={200} cy={110} r={15} fill="#D4A76A" opacity={0.3}/>{/* vase */}
+    <rect x={20} y={60} width={30} height={38} rx={2} fill="#5B8C5A" opacity={0.4}/>{/* book */}
+    <rect x={55} y={66} width={25} height={32} rx={2} fill="#4A7AB5" opacity={0.4}/>{/* book */}
+    <circle cx={200} cy={82} r={13} fill="#D4A76A" opacity={0.3}/>{/* vase */}
   </g>}
-  function BoxSVG(){return <g transform="translate(100,70)">
-    {/* 3D box */}
-    <path d="M0,28 L14,0 L160,0 L146,28 Z" fill="#D2B48C" stroke="#8B7355" strokeWidth={2.5}/>
-    <rect x={0} y={28} width={146} height={100} rx={4} fill="#C49A6C" stroke="#8B7355" strokeWidth={2.5}/>
-    <line x1={146} y1={28} x2={160} y2={0} stroke="#8B7355" strokeWidth={2}/>
-    <path d="M146,28 L160,0 L160,100 L146,128" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
+  function BoxSVG(){return <g transform="translate(90,55)">
+    {/* Open box — 3D with visible interior */}
+    {/* Interior (dark) */}
+    <rect x={8} y={35} width={148} height={100} rx={3} fill="#8B6F47"/>
+    {/* Front face */}
+    <rect x={0} y={35} width={160} height={105} rx={4} fill="#C49A6C" stroke="#8B7355" strokeWidth={2.5}/>
+    {/* Right side */}
+    <path d="M160,35 L180,15 L180,120 L160,140" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
+    {/* Back wall inside (visible because box is open) */}
+    <path d="M8,35 L28,15 L180,15 L160,35 Z" fill="#B8956A" stroke="#8B7355" strokeWidth={1.5}/>
+    {/* Interior shadow */}
+    <rect x={10} y={38} width={146} height={20} rx={2} fill="#7A5F3A" opacity={0.4}/>
+    {/* Open flaps */}
+    <path d="M0,35 L-12,10 L60,5 L80,30 Z" fill="#D2B48C" stroke="#8B7355" strokeWidth={1.5}/>{/* left flap */}
+    <path d="M80,30 L80,5 L180,0 L160,35 Z" fill="#CDAA73" stroke="#8B7355" strokeWidth={1.5}/>{/* right flap */}
   </g>}
   function BackpackSVG(){return <g transform="translate(110,45)">
     <rect x={14} y={28} width={110} height={130} rx={22} fill="#2980B9" stroke="#1F6DA0" strokeWidth={2.5}/>
@@ -1573,24 +1592,103 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const scenePos={
     mesa:     {encima:{x:180,y:70},debajo:{x:180,y:175},'al lado':{x:300,y:100},dentro:{x:180,y:140},fuera:{x:300,y:100}},
     silla:    {encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120},fuera:{x:280,y:120}},
-    estantería:{encima:{x:180,y:40},debajo:{x:180,y:220},'al lado':{x:300,y:100},dentro:{x:180,y:100},fuera:{x:300,y:100}},
-    caja:     {encima:{x:180,y:77},debajo:{x:180,y:175},'al lado':{x:290,y:105},dentro:{x:180,y:110},fuera:{x:290,y:105}},
-    mochila:  {encima:{x:175,y:82},debajo:{x:175,y:180},'al lado':{x:285,y:110},dentro:{x:175,y:115},fuera:{x:285,y:110}},
-    puerta:   {encima:{x:170,y:82},debajo:{x:170,y:180},'al lado':{x:280,y:110},dentro:{x:170,y:110},fuera:{x:280,y:110}},
-    armario:  {encima:{x:175,y:18},debajo:{x:175,y:210},'al lado':{x:290,y:130},dentro:{x:125,y:170},fuera:{x:290,y:130}}
+    estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82},fuera:{x:310,y:120}},
+    caja:     {encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120},fuera:{x:295,y:120}},
+    mochila:  {encima:{x:175,y:35},debajo:{x:175,y:195},'al lado':{x:285,y:110},dentro:{x:175,y:120},fuera:{x:285,y:110}},
+    puerta:   {encima:{x:170,y:34},debajo:{x:170,y:215},'al lado':{x:280,y:130},dentro:{x:170,y:130},fuera:{x:280,y:130}},
+    armario:  {encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170},fuera:{x:295,y:130}}
   };
   const sp=scenePos[scene]||scenePos.mesa;
   const normPos=pos==='al_lado'?'al lado':pos;
   const p=sp[normPos]||sp['al lado']||{x:180,y:120};
   const cx=p.x,cy=p.y;
+  // Drop zones for drag mode
+  const allPositions=['encima','debajo','dentro','al lado'];
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
     <FurnitureCmp/>
-    <circle cx={cx} cy={cy} r={36} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="5 3"/>
-    <text x={cx} y={cy+10} textAnchor="middle" fontSize={42}>{objEm}</text>
-    <text x={w/2} y={h-4} textAnchor="middle" fill={'#E8E8F0'} fontSize={20} fontWeight={700} fontFamily="'Fredoka'">{scene}</text>
+    {dropZones&&allPositions.map(zp=>{const zpos=sp[zp];if(!zpos)return null;const isHl=highlightZone===zp;const isCorrect=zp===normPos;
+      return <g key={zp}>
+        <circle cx={zpos.x} cy={zpos.y} r={32} fill={isHl?(isCorrect?GREEN+'55':RED+'33'):'rgba(255,255,255,0.08)'} stroke={isHl?(isCorrect?GREEN:RED+'88'):'rgba(255,255,255,0.25)'} strokeWidth={isHl?3:2} strokeDasharray={isHl?'':'5 3'}/>
+        <text x={zpos.x} y={zpos.y+5} textAnchor="middle" fontSize={13} fill="rgba(255,255,255,0.5)" fontWeight={700} fontFamily="'Fredoka'">{zp}</text>
+      </g>})}
+    {showObj&&<>
+      <circle cx={cx} cy={cy} r={32} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="5 3"/>
+      {obj==='mochila'?<g transform={`translate(${cx-16},${cy-20})`}>
+        <rect x={2} y={5} width={28} height={34} rx={7} fill="#2980B9" stroke="#1F6DA0" strokeWidth={1.8}/>
+        <rect x={7} y={11} width={18} height={10} rx={3} fill="#F39C12" stroke="#E67E22" strokeWidth={1.2}/>
+        <path d="M9,5 Q16,-3 23,5" fill="none" stroke="#333" strokeWidth={2.5} strokeLinecap="round"/>
+        <rect x={11} y={26} width={9} height={4} rx={2} fill="#1F6DA0"/>
+      </g>:<text x={cx} y={cy+8} textAnchor="middle" fontSize={38}>{objEm}</text>}
+    </>}
+    <text x={w/2} y={h-4} textAnchor="middle" fill={'#E8E8F0'} fontSize={22} fontWeight={700} fontFamily="'Fredoka'">{scene}</text>
   </svg>}
+
+function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
+  const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
+  const objEm=objEmojis[ex.data.obj]||'📦';
+  const containerRef=useRef(null);
+  const[dragPos,setDragPos]=useState(null);// {x,y} while dragging
+  const[placed,setPlaced]=useState(false);// object placed correctly
+  const[nearZone,setNearZone]=useState(null);// which zone is near
+  const startPos=useRef(null);
+  // Get SVG zone positions (matching SceneSVG scenePos)
+  const scenePos={
+    mesa:{encima:{x:180,y:70},debajo:{x:180,y:175},'al lado':{x:300,y:100},dentro:{x:180,y:140}},
+    silla:{encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120}},
+    estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82}},
+    caja:{encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120}},
+    mochila:{encima:{x:175,y:35},debajo:{x:175,y:195},'al lado':{x:285,y:110},dentro:{x:175,y:120}},
+    puerta:{encima:{x:170,y:34},debajo:{x:170,y:215},'al lado':{x:280,y:130},dentro:{x:170,y:130}},
+    armario:{encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170}}
+  };
+  function getTouch(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY}}
+  function onStart(e){e.preventDefault();poke();const t=getTouch(e);startPos.current=t;setDragPos(t)}
+  function onMove(e){if(!startPos.current||placed||fb)return;e.preventDefault();const t=getTouch(e);setDragPos(t);
+    // Check proximity to drop zones
+    if(!containerRef.current)return;const rect=containerRef.current.querySelector('svg')?.getBoundingClientRect();
+    if(!rect)return;const sp=scenePos[ex.data.scene]||scenePos.mesa;
+    const svgX=(t.x-rect.left)/rect.width*360;const svgY=(t.y-rect.top)/rect.height*280;
+    let closest=null;let minD=Infinity;
+    for(const[zn,zp] of Object.entries(sp)){const d=Math.hypot(svgX-zp.x,svgY-zp.y);if(d<minD){minD=d;closest=zn}}
+    setNearZone(minD<50?closest:null)}
+  function onEnd(e){if(!startPos.current||placed||fb)return;poke();
+    const correctPos=ex.data.pos==='al_lado'?'al lado':ex.data.pos;
+    if(nearZone===correctPos){setPlaced(true);setDragPos(null);onCorrect()}
+    else if(nearZone){onWrong(correctPos);setDragPos(null);startPos.current=null;setNearZone(null)}
+    else{setDragPos(null);startPos.current=null;setNearZone(null)}}
+  useEffect(()=>{setPlaced(false);setDragPos(null);setNearZone(null);startPos.current=null},[ex]);
+  return <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
+    {/* Left — draggable object */}
+    <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220}}>
+      {!placed&&!fb&&<div
+        onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
+        onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd}
+        style={{fontSize:56,cursor:'grab',userSelect:'none',touchAction:'none',
+          padding:16,borderRadius:20,background:GOLD+'22',border:`3px dashed ${GOLD}`,
+          animation:'pulse 1.5s infinite',display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+        {objEm}
+        <span style={{fontSize:13,fontWeight:700,color:GOLD}}>{ex.data.obj}</span>
+      </div>}
+      {placed&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+        <div style={{animation:'rocketUp 1.8s 0.15s ease-in-out forwards',fontSize:52}}>🚀</div>
+        <span style={{fontSize:36,opacity:0,animation:'starPop 0.6s 0.3s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+        <span style={{fontSize:28,opacity:0,animation:'starPop 0.6s 0.6s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+        <p style={{fontSize:18,fontWeight:800,color:GREEN,margin:0,opacity:0,animation:'fadeIn 0.4s 0.5s both'}}>¡Genial!</p>
+      </div>}
+      {fb==='no'&&<p style={{fontSize:16,fontWeight:700,color:RED,margin:0,textAlign:'center'}}>¡Inténtalo otra vez!</p>}
+    </div>
+    {/* Center — scene with drop zones */}
+    <div ref={containerRef} style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:6,minWidth:0}}>
+      <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
+      <SceneSVG scene={ex.data.scene} obj={ex.data.obj} pos={ex.data.pos} showObj={placed} dropZones={!placed} highlightZone={nearZone}/>
+    </div>
+    {/* Right — empty for symmetry */}
+    <div style={{flex:'0 0 140px'}}/>
+    {/* Floating dragged object */}
+    {dragPos&&<div style={{position:'fixed',left:dragPos.x-28,top:dragPos.y-28,fontSize:56,pointerEvents:'none',zIndex:9999,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',transform:'scale(1.2)',transition:'transform 0.1s'}}>{objEm}</div>}
+  </div>}
 
 function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
@@ -1610,22 +1708,22 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       {/* Left side — celebration zone (symmetry with buttons) */}
       <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220,position:'relative'}}>
         {fb==='ok'&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',overflow:'hidden'}}>
-          <div style={{position:'relative',width:130,height:210}}>
-            {/* Cohete sube desde abajo */}
-            <div style={{position:'absolute',left:'55%',bottom:25,transform:'translateX(-50%)',animation:'rocketUp 1.4s 0.2s ease-out forwards',fontSize:52}}>🚀</div>
-            {/* Estrellas — dispersas orgánicas, distintos tamaños, posiciones irregulares */}
-            <span style={{position:'absolute',left:8,top:15,fontSize:34,opacity:0,animation:'starPop 0.6s 0.35s both',filter:'drop-shadow(0 0 10px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:72,top:4,fontSize:26,opacity:0,animation:'starPop 0.6s 0.55s both',filter:'drop-shadow(0 0 10px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:42,top:48,fontSize:30,opacity:0,animation:'starPop 0.6s 0.75s both',filter:'drop-shadow(0 0 10px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:95,top:38,fontSize:22,opacity:0,animation:'starPop 0.6s 0.95s both',filter:'drop-shadow(0 0 10px #FFD700)'}}>⭐</span>
-            {/* Destellos — tamaños y posiciones muy variadas */}
-            <span style={{position:'absolute',left:30,top:2,fontSize:16,opacity:0,animation:'starPop 0.4s 0.45s both'}}>✨</span>
-            <span style={{position:'absolute',left:105,top:18,fontSize:12,opacity:0,animation:'starPop 0.4s 0.65s both'}}>✨</span>
-            <span style={{position:'absolute',left:2,top:52,fontSize:14,opacity:0,animation:'starPop 0.4s 0.85s both'}}>💫</span>
-            <span style={{position:'absolute',left:68,top:68,fontSize:11,opacity:0,animation:'starPop 0.4s 1.05s both'}}>✨</span>
-            <span style={{position:'absolute',left:18,top:72,fontSize:18,opacity:0,animation:'starPop 0.4s 1.1s both'}}>🌟</span>
+          <div style={{position:'relative',width:140,height:220}}>
+            {/* Cohete — órbita curva subiendo */}
+            <div style={{position:'absolute',left:'50%',bottom:10,transform:'translateX(-50%)',animation:'rocketUp 1.8s 0.15s ease-in-out forwards',fontSize:52}}>🚀</div>
+            {/* Estrellas — MUY dispersas, tamaños variados, orgánicas */}
+            <span style={{position:'absolute',left:-5,top:5,fontSize:36,opacity:0,animation:'starPop 0.6s 0.3s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+            <span style={{position:'absolute',left:95,top:-8,fontSize:28,opacity:0,animation:'starPop 0.6s 0.55s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+            <span style={{position:'absolute',left:25,top:65,fontSize:32,opacity:0,animation:'starPop 0.6s 0.8s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+            <span style={{position:'absolute',left:110,top:50,fontSize:24,opacity:0,animation:'starPop 0.6s 1.05s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
+            {/* Destellos extras */}
+            <span style={{position:'absolute',left:50,top:-5,fontSize:18,opacity:0,animation:'starPop 0.4s 0.4s both'}}>✨</span>
+            <span style={{position:'absolute',left:120,top:25,fontSize:14,opacity:0,animation:'starPop 0.4s 0.65s both'}}>✨</span>
+            <span style={{position:'absolute',left:-10,top:45,fontSize:16,opacity:0,animation:'starPop 0.4s 0.9s both'}}>💫</span>
+            <span style={{position:'absolute',left:80,top:85,fontSize:13,opacity:0,animation:'starPop 0.4s 1.1s both'}}>✨</span>
+            <span style={{position:'absolute',left:5,top:90,fontSize:20,opacity:0,animation:'starPop 0.4s 1.2s both'}}>🌟</span>
             {/* Texto */}
-            <p style={{position:'absolute',bottom:0,left:-10,right:-10,fontSize:20,fontWeight:800,color:GREEN,margin:0,textAlign:'center',opacity:0,animation:'fadeIn 0.4s 0.5s both',whiteSpace:'nowrap',textShadow:'0 1px 4px rgba(0,0,0,0.3)'}}>¡Bien, vamos!</p>
+            <p style={{position:'absolute',bottom:-5,left:-15,right:-15,fontSize:20,fontWeight:800,color:GREEN,margin:0,textAlign:'center',opacity:0,animation:'fadeIn 0.4s 0.5s both',whiteSpace:'nowrap',textShadow:'0 2px 6px rgba(0,0,0,0.4)'}}>¡Bien, vamos!</p>
           </div>
         </div>}
       </div>
@@ -1636,9 +1734,10 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
       {/* Right side — answer buttons */}
       <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',gap:8}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:19,padding:14,minHeight:52,fontWeight:600,letterSpacing:0.5,opacity:fb==='ok'?0.4:1,transition:'opacity 0.3s'}}>{o}</button>)}
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:19,padding:14,minHeight:52,fontWeight:600,letterSpacing:0.5,opacity:fb==='ok'&&o!==ex.data.ans?0.35:1,transition:'opacity 0.3s'}}>{o}</button>)}
       </div>
     </div>}
+    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,1800))}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
     {ex.mode==='intruso'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
