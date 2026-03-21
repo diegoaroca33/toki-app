@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
-const VER='v21';
+const VER='v20';
 const CSS=`
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min-height:100dvh;transition:background 2s}
@@ -495,10 +495,88 @@ function ExSit({ex,onOk,onSkip,sex,name,uid,vids}){const[ph,sPh]=useState('choos
     {ph==='speak'&&<SpeakPanel text={ex.su} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
   </div>}
 
-function ExCount({num,onOk,onSkip,sex,name,uid,vids}){
-  const text=NUMS_1_100[num-1]||String(num);
-  useEffect(()=>{stopVoice();return()=>stopVoice()},[num]);
-  return <div style={{textAlign:'center',padding:18}}><div style={{fontSize:100,fontWeight:700,color:GOLD,marginBottom:12,lineHeight:1}}>{num}</div><SpeakPanel text={text} exId={'cnt_'+num} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/></div>}
+// Quick TTS at faster rate for counting
+function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=1.1;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;window.speechSynthesis.speak(u);setTimeout(finish,Math.max(1200,text.length*120))})}
+// Quick one-shot speech recognition for counting
+function listenQuick(ms){return new Promise(res=>{if(!SR_AVAILABLE){res(null);return}try{const S=window.SpeechRecognition||window.webkitSpeechRecognition;const r=new S();r.lang='es-ES';r.continuous=false;r.interimResults=false;r.maxAlternatives=3;let done=false;const fin=v=>{if(!done){done=true;try{r.abort()}catch(e){}res(v)}};r.onresult=e=>{const a=[];for(let i=0;i<e.results[0].length;i++)a.push(e.results[0][i].transcript.toLowerCase().trim());fin(a.join('|'))};r.onerror=()=>fin(null);r.onend=()=>fin(null);r.start();setTimeout(()=>fin(null),ms||2500)}catch(e){res(null)}})}
+const NUM_BLOCK_COLORS=['#E74C3C','#3498DB','#F1C40F','#2ECC71','#9B59B6','#E67E22','#1ABC9C','#E91E63','#00BCD4','#FF5722'];
+function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
+  const nums=ex.nums||[ex.num];
+  const[ci,setCi]=useState(-1);
+  const[phase,setPhase]=useState('ready');
+  const[revealed,setRevealed]=useState(new Set());
+  const alive=useRef(true);
+  const batchSet=useMemo(()=>new Set(nums),[nums]);
+  // Build grid rows: show decades containing batch nums + context
+  const gridRows=useMemo(()=>{
+    const minD=Math.floor((Math.min(...nums)-1)/10);
+    const maxD=Math.floor((Math.max(...nums)-1)/10);
+    const lo=Math.max(0,minD-1),hi=Math.min(9,maxD+1);
+    const rows=[];
+    for(let d=hi;d>=lo;d--){const r=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n<=100)r.push(n)}rows.push({nums:r,decade:d,isCurrent:d>=minD&&d<=maxD,isFuture:d>maxD,isPast:d<minD})}
+    return rows;
+  },[nums]);
+  useEffect(()=>{
+    alive.current=true;setCi(-1);setPhase('ready');setRevealed(new Set());stopVoice();
+    const t=setTimeout(()=>{if(alive.current)runSequence()},500);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice()}},[ex]);
+  async function runSequence(){
+    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
+    for(let i=0;i<nums.length;i++){
+      if(!alive.current)return;
+      const n=nums[i];setCi(i);
+      setRevealed(prev=>{const s=new Set(prev);s.add(n);return s});
+      setPhase('toki');stopVoice();
+      const text=NUMS_1_100[n-1]||String(n);
+      await sayFast(text);
+      if(!alive.current)return;
+      setPhase('child');
+      const heard=await listenQuick(2200);
+      if(!alive.current)return;
+      if(heard){const rawB=Math.max(...heard.split('|').map(a=>score(a,text)));if(rawB>=2)beep(500+n*5,50)}
+      await new Promise(r=>setTimeout(r,120));
+    }
+    if(!alive.current)return;setPhase('done');setCi(-1);
+    starBeep(4);await cheerOrSay(mkPerfect(name),uid,vids,'perfect');
+    if(alive.current)setTimeout(onOk,300);
+  }
+  const curNum=ci>=0?nums[ci]:null;
+  return <div style={{textAlign:'center',padding:'10px 4px'}}>
+    <div style={{marginBottom:8}}>
+      <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:'0 0 2px'}}>{phase==='done'?'🎉 ¡Genial!':phase==='ready'?'🔢 Cuenta conmigo...':'🔢 ¡Cuenta!'}</p>
+      {curNum&&phase!=='done'&&<div>
+        <p style={{fontSize:48,fontWeight:800,color:'#fff',margin:'4px 0',animation:phase==='child'?'pulse .6s infinite':'none',textShadow:'0 0 24px '+NUM_BLOCK_COLORS[(curNum-1)%10]}}>{curNum}</p>
+        <p style={{fontSize:16,color:DIM,margin:0,fontStyle:'italic'}}>{NUMS_1_100[curNum-1]}</p>
+      </div>}
+    </div>
+    <div style={{padding:8,borderRadius:16,background:CARD,border:'2px solid '+BORDER,marginBottom:8}}>
+      {gridRows.map((row,ri)=><div key={ri} style={{display:'grid',gridTemplateColumns:'repeat(10,1fr)',gap:3,marginBottom:ri<gridRows.length-1?3:0,opacity:row.isFuture?0.2:row.isPast?0.65:1,transition:'opacity .4s'}}>
+        {row.nums.map(n=>{
+          const inBatch=batchSet.has(n);const rev=revealed.has(n)||row.isPast;const cur=n===curNum;
+          const bc=NUM_BLOCK_COLORS[(n-1)%10];
+          return <div key={n} style={{aspectRatio:'1',borderRadius:7,position:'relative',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',
+            background:rev?bc:(inBatch?bc+'22':BG3+'88'),
+            border:cur?'2.5px solid #fff':(rev?'1.5px solid '+bc+'55':'1.5px solid '+BORDER),
+            transform:cur?'scale(1.15)':'scale(1)',transition:'all .25s cubic-bezier(.34,1.56,.64,1)',
+            boxShadow:cur?'0 0 16px '+bc+'aa':'none',
+            animation:cur&&phase==='child'?'pulse .5s infinite':(rev&&inBatch?'countNum .35s ease-out':'none'),overflow:'hidden',
+          }}>
+            <span style={{fontSize:cur?16:13,fontWeight:700,color:rev?'#fff':(inBatch?'#888':'#555'),lineHeight:1,zIndex:1}}>{n}</span>
+            {rev&&inBatch&&<div style={{display:'flex',gap:1.5,marginTop:1}}>
+              <div style={{width:3,height:3.5,borderRadius:'50%',background:'rgba(255,255,255,.85)'}}/>
+              <div style={{width:3,height:3.5,borderRadius:'50%',background:'rgba(255,255,255,.85)'}}/>
+            </div>}
+            {rev&&<div style={{position:'absolute',bottom:0,left:0,right:0,height:'30%',background:'linear-gradient(transparent,rgba(0,0,0,.15))',borderRadius:'0 0 7px 7px'}}/>}
+          </div>})}
+      </div>)}
+    </div>
+    {phase==='done'&&<div className="ab" style={{marginTop:8}}><Stars n={4} sz={36}/></div>}
+    {phase==='child'&&curNum&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:4}}>
+      <span style={{fontSize:28,animation:'pulse .8s infinite'}}>🎤</span>
+      <span style={{fontSize:15,color:DIM,fontWeight:600}}>¡Dilo tú!</span>
+    </div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();alive.current=false;onSkip()}} style={{marginTop:8}}>⏭️ Saltar</button>
+  </div>}
 
 function genMath(lv){const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(lv===1){for(let i=0;i<30;i++){const a=rng(1,10),b=rng(1,2);ops.push({q:`${a} + ${b}`,ans:a+b})}}
@@ -794,7 +872,7 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   </div>}
 
 // ===== LA HORA =====
-function clockText(h,m){return m===0?(h===1?'la una en punto':'las '+h+' en punto'):m===30?(h===1?'la una':'las '+h)+' y media':m===15?(h===1?'la una':'las '+h)+' y cuarto':(h===1?'la una':'las '+h)+' menos cuarto'}
+function clockText(h,m){if(m===0)return h===1?'la una en punto':'las '+h+' en punto';if(m===30)return(h===1?'la una':'las '+h)+' y media';if(m===15)return(h===1?'la una':'las '+h)+' y cuarto';const nh=h===12?1:h+1;return(nh===1?'la una':'las '+nh)+' menos cuarto'}
 
 function genClock(lv){const items=[];
   if(lv===1){for(let h=1;h<=12;h++)items.push({ty:'clock',h,m:0,text:clockText(h,0),id:'clk_'+h+'_0'})}
@@ -2009,7 +2087,13 @@ export default function App(){
       let sel=sh(pool).slice(0,40);return sel.map(e=>{const ph=personalize(e.ph,u);const q=ph.split(/\s+/).length<=3?'¿Cómo dices esto?':'¿Cómo se dice?';
         if(slv===4&&Math.random()>0.5){const words=ph.split(/\s+/);const bi=1+Math.floor(Math.random()*(words.length-2));const blank=words[bi];words[bi]='___';return{...e,ty:'frases_blank',q:'Completa la frase',fu:ph,blank,words,ph:personalize(e.ph,u)}}
         return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}})}
-    if(section==='contar'){let nums=[];if(slv===1)nums=Array.from({length:20},(_,i)=>i+1);else if(slv===2)nums=Array.from({length:31},(_,i)=>i+20);else if(slv===3)nums=Array.from({length:51},(_,i)=>i+50);else nums=Array.from({length:100},(_,i)=>i+1);return nums.map(n=>({ty:'count',num:n,id:'num_'+n}))}
+    if(section==='contar'){let start=1,end=20;if(slv===2){start=20;end=50}else if(slv===3){start=50;end=100}else if(slv>=4){start=1;end=100}
+      const firstD=Math.floor((start-1)/10),lastD=Math.floor((end-1)/10);const batches=[];
+      for(let d=firstD;d<=lastD;d++){const b=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n>=start&&n<=end&&n<=100)b.push(n)}if(b.length>0)batches.push(b)}
+      // Merge small batches (<5) with next/prev
+      for(let i=0;i<batches.length-1;i++){if(batches[i].length<5){batches[i+1]=[...batches[i],...batches[i+1]];batches.splice(i,1);i--}}
+      if(batches.length>1&&batches[batches.length-1].length<5){batches[batches.length-2]=[...batches[batches.length-2],...batches[batches.length-1]];batches.pop()}
+      return batches.map((b,i)=>({ty:'count',nums:b,id:'cnt_batch_'+i}))}
     if(section==='math'){return genMath(slv).slice(0,30).map((m,i)=>({ty:'math',q:m.q,ans:m.ans,id:'math_'+i}))}
     if(section==='frac'){return genFractions(slv).slice(0,20).map(f=>({ty:'frac',...f}))}
     if(section==='multi'){return genMulti(slv).slice(0,20).map((m,i)=>({ty:'multi',...m,id:'multi_'+i}))}
@@ -2475,7 +2559,7 @@ export default function App(){
         {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='count'&&<ExCount num={cur.num} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
+        {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='math'&&<ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='multi'&&<ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='frac'&&<ExFraction ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
