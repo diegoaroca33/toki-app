@@ -743,15 +743,15 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:<BillSVG b={b} w={bw} h={bh}/>}
     </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    {ex.mode==='recognize'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-      <div className="card" style={{padding:20,flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center'}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Cuánto vale?</p>
-        {ex.coin.v>=5?<Bill b={ex.coin}/>:<Coin c={ex.coin} size={130}/>}</div>
-      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
+    {ex.mode==='recognize'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,maxWidth:700,margin:'0 auto'}}>
+      <div className="card" style={{padding:24,flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',minHeight:180}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
+        {ex.coin.v>=5?<Bill b={ex.coin}/>:<Coin c={ex.coin} size={140}/>}</div>
+      <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
     </div>}
-    {ex.mode==='sum'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-      <div className="card" style={{padding:16,flex:'0 1 auto',maxWidth:320}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>¿Cuánto hay?</p>
-        <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
-      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
+    {ex.mode==='sum'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,maxWidth:700,margin:'0 auto'}}>
+      <div className="card" style={{padding:20,flex:'1 1 0'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Cuánto hay?</p>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
+      <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
     </div>}
     {ex.mode==='pay'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Paga: {ex.price.toFixed(2).replace('.',',')} €</p>
@@ -765,10 +765,10 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <button className="btn btn-ghost" onClick={()=>{setSel([])}} style={{fontSize:14,marginBottom:8}}>↩️ Borrar</button>
       <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:14}}>⏭️ Saltar</button>
     </div>}
-    {ex.mode==='change'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
-      <div className="card" style={{padding:20,flex:'0 0 auto'}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
-        <p style={{fontSize:16,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
-      <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
+    {ex.mode==='change'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,maxWidth:700,margin:'0 auto'}}>
+      <div className="card" style={{padding:24,flex:'1 1 0',minHeight:120}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
+        <p style={{fontSize:18,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
+      <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
