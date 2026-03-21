@@ -1435,53 +1435,84 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const objEm=objEmojis[obj]||'📦';
   const posMap={encima:{ox:0,oy:-60},debajo:{ox:0,oy:68},dentro:{ox:0,oy:0},'al lado':{ox:100,oy:0},al_lado:{ox:100,oy:0},fuera:{ox:100,oy:0}};
   const off=posMap[pos]||{ox:0,oy:0};
-  // Furniture renderers — scaled up for clarity
-  function TableSVG(){return <g transform="translate(80,80)">
-    <rect x={0} y={0} width={200} height={14} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={10} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={178} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={50} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={138} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+  // Furniture renderers — centered in 360x280 viewBox, recognizable shapes
+  function TableSVG(){return <g transform="translate(70,80)">
+    {/* 3D Table top */}
+    <path d="M10,10 L30,0 L230,0 L220,10 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>
+    <path d="M10,10 L10,22 L220,22 L220,10 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
+    <path d="M220,10 L230,0 L230,12 L220,22 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* 4 legs */}
+    <rect x={18} y={22} width={14} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={195} y={22} width={14} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Cross bar */}
+    <rect x={32} y={66} width={163} height={8} rx={2} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
   </g>}
-  function ChairSVG(){return <g transform="translate(110,50)">
-    <rect x={0} y={0} width={100} height={10} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={-60} width={10} height={70} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={90} y={-60} width={10} height={70} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={0} y={10} width={10} height={65} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={90} y={10} width={10} height={65} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={0} y={-60} width={100} height={10} rx={4} fill="#C49A6C" stroke="#6D4C2E" strokeWidth={1.5}/>
+  function ChairSVG(){return <g transform="translate(105,30)">
+    {/* 3D Chair — isometric perspective */}
+    {/* Back legs (behind) */}
+    <rect x={20} y={0} width={10} height={160} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1.5}/>
+    <rect x={120} y={0} width={10} height={160} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1.5}/>
+    {/* Back rest top rail */}
+    <rect x={18} y={0} width={114} height={12} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
+    {/* Back rest slats */}
+    <rect x={42} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
+    <rect x={68} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
+    <rect x={94} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
+    {/* Back rest bottom rail */}
+    <rect x={18} y={82} width={114} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Seat — 3D parallelogram */}
+    <path d="M10,100 L30,88 L150,88 L140,100 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
+    <path d="M10,100 L10,112 L140,112 L140,100 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <path d="M140,100 L150,88 L150,100 L140,112 Z" fill="#6D3612" stroke="#5A3218" strokeWidth={1}/>
+    {/* Front legs */}
+    <rect x={10} y={112} width={12} height={58} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={128} y={112} width={12} height={58} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Cross bar between front legs */}
+    <rect x={22} y={146} width={106} height={6} rx={2} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
   </g>}
-  function ShelfSVG(){return <g transform="translate(60,40)">
+  function ShelfSVG(){return <g transform="translate(60,50)">
+    {/* 3 shelves */}
     <rect x={0} y={0} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={60} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={120} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={0} y={0} width={10} height={130} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={230} y={0} width={10} height={130} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <path d="M12,10 L28,28 L28,10" fill="#C49A6C"/><path d="M210,10 L226,28 L226,10" fill="#C49A6C"/>
-    <path d="M12,70 L28,88 L28,70" fill="#C49A6C"/><path d="M210,70 L226,88 L226,70" fill="#C49A6C"/>
+    <rect x={0} y={65} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={130} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    {/* Side panels */}
+    <rect x={0} y={0} width={10} height={140} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={230} y={0} width={10} height={140} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Some items on shelves for context */}
+    <rect x={20} y={75} width={30} height={55} rx={2} fill="#5B8C5A" opacity={0.4}/>{/* book */}
+    <rect x={55} y={85} width={25} height={45} rx={2} fill="#4A7AB5" opacity={0.4}/>{/* book */}
+    <circle cx={200} cy={110} r={15} fill="#D4A76A" opacity={0.3}/>{/* vase */}
   </g>}
   function BoxSVG(){return <g transform="translate(100,70)">
+    {/* 3D box */}
     <path d="M0,28 L14,0 L160,0 L146,28 Z" fill="#D2B48C" stroke="#8B7355" strokeWidth={2.5}/>
-    <rect x={0} y={28} width={146} height={90} rx={4} fill="#C49A6C" stroke="#8B7355" strokeWidth={2.5}/>
+    <rect x={0} y={28} width={146} height={100} rx={4} fill="#C49A6C" stroke="#8B7355" strokeWidth={2.5}/>
     <line x1={146} y1={28} x2={160} y2={0} stroke="#8B7355" strokeWidth={2}/>
-    <path d="M146,28 L160,0 L160,90 L146,118" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
+    <path d="M146,28 L160,0 L160,100 L146,128" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
   </g>}
-  function BackpackSVG(){return <g transform="translate(110,40)">
-    <rect x={14} y={28} width={100} height={110} rx={18} fill="#E74C3C" stroke="#C0392B" strokeWidth={2.5}/>
-    <rect x={28} y={42} width={70} height={40} rx={10} fill="#F39C12" stroke="#E67E22" strokeWidth={2}/>
-    <path d="M35,28 Q64,8 93,28" fill="none" stroke="#333" strokeWidth={6} strokeLinecap="round"/>
-    <rect x={44} y={96} width={34} height={12} rx={4} fill="#C0392B" stroke="#922B21" strokeWidth={1.5}/>
+  function BackpackSVG(){return <g transform="translate(115,40)">
+    <rect x={14} y={28} width={100} height={120} rx={20} fill="#E74C3C" stroke="#C0392B" strokeWidth={2.5}/>
+    <rect x={28} y={45} width={70} height={40} rx={10} fill="#F39C12" stroke="#E67E22" strokeWidth={2}/>
+    <path d="M35,28 Q64,6 93,28" fill="none" stroke="#333" strokeWidth={6} strokeLinecap="round"/>
+    <rect x={44} y={100} width={34} height={14} rx={4} fill="#C0392B" stroke="#922B21" strokeWidth={1.5}/>
   </g>}
-  function DoorSVG(){return <g transform="translate(100,20)">
-    <rect x={0} y={0} width={110} height={180} rx={6} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={8} y={8} width={94} height={75} rx={3} fill="#A0522D"/>
-    <rect x={8} y={92} width={94} height={75} rx={3} fill="#A0522D"/>
-    <circle cx={92} cy={105} r={8} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+  function DoorSVG(){return <g transform="translate(110,25)">
+    {/* Door frame */}
+    <rect x={-8} y={-5} width={126} height={200} rx={4} fill="#6D4C2E" stroke="#5A3C1E" strokeWidth={2}/>
+    {/* Door */}
+    <rect x={0} y={0} width={110} height={190} rx={4} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={10} y={10} width={90} height={80} rx={3} fill="#A0522D"/>
+    <rect x={10} y={100} width={90} height={80} rx={3} fill="#A0522D"/>
+    <circle cx={92} cy={110} r={8} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
   </g>}
-  function WardrobeSVG(){return <g transform="translate(60,25)">
-    <rect x={0} y={0} width={220} height={180} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <line x1={110} y1={6} x2={110} y2={174} stroke="#6D4C2E" strokeWidth={2.5}/>
-    <circle cx={100} cy={90} r={6} fill="#DAA520"/><circle cx={120} cy={90} r={6} fill="#DAA520"/>
+  function WardrobeSVG(){return <g transform="translate(65,25)">
+    <rect x={0} y={0} width={220} height={190} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <line x1={110} y1={6} x2={110} y2={184} stroke="#6D4C2E" strokeWidth={2.5}/>
+    {/* Handles */}
+    <circle cx={100} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+    <circle cx={120} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+    {/* Top molding */}
+    <rect x={-4} y={-4} width={228} height={10} rx={3} fill="#6D4C2E"/>
   </g>}
   const sceneMap={mesa:TableSVG,silla:ChairSVG,estantería:ShelfSVG,caja:BoxSVG,mochila:BackpackSVG,puerta:DoorSVG,armario:WardrobeSVG};
   const FurnitureCmp=sceneMap[scene]||TableSVG;
