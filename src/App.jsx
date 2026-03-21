@@ -2245,7 +2245,7 @@ export default function App(){
               flexDirection:'column',pointerEvents:'none',
             }}>
               <span style={{fontSize:22}}>{pp.avatar||'👤'}</span>
-              <span style={{position:'absolute',bottom:-20,fontSize:14,color:'#E8E8F0',fontWeight:700,whiteSpace:'nowrap',textShadow:'0 1px 4px rgba(0,0,0,.6)'}}>{pp.name}</span>
+              <span style={{position:'absolute',bottom:-20,fontSize:14,color:'#E8E8F0',fontWeight:500,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)',letterSpacing:0.3}}>{pp.name}</span>
             </div>})}
         </div>}
         <div style={{
