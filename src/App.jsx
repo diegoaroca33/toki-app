@@ -1430,70 +1430,70 @@ function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-
   if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
-function SceneSVG({scene,obj,pos}){const w=260,h=200;
+function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
   const objEm=objEmojis[obj]||'📦';
-  const posMap={encima:{ox:0,oy:-42},debajo:{ox:0,oy:48},dentro:{ox:0,oy:0},'al lado':{ox:70,oy:0},al_lado:{ox:70,oy:0},fuera:{ox:70,oy:0}};
+  const posMap={encima:{ox:0,oy:-60},debajo:{ox:0,oy:68},dentro:{ox:0,oy:0},'al lado':{ox:100,oy:0},al_lado:{ox:100,oy:0},fuera:{ox:100,oy:0}};
   const off=posMap[pos]||{ox:0,oy:0};
-  // Furniture renderers
-  function TableSVG(){return <g transform="translate(70,60)">
-    <rect x={0} y={0} width={120} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={8} y={10} width={8} height={50} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={104} y={10} width={8} height={50} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={30} y={10} width={8} height={50} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={82} y={10} width={8} height={50} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
+  // Furniture renderers — scaled up for clarity
+  function TableSVG(){return <g transform="translate(80,80)">
+    <rect x={0} y={0} width={200} height={14} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={10} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={178} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={50} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={138} y={14} width={12} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
   </g>}
-  function ChairSVG(){return <g transform="translate(90,40)">
-    <rect x={0} y={0} width={60} height={8} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={0} y={-40} width={8} height={48} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={52} y={-40} width={8} height={48} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={0} y={8} width={8} height={40} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={52} y={8} width={8} height={40} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={0} y={-40} width={60} height={8} rx={3} fill="#C49A6C" stroke="#6D4C2E" strokeWidth={1}/>
+  function ChairSVG(){return <g transform="translate(110,50)">
+    <rect x={0} y={0} width={100} height={10} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={-60} width={10} height={70} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={90} y={-60} width={10} height={70} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={0} y={10} width={10} height={65} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={90} y={10} width={10} height={65} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={0} y={-60} width={100} height={10} rx={4} fill="#C49A6C" stroke="#6D4C2E" strokeWidth={1.5}/>
   </g>}
-  function ShelfSVG(){return <g transform="translate(60,30)">
-    <rect x={0} y={0} width={140} height={8} rx={2} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={0} y={40} width={140} height={8} rx={2} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={0} y={80} width={140} height={8} rx={2} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={0} y={0} width={8} height={88} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <rect x={132} y={0} width={8} height={88} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
-    <path d="M10,8 L20,18 L20,8" fill="#C49A6C"/><path d="M120,8 L130,18 L130,8" fill="#C49A6C"/>
-    <path d="M10,48 L20,58 L20,48" fill="#C49A6C"/><path d="M120,48 L130,58 L130,48" fill="#C49A6C"/>
+  function ShelfSVG(){return <g transform="translate(60,40)">
+    <rect x={0} y={0} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={60} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={120} width={240} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={0} y={0} width={10} height={130} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <rect x={230} y={0} width={10} height={130} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <path d="M12,10 L28,28 L28,10" fill="#C49A6C"/><path d="M210,10 L226,28 L226,10" fill="#C49A6C"/>
+    <path d="M12,70 L28,88 L28,70" fill="#C49A6C"/><path d="M210,70 L226,88 L226,70" fill="#C49A6C"/>
   </g>}
-  function BoxSVG(){return <g transform="translate(80,50)">
-    <path d="M0,20 L10,0 L110,0 L100,20 Z" fill="#D2B48C" stroke="#8B7355" strokeWidth={2}/>
-    <rect x={0} y={20} width={100} height={60} rx={3} fill="#C49A6C" stroke="#8B7355" strokeWidth={2}/>
-    <line x1={100} y1={20} x2={110} y2={0} stroke="#8B7355" strokeWidth={2}/>
-    <path d="M100,20 L110,0 L110,60 L100,80" fill="#A0522D" stroke="#8B7355" strokeWidth={1}/>
+  function BoxSVG(){return <g transform="translate(100,70)">
+    <path d="M0,28 L14,0 L160,0 L146,28 Z" fill="#D2B48C" stroke="#8B7355" strokeWidth={2.5}/>
+    <rect x={0} y={28} width={146} height={90} rx={4} fill="#C49A6C" stroke="#8B7355" strokeWidth={2.5}/>
+    <line x1={146} y1={28} x2={160} y2={0} stroke="#8B7355" strokeWidth={2}/>
+    <path d="M146,28 L160,0 L160,90 L146,118" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
   </g>}
-  function BackpackSVG(){return <g transform="translate(90,30)">
-    <rect x={10} y={20} width={60} height={70} rx={12} fill="#E74C3C" stroke="#C0392B" strokeWidth={2}/>
-    <rect x={20} y={30} width={40} height={25} rx={6} fill="#F39C12" stroke="#E67E22" strokeWidth={1.5}/>
-    <path d="M25,20 Q40,5 55,20" fill="none" stroke="#333" strokeWidth={4} strokeLinecap="round"/>
-    <rect x={30} y={60} width={20} height={8} rx={3} fill="#C0392B" stroke="#922B21" strokeWidth={1}/>
+  function BackpackSVG(){return <g transform="translate(110,40)">
+    <rect x={14} y={28} width={100} height={110} rx={18} fill="#E74C3C" stroke="#C0392B" strokeWidth={2.5}/>
+    <rect x={28} y={42} width={70} height={40} rx={10} fill="#F39C12" stroke="#E67E22" strokeWidth={2}/>
+    <path d="M35,28 Q64,8 93,28" fill="none" stroke="#333" strokeWidth={6} strokeLinecap="round"/>
+    <rect x={44} y={96} width={34} height={12} rx={4} fill="#C0392B" stroke="#922B21" strokeWidth={1.5}/>
   </g>}
-  function DoorSVG(){return <g transform="translate(85,20)">
-    <rect x={0} y={0} width={70} height={110} rx={4} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2}/>
-    <rect x={6} y={6} width={58} height={45} rx={2} fill="#A0522D"/>
-    <rect x={6} y={58} width={58} height={45} rx={2} fill="#A0522D"/>
-    <circle cx={58} cy={65} r={5} fill="#DAA520" stroke="#B8860B" strokeWidth={1}/>
+  function DoorSVG(){return <g transform="translate(100,20)">
+    <rect x={0} y={0} width={110} height={180} rx={6} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={8} y={8} width={94} height={75} rx={3} fill="#A0522D"/>
+    <rect x={8} y={92} width={94} height={75} rx={3} fill="#A0522D"/>
+    <circle cx={92} cy={105} r={8} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
   </g>}
-  function WardrobeSVG(){return <g transform="translate(65,20)">
-    <rect x={0} y={0} width={130} height={110} rx={4} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2}/>
-    <line x1={65} y1={5} x2={65} y2={105} stroke="#6D4C2E" strokeWidth={2}/>
-    <circle cx={58} cy={55} r={4} fill="#DAA520"/><circle cx={72} cy={55} r={4} fill="#DAA520"/>
+  function WardrobeSVG(){return <g transform="translate(60,25)">
+    <rect x={0} y={0} width={220} height={180} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <line x1={110} y1={6} x2={110} y2={174} stroke="#6D4C2E" strokeWidth={2.5}/>
+    <circle cx={100} cy={90} r={6} fill="#DAA520"/><circle cx={120} cy={90} r={6} fill="#DAA520"/>
   </g>}
   const sceneMap={mesa:TableSVG,silla:ChairSVG,estantería:ShelfSVG,caja:BoxSVG,mochila:BackpackSVG,puerta:DoorSVG,armario:WardrobeSVG};
   const FurnitureCmp=sceneMap[scene]||TableSVG;
-  const cx=130+off.ox,cy=80+off.oy;
+  const cx=180+off.ox,cy=120+off.oy;
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
     <FurnitureCmp/>
-    <circle cx={cx} cy={cy} r={22} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="4 2"/>
-    <text x={cx} y={cy+6} textAnchor="middle" fontSize={24}>{objEm}</text>
-    <text x={cx} y={cy+26} textAnchor="middle" fill={GOLD} fontSize={11} fontWeight={700}>{obj}</text>
-    <text x={w/2} y={h-6} textAnchor="middle" fill={DIM} fontSize={11} fontWeight={600}>{scene}</text>
+    <circle cx={cx} cy={cy} r={32} fill={GOLD+'33'} stroke={GOLD} strokeWidth={3} strokeDasharray="5 3"/>
+    <text x={cx} y={cy+8} textAnchor="middle" fontSize={34}>{objEm}</text>
+    <text x={cx} y={cy+38} textAnchor="middle" fill={GOLD} fontSize={14} fontWeight={700}>{obj}</text>
+    <text x={w/2} y={h-8} textAnchor="middle" fill={DIM} fontSize={14} fontWeight={600}>{scene}</text>
   </svg>}
 
 function ExRazona({ex,onOk,onSkip,name,uid,vids}){
@@ -1508,24 +1508,28 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
       if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
-  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
-      <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
-    </div>
-    {ex.mode==='spatial'&&<div>
-      <SceneSVG scene={ex.data.scene} obj={ex.data.obj} pos={ex.data.pos}/>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:14}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:18,minHeight:64}}>{o}</button>)}
+  return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
+    {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,maxWidth:750,margin:'0 auto'}}>
+      <div style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+        <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
+        <SceneSVG scene={ex.data.scene} obj={ex.data.obj} pos={ex.data.pos}/>
+      </div>
+      <div style={{flex:'0 0 240px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,padding:14,minHeight:56}}>{o}</button>)}
       </div>
     </div>}
     {ex.mode==='intruso'&&<div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:8}}>
+      <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         {[...ex.data.words].sort(()=>Math.random()-.5).map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
       </div>
     </div>}
     {ex.mode==='classify'&&<div>
+      <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
       <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:12}}>
-        {ex.data.groups.map((g,gi)=><div key={gi} style={{flex:1,background:gi===0?BLUE+'22':GREEN+'22',border:`2px solid ${gi===0?BLUE:GREEN}`,borderRadius:12,padding:10,minHeight:100}}>
+        {ex.data.groups.map((g,gi)=><div key={gi} style={{flex:1,background:gi===0?BLUE+'22':GREEN+'22',border:`2px solid ${gi===0?BLUE:GREEN}`,borderRadius:12,padding:10,minHeight:80}}>
           <p style={{fontSize:16,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 8px'}}>{g}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>
             {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'44':GREEN+'44',borderRadius:6,padding:'4px 8px',fontSize:14,fontWeight:700}}>{it.w}</span>)}
@@ -1539,14 +1543,18 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
     </div>}
     {ex.mode==='cause'&&<div>
-      <div style={{display:'flex',flexDirection:'column',gap:12,marginTop:12}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:22,padding:20,minHeight:64}}>{o}</button>)}
+      <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
-    {ex.mode==='emotion'&&<div>
-      <div style={{fontSize:100,marginBottom:16}}>{ex.data.emoji}</div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:18,minHeight:60}}>{o}</button>)}
+    {ex.mode==='emotion'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24}}>
+      <div style={{flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+        <p style={{fontSize:20,fontWeight:700,margin:0,color:GOLD}}>{ex.data.q}</p>
+        <div style={{fontSize:90}}>{ex.data.emoji}</div>
+      </div>
+      <div style={{flex:'0 0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:280}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
