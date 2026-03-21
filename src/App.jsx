@@ -1433,42 +1433,47 @@ function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-
 function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
   const objEm=objEmojis[obj]||'📦';
-  const posMap={encima:{ox:0,oy:-60},debajo:{ox:0,oy:68},dentro:{ox:0,oy:0},'al lado':{ox:100,oy:0},al_lado:{ox:100,oy:0},fuera:{ox:100,oy:0}};
+  const posMap={encima:{ox:0,oy:-50},debajo:{ox:0,oy:75},dentro:{ox:0,oy:5},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
   const off=posMap[pos]||{ox:0,oy:0};
   // Furniture renderers — centered in 360x280 viewBox, recognizable shapes
-  function TableSVG(){return <g transform="translate(70,80)">
-    {/* 3D Table top */}
-    <path d="M10,10 L30,0 L230,0 L220,10 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>
-    <path d="M10,10 L10,22 L220,22 L220,10 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <path d="M220,10 L230,0 L230,12 L220,22 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    {/* 4 legs */}
-    <rect x={18} y={22} width={14} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={195} y={22} width={14} height={80} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    {/* Cross bar */}
-    <rect x={32} y={66} width={163} height={8} rx={2} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
-  </g>}
-  function ChairSVG(){return <g transform="translate(105,30)">
-    {/* 3D Chair — isometric perspective */}
-    {/* Back legs (behind) */}
-    <rect x={20} y={0} width={10} height={160} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1.5}/>
-    <rect x={120} y={0} width={10} height={160} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1.5}/>
-    {/* Back rest top rail */}
-    <rect x={18} y={0} width={114} height={12} rx={4} fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    {/* Back rest slats */}
-    <rect x={42} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
-    <rect x={68} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
-    <rect x={94} y={12} width={7} height={78} rx={2} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1}/>
-    {/* Back rest bottom rail */}
-    <rect x={18} y={82} width={114} height={10} rx={3} fill="#A0522D" stroke="#6D4C2E" strokeWidth={1.5}/>
-    {/* Seat — 3D parallelogram */}
-    <path d="M10,100 L30,88 L150,88 L140,100 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
-    <path d="M10,100 L10,112 L140,112 L140,100 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <path d="M140,100 L150,88 L150,100 L140,112 Z" fill="#6D3612" stroke="#5A3218" strokeWidth={1}/>
+  function TableSVG(){return <g transform="translate(55,70)">
+    {/* 3D Table — strong isometric */}
+    {/* Back legs (partially hidden) */}
+    <path d="M40,25 L40,115 L52,115 L52,25 Z" fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
+    <path d="M218,15 L218,105 L230,105 L230,15 Z" fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
+    {/* Table top — 3D parallelogram with visible depth */}
+    <path d="M20,30 L50,12 L250,2 L230,20 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>{/* top */}
+    <path d="M20,30 L20,44 L230,34 L230,20 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>{/* front */}
+    <path d="M230,20 L250,2 L250,16 L230,34 Z" fill="#8B4513" stroke="#5A3218" strokeWidth={1.5}/>{/* right side */}
     {/* Front legs */}
-    <rect x={10} y={112} width={12} height={58} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <rect x={128} y={112} width={12} height={58} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    {/* Cross bar between front legs */}
-    <rect x={22} y={146} width={106} height={6} rx={2} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
+    <path d="M20,44 L20,135 L32,135 L32,44 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <path d="M218,34 L218,125 L230,125 L230,34 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Cross bar */}
+    <path d="M32,95 L218,85 L218,91 L32,101 Z" fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
+  </g>}
+  function ChairSVG(){return <g transform="translate(90,15)">
+    {/* Side view chair — clear profile showing seat, legs, backrest */}
+    {/* Back leg (goes up to become backrest, slightly angled) */}
+    <path d="M30,0 L42,0 L50,230 L38,230 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={2}/>
+    {/* Front leg (straight vertical) */}
+    <path d="M140,115 L152,115 L152,230 L140,230 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>
+    {/* Backrest top curve — rounded */}
+    <path d="M28,0 L44,0 L46,4 L30,4 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={1.5}/>
+    <ellipse cx={37} cy={2} rx={10} ry={6} fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>
+    {/* Backrest slats (horizontal) */}
+    <rect x={32} y={30} width={16} height={70} rx={6} fill="#C49A6C" stroke="#8B5E3C" strokeWidth={2}/>
+    <line x1={32} y1={50} x2={48} y2={50} stroke="#8B5E3C" strokeWidth={1.5}/>
+    <line x1={32} y1={70} x2={48} y2={70} stroke="#8B5E3C" strokeWidth={1.5}/>
+    {/* SEAT — thick horizontal plank, clearly flat surface */}
+    <rect x={20} y={108} width={150} height={18} rx={5} fill="#B5651D" stroke="#6D4C2E" strokeWidth={2.5}/>
+    {/* Seat edge shadow for depth */}
+    <rect x={22} y={126} width={146} height={5} rx={2} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1}/>
+    {/* Stretcher bar between legs */}
+    <rect x={44} y={185} width={96} height={8} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1.5}/>
+    {/* Second back leg hint (behind, for depth) */}
+    <path d="M22,5 L28,5 L36,230 L30,230 Z" fill="#6D3612" stroke="#5A2E10" strokeWidth={1}/>
+    {/* Second front leg hint */}
+    <rect x={148} y={118} width={8} height={112} rx={3} fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
   </g>}
   function ShelfSVG(){return <g transform="translate(60,50)">
     {/* 3 shelves */}
@@ -1516,7 +1521,14 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
   </g>}
   const sceneMap={mesa:TableSVG,silla:ChairSVG,estantería:ShelfSVG,caja:BoxSVG,mochila:BackpackSVG,puerta:DoorSVG,armario:WardrobeSVG};
   const FurnitureCmp=sceneMap[scene]||TableSVG;
-  const cx=180+off.ox,cy=120+off.oy;
+  // Surface reference point per furniture (where "encima" sits)
+  // surfaceY = y of the main surface where objects sit (seat top edge)
+  const surfaceY={mesa:70,silla:120,estantería:50,caja:70,mochila:55,puerta:40,armario:25};
+  const surfaceX={mesa:170,silla:170,estantería:180,caja:180,mochila:180,puerta:165,armario:175};
+  const sy=surfaceY[scene]||120; const sx=surfaceX[scene]||180;
+  const posAdj={encima:{ox:0,oy:-38},debajo:{ox:0,oy:70},dentro:{ox:0,oy:10},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
+  const adj=posAdj[pos]||{ox:0,oy:0};
+  const cx=sx+adj.ox,cy=sy+adj.oy;
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
