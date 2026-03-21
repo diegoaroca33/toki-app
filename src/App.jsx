@@ -19,7 +19,7 @@ button{font-family:'Fredoka',sans-serif;touch-action:manipulation;cursor:pointer
 input{font-family:'Fredoka',sans-serif}
 input::placeholder{color:${DIM}}
 #root{max-width:1100px;margin:0 auto;padding:16px 20px;position:relative;z-index:1}
-.btn{display:block;width:100%;border:3px solid;border-radius:14px;padding:22px 28px;font-weight:700;font-size:22px;transition:transform .1s;color:#fff;text-align:center;min-height:48px}
+.btn{display:block;width:100%;border:3px solid;border-radius:14px;padding:22px 28px;font-weight:600;font-size:22px;transition:transform .1s;color:#fff;text-align:center;min-height:48px}
 .btn:active{transform:scale(.93)!important}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn-g{background:${GREEN};border-color:#27ae60;box-shadow:4px 4px 0 #1e8449}
@@ -32,7 +32,7 @@ input::placeholder{color:${DIM}}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
 .inp{width:100%;padding:16px;background:${BG3};border:2px solid ${BORDER};border-radius:12px;color:${TXT};font-size:20px;outline:none}
-.ws{min-width:52px;height:50px;display:flex;align-items:center;justify-content:center;padding:0 14px;border-radius:12px;font-size:20px;font-weight:700;transition:all .2s}
+.ws{min-width:52px;height:50px;display:flex;align-items:center;justify-content:center;padding:0 14px;border-radius:12px;font-size:20px;font-weight:600;transition:all .2s}
 .ws-e{background:rgba(255,255,255,.04);border:2.5px dashed rgba(255,255,255,.18);color:rgba(255,255,255,.18)}
 .ws-f{background:${GREEN};border:2.5px solid #27ae60;color:#0B1D3A;box-shadow:2px 2px 0 #1e8449}
 .pbar{height:7px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
@@ -43,7 +43,7 @@ input::placeholder{color:${DIM}}
 .avbtn{font-size:30px;width:52px;height:52px;border-radius:14px;border:2px solid ${BORDER};background:${BG3}}
 .avbtn.on{border-color:${GOLD};background:${GOLD}22}
 .tabs{display:flex;gap:4px;background:${BG3};border-radius:12px;padding:4px}
-.tab{flex:1;padding:12px;border-radius:10px;border:none;font-weight:700;font-size:15px;background:transparent;color:${DIM}}
+.tab{flex:1;padding:12px;border-radius:10px;border:none;font-weight:600;font-size:15px;background:transparent;color:${DIM}}
 .tab.on{background:${GOLD};color:#1a1a2e}
 .sbox{background:${CARD};border:2px solid ${BORDER};border-radius:12px;padding:16px;text-align:center}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -418,7 +418,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={40}/></div>}
     {/* Feedback message */}
     {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginBottom:12}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
-    {idleMsg&&!sf&&!msg&&<div className="af" style={{marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
     <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
       <button onClick={hearAgain} style={{
@@ -460,8 +460,8 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:16,minHeight:56}}>{pl.map((p,i)=><div key={i} className={'ws '+(p?'ws-f':'ws-e')}>{p?p.w:'___'}</div>)}</div>
-      {bf==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:700,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div>}
-      {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+      {bf==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div>}
+      {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
       <div style={{display:'flex',gap:10}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}<button className="btn btn-p btn-half" onClick={()=>{poke();say(ex.fu)}}>🔊 Pista</button></div>
@@ -483,7 +483,7 @@ function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids}){
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} placeholder="Escribe la palabra" style={{textAlign:'center',fontSize:22,marginBottom:12}}/>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans.trim()} onClick={check} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
       {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-      {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+      {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     </div>}
     {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
@@ -654,8 +654,8 @@ function ExFraction({ex,onOk,onSkip,name}){
       </div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkMathAns} maxLen={2}/>
     </div>}
-    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:700,color:GREEN,margin:'8px 0 0'}}>¡Perfecto!</p></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Perfecto!</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:16,marginTop:8}}>⏭️ Saltar</button>
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}
@@ -684,7 +684,7 @@ function ExMulti({ex,onOk,onSkip,name,uid,vids}){
       <Stars n={4} sz={32}/><p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{ex.a} x {ex.b} = {ex.ans}</p>
     </div>}
     {showHelp&&fb==='no'&&<div className="af" style={{background:GOLD+'0C',borderRadius:14,padding:20,marginBottom:14}}>
-      <p style={{fontSize:18,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¡Vamos a sumarlos!</p>
+      <p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¡Vamos a sumarlos!</p>
       <p style={{fontSize:20,color:TXT,margin:'0 0 8px'}}>{Array(ex.b).fill(ex.a).join(' + ')} = <span style={{color:GREEN,fontWeight:700}}>{ex.ans}</span></p>
       <button className="btn btn-g" onClick={()=>{setAns('');setFb(null);setShowHelp(false)}} style={{marginTop:12,fontSize:18}}>🔄 Intentar</button>
       <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
@@ -789,7 +789,7 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}
 
@@ -825,7 +825,7 @@ function ExClock({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'flex',justifyContent:'center'}}><ClockFace h={ex.h} m={ex.m}/></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! Prueba otra 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -872,7 +872,7 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
       <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:0,color:GOLD}}>{ex.mode==='order_days'?'Ordena los días':'Ordena los meses'}</p></div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,minHeight:44}}>{placed.map((d,i)=><span key={i} style={{background:GREEN+'33',borderRadius:8,padding:'8px 12px',fontSize:15,fontWeight:700,color:GREEN}}>{d}</span>)}</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,minHeight:44}}>{placed.map((d,i)=><span key={i} style={{background:GREEN+'33',borderRadius:8,padding:'8px 12px',fontSize:15,fontWeight:600,color:GREEN}}>{d}</span>)}</div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>{avail.map(d=><button key={d} className="btn btn-b btn-word" onClick={()=>place(d)} style={{fontSize:15,padding:'10px 14px'}}>{d}</button>)}</div>
       {placed.length>0&&!fb&&<button className="btn btn-o" onClick={()=>{setPlaced([]);setAvail([...(ex.mode==='order_days'?DIAS:MESES)].sort(()=>Math.random()-.5))}} style={{fontSize:14,maxWidth:150,margin:'0 auto'}}>↩️ Borrar</button>}
     </div>}
@@ -903,18 +903,18 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       {!fb&&(baAns.before||baAns.after)&&<button className="btn btn-o" onClick={()=>setBaAns({before:null,after:null})} style={{fontSize:16,maxWidth:160,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {ex.mode==='yesterday_tomorrow'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:16,color:DIM,margin:0}}>¿Qué día fue ayer y cuál será mañana?</p></div>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:16,color:DIM,margin:0}}>¿Qué día fue ayer y cuál será mañana?</p></div>
       <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
         <div style={{flex:1,maxWidth:160}}>
           <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>AYER</p>
           <div style={{minHeight:48,background:ytAns.ayer?GREEN+'22':CARD,border:'2px solid '+(ytAns.ayer?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
-            <span style={{fontSize:18,fontWeight:700,color:ytAns.ayer?GREEN:DIM}}>{ytAns.ayer||'___'}</span>
+            <span style={{fontSize:18,fontWeight:600,color:ytAns.ayer?GREEN:DIM}}>{ytAns.ayer||'___'}</span>
           </div>
         </div>
         <div style={{flex:1,maxWidth:160}}>
           <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>MAÑANA</p>
           <div style={{minHeight:48,background:ytAns.manana?GREEN+'22':CARD,border:'2px solid '+(ytAns.manana?GREEN:BORDER),borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',padding:8}}>
-            <span style={{fontSize:18,fontWeight:700,color:ytAns.manana?GREEN:DIM}}>{ytAns.manana||'___'}</span>
+            <span style={{fontSize:18,fontWeight:600,color:ytAns.manana?GREEN:DIM}}>{ytAns.manana||'___'}</span>
           </div>
         </div>
       </div>
@@ -926,7 +926,7 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       {!fb&&(ytAns.ayer||ytAns.manana)&&<button className="btn btn-o" onClick={()=>setYtAns({ayer:null,manana:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -1033,23 +1033,23 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
       </div>}
     </div>}
     {ex.mode==='equal'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Reparte {ex.total} 🍬 en {ex.bags} bolsas</p>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:GOLD}}>Reparte {ex.total} 🍬 en {ex.bags} bolsas</p>
         <div style={{display:'flex',gap:8,justifyContent:'center'}}>{(ex.names||[]).map((n,i)=><div key={i} style={{display:'inline-block'}}><BagSVG name={n} size={60}/></div>)}</div>
         <p style={{fontSize:16,color:DIM,margin:'8px 0 0'}}>¿Cuántos le tocan a cada uno?</p></div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkEqual} maxLen={3}/>
     </div>}
     {ex.mode==='compare'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Quién tiene más?</p>
+      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¿Quién tiene más?</p>
         <div style={{display:'flex',gap:16,justifyContent:'center'}}>
-          <div><p style={{fontWeight:700,fontSize:16,margin:'0 0 4px'}}>{ex.nameA}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
-          <div><p style={{fontWeight:700,fontSize:16,margin:'0 0 4px'}}>{ex.nameB}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
+          <div><p style={{fontWeight:600,fontSize:16,margin:'0 0 4px'}}>{ex.nameA}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
+          <div><p style={{fontWeight:600,fontSize:16,margin:'0 0 4px'}}>{ex.nameB}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
         </div></div>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-b" onClick={()=>checkCompare('a')} style={{flex:1,maxWidth:140}}>{ex.nameA}</button>
         {ex.a===ex.b&&<button className="btn btn-p" onClick={()=>checkCompare('equal')} style={{flex:1,maxWidth:140}}>Igual</button>}
         <button className="btn btn-b" onClick={()=>checkCompare('b')} style={{flex:1,maxWidth:140}}>{ex.nameB}</button></div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -1205,7 +1205,7 @@ function ExWriting({ex,onOk,onSkip,name}){
     <div className={needsLandscape?'wr-canvas-wrap':''}>
       {ex.mode!=='letter'&&<div style={{background:GOLD+'15',borderRadius:10,padding:'8px 16px',marginBottom:10}}><p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0}}>{ex.letter}</p></div>}
       <div className="card" style={{padding:12,marginBottom:10,background:'#FAFAF5',borderColor:'#D4D4D4'}}>
-        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
+        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
         <canvas ref={canvasRef} width={cW} height={cH} style={{width:'100%',maxWidth:cW,height:'auto',aspectRatio:cW+'/'+cH,borderRadius:8,border:'2px solid #D4D4D4',touchAction:'none',cursor:'crosshair'}}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           onMouseDown={start} onMouseMove={move} onMouseUp={end}/>
@@ -1343,11 +1343,11 @@ function VoiceRec({user,onBack,onSave}){const[mode,setMode]=useState('menu');con
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}>
     {mode==='menu'&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>🎙️ Voces</p><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'8px 16px'}} onClick={onBack}>✕</button></div>
       {voices.length>0&&<div style={{marginBottom:20}}><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Toca para añadir grabaciones:</p>{voices.map((v,i)=><div key={i} style={{display:'flex',gap:6,marginBottom:8,alignItems:'center'}}><button className="card" style={{flex:1,display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`2px solid ${selV?.id===v.id?GOLD:BORDER}`}} onClick={()=>init(v)}><span style={{fontSize:30}}>{v.avatar}</span><div style={{flex:1,textAlign:'left'}}><div style={{fontWeight:700}}>{v.name}</div><div style={{fontSize:13,color:DIM}}>{v.saved} grabaciones</div></div><span style={{color:GOLD,fontSize:14}}>{selV?.id===v.id?'✓':'→'}</span></button><button style={{background:RED+'22',border:'2px solid '+RED+'44',borderRadius:12,padding:'8px 10px',color:RED,fontSize:16,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{try{localStorage.removeItem('toki_voice_'+user.id+'_'+v.id)}catch(e){}const nv=voices.filter(x=>x.id!==v.id);onSave({...user,voices:nv})}}>🗑️</button></div>)}</div>}
-      {!selV&&<div><p style={{fontSize:16,color:DIM,margin:'0 0 12px'}}>Nueva voz:</p><input className="inp" value={vn} onChange={e=>setVn(e.target.value)} placeholder="Nombre: Papá, Jaime..." style={{marginBottom:12}}/><div style={{display:'flex',gap:10,marginBottom:12}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setVs(v)} style={{flex:1,padding:'12px 0',borderRadius:12,border:`3px solid ${vs===v?GOLD:BORDER}`,background:vs===v?GOLD+'22':BG3,color:vs===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer'}}>{l}</button>)}</div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'0 0 16px'}}>{AVS.slice(0,20).map(a=><button key={a} className={'avbtn'+(va===a?' on':'')} onClick={()=>setVa(a)}>{a}</button>)}</div></div>}
+      {!selV&&<div><p style={{fontSize:16,color:DIM,margin:'0 0 12px'}}>Nueva voz:</p><input className="inp" value={vn} onChange={e=>setVn(e.target.value)} placeholder="Nombre: Papá, Jaime..." style={{marginBottom:12}}/><div style={{display:'flex',gap:10,marginBottom:12}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setVs(v)} style={{flex:1,padding:'12px 0',borderRadius:12,border:`3px solid ${vs===v?GOLD:BORDER}`,background:vs===v?GOLD+'22':BG3,color:vs===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer'}}>{l}</button>)}</div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'0 0 16px'}}>{AVS.slice(0,20).map(a=><button key={a} className={'avbtn'+(va===a?' on':'')} onClick={()=>setVa(a)}>{a}</button>)}</div></div>}
       <div style={{display:'flex',flexDirection:'column',gap:10}}><button className="btn btn-gold" disabled={!vn.trim()&&!selV} onClick={()=>{if(!selV)init(null);setRi(0);setMode('cheers')}}>🎤 Ánimos</button><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{[1,2,3,4,5].map(n=><button key={n} className="btn btn-b btn-half" style={{flex:1,fontSize:16,minWidth:50}} disabled={!vn.trim()&&!selV} onClick={()=>{if(!selV)init(null);setRecLv(n);setRi(0);setMode('phrases')}}>N{n}</button>)}</div><button className="btn btn-p" disabled={!vn.trim()&&!selV} onClick={()=>{if(!selV)init(null);setRi(0);setMode('counting')}} style={{fontSize:18}}>🔢 Cuento hasta 100</button>{user.telefono&&<button className="btn btn-o" disabled={!vn.trim()&&!selV} onClick={()=>{if(!selV)init(null);setRi(0);setMode('personal')}} style={{fontSize:18}}>👤 Datos personales</button>}
         <button className="btn btn-p" disabled={!vn.trim()&&!selV} onClick={()=>{if(!selV)init(null);setRi(0);setMode('quiensoy')}} style={{fontSize:18,background:'#E91E63',borderColor:'#C2185B',boxShadow:'4px 4px 0 #880E4F'}}>👤 Quién Soy</button>
       </div></div>}
-    {(mode==='cheers'||mode==='phrases'||mode==='counting'||mode==='personal'||mode==='quiensoy')&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>{mode==='cheers'?'🎤 Ánimos':mode==='counting'?'🔢 Números':mode==='personal'?'👤 Datos':mode==='quiensoy'?'👤 Quién Soy':`🎤 N${recLv}`} — {vn}</p><span style={{fontSize:14,color:DIM}}>{ri+1}/{items.length}</span></div>
+    {(mode==='cheers'||mode==='phrases'||mode==='counting'||mode==='personal'||mode==='quiensoy')&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>{mode==='cheers'?'🎤 Ánimos':mode==='counting'?'🔢 Números':mode==='personal'?'👤 Datos':mode==='quiensoy'?'👤 Quién Soy':`🎤 N${recLv}`} — {vn}</p><span style={{fontSize:14,color:DIM}}>{ri+1}/{items.length}</span></div>
       <div className="pbar" style={{marginBottom:16}}><div className="pfill" style={{width:((ri+1)/items.length*100)+'%'}}/></div>
       <div className="card" style={{padding:24,marginBottom:16,textAlign:'center'}}><p style={{fontSize:13,color:DIM,margin:'0 0 8px'}}>Lee en voz alta:</p><p style={{fontSize:24,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>"{cur}"</p></div>
       <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16}}><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'8px 14px'}} onClick={()=>preview(ri)} disabled={pp>=0}>🔊 Escuchar</button><span style={{color:GREEN,fontWeight:700,alignSelf:'center'}}>{saved}</span></div>
@@ -1377,7 +1377,7 @@ function NumPad({value,onChange,onSubmit,maxLen=5,decimal=false}){
         <button style={btnSt} onClick={()=>press(0)}>0</button>
         <button style={{...btnSt,background:RED+'22',color:RED,border:`2px solid ${RED}33`,fontSize:18}} onClick={bksp}>⌫</button>
       </div>
-      <button style={{width:58,borderRadius:14,border:`3px solid ${GREEN}`,background:GREEN+'33',color:'#fff',fontSize:14,fontWeight:700,fontFamily:"'Fredoka'",cursor:!value?'default':'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,opacity:!value?0.35:1,transition:'all .15s'}} onClick={onSubmit} disabled={!value}>
+      <button style={{width:58,borderRadius:14,border:`3px solid ${GREEN}`,background:GREEN+'33',color:'#fff',fontSize:14,fontWeight:600,fontFamily:"'Fredoka'",cursor:!value?'default':'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,opacity:!value?0.35:1,transition:'all .15s'}} onClick={onSubmit} disabled={!value}>
         <span style={{fontSize:28}}>🚀</span>
         <span style={{fontSize:11,lineHeight:1}}>¡Listo!</span>
       </button>
@@ -1390,7 +1390,7 @@ function AbacusHelp({a,b,op='+',result}){
   useEffect(()=>{setStep(0);let i=0;const t=setInterval(()=>{i++;setStep(i);if(i<=showN){stopVoice();say(NUMS_1_100[i-1]||String(i))}if(i>=showN+2)clearInterval(t)},900);return()=>{clearInterval(t);stopVoice()}},[a,b,op]);
   const beadSz=total>15?16:total>10?20:28;
   return <div style={{textAlign:'center',padding:12}}>
-    <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¡Vamos a contarlo!</p>
+    <p style={{fontSize:18,fontWeight:600,color:GOLD,margin:'0 0 12px'}}>¡Vamos a contarlo!</p>
     <div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap',marginBottom:12,minHeight:50}}>
       {Array.from({length:total},(_,i)=>{const isA=op==='+'?i<a:i<result;const isB=op==='+'?i>=a&&i<a+b:false;const removed=op==='-'&&i>=result;const visible=i<step;
         return <div key={i} style={{width:beadSz,height:beadSz+8,borderRadius:beadSz/2,background:removed?RED+'44':isA?'#E67E22':isB?BLUE:GREEN,border:'2px solid '+(removed?RED+'66':'rgba(0,0,0,.2)'),opacity:visible?1:0.2,transform:visible?'scale(1)':'scale(0.4)',transition:'all .5s',textDecoration:removed?'line-through':'none'}}/>})}
@@ -1399,6 +1399,16 @@ function AbacusHelp({a,b,op='+',result}){
   </div>}
 
 // ===== RAZONA MODULE =====
+// Shared scene positions for SceneSVG and SpatialDrag
+const SCENE_POS={
+  mesa:{encima:{x:180,y:65},debajo:{x:180,y:195},'al lado':{x:310,y:100},dentro:{x:180,y:140},fuera:{x:310,y:100}},
+  silla:{encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120},fuera:{x:280,y:120}},
+  estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82},fuera:{x:310,y:120}},
+  caja:{encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120},fuera:{x:295,y:120}},
+  mochila:{encima:{x:175,y:35},debajo:{x:175,y:195},'al lado':{x:285,y:110},dentro:{x:175,y:120},fuera:{x:285,y:110}},
+  puerta:{encima:{x:170,y:34},debajo:{x:170,y:215},'al lado':{x:280,y:130},dentro:{x:170,y:130},fuera:{x:280,y:130}},
+  armario:{encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170},fuera:{x:295,y:130}}
+};
 const RAZONA_SPATIAL=[
   {scene:'estantería',obj:'libro',pos:'encima',q:'¿Dónde está el libro?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Encima'},
   {scene:'mesa',obj:'mochila',pos:'debajo',q:'¿Dónde está la mochila?',opts:['Encima','Debajo','Dentro','Al lado'],ans:'Debajo'},
@@ -1588,17 +1598,7 @@ function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}
   // Surface reference point per furniture (where "encima" sits)
   // Per-scene reference: {x,y} = center of the main surface
   // encima = just above surface, debajo = below, dentro = inside body, al lado = to the right
-  // Per-scene position map: each scene defines exactly where the object goes for each position
-  const scenePos={
-    mesa:     {encima:{x:180,y:65},debajo:{x:180,y:195},'al lado':{x:310,y:100},dentro:{x:180,y:140},fuera:{x:310,y:100}},
-    silla:    {encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120},fuera:{x:280,y:120}},
-    estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82},fuera:{x:310,y:120}},
-    caja:     {encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120},fuera:{x:295,y:120}},
-    mochila:  {encima:{x:175,y:35},debajo:{x:175,y:195},'al lado':{x:285,y:110},dentro:{x:175,y:120},fuera:{x:285,y:110}},
-    puerta:   {encima:{x:170,y:34},debajo:{x:170,y:215},'al lado':{x:280,y:130},dentro:{x:170,y:130},fuera:{x:280,y:130}},
-    armario:  {encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170},fuera:{x:295,y:130}}
-  };
-  const sp=scenePos[scene]||scenePos.mesa;
+  const sp=SCENE_POS[scene]||SCENE_POS.mesa;
   const normPos=pos==='al_lado'?'al lado':pos;
   const p=sp[normPos]||sp['al lado']||{x:180,y:120};
   const cx=p.x,cy=p.y;
@@ -1642,21 +1642,12 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
   const[placed,setPlaced]=useState(false);
   const[nearZone,setNearZone]=useState(null);
   const dragging=useRef(false);
-  const scenePos={
-    mesa:{encima:{x:180,y:65},debajo:{x:180,y:195},'al lado':{x:310,y:100},dentro:{x:180,y:140}},
-    silla:{encima:{x:170,y:92},debajo:{x:170,y:190},'al lado':{x:280,y:120},dentro:{x:170,y:120}},
-    estantería:{encima:{x:180,y:35},debajo:{x:180,y:200},'al lado':{x:310,y:120},dentro:{x:180,y:82}},
-    caja:{encima:{x:180,y:40},debajo:{x:180,y:200},'al lado':{x:295,y:120},dentro:{x:175,y:120}},
-    mochila:{encima:{x:175,y:35},debajo:{x:175,y:195},'al lado':{x:285,y:110},dentro:{x:175,y:120}},
-    puerta:{encima:{x:170,y:34},debajo:{x:170,y:215},'al lado':{x:280,y:130},dentro:{x:170,y:130}},
-    armario:{encima:{x:175,y:34},debajo:{x:175,y:215},'al lado':{x:295,y:130},dentro:{x:125,y:170}}
-  };
   function getTouch(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY}}
   function checkZone(t){
     if(!containerRef.current)return null;
     const rect=containerRef.current.querySelector('svg')?.getBoundingClientRect();
     if(!rect)return null;
-    const sp=scenePos[ex.data.scene]||scenePos.mesa;
+    const sp=SCENE_POS[ex.data.scene]||SCENE_POS.mesa;
     const svgX=(t.x-rect.left)/rect.width*360;const svgY=(t.y-rect.top)/rect.height*280;
     let closest=null;let minD=Infinity;
     for(const[zn,zp] of Object.entries(sp)){const d=Math.hypot(svgX-zp.x,svgY-zp.y);if(d<minD){minD=d;closest=zn}}
@@ -1685,21 +1676,21 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
     {/* Left — draggable object */}
     <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220}}>
       {!placed&&!fb&&<div
-        onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
-        onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd}
+        onTouchStart={onStart}
+        onMouseDown={onStart}
         style={{cursor:'grab',userSelect:'none',touchAction:'none',
           padding:'14px 20px',borderRadius:20,background:GOLD+'22',border:`3px dashed ${GOLD}`,
           animation:'pulse 1.5s infinite',display:'flex',flexDirection:'column',alignItems:'center',gap:2,overflow:'hidden'}}>
         <span style={{fontSize:48,lineHeight:1}}>{objEm}</span>
-        <span style={{fontSize:13,fontWeight:700,color:GOLD}}>{ex.data.obj}</span>
+        <span style={{fontSize:13,fontWeight:600,color:GOLD}}>{ex.data.obj}</span>
       </div>}
       {placed&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
         <div style={{animation:'rocketUp 1.8s 0.15s ease-in-out forwards',fontSize:52}}>🚀</div>
         <span style={{fontSize:36,opacity:0,animation:'starPop 0.6s 0.3s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
         <span style={{fontSize:28,opacity:0,animation:'starPop 0.6s 0.6s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
-        <p style={{fontSize:18,fontWeight:800,color:GREEN,margin:0,opacity:0,animation:'fadeIn 0.4s 0.5s both'}}>¡Genial!</p>
+        <p style={{fontSize:18,fontWeight:600,color:GREEN,margin:0,opacity:0,animation:'fadeIn 0.4s 0.5s both'}}>¡Genial!</p>
       </div>}
-      {fb==='no'&&<p style={{fontSize:16,fontWeight:700,color:RED,margin:0,textAlign:'center'}}>¡Inténtalo otra vez!</p>}
+      {fb==='no'&&<p style={{fontSize:16,fontWeight:600,color:RED,margin:0,textAlign:'center'}}>¡Inténtalo otra vez!</p>}
     </div>
     {/* Center — scene with drop zones */}
     <div ref={containerRef} style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:6,minWidth:0}}>
@@ -1745,7 +1736,7 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
             <span style={{position:'absolute',left:80,top:85,fontSize:13,opacity:0,animation:'starPop 0.4s 1.1s both'}}>✨</span>
             <span style={{position:'absolute',left:5,top:90,fontSize:20,opacity:0,animation:'starPop 0.4s 1.2s both'}}>🌟</span>
             {/* Texto */}
-            <p style={{position:'absolute',bottom:-5,left:-15,right:-15,fontSize:20,fontWeight:800,color:GREEN,margin:0,textAlign:'center',opacity:0,animation:'fadeIn 0.4s 0.5s both',whiteSpace:'nowrap',textShadow:'0 2px 6px rgba(0,0,0,0.4)'}}>¡Bien, vamos!</p>
+            <p style={{position:'absolute',bottom:-5,left:-15,right:-15,fontSize:20,fontWeight:600,color:GREEN,margin:0,textAlign:'center',opacity:0,animation:'fadeIn 0.4s 0.5s both',whiteSpace:'nowrap',textShadow:'0 2px 6px rgba(0,0,0,0.4)'}}>¡Bien, vamos!</p>
           </div>
         </div>}
       </div>
@@ -1772,9 +1763,9 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
       <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:12}}>
         {ex.data.groups.map((g,gi)=><div key={gi} style={{flex:1,background:gi===0?BLUE+'22':GREEN+'22',border:`2px solid ${gi===0?BLUE:GREEN}`,borderRadius:12,padding:10,minHeight:80}}>
-          <p style={{fontSize:16,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 8px'}}>{g}</p>
+          <p style={{fontSize:16,fontWeight:600,color:gi===0?BLUE:GREEN,margin:'0 0 8px'}}>{g}</p>
           <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>
-            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'44':GREEN+'44',borderRadius:6,padding:'4px 8px',fontSize:14,fontWeight:700}}>{it.w}</span>)}
+            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'44':GREEN+'44',borderRadius:6,padding:'4px 8px',fontSize:14,fontWeight:600}}>{it.w}</span>)}
           </div>
         </div>)}
       </div>
@@ -1800,7 +1791,7 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
     </div>}
     {fb==='ok'&&ex.mode!=='spatial'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -1880,7 +1871,7 @@ function ExLee({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
         {shuffledWords.map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:26,padding:22,fontWeight:700,minHeight:80,boxShadow:fb==='ok'&&w===ex.data.ans?'0 0 20px '+GREEN+'88':'',transition:'all .3s'}} disabled={!!fb}>{w}</button>)}
       </div>
-      {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:14,marginTop:12}}><p style={{fontSize:18,fontWeight:700,color:GREEN,margin:0}}>{'¡Bien! '+ex.data.ans+' no es un '+ex.data.cat.replace(/s$/,'')+'!'}</p></div>}
+      {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:14,marginTop:12}}><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:0}}>{'¡Bien! '+ex.data.ans+' no es un '+ex.data.cat.replace(/s$/,'')+'!'}</p></div>}
     </div>}
     {ex.mode==='word_img'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:36,fontWeight:700,margin:0,color:GOLD,letterSpacing:4}}>{ex.data.word}</p></div>
@@ -1891,14 +1882,14 @@ function ExLee({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='complete'&&<div>
       <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:42,fontWeight:700,margin:0,color:GOLD,letterSpacing:6,fontFamily:'monospace'}}>{filledLetter?ex.data.display.split('').map((c,i)=>c==='_'?<span key={i} style={{color:fb==='ok'?GREEN:fb==='show'?GREEN:GOLD,textDecoration:fb==='ok'?'none':'none',transition:'all .3s'}}>{filledLetter}</span>:c):ex.data.display}</p></div>
       {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:24,fontWeight:700,color:GREEN,margin:0}}>{ex.data.word}</p></div>}
-      {fb==='show'&&<div className="af" style={{background:GOLD+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:700,color:GOLD,margin:0}}>Era {ex.data.missing}!</p></div>}
-      {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Prueba otra</p></div>}
+      {fb==='show'&&<div className="af" style={{background:GOLD+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,color:GOLD,margin:0}}>Era {ex.data.missing}!</p></div>}
+      {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! Prueba otra</p></div>}
       {!fb&&<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
         {ex.data.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>pick(o)} style={{fontSize:32,padding:18,fontWeight:700,minHeight:70}}>{o}</button>)}
       </div>}
     </div>}
     {ex.mode==='syllables'&&<div>
-      <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:0,color:GOLD}}>Ordena las sílabas</p></div>
+      <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>Ordena las sílabas</p></div>
       <div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:14,minHeight:60}}>
         {ex.data.syllables.map((_,i)=><div key={i} style={{minWidth:70,height:56,display:'flex',alignItems:'center',justifyContent:'center',borderRadius:12,border:`3px solid ${placed[i]?GREEN:BORDER}`,background:placed[i]?GREEN+'22':BG3,fontSize:28,fontWeight:700,color:placed[i]?GREEN:DIM}}>{placed[i]||'__'}</div>)}
       </div>
@@ -1914,7 +1905,7 @@ function ExLee({ex,onOk,onSkip,name,uid,vids}){
       </div>
     </div>}
     {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -1959,8 +1950,8 @@ function DoneScreen({st,elapsed,user,supPin,onExit}){
           <p style={{fontSize:22,fontWeight:700,margin:0,color:GREEN}}>¡Lo has hecho genial!</p>
         </div>
         <div style={{display:'flex',justifyContent:'center',gap:24,animation:'fadeIn .5s 1.1s both'}}>
-          <button onClick={()=>onExit('repeat')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #27ae60',background:GREEN,color:'#fff',fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1e8449',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🔄</span><span>¡Otra ronda!</span></button>
-          <button onClick={()=>onExit('menu')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #2980b9',background:BLUE,color:'#fff',fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1a5276',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🪐</span><span>Menú</span></button>
+          <button onClick={()=>onExit('repeat')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #27ae60',background:GREEN,color:'#fff',fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1e8449',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🔄</span><span>¡Otra ronda!</span></button>
+          <button onClick={()=>onExit('menu')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #2980b9',background:BLUE,color:'#fff',fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1a5276',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🪐</span><span>Menú</span></button>
         </div>
       </div>}
     </div>
@@ -2057,8 +2048,8 @@ export default function App(){
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:18}}>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🔒 PIN del supervisor</p><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></p><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏰ Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></p><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏰ Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🎤 Exigencia del micro: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Cuanto más bajo, más fácil acepta la pronunciación</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>50% Fácil</span><span>65% Normal</span><span>100% Estricto</span></div></div>
         <div className="card" style={{padding:20}}>{(()=>{
           const PLANET_COLORS_P={quiensoy:['#F8BBD0','#E91E63','#AD1457'],dilo:['#A5D6A7','#4CAF50','#2E7D32'],cuenta:['#FFCC80','#FF9800','#E65100'],razona:['#90CAF9','#42A5F5','#1565C0'],escribe:['#CE93D8','#AB47BC','#6A1B9A'],lee:['#EF9A9A','#EF5350','#B71C1C']};
@@ -2068,7 +2059,7 @@ export default function App(){
           return <>
             <p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🪐 Planetas activos</p>
             <p style={{fontSize:14,color:DIM,margin:'0 0 4px'}}>Toca un planeta para ver sus módulos. Toca cada módulo para activarlo/desactivarlo.</p>
-            <p style={{fontSize:15,fontWeight:700,margin:'0 0 12px',color:totalActive>MAX_ACTIVE?RED:totalActive<=MAX_ACTIVE?GREEN:'#E67E22'}}>
+            <p style={{fontSize:15,fontWeight:600,margin:'0 0 12px',color:totalActive>MAX_ACTIVE?RED:totalActive<=MAX_ACTIVE?GREEN:'#E67E22'}}>
               {totalActive} activos {totalActive>MAX_ACTIVE&&'⚠️ Máximo recomendado: '+MAX_ACTIVE}
             </p>
             {/* Planets as circles */}
@@ -2128,18 +2119,18 @@ export default function App(){
         </div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📋 Nivel por módulo</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Configura el nivel que verá el niño en cada módulo</p>
           {GROUPS.map(g=><div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
-            <p style={{fontSize:18,fontWeight:700,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
+            <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
             {g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLv=getModuleLv(m.lvKey)||m.defLv;
               return <div key={mi} style={{marginBottom:8}}>
               <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
               {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap'}}>{opts.map(lv=>
-                <button key={lv.n} onClick={()=>{setModuleLv(m.lvKey,lv.n);setActiveMods(a=>({...a}))}} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${curLv===lv.n?g.color:BORDER}`,background:curLv===lv.n?g.color+'22':BG3+'44',color:curLv===lv.n?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:'pointer',minHeight:40}}>{curLv===lv.n?'● ':''}{lv.l}</button>
+                <button key={lv.n} onClick={()=>{setModuleLv(m.lvKey,lv.n);setActiveMods(a=>({...a}))}} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${curLv===lv.n?g.color:BORDER}`,background:curLv===lv.n?g.color+'22':BG3+'44',color:curLv===lv.n?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40}}>{curLv===lv.n?'● ':''}{lv.l}</button>
               )}</div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
             </div>})}
           </div>)}
         </div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📝 Sesión de hoy</p>
-          <div style={{display:'flex',gap:8,marginBottom:12}}>{['free','guided'].map(m=><button key={m} onClick={()=>{setSessionMode(m);saveData('session_mode',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sessionMode===m?GOLD:BORDER}`,background:sessionMode===m?GOLD+'22':BG3,color:sessionMode===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer',minHeight:52}}>{m==='free'?'🆓 Libre':'📋 Guiada'}</button>)}</div>
+          <div style={{display:'flex',gap:8,marginBottom:12}}>{['free','guided'].map(m=><button key={m} onClick={()=>{setSessionMode(m);saveData('session_mode',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sessionMode===m?GOLD:BORDER}`,background:sessionMode===m?GOLD+'22':BG3,color:sessionMode===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m==='free'?'🆓 Libre':'📋 Guiada'}</button>)}</div>
           {sessionMode==='guided'&&<div>
             <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Elige hasta 4 tareas:</p>
             <p style={{fontSize:14,color:GOLD,fontWeight:700,margin:'0 0 10px'}}>Máximo 4 tareas</p>
@@ -2155,27 +2146,27 @@ export default function App(){
           </div>}
         </div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🎯 Módulo de hoy</p>
-          <button onClick={()=>{setFreeChoice(!freeChoice)}} style={{width:'100%',padding:'14px 20px',borderRadius:10,border:`3px solid ${freeChoice?GREEN:BORDER}`,background:freeChoice?GREEN+'22':BG3,color:freeChoice?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer',marginBottom:12,minHeight:52}}>{freeChoice?'✅ Elección libre (el niño elige)':'❌ Elección libre'}</button>
+          <button onClick={()=>{setFreeChoice(!freeChoice)}} style={{width:'100%',padding:'14px 20px',borderRadius:10,border:`3px solid ${freeChoice?GREEN:BORDER}`,background:freeChoice?GREEN+'22':BG3,color:freeChoice?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',marginBottom:12,minHeight:52}}>{freeChoice?'✅ Elección libre (el niño elige)':'❌ Elección libre'}</button>
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
             {GROUPS.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
-              <p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
-              {g.modules.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||m.defLv;return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&secLv===mLv?g.color:BORDER}`,background:sec===m.k&&secLv===mLv?g.color+'33':BG3,color:sec===m.k&&secLv===mLv?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
+              <p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
+              {g.modules.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||m.defLv;return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&secLv===mLv?g.color:BORDER}`,background:sec===m.k&&secLv===mLv?g.color+'33':BG3,color:sec===m.k&&secLv===mLv?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
             </div>)}
           </div>}
         </div>
         <button className="btn btn-gold" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up);setOv(null)}} style={{fontSize:20,padding:'16px 20px',minHeight:52}}>💾 Guardar</button>
         <button className="btn btn-g" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up);setOv(null)}} style={{marginTop:8,fontSize:24,padding:'20px 24px',minHeight:64}}>🎮 ¡A jugar!</button>
         <button className="btn btn-p" onClick={()=>{setOv(null);setShowRec(true)}} style={{marginTop:8,fontSize:18,padding:'14px 20px',minHeight:52}}>🎙️ Grabar voces</button>
-        <div style={{marginTop:20,borderTop:'1px solid '+BORDER,paddingTop:20}}>{!delConf?<button className="btn btn-ghost" style={{color:RED,borderColor:RED+'44',fontSize:18,padding:'14px 20px',minHeight:52}} onClick={()=>setDelConf(true)}>🗑️ Borrar perfil de {user.name}</button>:<div className="card" style={{borderColor:RED+'66',background:RED+'0C',padding:20}}><p style={{fontSize:18,fontWeight:700,color:RED,margin:'0 0 10px'}}>¿Seguro? Se perderá todo el progreso</p><div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1,fontSize:18,minHeight:52}} onClick={()=>setDelConf(false)}>Cancelar</button><button className="btn btn-g" style={{flex:1,background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21',fontSize:18,minHeight:52}} onClick={()=>{setProfs(p=>p.filter(x=>x.id!==user.id));setUser(null);setOv(null);setDelConf(false);setScr('login')}}>Sí, borrar</button></div></div>}
+        <div style={{marginTop:20,borderTop:'1px solid '+BORDER,paddingTop:20}}>{!delConf?<button className="btn btn-ghost" style={{color:RED,borderColor:RED+'44',fontSize:18,padding:'14px 20px',minHeight:52}} onClick={()=>setDelConf(true)}>🗑️ Borrar perfil de {user.name}</button>:<div className="card" style={{borderColor:RED+'66',background:RED+'0C',padding:20}}><p style={{fontSize:18,fontWeight:600,color:RED,margin:'0 0 10px'}}>¿Seguro? Se perderá todo el progreso</p><div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1,fontSize:18,minHeight:52}} onClick={()=>setDelConf(false)}>Cancelar</button><button className="btn btn-g" style={{flex:1,background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21',fontSize:18,minHeight:52}} onClick={()=>{setProfs(p=>p.filter(x=>x.id!==user.id));setUser(null);setOv(null);setDelConf(false);setScr('login')}}>Sí, borrar</button></div></div>}
         <button className="btn btn-ghost" style={{color:RED,borderColor:RED+'22',marginTop:12,fontSize:16,padding:'14px 20px',minHeight:52}} onClick={()=>{if(confirm('¿Borrar todos los perfiles y progreso? Las voces grabadas se conservan.')){const keep={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))keep[k]=localStorage.getItem(k)}localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));setProfs([]);setUser(null);setOv(null);setScr('setup')}}}>🔄 Resetear app (conserva voces)</button></div>
       </div>}
       {ptab==='familia'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>👨 Nombre del padre</p><input className="inp" value={user.padre||''} onChange={e=>{const up={...user,padre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Paco" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>👩 Nombre de la madre</p><input className="inp" value={user.madre||''} onChange={e=>{const up={...user,madre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Ana" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>👦 Hermanos (separados por coma)</p><input className="inp" value={user.hermanos||''} onChange={e=>{const up={...user,hermanos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Sofía, Miguel" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>🤝 Mejores amigos (separados por coma)</p><input className="inp" value={user.amigos||''} onChange={e=>{const up={...user,amigos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Vega, Amir, Carlos" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>📱 Teléfono de emergencia</p><input className="inp" value={user.telefono||''} onChange={e=>{const up={...user,telefono:e.target.value};setUser(up);saveP(up)}} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{fontSize:18,padding:14}}/><p style={{fontSize:14,color:DIM,margin:'8px 0 0'}}>Con puntos para pronunciar: 6.1.2.3.4.5</p></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>🏠 Dirección de casa</p><input className="inp" value={user.direccion||''} onChange={e=>{const up={...user,direccion:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Calle Mayor 10, Madrid" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👨 Nombre del padre</p><input className="inp" value={user.padre||''} onChange={e=>{const up={...user,padre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Paco" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👩 Nombre de la madre</p><input className="inp" value={user.madre||''} onChange={e=>{const up={...user,madre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Ana" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👦 Hermanos (separados por coma)</p><input className="inp" value={user.hermanos||''} onChange={e=>{const up={...user,hermanos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Sofía, Miguel" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>🤝 Mejores amigos (separados por coma)</p><input className="inp" value={user.amigos||''} onChange={e=>{const up={...user,amigos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Vega, Amir, Carlos" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>📱 Teléfono de emergencia</p><input className="inp" value={user.telefono||''} onChange={e=>{const up={...user,telefono:e.target.value};setUser(up);saveP(up)}} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{fontSize:18,padding:14}}/><p style={{fontSize:14,color:DIM,margin:'8px 0 0'}}>Con puntos para pronunciar: 6.1.2.3.4.5</p></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>🏠 Dirección de casa</p><input className="inp" value={user.direccion||''} onChange={e=>{const up={...user,direccion:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Calle Mayor 10, Madrid" style={{fontSize:18,padding:14}}/></div>
         <p style={{fontSize:16,color:DIM,margin:0}}>Estos datos se usan en frases personalizadas para que practique con su información real.</p>
         <div className="card" style={{marginTop:16,borderColor:PURPLE+'44',padding:20}}>
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:PURPLE}}>👥 Mis Personas</p>
@@ -2199,10 +2190,10 @@ export default function App(){
       <div className="card" style={{padding:24,textAlign:'left',marginBottom:16}}>
         <p style={{fontSize:20,color:GOLD,fontWeight:700,textAlign:'center',margin:'0 0 16px'}}>Configuración inicial</p>
         <p style={{fontSize:15,color:DIM,margin:'0 0 14px'}}>Este PIN lo usará el supervisor (padre, madre o tutor) para gestionar la app. El niño no podrá salir sin él.</p>
-        <label style={{fontSize:16,fontWeight:700,color:TXT}}>🔒 PIN del supervisor (4 dígitos)</label>
+        <label style={{fontSize:16,fontWeight:600,color:TXT}}>🔒 PIN del supervisor (4 dígitos)</label>
         <input className="inp" value={supInp} onChange={e=>setSupInp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{marginTop:8,marginBottom:20,textAlign:'center',fontSize:30,letterSpacing:16}}/>
         <div style={{background:BLUE+'15',border:'2px solid '+BLUE+'33',borderRadius:14,padding:16,marginBottom:16}}>
-          <p style={{fontSize:16,fontWeight:700,margin:'0 0 8px'}}>🎤 Permiso del micrófono</p>
+          <p style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>🎤 Permiso del micrófono</p>
           <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Toki necesita el micrófono para escuchar al niño. Sin él, la app no funciona.</p>
           {!micOk?<button className="btn btn-b" onClick={()=>{navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop());setMicOk(true)}).catch(()=>alert('No se ha podido activar el micrófono. Revisa los permisos del navegador.'))}} style={{fontSize:18}}>🎤 Activar micrófono</button>
           :<p style={{fontSize:18,color:GREEN,fontWeight:700,margin:0}}>✅ Micrófono activado</p>}
@@ -2274,12 +2265,12 @@ export default function App(){
         }}>
           <span style={{fontSize:36}}>➕</span>
         </div>
-        <div style={{fontSize:16,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
+        <div style={{fontSize:16,fontWeight:600,color:DIM}}>Nuevo Jugador</div>
       </button>}
       {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}><p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
         <label style={{fontSize:15,color:DIM}}>Nombre</label><input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Nico" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label><input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
-        <label style={{fontSize:15,color:DIM}}>Sexo</label><div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
+        <label style={{fontSize:15,color:DIM}}>Sexo</label><div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
         <div style={{borderTop:'1px solid '+BORDER,paddingTop:14,marginBottom:14}}><p style={{fontSize:16,color:GOLD,fontWeight:700,margin:'0 0 12px'}}>👨‍👩‍👦 Familia (opcional, para frases personalizadas)</p>
         <label style={{fontSize:14,color:DIM}}>Nombre del padre</label><input className="inp" value={fPadre} onChange={e=>setFPadre(e.target.value)} placeholder="Ej: Paco" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>Nombre de la madre</label><input className="inp" value={fMadre} onChange={e=>setFMadre(e.target.value)} placeholder="Ej: Ana" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
@@ -2381,7 +2372,7 @@ export default function App(){
                       }}>
                         <span style={{fontSize:42,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
                       </div>
-                      <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
+                      <div style={{fontSize:13,fontWeight:600,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
                     </div>
                   </button>})}
               </div>
