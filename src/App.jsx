@@ -2258,7 +2258,7 @@ export default function App(){
         }}>
           <span style={{fontSize:56,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
         </div>
-        <div style={{fontSize:20,fontWeight:700,position:'relative',zIndex:1}}>{p.name}</div>
+        <div style={{fontSize:20,fontWeight:600,position:'relative',zIndex:1}}>{p.name}</div>
         <div style={{fontSize:14,color:DIM,position:'relative',zIndex:1}}>{p.age} años</div>
       </button>})}</div>}
       {profs.length<4&&!creating&&<button onClick={()=>setCreating(true)} style={{
