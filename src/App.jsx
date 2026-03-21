@@ -1552,13 +1552,13 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
-    {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,maxWidth:750,margin:'0 auto'}}>
-      <div style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+    {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:16,maxWidth:750,margin:'0 auto'}}>
+      <div style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
         <SceneSVG scene={ex.data.scene} obj={ex.data.obj} pos={ex.data.pos}/>
       </div>
-      <div style={{flex:'0 0 240px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,padding:14,minHeight:56}}>{o}</button>)}
+      <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',gap:8}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,padding:14,minHeight:52}}>{o}</button>)}
       </div>
     </div>}
     {ex.mode==='intruso'&&<div>
