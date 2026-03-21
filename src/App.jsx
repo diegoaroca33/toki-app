@@ -2129,7 +2129,7 @@ export default function App(){
                         display:'flex',alignItems:'center',justifyContent:'center',
                         boxShadow:hasActive?`0 4px 20px ${pc[1]}44, inset 0 -4px 12px ${pc[2]}66, inset 0 4px 8px ${pc[0]}88`:'0 2px 8px rgba(0,0,0,.3)',
                       }}>
-                        <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
+                        <span style={{fontSize:42,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
                       </div>
                       <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
                     </div>
@@ -2200,7 +2200,7 @@ export default function App(){
                       display:'flex',alignItems:'center',justifyContent:'center',
                       transition:'all .25s',
                     }}>
-                      <span style={{fontSize:isActive?26:22,filter:isActive?'':'brightness(0.7) saturate(0.5)',transition:'all .25s'}}>
+                      <span style={{fontSize:isActive?30:26,filter:isActive?'':'brightness(0.7) saturate(0.5)',transition:'all .25s'}}>
                         {m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐'}
                       </span>
                     </div>
