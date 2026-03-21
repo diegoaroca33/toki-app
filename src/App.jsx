@@ -1954,23 +1954,52 @@ export default function App(){
     </div>}
 
     {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
-      {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=><button key={p.id} onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
+      {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=>{
+        const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
+        const pN=myPersonas.length;
+        const pOrbitR=140;const pSize=52;
+        return <button key={p.id} onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
         background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
-        display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:0,transition:'transform .2s',
+        display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:0,transition:'transform .2s',position:'relative',
       }}>
+        {/* Personas orbitando alrededor del avatar */}
+        {pN>0&&<div style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,zIndex:0,marginTop:-10}}>
+          {/* Orbit ring */}
+          <svg style={{position:'absolute',left:-pOrbitR,top:-pOrbitR*0.5,width:pOrbitR*2,height:pOrbitR,pointerEvents:'none',overflow:'visible'}}>
+            <ellipse cx={pOrbitR} cy={pOrbitR*0.5} rx={pOrbitR} ry={pOrbitR*0.45} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="4 3"/>
+          </svg>
+          {myPersonas.map((pp,i)=>{
+            const angle=(360/pN)*i - 45;
+            const rad=angle*Math.PI/180;
+            const px=pOrbitR*Math.cos(rad);
+            const py=pOrbitR*0.45*Math.sin(rad);
+            const relColors={'Padre':'#42A5F5','Madre':'#E91E63','Hermano':'#4CAF50','Hermana':'#AB47BC','Abuelo':'#FF9800','Abuela':'#FF7043','Amigo':'#26C6DA','Amiga':'#EC407A','Mejor amigo/a':'#FFCA28','Profe':'#7E57C2'};
+            const rc=relColors[pp.relation]||'#78909C';
+            return <div key={i} style={{position:'absolute',left:px-pSize/2,top:py-pSize/2,
+              width:pSize,height:pSize,borderRadius:'50%',
+              background:`radial-gradient(circle at 30% 25%,${rc}88,${rc} 70%,${rc}CC)`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+              boxShadow:`0 2px 8px ${rc}44`,
+              animation:`planetFloat ${3+i*0.5}s ease-in-out ${i*0.3}s infinite`,
+              flexDirection:'column',pointerEvents:'none',
+            }}>
+              <span style={{fontSize:22}}>{pp.avatar||'👤'}</span>
+              <span style={{position:'absolute',bottom:-16,fontSize:10,color:DIM,fontWeight:700,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{pp.name}</span>
+            </div>})}
+        </div>}
         <div style={{
           width:130,height:130,borderRadius:'50%',
           background:'radial-gradient(circle at 30% 25%,#90CAF9,#42A5F5 60%,#1565C0)',
           display:'flex',alignItems:'center',justifyContent:'center',
           boxShadow:'0 4px 24px #42A5F544, inset 0 -4px 12px #1565C066, inset 0 4px 8px #90CAF988',
           animation:'planetFloat 4s ease-in-out infinite',
-          position:'relative',
+          position:'relative',zIndex:1,
         }}>
           <span style={{fontSize:56,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
         </div>
-        <div style={{fontSize:20,fontWeight:700}}>{p.name}</div>
-        <div style={{fontSize:14,color:DIM}}>{p.age} años</div>
-      </button>)}</div>}
+        <div style={{fontSize:20,fontWeight:700,position:'relative',zIndex:1}}>{p.name}</div>
+        <div style={{fontSize:14,color:DIM,position:'relative',zIndex:1}}>{p.age} años</div>
+      </button>})}</div>}
       {profs.length<4&&!creating&&<button onClick={()=>setCreating(true)} style={{
         background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
         display:'flex',flexDirection:'column',alignItems:'center',gap:6,margin:'0 auto',padding:0,
