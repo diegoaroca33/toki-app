@@ -715,7 +715,7 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <circle cx={sz/2} cy={sz/2} r={sz/2-3} fill={`url(#${gid}sh)`}/>
       <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>=80?24:sz>=60?20:sz>=50?17:14} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 0 rgba(255,255,255,.4)'}}>{c.l}</text>
     </svg>};
-  const Coin=({c,onClick})=>{const sz=Math.max(80,c.sz?Math.round(c.sz*2.2):80);const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
+  const Coin=({c,onClick,size})=>{const sz=size||Math.min(100,Math.max(70,c.sz?Math.round(c.sz*2):70));const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
     return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 3px 5px rgba(0,0,0,.45))',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.93)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
       {imgOk?<img src={imgSrc} alt={c.l} style={{width:sz,height:sz,borderRadius:'50%',objectFit:'cover'}} onError={()=>setImgOk(false)}/>:<CoinSVG c={c} sz={sz}/>}
     </button>};
@@ -738,19 +738,19 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <text x={12} y={16} textAnchor="start" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
       <text x={w-12} y={h-14} textAnchor="end" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
     </svg>};
-  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.png';const bw=160;const bh=85;
+  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.png';const bw=200;const bh=105;
     return <button onClick={onClick} style={{width:bw,height:bh,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.95)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
       {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:<BillSVG b={b} w={bw} h={bh}/>}
     </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    {ex.mode==='recognize'&&<div>
-      <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
-        {ex.coin.v>=5?<Bill b={ex.coin}/>:<div style={{display:'inline-block',transform:'scale(1.6)',margin:'20px 0'}}><Coin c={ex.coin}/></div>}</div>
+    {ex.mode==='recognize'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
+      <div className="card" style={{padding:20,flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center'}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Cuánto vale?</p>
+        {ex.coin.v>=5?<Bill b={ex.coin}/>:<Coin c={ex.coin} size={130}/>}</div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
-    {ex.mode==='sum'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Cuánto hay?</p>
-        <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
+    {ex.mode==='sum'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
+      <div className="card" style={{padding:16,flex:'0 1 auto',maxWidth:320}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 10px',color:GOLD}}>¿Cuánto hay?</p>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
     {ex.mode==='pay'&&<div>
@@ -765,8 +765,8 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <button className="btn btn-ghost" onClick={()=>{setSel([])}} style={{fontSize:14,marginBottom:8}}>↩️ Borrar</button>
       <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:14}}>⏭️ Saltar</button>
     </div>}
-    {ex.mode==='change'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
+    {ex.mode==='change'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,flexWrap:'wrap'}}>
+      <div className="card" style={{padding:20,flex:'0 0 auto'}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Cuesta {ex.price.toFixed(2).replace('.',',')} €</p>
         <p style={{fontSize:16,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/>
     </div>}
@@ -1343,15 +1343,26 @@ function NumPad({value,onChange,onSubmit,maxLen=5,decimal=false}){
   const press=d=>{if(String(value).length<maxLen)onChange(String(value)+d)};
   const addDot=()=>{const v=String(value);if(!v.includes(',')&&v.length>0&&v.length<maxLen)onChange(v+',')};
   const bksp=()=>onChange(String(value).slice(0,-1));
-  const btnSt={width:68,height:64,borderRadius:14,border:`2px solid ${BORDER}`,background:BG3,color:TXT,fontSize:28,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s'};
-  return <div style={{display:'flex',flexDirection:'column',gap:6,alignItems:'center',padding:8}}>
-    <div style={{fontSize:40,fontWeight:700,color:GOLD,minHeight:52,letterSpacing:6,marginBottom:6,textAlign:'center'}}>{value?(value+(decimal?' €':'')):'?'}</div>
-    <div style={{display:'grid',gridTemplateColumns:decimal?'repeat(4,1fr)':'repeat(3,1fr)',gap:8,maxWidth:decimal?340:260}}>
-      {[1,2,3,4,5,6,7,8,9].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
-      <button style={{...btnSt,background:RED+'33',color:RED,border:`2px solid ${RED}44`}} onClick={bksp}>⌫</button>
-      <button style={btnSt} onClick={()=>press(0)}>0</button>
-      {decimal&&<button style={{...btnSt,background:BLUE+'33',color:BLUE,border:`2px solid ${BLUE}44`}} onClick={addDot}>,</button>}
-      <button style={{...btnSt,background:GOLD+'33',color:GOLD,border:`2px solid ${GOLD}66`}} onClick={onSubmit} disabled={!value}>✓</button>
+  const btnSt={width:52,height:46,borderRadius:12,border:`2px solid ${BORDER}`,background:BG3,color:TXT,fontSize:22,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'transform .1s'};
+  // Layout: 3 columns of digits + comma integrated as a number character
+  // Row 1: 1 2 3     Row 2: 4 5 6     Row 3: 7 8 9     Row 4: , 0 ⌫
+  return <div style={{display:'flex',flexDirection:'column',gap:4,alignItems:'center',padding:2}}>
+    <div style={{fontSize:26,fontWeight:700,color:GOLD,minHeight:30,letterSpacing:3,marginBottom:2,textAlign:'center'}}>{value?(value+(decimal?' €':'')):'?'}</div>
+    <div style={{display:'flex',gap:6,alignItems:'stretch'}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:4}}>
+        {[1,2,3].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
+        {[4,5,6].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
+        {[7,8,9].map(d=><button key={d} style={btnSt} onClick={()=>press(d)}>{d}</button>)}
+        {decimal
+          ?<button style={{...btnSt,fontSize:28,color:GOLD,fontWeight:800}} onClick={addDot}>,</button>
+          :<div/>}
+        <button style={btnSt} onClick={()=>press(0)}>0</button>
+        <button style={{...btnSt,background:RED+'22',color:RED,border:`2px solid ${RED}33`,fontSize:18}} onClick={bksp}>⌫</button>
+      </div>
+      <button style={{width:58,borderRadius:14,border:`3px solid ${GREEN}`,background:GREEN+'33',color:'#fff',fontSize:14,fontWeight:700,fontFamily:"'Fredoka'",cursor:!value?'default':'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,opacity:!value?0.35:1,transition:'all .15s'}} onClick={onSubmit} disabled={!value}>
+        <span style={{fontSize:28}}>🚀</span>
+        <span style={{fontSize:11,lineHeight:1}}>¡Listo!</span>
+      </button>
     </div>
   </div>}
 
