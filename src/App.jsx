@@ -1,5 +1,5 @@
 // ============================================================
-// TOKI · Aprende a decirlo  
+// TOKI · Aprende a decirlo
 // © 2026 Diego Aroca. Todos los derechos reservados.
 // ============================================================
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
@@ -62,12 +62,17 @@ input::placeholder{color:${DIM}}
 @keyframes mascotBounce{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-5deg)}75%{transform:translateY(-4px) rotate(5deg)}}
 @keyframes mascotShy{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
 @keyframes mascotDance{0%{transform:translateY(0) rotate(0) scale(1)}25%{transform:translateY(-6px) rotate(-10deg) scale(1.1)}50%{transform:translateY(0) rotate(0) scale(1)}75%{transform:translateY(-6px) rotate(10deg) scale(1.1)}}
+@keyframes planetFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes orbitAll{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes counterSpin{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
 .skip-btn{display:none}body.sup-mode .skip-btn{display:inline-block}
 .af{animation:fadeIn .4s ease-out}.ab{animation:bounceIn .45s}.ap{animation:pulse 1.4s infinite}.as{animation:shake .4s}
 `;
 function lev(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
 function digToText(s){const m={'0':'cero','1':'uno','2':'dos','3':'tres','4':'cuatro','5':'cinco','6':'seis','7':'siete','8':'ocho','9':'nueve','10':'diez','11':'once','12':'doce','13':'trece','14':'catorce','15':'quince','16':'dieciséis','17':'diecisiete','18':'dieciocho','19':'diecinueve','20':'veinte','30':'treinta','40':'cuarenta','50':'cincuenta','60':'sesenta','70':'setenta','80':'ochenta','90':'noventa','100':'cien'};return s.replace(/\d+/g,n=>{if(m[n])return m[n];const num=parseInt(n);if(num>20&&num<30)return'veinti'+['uno','dós','trés','cuatro','cinco','séis','siete','ocho','nueve'][num-21];const d=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];const t=Math.floor(num/10),r=num%10;if(r===0)return d[t]||n;const u=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve'];return(d[t]||'')+' y '+(u[r]||'')})}
 function score(said,tgt){if(!said||!said.trim())return 0;const c=s=>digToText(s.toLowerCase()).replace(/[^a-záéíóúñü\s]/g,'').trim();const a=c(said),b=c(tgt);if(!a)return 0;if(a===b)return 4;const sw=a.split(/\s+/),tw=b.split(/\s+/);let exact=0,close=0;tw.forEach(t=>{if(sw.some(s=>s===t))exact++;else{const maxLev=t.length<=3?0:t.length<=5?1:2;if(sw.some(s=>lev(s,t)<=maxLev))close++}});const exactR=exact/Math.max(tw.length,1);if(exactR>=1)return 4;if(exactR>=.8)return 3;const totalR=(exact+close*.7)/Math.max(tw.length,1);if(totalR>=.5||exact>=1)return 2;return 1}
+function getExigencia(){try{const v=localStorage.getItem('toki_exigencia');return v?parseInt(v):65}catch(e){return 65}}
+function adjScore(raw){const ex=getExigencia();if(ex>=100)return raw;return Math.min(4,Math.round(raw*(100/ex)))}
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
 let voiceProfile={age:12,sex:'m'},cachedVoice=null;
 function setVoiceProfile(a,s){voiceProfile={age:a||12,sex:s||'m'};cachedVoice=null;pickVoice()}
@@ -97,16 +102,17 @@ const AVS=['🧑‍🚀','👨‍🚀','👩‍🚀','🦸','🦸‍♂️','�
 const avStr=v=>typeof v==='string'?v:'🧑‍🚀';
 const CLS=[GREEN,BLUE,GOLD,PURPLE,RED,'#E67E22',GREEN];const tdy=()=>new Date().toLocaleDateString('es-ES');const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const BUILD_OK=['¡Sí señor!','¡Eso es!','¡Bien hecho!','¡Perfecto!','¡Así se hace!','¡Genial!','¡Correcto!','¡Exacto!'];
-const PERFECT_T=['{N}, ¡eso ha sido perfecto!','¡Increíble, {N}!','¡{N}, qué crack!','¡Bravo, {N}!','¡Espectacular, {N}!','¡Fantástico, {N}!','¡Lo has clavado, {N}!','¡{N}, eres una máquina!','¡Qué bien, {N}!','¡Eso es, {N}!'];
-const GOOD_MSG=['¡Bien hecho!','¡Genial!','¡Muy bien!','¡Así se habla!','¡Fenomenal!','¡Estupendo!','¡Sigue así!','¡Vas muy bien!','¡Olé!','¡Qué bien suena!'];
-const RETRY_MSG=['Inténtalo otra vez','Escucha bien y repite','Otra vez, tú puedes','Venga, una más','Casi casi'];
-const FAIL_MSG=['Poco a poco lo conseguirás','No te rindas, otro día te saldrá','Ánimo, vas mejorando','Tranquilo, la próxima vez seguro','No pasa nada, seguimos'];
-const SHORT_ENCOURAGEMENT=['¡Casi!','Venga','¡Va!','Sigue','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!'];
-const MODULE_MSG={decir:['¡Dilo!','Dilo tú','Dilo otra vez','Venga, dilo'],math:['¡Cuenta!','Cuenta conmigo','Cuenta otra vez'],multi:['¡Cuenta!','Cuenta conmigo'],frac:['¡Cuenta!','Cuenta otra vez'],contar:['¡Cuenta!','Cuenta conmigo'],writing:['¡Escríbelo!','Escribe otra vez'],calendar:['¡Piensa!','Tú puedes','¡Razona!'],distribute:['¡Piensa!','Tú puedes'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','Tú puedes'],quiensoy:['¡Dilo!','Dilo tú'],razona:['¡Piensa!','Tú puedes','¡Razona!','Piensa bien'],lee:['¡Léelo!','Lee otra vez','¡Tú sabes leer!','Venga, lee']};
+const PERFECT_T=['¡Muy bien {N}!','¡Eres un crack {N}!','¡Genial {N}, sigue así!','¡{N}, qué crack!','¡Bravo {N}!','¡Espectacular {N}!','¡Fantástico {N}!','¡Lo has clavado {N}!','¡Qué bien {N}!','¡Eso es {N}!'];
+const GOOD_MSG=['¡Bien!','¡Genial!','¡Muy bien!','¡Fenomenal!','¡Estupendo!','¡Olé!'];
+const RETRY_MSG=['Otra vez','Venga, otra','Una más','Casi casi'];
+const FAIL_MSG=['Poco a poco','No pasa nada','Seguimos','Ánimo'];
+const SHORT_OK=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!'];
+const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!'];
+const MODULE_MSG={decir:['¡Dilo!','¡Dilo tú!','¡Dilo otra vez!','¡Venga, dilo!'],frase:['¡Dilo!','¡Dilo tú!','¡Venga, dilo!'],math:['¡Cuenta!','¡Cuenta conmigo!','¡Cuenta otra vez!'],multi:['¡Cuenta!','¡Cuenta conmigo!'],frac:['¡Cuenta!','¡Cuenta otra vez!'],contar:['¡Cuenta!','¡Cuenta conmigo!'],writing:['¡Escríbelo!','¡Escribe otra vez!'],calendar:['¡Piensa!','¡Tú puedes!','¡Razona!'],distribute:['¡Piensa!','¡Tú puedes!'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','¡Tú puedes!'],quiensoy:['¡Dilo!','¡Dilo tú!'],razona:['¡Piensa!','¡Tú puedes!','¡Razona!','¡Piensa bien!'],lee:['¡Léelo!','¡Lee otra vez!','¡Tú sabes leer!','¡Venga, lee!']};
 let _lastMsg='';
-function pickMsg(positive,name,section){const pool=[];if(positive){if(Math.random()<0.2){const t=rnd(PERFECT_T).replace(/\{N\}/g,name||'crack');if(t!==_lastMsg){_lastMsg=t;return t}}pool.push(...SHORT_ENCOURAGEMENT);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}else{pool.push(...SHORT_ENCOURAGEMENT);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}const filtered=pool.filter(m=>m!==_lastMsg);const msg=rnd(filtered.length?filtered:pool);_lastMsg=msg;return msg}
-function mkPerfect(name){const msg=rnd(PERFECT_T).replace(/\{N\}/g,name||'crack');_lastMsg=msg;return msg}
-const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK];
+function pickMsg(positive,name,section){const pool=[];if(positive){if(Math.random()<0.2&&name){const t=rnd(PERFECT_T).replace(/\{N\}/g,name);if(t!==_lastMsg){_lastMsg=t;return t}}pool.push(...SHORT_OK);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}else{pool.push(...SHORT_FAIL);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}const filtered=pool.filter(m=>m!==_lastMsg);const msg=rnd(filtered.length?filtered:pool);_lastMsg=msg;return msg}
+function mkPerfect(name){if(Math.random()<0.2&&name){const msg=rnd(PERFECT_T).replace(/\{N\}/g,name);_lastMsg=msg;return msg}const short=rnd(SHORT_OK.filter(m=>m!==_lastMsg));_lastMsg=short;return short}
+const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK,...SHORT_OK];
 function cheerIdx(text){const clean=text.replace(/\{N\}/g,'').trim().toLowerCase();for(let i=0;i<CHEER_ALL.length;i++){if(CHEER_ALL[i].replace(/\{N\}/g,'').trim().toLowerCase()===clean)return i}return -1}
 async function cheerOrSay(text,uid,vids,_cat){const idx=cheerIdx(text);if(idx>=0){const played=await playRec(uid,vids,'cheer_'+idx);if(played)return}await sayFB(text)}
 const NUMS_1_100=Array.from({length:100},(_,i)=>{const n=i+1;if(n===100)return'Cien';const u=['','Uno','Dos','Tres','Cuatro','Cinco','Seis','Siete','Ocho','Nueve','Diez','Once','Doce','Trece','Catorce','Quince','Dieciséis','Diecisiete','Dieciocho','Diecinueve','Veinte'];if(n<=20)return u[n];if(n<30)return'Veinti'+['uno','dós','trés','cuatro','cinco','séis','siete','ocho','nueve'][n-21];const d=['','','','Treinta','Cuarenta','Cincuenta','Sesenta','Setenta','Ochenta','Noventa'];const t=Math.floor(n/10),r=n%10;return r===0?d[t]:d[t]+' y '+u[r].toLowerCase()});
@@ -197,7 +203,7 @@ const GROUPS=[
     {k:'lee',l:'Ordena sílabas',defLv:4,lvKey:'lee_syllables'},
     {k:'lee',l:'Lee y haz',defLv:5,lvKey:'lee_read_do'}]}
 ];
-function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.06;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
+function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.03;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
 // Time-of-day helpers
 function getTimeOfDay(){const h=new Date().getHours();if(h>=6&&h<14)return'morning';if(h>=14&&h<20)return'afternoon';return'night'}
 function getSkyClass(){const t=getTimeOfDay();return t==='morning'?'sky-morning':t==='afternoon'?'sky-afternoon':'sky-night'}
@@ -212,52 +218,115 @@ function getGroupStatus(userId,groupId){const n=getGroupProgress(userId,groupId)
 // Spanish syllable splitter
 function splitSyllables(text){const w=text.toLowerCase().replace(/[¿?¡!,\.;:]/g,'').trim();const words=w.split(/\s+/);const result=[];const vowels='aeiouáéíóúü';words.forEach(word=>{const syls=[];let cur='';for(let i=0;i<word.length;i++){const c=word[i];const isV=vowels.includes(c);cur+=c;if(isV){const next=word[i+1],next2=word[i+2];if(i===word.length-1){syls.push(cur);cur=''}else if(next&&!vowels.includes(next)){if(next2&&!vowels.includes(next2)){if('lrLR'.includes(next2)){syls.push(cur);cur=''}else{cur+=next;syls.push(cur);cur='';i++}}else{if(next2&&vowels.includes(next2)){syls.push(cur);cur=''}else if(!next2){/* let it continue */}else{syls.push(cur);cur=''}}}else if(next&&vowels.includes(next)){syls.push(cur);cur=''}}}if(cur)syls.push(cur);result.push(syls)});return result}
 // Countdown beep
-function countdownBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=n===0?880:440;g.gain.value=n===0?0.12:0.08;o.start();o.stop(c.currentTime+(n===0?0.4:0.15));setTimeout(()=>c.close(),600)}catch(e){}}
+function countdownBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=n===0?880:440;g.gain.value=n===0?0.06:0.04;o.start();o.stop(c.currentTime+(n===0?0.25:0.08));setTimeout(()=>c.close(),400)}catch(e){}}
 // Mascot SVG component
-function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'';
+function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
   return <svg width={size} height={size} viewBox="0 0 48 48" style={{animation:anim,display:'block'}}>
-    <polygon points="24,2 28,16 42,16 30,24 34,38 24,30 14,38 18,24 6,16 20,16" fill={GOLD} stroke="#d4ac0d" strokeWidth={1.5}/>
-    <circle cx={19} cy={18} r={2.5} fill="#1a1a2e"/><circle cx={29} cy={18} r={2.5} fill="#1a1a2e"/>
+    <defs><filter id="starGlow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <path d="M24,3 C25.5,12 27,14 28,16 C33,15.5 39,15 42,16 C37,19 33,21 31,23 C33,28 35,34 34,38 C30,34 27,31 24,29 C21,31 18,34 14,38 C13,34 15,28 17,23 C15,21 11,19 6,16 C9,15 15,15.5 20,16 C21,14 22.5,12 24,3Z" fill={GOLD} stroke="#d4ac0d" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" filter="url(#starGlow)"/>
+    <circle cx={19} cy={19} r={2.8} fill="#1a1a2e"/><circle cx={29} cy={19} r={2.8} fill="#1a1a2e"/>
+    <circle cx={20} cy={18} r={1} fill="#fff"/><circle cx={30} cy={18} r={1} fill="#fff"/>
     {mood==='happy'&&<path d="M19,24 Q24,30 29,24" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
     {mood==='sad'&&<path d="M19,26 Q24,23 29,26" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
-    {mood==='idle'&&<path d="M20,23 L28,23" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
+    {mood==='idle'&&<path d="M20,24 Q24,27 28,24" fill="none" stroke="#1a1a2e" strokeWidth={1.8} strokeLinecap="round"/>}
     {mood==='dance'&&<path d="M18,24 Q24,31 30,24" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
   </svg>}
 // Rocket transition overlay
-function RocketTransition({show,onDone}){const[phase,setPhase]=useState('count');const[num,setNum]=useState(3);
-  useEffect(()=>{if(!show)return;setPhase('count');setNum(3);countdownBeep(3);
-    const t1=setTimeout(()=>{setNum(2);countdownBeep(2)},1200);
-    const t2=setTimeout(()=>{setNum(1);countdownBeep(1)},2400);
-    const t3=setTimeout(()=>{setNum(0);setPhase('launch');countdownBeep(0)},3600);
-    const t4=setTimeout(()=>{setPhase('fly')},4600);
-    const t5=setTimeout(()=>{if(onDone)onDone()},7100);
-    return()=>{[t1,t2,t3,t4,t5].forEach(clearTimeout)}},[show]);
+function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
+  const[phase,setPhase]=useState('idle');const[num,setNum]=useState(5);
+  const pc=planetColor||'#42A5F5';
+  useEffect(()=>{if(!show)return;setPhase('ignite');setNum(5);
+    // Phase 1: ignite (fire appears) 0-800ms
+    const t0=setTimeout(()=>{setPhase('pickup');countdownBeep(5)},800);
+    // Phase 2: pickup (rocket goes to avatar, face appears) 800-2000ms
+    const t1=setTimeout(()=>{setPhase('fly');setNum(5);countdownBeep(5)},2000);
+    // Phase 3: fly (countdown 5,4,3,2,1) 2000-7000ms
+    const t2=setTimeout(()=>{setNum(4);countdownBeep(4)},3000);
+    const t3=setTimeout(()=>{setNum(3);countdownBeep(3)},4000);
+    const t4=setTimeout(()=>{setNum(2);countdownBeep(2)},5000);
+    const t5=setTimeout(()=>{setNum(1);countdownBeep(1)},6000);
+    const t6=setTimeout(()=>{setPhase('arrive');countdownBeep(0)},7000);
+    // Phase 4: arrive at planet 7000-8200ms
+    const t7=setTimeout(()=>{if(onDone)onDone()},8200);
+    return()=>{[t0,t1,t2,t3,t4,t5,t6,t7].forEach(clearTimeout)}},[show]);
   if(!show)return null;
+  const RocketSVG=({size=120,showFire=false,showFace=false})=>(
+    <svg width={size} height={size*1.5} viewBox="0 0 100 150">
+      {/* Rocket body */}
+      <ellipse cx="50" cy="60" rx="22" ry="48" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="2"/>
+      {/* Nose cone */}
+      <ellipse cx="50" cy="18" rx="12" ry="20" fill={RED}/>
+      {/* Left fin */}
+      <path d="M28,85 L15,110 L28,100 Z" fill={BLUE} stroke="#1565C0" strokeWidth="1"/>
+      {/* Right fin */}
+      <path d="M72,85 L85,110 L72,100 Z" fill={BLUE} stroke="#1565C0" strokeWidth="1"/>
+      {/* Window/porthole */}
+      <circle cx="50" cy="50" r="12" fill="#1A237E" stroke="#90CAF9" strokeWidth="2"/>
+      <circle cx="50" cy="50" r="10" fill="#0D47A1"/>
+      {/* Face in window */}
+      {showFace&&<text x="50" y="55" textAnchor="middle" fontSize="16" dominantBaseline="central">{avatar||'🧑‍🚀'}</text>}
+      {!showFace&&<><circle cx="46" cy="47" r="1.5" fill="#90CAF9" opacity=".5"/><circle cx="54" cy="47" r="1" fill="#90CAF9" opacity=".3"/></>}
+      {/* Fire/propulsion */}
+      {showFire&&<>
+        <ellipse cx="50" cy="115" rx="14" ry="25" fill={GOLD} opacity=".85">
+          <animate attributeName="ry" values="20;28;20" dur=".3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".7;1;.7" dur=".2s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="50" cy="118" rx="9" ry="18" fill="#E67E22" opacity=".9">
+          <animate attributeName="ry" values="14;20;14" dur=".25s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="50" cy="120" rx="5" ry="12" fill="#F44336" opacity=".8">
+          <animate attributeName="ry" values="10;15;10" dur=".2s" repeatCount="indefinite"/>
+        </ellipse>
+      </>}
+    </svg>);
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200,background:'radial-gradient(ellipse,#0B1D3A 0%,#000 100%)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',overflow:'hidden'}}>
-    {phase==='count'&&<div key={num} style={{fontSize:120,fontWeight:900,color:GOLD,animation:'countNum 1s ease-out',textShadow:'0 0 40px '+GOLD}}>{num>0?num:'¡DESPEGUE!'}</div>}
-    {phase==='launch'&&<div style={{fontSize:80,fontWeight:900,color:GOLD,animation:'countNum .8s ease-out',textShadow:'0 0 40px '+GOLD}}>¡DESPEGUE!</div>}
+    {/* Stars background */}
+    {Array.from({length:30},(_,i)=><div key={'s'+i} style={{position:'absolute',left:Math.random()*100+'%',top:Math.random()*100+'%',width:Math.random()>0.5?2:1,height:Math.random()>0.5?2:1,background:'#fff',borderRadius:'50%',opacity:0.3+Math.random()*0.5,animation:`twinkle ${2+Math.random()*3}s ease-in-out infinite`}}/>)}
+
+    {/* Phase 1: IGNITE — rocket shakes, fire starts */}
+    {phase==='ignite'&&<div style={{animation:'shake .15s linear infinite'}}>
+      <RocketSVG size={140} showFire={true} showFace={false}/>
+    </div>}
+
+    {/* Phase 2: PICKUP — rocket moves to get Guillermo, face appears */}
+    {phase==='pickup'&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
+      <div style={{fontSize:56,animation:'bounceIn .6s ease-out'}}>{avatar||'🧑‍🚀'}</div>
+      <div style={{animation:'bounceIn .6s ease-out .3s both'}}>
+        <RocketSVG size={130} showFire={true} showFace={true}/>
+      </div>
+    </div>}
+
+    {/* Phase 3: FLY — countdown with streaking stars */}
     {phase==='fly'&&<>
-      {Array.from({length:20},(_,i)=><div key={i} style={{position:'absolute',left:Math.random()*100+'%',top:'-5%',width:2,height:Math.random()*30+10,background:'#fff',borderRadius:2,animation:'starPass '+(0.6+Math.random()*0.8)+'s linear '+(i*0.08)+'s forwards'}}/>)}
-      <svg width="80" height="120" viewBox="0 0 80 120" style={{animation:'rocketFly 2.5s ease-in forwards'}}>
-        <ellipse cx="40" cy="50" rx="18" ry="40" fill="#ddd" stroke="#999" strokeWidth="2"/>
-        <ellipse cx="40" cy="20" rx="10" ry="16" fill={RED}/>
-        <rect x="22" y="70" width="8" height="20" rx="3" fill={BLUE} transform="rotate(-15,26,80)"/>
-        <rect x="50" y="70" width="8" height="20" rx="3" fill={BLUE} transform="rotate(15,54,80)"/>
-        <ellipse cx="40" cy="40" rx="6" ry="8" fill={BLUE+'88'}/>
-        <ellipse cx="40" cy="95" rx="12" ry="20" fill={GOLD} opacity=".8"/>
-        <ellipse cx="40" cy="100" rx="8" ry="15" fill="#E67E22" opacity=".9"/>
-      </svg>
+      {Array.from({length:25},(_,i)=><div key={'st'+i} style={{position:'absolute',left:Math.random()*100+'%',top:'-5%',width:2,height:Math.random()*40+15,background:'#fff',borderRadius:2,opacity:0.6,animation:`starPass ${0.4+Math.random()*0.6}s linear ${i*0.15}s infinite`}}/>)}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
+        <div key={num} style={{fontSize:100,fontWeight:900,color:GOLD,animation:'countNum .8s ease-out',textShadow:`0 0 40px ${GOLD}`}}>{num}</div>
+        <RocketSVG size={100} showFire={true} showFace={true}/>
+      </div>
     </>}
+
+    {/* Phase 4: ARRIVE — rocket reaches planet */}
+    {phase==='arrive'&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,animation:'bounceIn .6s ease-out'}}>
+      <div style={{width:140,height:140,borderRadius:'50%',
+        background:`radial-gradient(circle at 30% 25%,${pc}88,${pc} 60%,${pc}cc)`,
+        display:'flex',alignItems:'center',justifyContent:'center',
+        boxShadow:`0 0 40px ${pc}66`,
+      }}>
+        <span style={{fontSize:60}}>{planetEmoji||'🪐'}</span>
+      </div>
+      <div style={{fontSize:36,fontWeight:900,color:GOLD,textShadow:`0 0 20px ${GOLD}`}}>¡DESPEGUE!</div>
+    </div>}
   </div>}
 // Personas helpers
 const PERSONA_RELATIONS=['Padre','Madre','Hermano','Hermana','Abuelo','Abuela','Tío','Tía','Primo','Prima','Amigo','Amiga','Compañero/a','Profe'];
 function Confetti({show}){const[pts,sP]=useState([]);useEffect(()=>{if(show){sP(Array.from({length:24},(_,i)=>({i,x:Math.random()*100,c:CLS[i%7],s:6+Math.random()*10,d:Math.random()*.5,du:.8+Math.random()*.8})));setTimeout(()=>sP([]),2800)}},[show]);if(!pts.length)return null;return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:999}}>{pts.map(p=><div key={p.i} style={{position:'absolute',left:p.x+'%',top:'-5%',width:p.s,height:p.s,background:p.c,borderRadius:3,animation:`confDrop ${p.du}s ease-in ${p.d}s forwards`}}/>)}</div>}
 function Ring({p,sz=80,sw=6,c=GREEN}){const r=(sz-sw)/2,ci=2*Math.PI*r;return <svg width={sz} height={sz} style={{transform:'rotate(-90deg)'}}><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={BG3} strokeWidth={sw}/><circle cx={sz/2} cy={sz/2} r={r} fill="none" stroke={c} strokeWidth={sw} strokeDasharray={ci} strokeDashoffset={ci-(p||0)*ci} strokeLinecap="round" style={{transition:'stroke-dashoffset .6s'}}/></svg>}
 function Tower({placed,total}){const cells=21,filled=Math.min(Math.floor((placed/Math.max(total,1))*cells),cells);return <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,maxWidth:220,margin:'0 auto'}}>{Array.from({length:cells},(_,i)=>{const row=Math.floor(i/7),inv=(2-row)*7+(i%7),on=inv<filled;return <div key={i} style={{aspectRatio:'1',borderRadius:4,transition:'all .3s cubic-bezier(.34,1.56,.64,1)',background:on?CLS[inv%7]:BG3+'44',border:on?'2px solid rgba(0,0,0,.2)':'2px solid '+BG3,transform:on?'scale(1)':'scale(.75)',opacity:on?1:.3}}/>})}</div>}
-function RecBtn({dur,onEnd,on}){const[pct,sP]=useState(100);const t=useRef(null);const s=useRef(0);useEffect(()=>{if(!on){sP(100);return}s.current=Date.now();const ms=dur*1000;t.current=setInterval(()=>{const e=Date.now()-s.current;const r=Math.max(0,100-e/ms*100);sP(r);if(r<=25&&r>20)beep(800,80);if(r<=15&&r>10)beep(800,80);if(r<=0){clearInterval(t.current);beep(1200,300);setTimeout(onEnd,1200)}},50);return()=>clearInterval(t.current)},[on,dur]);if(!on)return null;return <div style={{position:'relative',width:80,height:80,margin:'16px auto'}}><div style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',borderRadius:'50%',background:RED+'33',overflow:'hidden'}}><div style={{position:'absolute',bottom:0,left:0,width:'100%',background:RED,transition:'height .05s linear',height:pct+'%'}}/></div><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:36}}>🎤</div></div>}
+function RecBtn({dur,onEnd,on}){const[pct,sP]=useState(100);const t=useRef(null);const s=useRef(0);useEffect(()=>{if(!on){sP(100);return}s.current=Date.now();const ms=dur*1000;t.current=setInterval(()=>{const e=Date.now()-s.current;const r=Math.max(0,100-e/ms*100);sP(r);if(r<=25&&r>20)beep(1200,40);if(r<=15&&r>10)beep(1400,40);if(r<=0){clearInterval(t.current);beep(1600,60);setTimeout(onEnd,400)}},50);return()=>clearInterval(t.current)},[on,dur]);if(!on)return null;return <div style={{position:'relative',width:80,height:80,margin:'0 auto'}}><div style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',borderRadius:'50%',background:RED+'33',overflow:'hidden'}}><div style={{position:'absolute',bottom:0,left:0,width:'100%',background:RED,transition:'height .05s linear',height:pct+'%'}}/></div><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:36}}>🎤</div></div>}
 function useIdle(name,active){const[msg,sMsg]=useState('');const step=useRef(0);const timer=useRef(null);useEffect(()=>{step.current=0;sMsg('');clearInterval(timer.current);if(!active)return;timer.current=setInterval(()=>{const s=step.current;if(s===0){/* 15s: nothing, just wait */}else if(s===1)sMsg('¿Seguimos? 🚀');else if(s===2){const n=name||'';sMsg((n?n+', ':'')+'¿estás ahí? 👀')}else if(s===3)sMsg('Cuando quieras, seguimos 🌟');else if(s>=4)sMsg('Toki te espera... 💫');step.current=Math.min(s+1,5)},15000);return()=>clearInterval(timer.current)},[active,name]);function poke(){step.current=0;sMsg('');if(timer.current){clearInterval(timer.current);timer.current=null}}return{idleMsg:msg,poke}}
 
-function starBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[523,659,784,1047];for(let i=0;i<n;i++){const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=notes[Math.min(i,3)];g.gain.value=0.1;o.start(c.currentTime+i*0.2);o.stop(c.currentTime+i*0.2+0.15)}if(n>=4){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=1318;g.gain.value=0.12;o.start(c.currentTime+0.9);o.stop(c.currentTime+1.2)}setTimeout(()=>c.close(),2000)}catch(e){}}
+function starBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const melodies=[[523,659,784,1047],[440,554,659,880],[587,740,880,1175],[494,622,740,988]];const mel=melodies[Math.floor(Math.random()*melodies.length)];const cnt=Math.min(n,4);for(let i=0;i<cnt;i++){const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=mel[i];g.gain.value=0.08;g.gain.setValueAtTime(0.08,c.currentTime+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*0.15+0.12);o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.12)}if(n>=4){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=mel[3]*1.25;g.gain.value=0.1;g.gain.setValueAtTime(0.1,c.currentTime+0.7);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.0);o.start(c.currentTime+0.7);o.stop(c.currentTime+1.0)}setTimeout(()=>c.close(),1500)}catch(e){}}
 function Stars({n,sz=32}){return <div style={{display:'flex',gap:4,justifyContent:'center'}}>{[1,2,3,4].map(i=><span key={i} style={{fontSize:sz,opacity:i<=n?1:0.2,transform:i<=n?'scale(1)':'scale(0.7)',transition:`all 0.3s ${i*0.15}s`,filter:i<=n?'none':'grayscale(1)'}}>{i<=n?'⭐':'☆'}</span>)}</div>}
 
 // ===== SPEAK PANEL — 4-star SingStar system =====
@@ -273,57 +342,95 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
       await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,1500)});
       await new Promise(r=>setTimeout(r,300))}
-    setSylIdx(-1);await new Promise(r=>setTimeout(r,500));
+    setSylIdx(-1);await new Promise(r=>setTimeout(r,300));
     if(!alive.current)return;setSylShow(false);sr.go();setMic(true)}
   async function doSlowPlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();
     const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.35;u.pitch=1.0;u.volume=1.0;
     await new Promise(r=>{let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,Math.max(4000,text.length*400))});
     if(!alive.current)return;setSylShow(false);
-    const pm='¡Buen esfuerzo! Seguimos';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk()},800)}
+    const pm='¡Seguimos!';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk()},800)}
   function handleSR(said){if(!alive.current)return;poke();setMic(false);sr.stop();stopVoice();
-    const b=Math.max(...said.split('|').map(a=>score(a,text)));
+    const rawB=Math.max(...said.split('|').map(a=>score(a,text)));const b=adjScore(rawB);
     setStars(b);starBeep(b);
     if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk()})}
-    else if(b>=3){sMsg('¡Muy bien, '+name+'!');sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk()})}
-    else if(b>=2){const na=att+1;sAtt(na);const rm=rnd(['¡Vas bien!','¡Casi!','¡Sigue así!']);sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},1500)}
-      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}
-    else{const na=att+1;sAtt(na);const rm=rnd(['¡Buen intento!','¡Sigue adelante!','¡Tú puedes!']);sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=3){setTimeout(()=>{if(alive.current){sMsg('Vamos juntos, despacio...');sSf('syl');doSlowPlay()}},1500)}
-      else if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},1500)}
-      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
+    else if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk()})}
+    else if(b>=2){const na=att+1;sAtt(na);const rm=pickMsg(false,null,'decir');sMsg(rm);sSf('try');sayFB(rm);
+      if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},800)}
+      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
+    else{const na=att+1;sAtt(na);const rm=pickMsg(false,null,'decir');sMsg(rm);sSf('try');sayFB(rm);
+      if(na>=3){setTimeout(()=>{if(alive.current){sMsg('Vamos juntos, despacio...');sSf('syl');doSlowPlay()}},800)}
+      else if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},800)}
+      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
+    // Start mic BEFORE playing so it listens while Toki speaks — zero wait
+    sr.go();setMic(true);
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
     if(!alive.current)return;
-    sr.go();setMic(true)}
-  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);stopVoice();sr.stop();const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
+    // Mic is already listening — no need to start again
+  }
+  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);stopVoice();sr.stop();
+    // Proactively reactivate mic permission on exercise entry
+    if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
+    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
-    const na=att+1;sAtt(na);if(na>=2){const pm='¡Ánimo! Seguimos';sMsg(pm);sSf('pass');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current)onOk()},1800)}else{const pm='¿Lo intentamos?';sMsg(pm);sSf('wait');setTimeout(()=>sayFB(pm),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
+    const na=att+1;sAtt(na);
+    if(na>=3){const pm='Despacio...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSlowPlay()},800)}
+    else if(na>=2){const pm='Por sílabas...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSyllablePlay()},800)}
+    else{const pm=pickMsg(false,null,'decir');sMsg(pm);sSf('wait');sayFB(pm);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
   function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);setSylShow(false);doPlay()}
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
   const fc=stars>=4?GOLD:stars>=3?GREEN:stars>=2?BLUE:'#E67E22';
   let sylFlatIdx=0;
   return <div style={{textAlign:'center'}} onClick={poke}>
-    <div className="card" style={{padding:24,marginBottom:18,background:GREEN+'0C',borderColor:GREEN+'33'}}><p style={{fontSize:28,fontWeight:700,margin:0,lineHeight:1.3}}>"{text}"</p></div>
-    {sylShow&&<div className="af" style={{background:PURPLE+'15',borderRadius:14,padding:16,marginBottom:14}}>
+    {/* Phrase bubble */}
+    <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)'}}>
+      <p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.3,color:TXT}}>"{text}"</p>
+    </div>
+    {/* Syllable display */}
+    {sylShow&&<div className="af" style={{background:PURPLE+'12',borderRadius:18,padding:14,marginBottom:14}}>
       <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>{syllables.map((wordSyls,wi)=>{
         const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:12}}/>);
         wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=fi<sylIdx;
-          items.push(<span key={wi+'_'+si} style={{fontSize:24,fontWeight:700,padding:'4px 8px',borderRadius:8,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.2)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
+          items.push(<span key={wi+'_'+si} style={{fontSize:26,fontWeight:700,padding:'6px 10px',borderRadius:12,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
         return items})}</div>
     </div>}
-    {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={36}/></div>}
-    {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{background:fc+'22',borderRadius:14,padding:16,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
-    {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
-    <RecBtn dur={dur} onEnd={onTimeUp} on={mic}/>
-    <div style={{display:'flex',gap:10,marginTop:14}}><button className="btn btn-b btn-half" onClick={hearAgain}>🔊 Otra vez</button><button className="btn btn-ghost btn-half skip-btn" onClick={skip}>⏭️ Saltar</button></div>
+    {/* Stars */}
+    {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={40}/></div>}
+    {/* Feedback message */}
+    {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginBottom:12}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
+    {idleMsg&&!sf&&!msg&&<div className="af" style={{marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
+    <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
+      <button onClick={hearAgain} style={{
+        width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
+        background:`radial-gradient(circle at 30% 25%,#90CAF9,${BLUE} 60%,#1565C0)`,
+        boxShadow:`0 3px 12px ${BLUE}44, inset 0 -3px 8px #1565C066`,
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
+      }} title="Escuchar otra vez">
+        <span style={{fontSize:30}}>🔊</span>
+      </button>
+      <div style={{width:80,height:80,flexShrink:0}}>
+        <RecBtn dur={dur} onEnd={onTimeUp} on={mic}/>
+      </div>
+      <button className="skip-btn" onClick={skip} style={{
+        width:56,height:56,borderRadius:'50%',border:'none',cursor:'pointer',
+        background:`radial-gradient(circle at 30% 25%,#999,#666 60%,#444)`,
+        boxShadow:'0 2px 8px rgba(0,0,0,.3)',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
+      }} title="Saltar">
+        <span style={{fontSize:24}}>⏭️</span>
+      </button>
+    </div>
+    {/* Spacer so content doesn't go behind fixed bar */}
+    <div style={{height:100}}/>
   </div>}
 
-function ExFlu({ex,onOk,onSkip,sex,name,uid,vids}){const area=AREAS.find(a=>a.id===ex.a);return <div style={{textAlign:'center',padding:18}}>
-  {area&&<p style={{fontSize:13,color:DIM,margin:'0 0 6px',fontWeight:600,letterSpacing:1,textTransform:'uppercase'}}>{area.n}</p>}
-  <div style={{fontSize:96,marginBottom:16,animation:'glow 3s infinite',lineHeight:1.1}}>{ex.em}</div>
+function ExFlu({ex,onOk,onSkip,sex,name,uid,vids}){return <div style={{textAlign:'center',padding:12}}>
+  <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
   <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/></div>}
 
 function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
@@ -398,7 +505,7 @@ function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[showHelp,setShowHelp]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);const t=setTimeout(()=>{stopVoice();const opW=ex.q.replace('+',' más ').replace('-',' menos ')+' es igual a...';say(opW)},500);return()=>{clearTimeout(t);stopVoice()}},[ex]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();const opW=a+(op==='+'?' más ':' menos ')+b+' es igual a '+ex.ans;say(opW).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();const opW=a+(op==='+'?' más ':' menos ')+b+' es igual a '+ex.ans;say(opW).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.q} = ?</p></div>
     {!showHelp&&!fb&&<div>
@@ -435,11 +542,11 @@ function RectChart({num,den,width=160,height=100,color=GOLD,highlight=-1}){const
 
 function genFractions(lv){const fracs=[];
   if(!lv||lv===1){const pool=[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4],[1,5],[2,5],[3,5],[4,5],[1,6],[2,6],[3,6],[4,6],[5,6]];
-    pool.forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac_'+n+'_'+d,shape:i%2===0?'circle':'rect',mode:'recognize'})});return[...fracs].sort(()=>Math.random()-.5)}
-  if(lv===2){[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4]].forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac2_'+n+'_'+d,shape:i%2===0?'circle':'rect',mode:'notation'})});return[...fracs].sort(()=>Math.random()-.5)}
-  if(lv===3){[[1,2,2,4],[1,3,2,6],[2,4,1,2],[2,6,1,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,id:'frac3_'+i,shape:i%2===0?'circle':'rect',mode:'equivalence'})});return[...fracs].sort(()=>Math.random()-.5)}
-  if(lv===4){[[1,2,1,2],[1,3,1,3],[1,4,1,4],[1,3,2,3],[2,4,1,4]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1+n2,ans_d:d1,id:'frac4_'+i,shape:i%2===0?'circle':'rect',mode:'add'})});return[...fracs].sort(()=>Math.random()-.5)}
-  [[2,3,1,3],[1,2,1,2],[3,4,1,4],[2,3,2,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1-n2,ans_d:d1,id:'frac5_'+i,shape:i%2===0?'circle':'rect',mode:'subtract'})});
+    pool.forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac_'+n+'_'+d,shape:Math.random()<.5?'circle':'rect',mode:'recognize'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===2){[[1,2],[1,3],[2,3],[1,4],[2,4],[3,4]].forEach(([n,d],i)=>{fracs.push({num:n,den:d,id:'frac2_'+n+'_'+d,shape:Math.random()<.5?'circle':'rect',mode:'notation'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===3){[[1,2,2,4],[1,3,2,6],[2,4,1,2],[2,6,1,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,id:'frac3_'+i,shape:Math.random()<.5?'circle':'rect',mode:'equivalence'})});return[...fracs].sort(()=>Math.random()-.5)}
+  if(lv===4){[[1,2,1,2],[1,3,1,3],[1,4,1,4],[1,3,2,3],[2,4,1,4]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1+n2,ans_d:d1,id:'frac4_'+i,shape:Math.random()<.5?'circle':'rect',mode:'add'})});return[...fracs].sort(()=>Math.random()-.5)}
+  [[2,3,1,3],[1,2,1,2],[3,4,1,4],[2,3,2,3]].forEach(([n1,d1,n2,d2],i)=>{fracs.push({num:n1,den:d1,num2:n2,den2:d2,ans_n:n1-n2,ans_d:d1,id:'frac5_'+i,shape:Math.random()<.5?'circle':'rect',mode:'subtract'})});
   return[...fracs].sort(()=>Math.random()-.5)}
 
 function ExFraction({ex,onOk,onSkip,name}){
@@ -454,10 +561,10 @@ function ExFraction({ex,onOk,onSkip,name}){
     else say('Resta las fracciones')},[ex]);
   function addSlice(){poke();if(placed>=ex.den)return;const np=placed+1;setPlaced(np);beep(400+np*80,80)}
   function removeSlice(){poke();if(placed>0)setPlaced(placed-1)}
-  function validate(){poke();if(placed===ex.num){setFb('ok');starBeep(4);setTimeout(()=>{sayFB('¡'+ex.num+' de '+ex.den+'! ¡Perfecto!')},300);setTimeout(onOk,2000)}
+  function validate(){poke();if(placed===ex.num){setFb('ok');starBeep(4);sayFB('¡'+ex.num+' de '+ex.den+'!');setTimeout(onOk,800)}
     else{setFb('no');beep(200,200);sayFB('¡Casi! Necesitas '+ex.num+' porciones');setTimeout(()=>{setPlaced(0);setFb(null)},2000)}}
   function checkMathAns(){poke();const n=parseInt(ans);const target=mode==='add'?ex.ans_n:ex.ans_n;
-    if(n===target){setFb('ok');starBeep(4);sayFB('¡Perfecto!');setTimeout(onOk,1500)}
+    if(n===target){setFb('ok');starBeep(4);sayFB('¡Perfecto!');setTimeout(onOk,400)}
     else{setFb('no');beep(200,200);sayFB('La respuesta es '+target);setTimeout(()=>{setFb(null);setAns('')},2500)}}
   const isRect=ex.shape==='rect';
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
@@ -478,7 +585,7 @@ function ExFraction({ex,onOk,onSkip,name}){
           <button className="btn btn-o" onClick={removeSlice} disabled={placed===0} style={{fontSize:22,maxWidth:160,padding:'16px 20px'}}>➖ Quitar</button>
         </div>
         <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Llevas {placed} de {ex.den}</p>
-        <button className="btn btn-gold" onClick={validate} style={{fontSize:22,maxWidth:220,margin:'0 auto 12px',display:'block'}}>✅ ¡Listo!</button>
+        <button className="btn btn-g" onClick={validate} style={{fontSize:26,width:120,height:120,borderRadius:'50%',margin:'10px auto 12px',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 18px '+GREEN+'55',padding:0,lineHeight:1.1,flexDirection:'column'}}><span style={{fontSize:32}}>✅</span><span style={{fontSize:18}}>¡Listo!</span></button>
       </div>}
     </div>}
     {mode==='notation'&&<div>
@@ -490,7 +597,7 @@ function ExFraction({ex,onOk,onSkip,name}){
         </div>
         <p style={{fontSize:22,color:TXT,margin:0}}>{ex.num} {ex.num===1?'trozo':'trozos'} de {ex.den} = <span style={{color:GOLD,fontWeight:700}}>{ex.num}/{ex.den}</span></p>
       </div>
-      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,1000)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
     </div>}
     {mode==='equivalence'&&<div>
       <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
@@ -508,7 +615,7 @@ function ExFraction({ex,onOk,onSkip,name}){
         </div>
         <p style={{fontSize:18,color:TXT,margin:'12px 0 0'}}>La mitad es lo mismo, ¡mira!</p>
       </div>
-      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,1000)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(onOk,400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
     </div>}
     {(mode==='add'||mode==='subtract')&&<div>
       <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
@@ -546,7 +653,7 @@ function ExMulti({ex,onOk,onSkip,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[showHelp,setShowHelp]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
   const groups=Array.from({length:ex.b},(_,i)=>i);const emojis=['🍎','🌟','🔵','🟢','🟡','🟣','🔴','🍊','🍋','💎'];const em=emojis[ex.a%emojis.length];
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);stopVoice();setTimeout(()=>say(ex.a+' por '+ex.b),400);return()=>stopVoice()},[ex]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();say(ex.a+' por '+ex.b+' es igual a '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();say(ex.a+' por '+ex.b+' es igual a '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
   else{setFb('no');setShowHelp(true);stopVoice();const sumText=Array(ex.b).fill(ex.a).join(' más ')+' es igual a '+ex.ans;sayFB('Mira: '+ex.a+' por '+ex.b+' es '+sumText)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.a} x {ex.b} = ?</p></div>
@@ -586,30 +693,59 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
     return()=>stopVoice()},[ex]);
   function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='recognize'?ex.coin.v:ex.mode==='sum'?ex.total:ex.mode==='change'?ex.change:ex.price;
-    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
     else{setFb('no');stopVoice();sayFB('La respuesta es '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setAns('')},2500)}}
-  function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}}
-  const CoinSVG=({c,sz})=>{const copper=c.v<=0.05;const gold=c.v>=0.10&&c.v<=0.50;const bi=c.bi;const outerC=bi?'#C0C0C0':copper?'#B87333':gold?'#DAA520':'#C0C0C0';const innerC=bi?'#DAA520':outerC;const borderC=copper?'#8B5E3C':gold?'#B8860B':bi?'#A0A0A0':'#888';const txtC=copper||gold?'#fff':bi?'#333':'#333';
+  function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}}
+  const CoinSVG=({c,sz})=>{const copper=c.v<=0.05;const gold=c.v>=0.10&&c.v<=0.50;const bi=c.bi;
+    const outerC=bi?'#C0C0C0':copper?'#B87333':gold?'#FFD700':'#C0C0C0';
+    const borderC=copper?'#7A4E2D':gold?'#B8860B':bi?'#909090':'#888';
+    const outerDark=bi?'#A8A8A8':copper?'#9A6233':gold?'#DAA520':'#A8A8A8';
+    const innerLight=bi?'#D8D8D8':copper?'#CD8544':gold?'#FFE44D':'#D0D0D0';
+    const txtC=copper?'#4A2800':gold?'#5C3D00':bi?'#3A2800':'#333';
+    const gid='cg'+String(c.v).replace('.','_')+'_'+sz;
     return <svg width={sz} height={sz} viewBox={`0 0 ${sz} ${sz}`}>
-      <defs><radialGradient id={`cg${c.v}`} cx="40%" cy="35%"><stop offset="0%" stopColor="rgba(255,255,255,.4)"/><stop offset="100%" stopColor="rgba(0,0,0,.15)"/></radialGradient></defs>
-      <circle cx={sz/2} cy={sz/2} r={sz/2-2} fill={outerC} stroke={borderC} strokeWidth={2}/>
-      {bi&&<circle cx={sz/2} cy={sz/2} r={sz/2-8} fill={innerC} stroke={borderC} strokeWidth={1}/>}
-      <circle cx={sz/2} cy={sz/2} r={sz/2-2} fill={`url(#cg${c.v})`}/>
-      <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>42?18:sz>38?16:sz>34?14:12} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 1px rgba(0,0,0,.3)'}}>{c.l}</text>
+      <defs>
+        <radialGradient id={gid+'bg'} cx="45%" cy="38%"><stop offset="0%" stopColor={innerLight}/><stop offset="70%" stopColor={outerC}/><stop offset="100%" stopColor={outerDark}/></radialGradient>
+        <radialGradient id={gid+'sh'} cx="38%" cy="30%"><stop offset="0%" stopColor="rgba(255,255,255,.55)"/><stop offset="50%" stopColor="rgba(255,255,255,.08)"/><stop offset="100%" stopColor="rgba(0,0,0,.18)"/></radialGradient>
+        {bi&&<radialGradient id={gid+'in'} cx="45%" cy="38%"><stop offset="0%" stopColor="#FFE44D"/><stop offset="70%" stopColor="#FFD700"/><stop offset="100%" stopColor="#DAA520"/></radialGradient>}
+      </defs>
+      <circle cx={sz/2} cy={sz/2} r={sz/2-1} fill={borderC}/>
+      <circle cx={sz/2} cy={sz/2} r={sz/2-3} fill={`url(#${gid}bg)`}/>
+      {bi&&<><circle cx={sz/2} cy={sz/2} r={sz/2-12} fill={borderC}/><circle cx={sz/2} cy={sz/2} r={sz/2-14} fill={`url(#${gid}in)`}/></>}
+      <circle cx={sz/2} cy={sz/2} r={sz/2-3} fill={`url(#${gid}sh)`}/>
+      <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>=80?24:sz>=60?20:sz>=50?17:14} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 0 rgba(255,255,255,.4)'}}>{c.l}</text>
     </svg>};
-  const Coin=({c,onClick})=>{const sz=c.sz?Math.round(c.sz*1.8):64;const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
-    return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 2px 4px rgba(0,0,0,.5))'}}>
+  const Coin=({c,onClick})=>{const sz=Math.max(80,c.sz?Math.round(c.sz*2.2):80);const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
+    return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 3px 5px rgba(0,0,0,.45))',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.93)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
       {imgOk?<img src={imgSrc} alt={c.l} style={{width:sz,height:sz,borderRadius:'50%',objectFit:'cover'}} onError={()=>setImgOk(false)}/>:<CoinSVG c={c} sz={sz}/>}
     </button>};
-  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.jpg';
-    return <button onClick={onClick} style={{width:160,height:85,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative'}}>
-      {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:
-      <div style={{width:'100%',height:'100%',borderRadius:10,background:`linear-gradient(135deg, ${b.c2} 0%, ${b.c} 50%, ${b.c2} 100%)`,border:`2px solid ${b.c}`,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:800,fontSize:20,fontFamily:"'Fredoka'",textShadow:'0 1px 2px rgba(0,0,0,.4)'}}>{b.l}</span></div>}
+  const BillSVG=({b,w,h})=>{const bgC=b.v===5?'#A0A0A0':b.v===10?'#E74C3C':b.v===20?'#3498DB':'#E67E22';
+    const bgLight=b.v===5?'#BFBFBF':b.v===10?'#F1948A':b.v===20?'#7FB3D8':'#F0B27A';
+    const bgDark=b.v===5?'#808080':b.v===10?'#C0392B':b.v===20?'#2471A3':'#D35400';
+    const gid='bl'+b.v;
+    return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <defs>
+        <linearGradient id={gid+'bg'} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor={bgLight}/><stop offset="50%" stopColor={bgC}/><stop offset="100%" stopColor={bgDark}/></linearGradient>
+        <pattern id={gid+'pt'} width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,.12)"/><line x1="0" y1="0" x2="20" y2="20" stroke="rgba(255,255,255,.06)" strokeWidth=".5"/></pattern>
+      </defs>
+      <rect x="1" y="1" width={w-2} height={h-2} rx="8" ry="8" fill={`url(#${gid}bg)`} stroke={bgDark} strokeWidth="2"/>
+      <rect x="1" y="1" width={w-2} height={h-2} rx="8" ry="8" fill={`url(#${gid}pt)`}/>
+      <rect x="6" y="6" width={w-12} height={h-12} rx="5" ry="5" fill="none" stroke="rgba(255,255,255,.2)" strokeWidth="1" strokeDasharray="4 3"/>
+      <path d={`M${w/2-18} ${h-20} Q${w/2-10} ${h-38} ${w/2} ${h-38} Q${w/2+10} ${h-38} ${w/2+18} ${h-20}`} fill="none" stroke="rgba(255,255,255,.3)" strokeWidth="2"/>
+      <line x1={w/2-20} y1={h-18} x2={w/2-14} y2={h-18} stroke="rgba(255,255,255,.25)" strokeWidth="1.5"/>
+      <line x1={w/2+14} y1={h-18} x2={w/2+20} y2={h-18} stroke="rgba(255,255,255,.25)" strokeWidth="1.5"/>
+      <text x={w/2} y={h/2-2} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize="28" fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 2px 3px rgba(0,0,0,.35)'}}>{b.l}</text>
+      <text x={12} y={16} textAnchor="start" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
+      <text x={w-12} y={h-14} textAnchor="end" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
+    </svg>};
+  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.png';const bw=160;const bh=85;
+    return <button onClick={onClick} style={{width:bw,height:bh,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.95)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+      {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:<BillSVG b={b} w={bw} h={bh}/>}
     </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='recognize'&&<div>
       <div className="card" style={{padding:24,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
-        {ex.coin.v>=5?<Bill b={ex.coin}/>:<div style={{display:'inline-block',transform:'scale(2.5)',margin:'20px 0'}}><Coin c={ex.coin}/></div>}</div>
+        {ex.coin.v>=5?<Bill b={ex.coin}/>:<div style={{display:'inline-block',transform:'scale(1.6)',margin:'20px 0'}}><Coin c={ex.coin}/></div>}</div>
       <input className="inp" value={ans} onChange={e=>setAns(e.target.value)} type="text" inputMode="decimal" placeholder="Ej: 0,50" style={{textAlign:'center',fontSize:28,marginBottom:12,maxWidth:200,margin:'0 auto 12px'}}/>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-g" disabled={!ans} onClick={checkAns} style={{maxWidth:200}}>✓</button><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
@@ -643,10 +779,12 @@ function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   </div>}
 
 // ===== LA HORA =====
+function clockText(h,m){return m===0?(h===1?'la una en punto':'las '+h+' en punto'):m===30?(h===1?'la una':'las '+h)+' y media':m===15?(h===1?'la una':'las '+h)+' y cuarto':(h===1?'la una':'las '+h)+' menos cuarto'}
+
 function genClock(lv){const items=[];
-  if(lv===1){for(let h=1;h<=12;h++)items.push({ty:'clock',h,m:0,text:h===1?'la una en punto':'las '+h+' en punto',id:'clk_'+h+'_0'})}
-  else if(lv===2){for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:30,text:(h===1?'la una':'las '+h)+' y media',id:'clk_'+h+'_30'})}}
-  else{for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:15,text:(h===1?'la una':'las '+h)+' y cuarto',id:'clk_'+h+'_15'});items.push({ty:'clock',h,m:45,text:(h===1?'la una':'las '+h)+' menos cuarto',id:'clk_'+h+'_45'})}}
+  if(lv===1){for(let h=1;h<=12;h++)items.push({ty:'clock',h,m:0,text:clockText(h,0),id:'clk_'+h+'_0'})}
+  else if(lv===2){for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:30,text:clockText(h,30),id:'clk_'+h+'_30'})}}
+  else{for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:15,text:clockText(h,15),id:'clk_'+h+'_15'});items.push({ty:'clock',h,m:45,text:clockText(h,45),id:'clk_'+h+'_45'})}}
   return items.sort(()=>Math.random()-.5)}
 
 function ClockFace({h,m,size=160}){
@@ -662,10 +800,10 @@ function ClockFace({h,m,size=160}){
   </svg>}
 
 function ExClock({ex,onOk,onSkip,name,uid,vids}){
-  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=m===0?(h===1?'la una en punto':'las '+h+' en punto'):m===30?(h===1?'la una':'las '+h)+' y media':m===15?(h===1?'la una':'las '+h)+' y cuarto':(h===1?'la una':'las '+h)+' menos cuarto';if(t!==correct)pool.push(t)}}const wrong=[...pool].sort(()=>Math.random()-.5).slice(0,3);const result=[...wrong,correct];return result.sort(()=>Math.random()-.5)},[ex]);
+  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=clockText(h,m);if(t!==correct)pool.push(t)}}const wrong=[];const shuffled=[...pool].sort(()=>Math.random()-.5);for(const t of shuffled){if(wrong.length>=3)break;if(t!==correct&&!wrong.includes(t))wrong.push(t)}const result=[...wrong,correct];const unique=[...new Set(result)];if(!unique.includes(correct)){unique.pop();unique.push(correct)}return unique.sort(()=>Math.random()-.5)},[ex]);
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
-  function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+  function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
     else{setFb('no');beep(200,200);setTimeout(()=>setFb(null),1200)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>
@@ -676,6 +814,9 @@ function ExClock({ex,onOk,onSkip,name,uid,vids}){
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
+
+// DEV: verify ExClock options always contain the correct answer
+if(import.meta.env.DEV){(()=>{let fails=0;for(const lv of [1,2,3]){const exs=genClock(lv);for(let i=0;i<20;i++){const ex=exs[i%exs.length];const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=clockText(h,m);if(t!==correct)pool.push(t)}}const wrong=[];const shuffled=[...pool].sort(()=>Math.random()-.5);for(const t of shuffled){if(wrong.length>=3)break;if(t!==correct&&!wrong.includes(t))wrong.push(t)}const result=[...wrong,correct];const unique=[...new Set(result)];if(!unique.includes(correct)){fails++;console.error('ExClock BUG: correct answer missing!',{correct,unique,lv,ex})}if(unique.length!==4){fails++;console.error('ExClock BUG: expected 4 options, got '+unique.length,{correct,unique,lv})}}}console.log('[ExClock test] '+(fails===0?'PASS: all 60 tests OK':'FAIL: '+fails+' failures'))})()}
 
 // ===== CALENDARIO / TEMPORALIDAD =====
 const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -702,16 +843,16 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     else{const hoy=DIAS[new Date().getDay()===0?6:new Date().getDay()-1];setTimeout(()=>say('Hoy es '+hoy+'. ¿Qué día fue ayer y cuál será mañana?'),400)}
     return()=>stopVoice()},[ex]);
   function place(item){poke();const np=[...placed,item];setPlaced(np);setAvail(a=>a.filter(x=>x!==item));const target=ex.mode==='order_days'?DIAS:MESES;
-    if(np.length===target.length){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+    if(np.length===target.length){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
     else{setFb('no');beep(200,200);setTimeout(()=>{setPlaced([]);setAvail([...target].sort(()=>Math.random()-.5));setFb(null)},1500)}}}
   function pickBA(slot,val){poke();const newAns={...baAns,[slot]:val};setBaAns(newAns);
     if(newAns.before&&newAns.after){const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;
       const correctBefore=target[(idx-1+max)%max];const correctAfter=target[(idx+1)%max];
-      if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);stopVoice();sayFB('Antes: '+correctBefore+'. Después: '+correctAfter);setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},3000)}}}
   function pickYT(slot,val){poke();const newAns={...ytAns,[slot]:val};setYtAns(newAns);
     if(newAns.ayer&&newAns.manana){const di=new Date().getDay()===0?6:new Date().getDay()-1;const correctAyer=DIAS[(di-1+7)%7];const correctMan=DIAS[(di+1)%7];
-      if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
@@ -782,14 +923,39 @@ function genDistribute(lv,user){const items=[];const pNames=(loadData('personas'
   else{for(let i=0;i<10;i++){const a=2+Math.floor(Math.random()*6);const b=2+Math.floor(Math.random()*6);const na=friends[0]||'Ana',nb=friends[1]||'Carlos';items.push({ty:'distribute',mode:'compare',a,b,nameA:na,nameB:nb,id:'dist_cmp_'+i})}}
   return items}
 
-function BagSVG({name:bagName,size=80}){return <svg width={size} height={size*1.2} viewBox="0 0 80 96">
-  <ellipse cx={40} cy={84} rx={32} ry={10} fill={CARD} stroke={BORDER} strokeWidth={2}/>
-  <path d="M12,35 Q8,80 12,84 Q40,96 68,84 Q72,80 68,35 Z" fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2}/>
-  <path d="M12,35 Q40,28 68,35" fill="none" stroke="#6D4C2E" strokeWidth={2}/>
-  <path d="M20,30 Q22,18 30,16 Q40,14 50,16 Q58,18 60,30" fill="none" stroke="#C49A6C" strokeWidth={3} strokeLinecap="round"/>
-  <path d="M35,16 Q40,8 45,16" fill="none" stroke="#E67E22" strokeWidth={3} strokeLinecap="round"/>
-  <circle cx={40} cy={18} r={3} fill="#E67E22"/>
-  <text x={40} y={62} textAnchor="middle" fill="#FFF" fontSize={12} fontWeight={700} fontFamily="Fredoka">{bagName}</text>
+function BagSVG({name:bagName,size=80}){return <svg width={size} height={size*1.3} viewBox="0 0 80 104">
+  {/* Shadow */}
+  <ellipse cx={40} cy={98} rx={28} ry={5} fill="rgba(0,0,0,0.1)"/>
+  {/* Bag body - rounded sack shape */}
+  <path d="M14,42 C10,52 8,68 10,78 C12,88 20,94 40,96 C60,94 68,88 70,78 C72,68 70,52 66,42 Z" fill="#C49A6C" stroke="#8B5E3C" strokeWidth={2}/>
+  {/* Bag body shading - left highlight */}
+  <path d="M18,48 C16,58 15,70 16,78 C17,84 22,88 30,90" fill="none" stroke="#D4B896" strokeWidth={3} strokeLinecap="round" opacity={0.5}/>
+  {/* Bag body shading - right shadow */}
+  <path d="M62,48 C64,58 65,70 64,78 C63,84 58,88 50,90" fill="none" stroke="#8B5E3C" strokeWidth={2} strokeLinecap="round" opacity={0.3}/>
+  {/* Bag texture lines */}
+  <path d="M25,55 Q40,52 55,55" fill="none" stroke="#B8906E" strokeWidth={0.8} opacity={0.4}/>
+  <path d="M22,65 Q40,62 58,65" fill="none" stroke="#B8906E" strokeWidth={0.8} opacity={0.4}/>
+  <path d="M20,75 Q40,72 60,75" fill="none" stroke="#B8906E" strokeWidth={0.8} opacity={0.4}/>
+  {/* Gathered top of bag */}
+  <path d="M14,42 C20,38 28,36 40,36 C52,36 60,38 66,42" fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1.5}/>
+  <path d="M22,40 Q26,34 32,33" fill="none" stroke="#8B5E3C" strokeWidth={1} opacity={0.5}/>
+  <path d="M58,40 Q54,34 48,33" fill="none" stroke="#8B5E3C" strokeWidth={1} opacity={0.5}/>
+  {/* Neck of bag (gathered/cinched area) */}
+  <path d="M26,36 C30,30 34,28 40,28 C46,28 50,30 54,36" fill="#C49A6C" stroke="#8B5E3C" strokeWidth={1.5}/>
+  {/* Ribbon/tie wrapped around neck */}
+  <path d="M24,34 C28,31 34,29 40,29 C46,29 52,31 56,34" fill="none" stroke="#E74C3C" strokeWidth={3} strokeLinecap="round"/>
+  <path d="M24,36 C28,33 34,31 40,31 C46,31 52,33 56,36" fill="none" stroke="#C0392B" strokeWidth={2.5} strokeLinecap="round"/>
+  {/* Bow - left loop */}
+  <path d="M34,28 C28,20 22,18 20,22 C18,26 24,30 32,30" fill="#E74C3C" stroke="#C0392B" strokeWidth={1}/>
+  {/* Bow - right loop */}
+  <path d="M46,28 C52,20 58,18 60,22 C62,26 56,30 48,30" fill="#E74C3C" stroke="#C0392B" strokeWidth={1}/>
+  {/* Bow - center knot */}
+  <ellipse cx={40} cy={28} rx={4} ry={3} fill="#C0392B"/>
+  {/* Bow - ribbon tails */}
+  <path d="M36,30 C34,36 30,40 28,38" fill="none" stroke="#E74C3C" strokeWidth={2} strokeLinecap="round"/>
+  <path d="M44,30 C46,36 50,40 52,38" fill="none" stroke="#E74C3C" strokeWidth={2} strokeLinecap="round"/>
+  {/* Name label on bag */}
+  <text x={40} y={72} textAnchor="middle" fill="#FFF" fontSize={12} fontWeight={700} fontFamily="Fredoka" stroke="#8B5E3C" strokeWidth={0.5}>{bagName}</text>
 </svg>}
 
 function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
@@ -805,18 +971,13 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     return()=>stopVoice()},[ex]);
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
-  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
-    else{const na=att+1;setAtt(na);
-      if(na===1){setFb('retry');beep(200,200);sayFB(rnd(SHORT_ENCOURAGEMENT));setTimeout(()=>setFb(null),1500)}
-      else{setFb('no');setShowCount(true);beep(200,200);
-        // Toki counts with child
-        (async()=>{for(let i=1;i<=ex.count;i++){await say(NUMS_1_100[i-1]||String(i));await new Promise(r=>setTimeout(r,400))}
-          if(count>ex.count)sayFB('Sobran '+(count-ex.count));else if(count<ex.count)sayFB('Faltan '+(ex.count-count));
-          setTimeout(onOk,2000)})()}}}
-  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
+    else{setFb('wrong');beep(200,200);sayFB('¡Casi! Necesitas '+ex.count+' '+objName);
+      setTimeout(()=>{setFb(null);setCount(0)},2200)}}
+  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setTimeout(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
-    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
     else{setFb('no');beep(200,200);setTimeout(()=>setFb(null),1200)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
@@ -827,17 +988,21 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         {Array.from({length:count},(_,i)=><span key={i} style={{fontSize:36,animation:'bounceIn .3s '+(i*0.05)+'s both',display:'inline-flex',alignItems:'center'}}>
           {ObjSVG?<ObjSVG size={40}/>:objEmoji}
         </span>)}</div>
-      {fb==='no'&&showCount&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}>
-        {count>ex.count&&<p style={{fontSize:16,color:RED,fontWeight:700,margin:0}}>Sobran {count-ex.count} — hay que quitar</p>}
-        {count<ex.count&&<p style={{fontSize:16,color:BLUE,fontWeight:700,margin:0}}>Faltan {ex.count-count} — hay que añadir</p>}
+      {fb==='wrong'&&<div className="as" style={{background:RED+'18',borderRadius:14,padding:14,marginBottom:12}}>
+        <p style={{fontSize:20,color:RED,fontWeight:700,margin:0}}>¡Casi! Necesitas {ex.count} {objName}</p>
       </div>}
-      {fb==='retry'&&<div className="as" style={{background:GOLD+'22',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,color:GOLD,fontWeight:700,margin:0}}>¡Casi! Inténtalo otra vez 💪</p></div>}
       {!fb&&<div>
-        <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:10}}>
+        <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:14}}>
           <button className="btn btn-g" onClick={addCandy} style={{fontSize:24,maxWidth:170,padding:'16px 22px'}}>{ObjSVG?'➕':'🍬'} Añadir</button>
           <button className="btn btn-o" onClick={removeCandy} disabled={count===0} style={{fontSize:24,maxWidth:170,padding:'16px 22px'}}>➖ Quitar</button>
         </div>
-        <button className="btn btn-gold" onClick={validatePut} disabled={count===0} style={{fontSize:24,maxWidth:240,margin:'0 auto 10px',display:'block'}}>✅ ¡Listo!</button>
+        <button onClick={validatePut} disabled={count===0}
+          style={{width:80,height:80,borderRadius:'50%',border:'none',background:count===0?'#ccc':GREEN,color:'#FFF',fontSize:28,fontWeight:800,cursor:count===0?'default':'pointer',
+            boxShadow:count===0?'none':'0 4px 16px rgba(46,204,113,0.45)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 6px',
+            transition:'transform .15s,box-shadow .15s'}}
+          onPointerDown={e=>{if(count>0)e.currentTarget.style.transform='scale(0.92)'}}
+          onPointerUp={e=>{e.currentTarget.style.transform='scale(1)'}}>✅</button>
+        <p style={{fontSize:14,fontWeight:600,color:DIM,margin:'0 0 4px',textAlign:'center'}}>¡Listo!</p>
       </div>}
     </div>}
     {ex.mode==='equal'&&<div>
@@ -886,7 +1051,7 @@ function genWriting(lv){const items=[];
   return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:p,guide:false,isUpper:false,mode:'phrase',id:'wr_plf_'+p.replace(/\s/g,'_')}))}
 
 function ExWriting({ex,onOk,onSkip,name}){
-  const canvasRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
+  const canvasRef=useRef(null);const modelRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
   const isWide=ex.mode==='word'||ex.mode==='phrase';
   // Auto-size based on mode: letters=big pauta, words=medium, phrases=small
   const cW=ex.mode==='phrase'?800:isWide?700:400;
@@ -896,77 +1061,124 @@ function ExWriting({ex,onOk,onSkip,name}){
   const ascY=ex.mode==='letter'?30:ex.mode==='word'?25:20;
   const descY=ex.mode==='letter'?360:ex.mode==='word'?260:210;
   const midY=ex.mode==='letter'?175:ex.mode==='word'?130:105;
+  // 6.7 Lowercase: school-style Caveat font; Uppercase: bold Fredoka
+  function getModelFont(fSz){
+    if(ex.isUpper) return `bold ${fSz}px Fredoka`;
+    return `${Math.floor(fSz*1.1)}px 'Caveat','Segoe Script','Comic Sans MS',cursive`;
+  }
+  // 6.1 FRENCH CALLIGRAPHY GUIDELINES (Pauta francesa)
   function drawPauta(ctx,w,h){
     ctx.fillStyle='#FAFAF5';ctx.fillRect(0,0,w,h);
     // Pauta francesa (French calligraphy lines)
-    // Base line (thick blue - main writing line)
-    ctx.strokeStyle='#2E75B6';ctx.lineWidth=3.5;ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(w,baseY);ctx.stroke();
-    // Upper/capitals line (blue)
+    // Base line: thick blue 3px — where letters sit
+    ctx.strokeStyle='#2E75B6';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,baseY);ctx.lineTo(w,baseY);ctx.stroke();
+    // Top line (mayusculas): thin blue
     ctx.strokeStyle='#2E75B6';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,upperY);ctx.lineTo(w,upperY);ctx.stroke();
-    // Mid line (x-height, red dashed)
-    ctx.setLineDash([6,4]);ctx.strokeStyle='#E88D8D';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,midY);ctx.lineTo(w,midY);ctx.stroke();ctx.setLineDash([]);
-    // Ascender line (light blue thin)
-    ctx.strokeStyle='#2E75B6';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(0,ascY);ctx.lineTo(w,ascY);ctx.stroke();
-    // Descender line (light gray)
-    ctx.setLineDash([4,4]);ctx.strokeStyle='#AAAAAA';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,descY);ctx.lineTo(w,descY);ctx.stroke();ctx.setLineDash([]);
+    // Mid line: thin blue — top of regular lowercase
+    ctx.strokeStyle='#2E75B6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,midY);ctx.lineTo(w,midY);ctx.stroke();
+    // Ascender line: thin dashed — for b,d,f,h,k,l,t
+    ctx.setLineDash([5,5]);ctx.strokeStyle='#2E75B6';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(0,ascY);ctx.lineTo(w,ascY);ctx.stroke();ctx.setLineDash([]);
+    // Descender line: thin dashed — for g,j,p,q,y
+    ctx.setLineDash([4,4]);ctx.strokeStyle='#2E75B6';ctx.lineWidth=0.8;ctx.beginPath();ctx.moveTo(0,descY);ctx.lineTo(w,descY);ctx.stroke();ctx.setLineDash([]);
     // Light fill between baseline and upper for capital zone
     ctx.fillStyle='rgba(46,117,182,0.04)';ctx.fillRect(0,upperY,w,baseY-upperY);
     // Light fill between midY and baseY for lowercase zone
-    ctx.fillStyle='rgba(232,141,141,0.04)';ctx.fillRect(0,midY,w,baseY-midY);
+    ctx.fillStyle='rgba(46,117,182,0.03)';ctx.fillRect(0,midY,w,baseY-midY);
   }
+  // 6.2 STROKE GUIDE with numbered circles + directional arrows
   function drawGuide(ctx,w,h){
     if(!ex.guide)return;const letter=ex.letter;
     if(ex.mode==='letter'){
-      // Match letter height exactly to pauta zone: font size = zone height / 0.72 (approx cap-height ratio)
       const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);
       const fSz=Math.floor(zoneH/0.72);
-      const yBase=baseY;
-      ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;
-      ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,yBase);
-      if(ex.isUpper){const sg=STROKE_GUIDES[letter.toUpperCase()];if(sg){const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};sg.forEach(s=>{const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;ctx.fillStyle='#E74C3C';ctx.font='bold 16px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.n+s.d,sx,sy)})}}
+      ctx.font=getModelFont(fSz);
+      ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
+      if(ex.isUpper){
+        const sg=STROKE_GUIDES[letter.toUpperCase()];
+        if(sg){
+          const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};
+          sg.forEach(s=>{
+            const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;
+            const endX=zone.x+(s.ex||s.x)*zone.w,endY=zone.y+(s.ey||s.y)*zone.h;
+            ctx.fillStyle='#E74C3C';ctx.beginPath();ctx.arc(sx,sy,11,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#fff';ctx.font='bold 13px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(s.n),sx,sy);
+            const dx=endX-sx,dy=endY-sy;const len=Math.sqrt(dx*dx+dy*dy);
+            if(len>20){
+              const ux=dx/len,uy=dy/len;const arrowLen=Math.min(25,len*0.4);
+              const ax=sx+ux*14,ay=sy+uy*14;const bx=ax+ux*arrowLen,by=ay+uy*arrowLen;
+              ctx.strokeStyle='#E74C3C';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
+              const headLen=8;const angle=Math.atan2(by-ay,bx-ax);
+              ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx-headLen*Math.cos(angle-0.5),by-headLen*Math.sin(angle-0.5));ctx.moveTo(bx,by);ctx.lineTo(bx-headLen*Math.cos(angle+0.5),by-headLen*Math.sin(angle+0.5));ctx.stroke();
+            }
+          });
+        }
+      }
     }else{
       // Words/phrases: size to fill pauta zone
       const zoneH=baseY-upperY;
       const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);
-      ctx.font=`bold ${fSz}px Fredoka`;ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
+      ctx.font=getModelFont(fSz);ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
     }
   }
-  useEffect(()=>{setDone(false);setStars(0);setShowModel(false);strokePts.current=[];const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
+  // 6.4 Model mask for pixel-based stroke evaluation
+  function getModelMask(){
+    const offC=document.createElement('canvas');offC.width=cW;offC.height=cH;
+    const octx=offC.getContext('2d');
+    if(ex.mode==='letter'){
+      const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);
+      octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
+    }else{
+      const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);
+      octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
+    }
+    const imgData=octx.getImageData(0,0,cW,cH);
+    const mask=new Uint8Array(cW*cH);
+    for(let i=0;i<imgData.data.length;i+=4){if(imgData.data[i+3]>30)mask[i/4]=1;}
+    const dilated=new Uint8Array(cW*cH);const rad=6;
+    for(let y=0;y<cH;y++)for(let x=0;x<cW;x++){
+      let found=false;
+      for(let dy=-rad;dy<=rad&&!found;dy++)for(let dx=-rad;dx<=rad&&!found;dx++){
+        const nx=x+dx,ny=y+dy;
+        if(nx>=0&&nx<cW&&ny>=0&&ny<cH&&mask[ny*cW+nx])found=true;
+      }
+      if(found)dilated[y*cW+x]=1;
+    }
+    modelRef.current=dilated;return dilated;
+  }
+  useEffect(()=>{setDone(false);setStars(0);setShowModel(false);strokePts.current=[];modelRef.current=null;const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
     stopVoice();const msg=ex.mode==='letter'?'Escribe la letra '+ex.letter:ex.mode==='word'?'Escribe '+ex.letter:'Escribe: '+ex.letter;setTimeout(()=>say(msg),400);return()=>stopVoice()},[ex]);
   function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
   function start(e){e.preventDefault();poke();drawing.current=true;const p=getPos(e);strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round'}
-  function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.lineTo(p.x,p.y);ctx.stroke()}
+  function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.strokeStyle='#2E75B6';ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke()}
   function end(e){e.preventDefault();drawing.current=false}
   function clear(){strokePts.current=[];const c=canvasRef.current;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH)}
-  function evaluate(){const pts=strokePts.current;if(pts.length<5){setStars(1);return 1}
-    // Check coverage: how much of the letter zone was covered
+  function evaluate(){const pts=strokePts.current;if(pts.length<5){setStars(1);return 1;}
+    const mask=getModelMask();let insideCount=0;
+    for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&mask[py*cW+px])insideCount++;}
+    const insideRatio=insideCount/pts.length;
     const minX=Math.min(...pts.map(p=>p.x)),maxX=Math.max(...pts.map(p=>p.x)),minY=Math.min(...pts.map(p=>p.y)),maxY=Math.max(...pts.map(p=>p.y));
-    const spanX=maxX-minX,spanY=maxY-minY;
-    // Check if stayed within pauta
-    const outOfBounds=pts.filter(p=>p.y<ascY-10||p.y>descY+10).length;const outRatio=outOfBounds/pts.length;
-    // Check reasonable size
-    const goodSize=spanX>30&&spanY>30;
-    let s=4;
-    if(outRatio>.3)s=Math.min(s,2);else if(outRatio>.1)s=Math.min(s,3);
-    if(!goodSize)s=Math.min(s,2);
-    if(pts.length<15)s=Math.min(s,3);
-    setStars(s);return s}
+    const goodSize=(maxX-minX)>20&&(maxY-minY)>20;
+    let s=4;if(insideRatio<=0.4)s=1;else if(insideRatio<=0.6)s=2;else if(insideRatio<=0.8)s=3;
+    if(!goodSize&&s>2)s=2;if(pts.length<10&&s>2)s=2;
+    setStars(s);return s;}
   function accept(){const s=evaluate();setDone(true);setShowModel(true);starBeep(s);
     // Overlay model in green
-    const c=canvasRef.current;if(c){const ctx=c.getContext('2d');ctx.globalAlpha=0.25;ctx.fillStyle='#2ECC71';
-      if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=ex.isUpper?`bold ${fSz}px Fredoka`:`italic ${fSz}px 'Segoe Script','Comic Sans MS',cursive`;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      else{const zoneH=baseY-upperY;const fSz=isWide?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);ctx.font=`bold ${fSz}px Fredoka`;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      ctx.globalAlpha=1.0}
+    const c=canvasRef.current;if(c){const ctx=c.getContext('2d');const mask=modelRef.current||getModelMask();
+      ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle='rgba(0,180,0,1)';
+      if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+      else{const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+      ctx.restore();
+      const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}}
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
-    cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>setTimeout(onOk,1200))}
+    cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>setTimeout(onOk,400))}
   const needsLandscape=isWide;
   return <div style={{textAlign:'center',padding:isWide?10:18}} onClick={poke}>
     {needsLandscape&&<style>{`@media (orientation:portrait) and (max-width:700px){.wr-landscape-warn{display:flex!important}.wr-canvas-wrap{display:none!important}}@media (orientation:landscape),(min-width:701px){.wr-landscape-warn{display:none!important}.wr-canvas-wrap{display:block!important}}`}</style>}
-    {needsLandscape&&<div className="wr-landscape-warn" style={{display:'none',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:200,gap:16}}><span style={{fontSize:64}}>📱</span><p style={{fontSize:22,fontWeight:700,color:GOLD}}>Gira la tablet →</p><p style={{fontSize:16,color:DIM}}>Para escribir palabras necesitas modo horizontal</p></div>}
+    {needsLandscape&&<div className="wr-landscape-warn" style={{display:'none',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:200,gap:16,animation:'pulse 2s infinite'}}><span style={{fontSize:64}}>📱</span><p style={{fontSize:22,fontWeight:700,color:GOLD}}>Gira la tablet →</p><p style={{fontSize:16,color:DIM}}>Para escribir palabras necesitas modo horizontal</p></div>}
     <div className={needsLandscape?'wr-canvas-wrap':''}>
       {ex.mode!=='letter'&&<div style={{background:GOLD+'15',borderRadius:10,padding:'8px 16px',marginBottom:10}}><p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0}}>{ex.letter}</p></div>}
       <div className="card" style={{padding:12,marginBottom:10,background:'#FAFAF5',borderColor:'#D4D4D4'}}>
-        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6'}}>{ex.letter}</span></p>}
+        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
         <canvas ref={canvasRef} width={cW} height={cH} style={{width:'100%',maxWidth:cW,height:'auto',aspectRatio:cW+'/'+cH,borderRadius:8,border:'2px solid #D4D4D4',touchAction:'none',cursor:'crosshair'}}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           onMouseDown={start} onMouseMove={move} onMouseUp={end}/>
@@ -1003,21 +1215,25 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   const dur=useMemo(()=>Math.max(6,Math.ceil(ex.text.split(/\s+/).length*0.9)+4),[ex.text]);
   const key=ex.text+'|'+ex.id;
   function handleSR(said){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
-    const b=Math.max(...said.split('|').map(a=>score(a,ex.text)));
+    const rawB=Math.max(...said.split('|').map(a=>score(a,ex.text)));const b=adjScore(rawB);
     starBeep(b);
     if(b>=3){sSf('ok');cheerOrSay(b>=4?mkPerfect(name):rnd(GOOD_MSG),uid,vids,b>=4?'perfect':'good').then(()=>{if(alive.current)onOk()})}
     else{const na=att+1;sAtt(na);sSf('try');sayFB(rnd(['¡Vas bien!','¡Casi!','¡Sigue así!']));
-      if(na>=2){setTimeout(()=>{if(alive.current){sSf('pass');sayFB('¡Buen trabajo! Seguimos');setTimeout(onOk,800)}},1500)}
+      if(na>=2){setTimeout(()=>{if(alive.current){sSf('pass');sayFB('¡Seguimos!');setTimeout(onOk,300)}},600)}
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
-    // Reactivate mic permissions
+    // Reactivate mic permissions proactively
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
+    // Start mic BEFORE playing so it listens while Toki speaks
+    sr.go();setMic(true);
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
     if(!alive.current)return;
-    // Start mic immediately (overlap)
-    sr.go();setMic(true)}
+    // Mic is already listening
+  }
   useEffect(()=>{alive.current=true;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
+    // Proactively reactivate mic permission on exercise entry
+    if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
     const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
@@ -1262,13 +1478,13 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);setAtt(0);setPlaced({});stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
-    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
-    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(onOk,600)},2500)}
+    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
+    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(onOk,250)},2500)}
       else{setTimeout(()=>setFb(null),1200)}}}
   function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
-      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,800))}
+      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
@@ -1374,17 +1590,17 @@ function ExLee({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='syllables'){setAvail([...ex.data.syllables].sort(()=>Math.random()-.5))}
     stopVoice();return()=>stopVoice()},[ex]);
   function pick(ans){poke();
-    if(ex.mode==='intruso'){if(ans===ex.data.ans){setFb('ok');starBeep(4);say('¡Bien! '+ans+' no es '+ex.data.cat.replace(/s$/,'')).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,800))}
+    if(ex.mode==='intruso'){if(ans===ex.data.ans){setFb('ok');starBeep(4);say('¡Bien! '+ans+' no es '+ex.data.cat.replace(/s$/,'')).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La respuesta es '+ex.data.ans);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{say(ex.data.q);setTimeout(()=>setFb(null),1500)}}}
-    if(ex.mode==='word_img'){if(ans===ex.data.ans){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,600))}
+    if(ex.mode==='word_img'){if(ans===ex.data.ans){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2000)}else{setTimeout(()=>setFb(null),1200)}}}
-    if(ex.mode==='complete'){if(ans===ex.data.missing){setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,800))}
+    if(ex.mode==='complete'){if(ans===ex.data.missing){setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setFilledLetter(ex.data.missing);setFb('show');say('Era '+ex.data.missing);setTimeout(()=>{setTimeout(onOk,400)},2000)}else{sayFB('¡Casi!');setTimeout(()=>setFb(null),1200)}}}
     if(ex.mode==='read_do'){const isCorrect=ex.data.opts[ans]?.correct;
-      if(isCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,600))}
+      if(isCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.instruction);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{setTimeout(()=>setFb(null),1200)}}}}
   function placeSyl(s){poke();const np=[...placed,s];setPlaced(np);setAvail(a=>a.filter(x=>x!==s));
-    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,600))}
+    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
       else{setFb('no');beep(200,200);setTimeout(()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5));setFb(null)},1500)}}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='intruso'&&<div>
@@ -1444,28 +1660,25 @@ function DominoSVG({size=48}){return <svg width={size*1.6} height={size} viewBox
   <circle cx={57} cy={14} r={4} fill="#333"/><circle cx={57} cy={24} r={4} fill="#333"/><circle cx={57} cy={34} r={4} fill="#333"/>
 </svg>}
 
-function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[523,659,784,880,1047,1175,1319,1568];const durations=[0.2,0.15,0.15,0.15,0.3,0.15,0.15,0.5];let t=0;notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.10;g.gain.setValueAtTime(0.10,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+durations[i]);o.start(c.currentTime+t);o.stop(c.currentTime+t+durations[i]);t+=durations[i]*0.7});setTimeout(()=>c.close(),4000)}catch(e){}}
+function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[392,494,587,784,659,784,988,1175,988,1175];const durations=[0.25,0.2,0.2,0.3,0.2,0.2,0.25,0.3,0.2,0.6];let t=0;notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;const vol=i>=7?0.09:0.07;g.gain.value=vol;g.gain.setValueAtTime(vol,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+durations[i]);o.start(c.currentTime+t);o.stop(c.currentTime+t+durations[i]);t+=durations[i]*0.65});setTimeout(()=>c.close(),4000)}catch(e){}}
 
 function DoneScreen({st,elapsed,user,supPin,onExit}){
-  const[ph,sPh]=useState('party');const[xConf,sXConf]=useState(false);
+  const[xConf,sXConf]=useState(false);
   const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
-  const isFem=user?.sex==='f';const uname=user?.name||'crack';
+  const uname=user?.name||'crack';
   useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB('¡Lo has hecho genial, '+uname+'! ¿Quieres seguir?');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'radial-gradient(ellipse at center,'+BG2+' 0%,'+BG+' 100%)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20,overflow:'hidden'}}>
     <Confetti show={xConf}/>
     <div style={{maxWidth:420,width:'100%',textAlign:'center'}}>
-      {ph==='party'&&<div className="ab">
+      {<div className="ab">
         <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',gap:12,marginBottom:4}}>
           <div style={{fontSize:100,animation:'pulse 1s infinite'}}>🏆</div>
           <div style={{marginBottom:16}}><SpaceMascot mood="dance" size={56}/></div>
         </div>
-        <div style={{display:'flex',justifyContent:'center',gap:6,fontSize:36,marginBottom:12,animation:'bounceIn .6s .2s both'}}>{'🎉🎊🥳'.split('').map((e,i)=><span key={i} style={{animation:`bounceIn .4s ${.3+i*.12}s both`}}>{e}</span>)}</div>
-        <h1 style={{fontSize:28,color:GOLD,margin:'0 0 4px',animation:'fadeIn .5s .5s both'}}>¡FELICIDADES {uname.toUpperCase()}!</h1>
-        <p style={{fontSize:22,color:GREEN,fontWeight:700,margin:'0 0 20px',animation:'fadeIn .5s .7s both'}}>¡Has hecho un trabajo ENORME!</p>
+        <h1 style={{fontSize:28,color:GOLD,margin:'0 0 8px',animation:'fadeIn .5s .3s both'}}>¡FELICIDADES {uname.toUpperCase()}!</h1>
         <div style={{display:'flex',justifyContent:'center',gap:16,marginBottom:24,animation:'fadeIn .5s .9s both'}}>
-          {[{l:'Bien',v:st.ok,c:GREEN,e:'✅'},{l:'Acierto',v:pct+'%',c:BLUE,e:'🎯'},{l:'Minutos',v:elapsed,c:GOLD,e:'⏱️'}].map((s,i)=>
+          {[{l:'Bien',v:st.ok,c:GREEN},{l:'Acierto',v:pct+'%',c:BLUE},{l:'Minutos',v:elapsed,c:GOLD}].map((s,i)=>
             <div key={i} style={{background:CARD,border:'2px solid '+s.c+'44',borderRadius:16,padding:'14px 18px',minWidth:80}}>
-              <div style={{fontSize:24}}>{s.e}</div>
               <div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div>
               <div style={{fontSize:12,color:DIM}}>{s.l}</div>
             </div>)}
@@ -1473,9 +1686,9 @@ function DoneScreen({st,elapsed,user,supPin,onExit}){
         <div style={{background:GREEN+'15',border:'2px solid '+GREEN+'33',borderRadius:16,padding:18,marginBottom:20,animation:'fadeIn .5s 1.1s both'}}>
           <p style={{fontSize:22,fontWeight:700,margin:0,color:GREEN}}>¡Lo has hecho genial!</p>
         </div>
-        <div style={{display:'flex',gap:12,animation:'fadeIn .5s 1.3s both'}}>
-          <button className="btn btn-g" style={{flex:1,fontSize:20}} onClick={()=>onExit('repeat')}>🔄 ¡Otra ronda!</button>
-          <button className="btn btn-b" style={{flex:1,fontSize:20}} onClick={()=>onExit('menu')}>🏠 Menú principal</button>
+        <div style={{display:'flex',justifyContent:'center',gap:24,animation:'fadeIn .5s 1.1s both'}}>
+          <button onClick={()=>onExit('repeat')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #27ae60',background:GREEN,color:'#fff',fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1e8449',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🔄</span><span>¡Otra ronda!</span></button>
+          <button onClick={()=>onExit('menu')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #2980b9',background:BLUE,color:'#fff',fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1a5276',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🪐</span><span>Menú</span></button>
         </div>
       </div>}
     </div>
@@ -1487,10 +1700,12 @@ export default function App(){
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');
   const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');
-  const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);
+  const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);
   const[micOk,setMicOk]=useState(false);const[supervisorMode,setSupervisorMode]=useState(false);const supervisorTimer=useRef(null);
+  const[exigencia,setExigenciaState]=useState(()=>getExigencia());
+  function setExigencia(v){setExigenciaState(v);try{localStorage.setItem('toki_exigencia',String(v))}catch(e){}}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
   // Sky theme based on time of day
   useEffect(()=>{function applySky(){document.body.classList.remove('sky-morning','sky-afternoon','sky-night');document.body.classList.add(getSkyClass())}applySky();const iv=setInterval(applySky,60000);return()=>clearInterval(iv)},[]);
@@ -1503,7 +1718,7 @@ export default function App(){
   function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
   const[sec,setSec]=useState('decir');const[secLv,setSecLv]=useState(1);const[openGroup,setOpenGroup]=useState(null);
   const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
-  const[freeChoice,setFreeChoice]=useState(()=>{const u=loadData('profiles',[]);return u[0]?.freeChoice||false});
+  const[freeChoice,setFreeChoice]=useState(true);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
@@ -1545,7 +1760,7 @@ export default function App(){
     if(section==='quiensoy'){return slv===2?[{ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img}]:QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:q.text,img:q.img,picto:q.picto}))}
     return[]}
   function startGame(){setQ(buildQ(user,sec,secLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
-  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game')}
+  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
@@ -1559,29 +1774,85 @@ export default function App(){
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
-  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone}/>
+  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?avStr(user.av):null} planetEmoji={GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={quiensoy:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
     {showRec&&user&&<VoiceRec user={user} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
-    {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡8 minutos trabajando!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo! 💪</button></div></div>}
+    {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
     {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setUser(null);setScr('login')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
     {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
-    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={parentPin.length<4} onClick={()=>{if(parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),300000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
-    {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>setOv(null)}>✕</button></div>
+    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={!!supPin&&parentPin.length<4} onClick={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
+    {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>setOv(null)}>🎮 ¡A jugar!</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:18}}>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🔒 PIN del supervisor</p><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></p><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏰ Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:700,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🎛️ Módulos activos</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Activa o desactiva módulos. Los desactivados no aparecen al niño.</p>
-          {GROUPS.map(g=>{const allMKeys=g.modules.map(m=>m.lvKey);const allOff=allMKeys.every(k=>activeMods[k]===false);return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
-            <p style={{fontSize:18,fontWeight:700,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
-            {g.modules.map((m,mi)=>{const isOn=activeMods[m.lvKey]!==false;return <div key={mi} style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
-              <button onClick={()=>{const na={...activeMods,[m.lvKey]:!isOn};setActiveMods(na);saveData('active_mods',na)}} style={{width:52,height:32,borderRadius:16,border:'none',background:isOn?GREEN:BG3,cursor:'pointer',position:'relative',transition:'background .2s',flexShrink:0}}>
-                <div style={{width:26,height:26,borderRadius:13,background:'#fff',position:'absolute',top:3,left:isOn?23:3,transition:'left .2s',boxShadow:'0 1px 3px rgba(0,0,0,.3)'}}/>
-              </button>
-              <span style={{fontSize:16,fontWeight:600,color:isOn?TXT:DIM}}>{m.l}</span>
-            </div>})}
-          </div>})}
+        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🎤 Exigencia del micro: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Cuanto más bajo, más fácil acepta la pronunciación</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>50% Fácil</span><span>65% Normal</span><span>100% Estricto</span></div></div>
+        <div className="card" style={{padding:20}}>{(()=>{
+          const PLANET_COLORS_P={quiensoy:['#F8BBD0','#E91E63','#AD1457'],dilo:['#A5D6A7','#4CAF50','#2E7D32'],cuenta:['#FFCC80','#FF9800','#E65100'],razona:['#90CAF9','#42A5F5','#1565C0'],escribe:['#CE93D8','#AB47BC','#6A1B9A'],lee:['#EF9A9A','#EF5350','#B71C1C']};
+          const totalActive=GROUPS.reduce((n,g)=>n+g.modules.filter(m=>activeMods[m.lvKey]!==false).length,0);
+          const MAX_ACTIVE=4;
+          const parentOpenPlanet=pOpenPlanet;const setParentOpenPlanet=setPOpenPlanet;
+          return <>
+            <p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🪐 Planetas activos</p>
+            <p style={{fontSize:14,color:DIM,margin:'0 0 4px'}}>Toca un planeta para ver sus módulos. Toca cada módulo para activarlo/desactivarlo.</p>
+            <p style={{fontSize:15,fontWeight:700,margin:'0 0 12px',color:totalActive>MAX_ACTIVE?RED:totalActive<=MAX_ACTIVE?GREEN:'#E67E22'}}>
+              {totalActive} activos {totalActive>MAX_ACTIVE&&'⚠️ Máximo recomendado: '+MAX_ACTIVE}
+            </p>
+            {/* Planets as circles */}
+            <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:12,marginBottom:12}}>
+              {GROUPS.map(g=>{
+                const pc=PLANET_COLORS_P[g.id]||[g.color+'88',g.color,g.color];
+                const anyOn=g.modules.some(m=>activeMods[m.lvKey]!==false);
+                const isOpenP=parentOpenPlanet===g.id;
+                return <button key={g.id} onClick={()=>setParentOpenPlanet(isOpenP?null:g.id)} style={{
+                  width:70,height:90,padding:0,border:'none',background:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
+                  display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+                  opacity:anyOn?1:0.4,filter:anyOn?'none':'grayscale(0.8)',transition:'all .3s',
+                  transform:isOpenP?'scale(1.1)':'scale(1)',
+                }}>
+                  <div style={{
+                    width:60,height:60,borderRadius:'50%',
+                    background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    boxShadow:isOpenP?`0 0 16px ${pc[1]}88`:`0 2px 8px rgba(0,0,0,.3)`,
+                    border:isOpenP?`3px solid ${pc[0]}`:'3px solid transparent',
+                  }}>
+                    <span style={{fontSize:26}}>{g.emoji}</span>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:700,lineHeight:1.1,textAlign:'center'}}>{g.name}</div>
+                </button>})}
+            </div>
+            {/* Satellites for open planet */}
+            {parentOpenPlanet&&GROUPS.filter(g=>g.id===parentOpenPlanet).map(g=>{
+              const pc=PLANET_COLORS_P[g.id]||[g.color+'88',g.color,g.color];
+              return <div key={g.id} className="af" style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:12,padding:'12px 0',borderTop:`2px solid ${g.color}33`}}>
+                {g.modules.map((m,mi)=>{
+                  const isOn=activeMods[m.lvKey]!==false;
+                  const wouldExceed=!isOn&&totalActive>=MAX_ACTIVE;
+                  return <button key={mi} onClick={()=>{if(wouldExceed)return;const na={...activeMods,[m.lvKey]:!isOn};setActiveMods(na);saveData('active_mods',na)}} style={{
+                    width:90,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+                    padding:6,border:'none',background:'none',cursor:wouldExceed?'not-allowed':'pointer',fontFamily:"'Fredoka'",
+                    opacity:wouldExceed&&!isOn?0.3:1,transition:'all .25s',
+                  }}>
+                    <div style={{
+                      width:56,height:56,borderRadius:'50%',
+                      background:isOn
+                        ?`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 70%,${pc[2]})`
+                        :`radial-gradient(circle at 30% 25%,#666,#444 70%,#333)`,
+                      border:isOn?`3px solid ${GREEN}`:`3px solid #555`,
+                      boxShadow:isOn?`0 0 12px ${GREEN}44`:'none',
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      transition:'all .25s',
+                    }}>
+                      <span style={{fontSize:isOn?22:18,filter:isOn?'':'brightness(0.5)',transition:'all .25s'}}>
+                        {isOn?'✅':'⬤'}
+                      </span>
+                    </div>
+                    <div style={{fontSize:11,fontWeight:600,color:isOn?TXT:DIM,textAlign:'center',lineHeight:1.15}}>{m.l}</div>
+                  </button>})}
+              </div>})}
+          </>})()}
         </div>
         <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📋 Nivel por módulo</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Configura el nivel que verá el niño en cada módulo</p>
           {GROUPS.map(g=><div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
@@ -1672,8 +1943,38 @@ export default function App(){
     </div>}
 
     {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
-      {profs.length>0&&!creating&&<div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:24}}>{profs.map(p=><button key={p.id} className="profcard" onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(p.freeChoice||false);setVoiceProfile(p.age,p.sex);setScr('goals')}}><div style={{fontSize:40}}>{avStr(p.av)}</div><div style={{flex:1}}><div style={{fontSize:22,fontWeight:700}}>{p.name}</div><div style={{fontSize:14,color:DIM}}>{p.age} años</div></div></button>)}</div>}
-      {profs.length<4&&!creating&&<button className="btn btn-p" onClick={()=>setCreating(true)} style={{fontSize:22}}>➕ Nuevo Jugador</button>}
+      {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=><button key={p.id} onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
+        background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
+        display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:0,transition:'transform .2s',
+      }}>
+        <div style={{
+          width:130,height:130,borderRadius:'50%',
+          background:'radial-gradient(circle at 30% 25%,#90CAF9,#42A5F5 60%,#1565C0)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:'0 4px 24px #42A5F544, inset 0 -4px 12px #1565C066, inset 0 4px 8px #90CAF988',
+          animation:'planetFloat 4s ease-in-out infinite',
+          position:'relative',
+        }}>
+          <span style={{fontSize:56,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
+        </div>
+        <div style={{fontSize:20,fontWeight:700}}>{p.name}</div>
+        <div style={{fontSize:14,color:DIM}}>{p.age} años</div>
+      </button>)}</div>}
+      {profs.length<4&&!creating&&<button onClick={()=>setCreating(true)} style={{
+        background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
+        display:'flex',flexDirection:'column',alignItems:'center',gap:6,margin:'0 auto',padding:0,
+      }}>
+        <div style={{
+          width:80,height:80,borderRadius:'50%',
+          background:'radial-gradient(circle at 30% 25%,#CE93D8,#AB47BC 60%,#6A1B9A)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:'0 4px 16px #AB47BC44, inset 0 -3px 10px #6A1B9A66',
+          animation:'planetFloat 4s ease-in-out 1s infinite',
+        }}>
+          <span style={{fontSize:36}}>➕</span>
+        </div>
+        <div style={{fontSize:16,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
+      </button>}
       {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}><p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
         <label style={{fontSize:15,color:DIM}}>Nombre</label><input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Nico" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label><input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
@@ -1701,34 +2002,173 @@ export default function App(){
       <button className="btn btn-ghost" onClick={()=>setShowMiCielo(false)} style={{marginTop:16}}>Cerrar</button>
     </div></div>}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setOv('pin');setPi('')}}>← Cambiar</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp(supPin||'');setSm(user.sessionMin||25);setSec(user.sec||sec);setSecLv(user.secLv||secLv);setFreeChoice(user.freeChoice||false);setPtab('config');setDelConf(false);setOv('parentGate')}}>⚙️</button></div></div>
-      <div style={{textAlign:'center',padding:'12px 0'}}><div style={{fontSize:56,marginBottom:4}}>{avStr(user.av)}</div><h2 style={{fontSize:22,margin:'0 0 2px',color:GOLD}}>{getGreeting(user.name)}</h2><p style={{fontSize:14,color:DIM,margin:'0 0 8px'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p>
-        <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:8}}>
-          <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'6px 14px',cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:18}}>🌌</span><span style={{fontSize:14,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
+      <div style={{textAlign:'center',padding:'4px 0 2px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:2}}>
+          <div style={{fontSize:36}}>{avStr(user.av)}</div>
+          <SpaceMascot mood={mascotMood} size={36}/>
+          <div><h2 style={{fontSize:18,margin:0,color:GOLD,textAlign:'left'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:DIM,margin:0,textAlign:'left'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
+        </div>
+        <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:4}}>
+          <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'4px 12px',cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:16}}>🌌</span><span style={{fontSize:13,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
           {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'6px 14px',display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:18}}>🔥</span><span style={{fontSize:14,color:'#E67E22',fontWeight:700}}>{streak} días</span></div>}
         </div>
       </div>
-      {freeChoice?(()=>{const visibleGroups=GROUPS.filter(g=>g.modules.some(m=>activeMods[m.lvKey]!==false));return <div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:12}}>
-          {visibleGroups.map(g=>{const isOpen=openGroup===g.id;const groupSelected=g.modules.some(m=>m.k===sec);const status=user?getGroupStatus(user.id,g.id):'new';const isMastered=status==='mastered';const isProgress=status==='progress';const isNew=status==='new';
-            return <button key={g.id} onClick={()=>setOpenGroup(isOpen?null:g.id)} style={{padding:'14px 8px',borderRadius:'50%',border:'none',background:'radial-gradient(circle at 35% 35%,'+g.color+'cc,'+g.color+'44)',color:TXT,fontFamily:"'Fredoka'",cursor:'pointer',textAlign:'center',transition:'all .3s',aspectRatio:'1',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',position:'relative',boxShadow:(isOpen||groupSelected?'0 0 20px '+g.color+'88':'0 4px 12px rgba(0,0,0,.4)')+','+(isMastered?'0 0 24px '+GOLD+'66':''),animation:isNew?'planetPulse 3s ease-in-out infinite':'none',transform:isNew?'':'scale(1)',filter:isMastered?'brightness(1.15)':'none',overflow:'visible'}}>
-              {isProgress&&<div style={{position:'absolute',top:'-6px',left:'-6px',right:'-6px',bottom:'-6px',border:'2px dashed '+g.color,borderRadius:'50%',animation:'planetRing 8s linear infinite',pointerEvents:'none'}}/>}
-              {isMastered&&<div style={{position:'absolute',top:0,left:0,right:0,bottom:0,pointerEvents:'none'}}>{[0,1,2].map(i=><div key={i} style={{position:'absolute',top:'50%',left:'50%',width:8,height:8,animation:`orbitStar ${3+i}s linear ${i*0.5}s infinite`,pointerEvents:'none'}}>⭐</div>)}</div>}
-              <span style={{fontSize:32,display:'block',marginBottom:2}}>{g.emoji}</span>
-              <div style={{fontSize:12,fontWeight:700,lineHeight:1.1}}>{g.name}</div>
-            </button>})}
-        </div>
-        {openGroup&&visibleGroups.filter(g=>g.id===openGroup).map(g=>{const enabledMods=g.modules.filter(m=>activeMods[m.lvKey]!==false);return <div key={g.id} className="af" style={{display:'flex',flexDirection:'column',gap:12,marginBottom:12}}>
-          <p style={{fontSize:18,fontWeight:700,color:g.color,margin:'0 0 4px'}}>{g.emoji} {g.name}</p>
-          {enabledMods.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||m.defLv;return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{background:sec===m.k&&secLv===mLv?g.color+'15':g.color+'08',border:`2px solid ${sec===m.k&&secLv===mLv?g.color:g.color+'44'}`,borderRadius:24,padding:'18px 16px',textAlign:'center',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,width:'100%',transition:'all .2s',boxShadow:sec===m.k&&secLv===mLv?'0 0 12px '+g.color+'44':'none'}}>
-            <p style={{fontSize:20,fontWeight:700,margin:0,color:sec===m.k&&secLv===mLv?g.color:TXT}}>{m.l}</p>
-          </button>})}
-        </div>})}
+      {freeChoice?(()=>{
+        const visibleGroups=GROUPS.filter(g=>g.modules.some(m=>activeMods[m.lvKey]!==false));
+        const PLANET_COLORS={
+          quiensoy:['#F8BBD0','#E91E63','#AD1457'],
+          dilo:['#A5D6A7','#4CAF50','#2E7D32'],
+          cuenta:['#FFCC80','#FF9800','#E65100'],
+          razona:['#90CAF9','#42A5F5','#1565C0'],
+          escribe:['#CE93D8','#AB47BC','#6A1B9A'],
+          lee:['#EF9A9A','#EF5350','#B71C1C']
+        };
+        const openG=openGroup?visibleGroups.find(g=>g.id===openGroup):null;
+        const otherGroups=openGroup?visibleGroups.filter(g=>g.id!==openGroup):[];
+        return <div style={{position:'relative',minHeight:320}}>
+        {/* When NO group is open: orbiting planets around center */}
+        {!openGroup&&(()=>{
+          const allGroups=GROUPS;
+          const n=allGroups.length;
+          const orbitR=160;const scX=1.8;const scY=0.7;const tilt=-8;
+          const planetSize=82;
+          const cW=orbitR*2*scX+planetSize+50;const cH=orbitR*2*scY+planetSize+70;
+          const orbitDuration=60;
+          return <div style={{position:'relative',width:cW,height:cH,margin:'0 auto'}}>
+            {/* Center: rocket (clickable start) */}
+            <button onClick={startGame} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:2,
+              background:'none',border:'none',cursor:'pointer',padding:0,
+              display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
+            }}>
+              <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
+            </button>
+            {/* Orbiting ring (visual — elliptical tilted) */}
+            <div style={{position:'absolute',top:'50%',left:'50%',
+              transform:`translate(-50%,-50%) rotate(${tilt}deg) scaleX(${scX}) scaleY(${scY})`,
+              width:orbitR*2,height:orbitR*2,borderRadius:'50%',
+              border:'1px dashed rgba(255,255,255,.12)',pointerEvents:'none'}}/>
+            {/* Rotating container — elliptical via scale+tilt */}
+            <div style={{position:'absolute',top:'50%',left:'50%',
+              width:orbitR*2,height:orbitR*2,
+              marginLeft:-orbitR,marginTop:-orbitR,
+              transform:`rotate(${tilt}deg) scaleX(${scX}) scaleY(${scY})`,
+              animation:`orbitAll ${orbitDuration}s linear infinite`}}>
+              {allGroups.map((g,i)=>{
+                const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
+                const hasActive=g.modules.some(m=>activeMods[m.lvKey]!==false);
+                const angle=(360/n)*i - 90;
+                const rad=angle*Math.PI/180;
+                const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
+                const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
+                return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
+                  position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
+                  padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
+                  display:'flex',flexDirection:'column',alignItems:'center',gap:2,
+                  animation:`counterSpin ${orbitDuration}s linear infinite`,
+                  transform:`scaleX(${1/scX}) scaleY(${1/scY}) rotate(${-tilt}deg)`,
+                  opacity:hasActive?1:0.35,filter:hasActive?'none':'grayscale(1) brightness(0.6)',
+                }}>
+                  <div style={{
+                    width:planetSize,height:planetSize,borderRadius:'50%',
+                    background:hasActive
+                      ?`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`
+                      :`radial-gradient(circle at 30% 25%,#888,#555 60%,#333)`,
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    boxShadow:hasActive?`0 4px 20px ${pc[1]}44, inset 0 -4px 12px ${pc[2]}66, inset 0 4px 8px ${pc[0]}88`:'0 2px 8px rgba(0,0,0,.3)',
+                  }}>
+                    <span style={{fontSize:34,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
+                </button>})}
+            </div>
+          </div>})()}
+        {/* When a group IS open: expanded view with central planet + orbiting sub-planets */}
+        {openG&&<div className="af" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:0}}>
+          {/* Mini planets row (the other groups) */}
+          <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
+            {otherGroups.map(g=>{
+              const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
+              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
+                width:48,height:48,borderRadius:'50%',border:'none',cursor:'pointer',
+                background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
+                boxShadow:`0 2px 8px ${pc[1]}44`,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                transition:'all .3s',fontFamily:"'Fredoka'",
+              }} title={g.name}>
+                <span style={{fontSize:22}}>{g.emoji}</span>
+              </button>})}
+          </div>
+          {/* Central planet (the open group) */}
+          {(()=>{
+            const pc=PLANET_COLORS[openG.id]||[openG.color+'88',openG.color,openG.color];
+            const enabledMods=openG.modules.filter(m=>activeMods[m.lvKey]!==false);
+            const modCount=enabledMods.length;
+            return <div style={{position:'relative',width:'100%',display:'flex',flexDirection:'column',alignItems:'center'}}>
+              {/* Back button */}
+              <button onClick={()=>setOpenGroup(null)} style={{
+                position:'absolute',top:0,left:0,background:'none',border:'none',color:DIM,
+                fontSize:18,cursor:'pointer',fontFamily:"'Fredoka'",zIndex:2,padding:'4px 8px',
+              }}>← Volver</button>
+              {/* Central planet */}
+              <div style={{
+                width:120,height:120,borderRadius:'50%',
+                background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
+                display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+                boxShadow:`0 0 30px ${pc[1]}55, inset 0 -6px 16px ${pc[2]}88, inset 0 6px 12px ${pc[0]}99`,
+                margin:'8px 0 6px',
+                animation:'planetFloat 4s ease-in-out infinite',
+              }}>
+                <span style={{fontSize:48,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{openG.emoji}</span>
+              </div>
+              <div style={{fontSize:20,fontWeight:700,color:pc[1],margin:'4px 0 16px',textShadow:`0 0 12px ${pc[1]}44`}}>{openG.name}</div>
+              {/* Sub-planets (modules) arranged in a row/grid */}
+              <div style={{
+                display:'flex',flexWrap:'wrap',justifyContent:'center',gap:14,
+                width:'100%',maxWidth:500,
+              }}>
+                {enabledMods.map((m,mi)=>{
+                  const mLv=getModuleLv(m.lvKey)||m.defLv;
+                  const isActive=sec===m.k&&secLv===mLv;
+                  const subSize=modCount<=3?100:modCount<=5?88:76;
+                  return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{
+                    width:subSize,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+                    padding:8,border:'none',background:'none',cursor:'pointer',fontFamily:"'Fredoka'",
+                    transition:'all .25s',transform:isActive?'scale(1.08)':'scale(1)',
+                  }}>
+                    <div style={{
+                      width:subSize-16,height:subSize-16,borderRadius:'50%',
+                      background:isActive
+                        ?`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 70%,${pc[2]})`
+                        :`radial-gradient(circle at 30% 25%,${pc[0]}66,${pc[1]}44 70%,${pc[2]}33)`,
+                      border:isActive?`3px solid ${pc[0]}`:`2px solid ${pc[1]}33`,
+                      boxShadow:isActive?`0 0 16px ${pc[1]}66, inset 0 -3px 8px ${pc[2]}55`:`0 2px 6px rgba(0,0,0,.2)`,
+                      display:'flex',alignItems:'center',justifyContent:'center',
+                      transition:'all .25s',
+                    }}>
+                      <span style={{fontSize:isActive?26:22,filter:isActive?'':'brightness(0.7) saturate(0.5)',transition:'all .25s'}}>
+                        {m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐'}
+                      </span>
+                    </div>
+                    <div style={{fontSize:12,fontWeight:600,color:isActive?TXT:DIM,textAlign:'center',lineHeight:1.15,transition:'color .25s'}}>{m.l}</div>
+                  </button>})}
+              </div>
+            </div>})()}
+        </div>}
       </div>})()
       :<div className="card" style={{padding:24,textAlign:'center',borderColor:GOLD+'55',background:GOLD+'0C'}}>
         <div style={{fontSize:56,marginBottom:8}}>{{quiensoy:'👤',decir:'🎤',frase:'🧱',contar:'🔢',math:'🧮',multi:'✖️',frac:'🍕',money:'💶',clock:'🕐',calendar:'📅',distribute:'🍬',writing:'✏️',razona:'🧠',lee:'📖'}[sec]||'🎤'}</div>
         <h3 style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{{quiensoy:'Quién Soy',decir:'Aprende a decirlo',frase:'Forma la frase',contar:'Cuenta conmigo',math:'Sumas y Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas y Billetes',clock:'La Hora',calendar:'Calendario',distribute:'Reparte y Cuenta',writing:'Escritura',razona:'Razona',lee:'Lectura'}[sec]||sec}</h3>
       </div>}
-      <button className="btn btn-g" onClick={startGame} style={{fontSize:24,marginTop:16}}>🚀 ¡A por ello!</button>
+      {/* Rocket button only when a group is open and module selected */}
+      {openGroup&&<div style={{display:'flex',justifyContent:'center',marginTop:10}}>
+        <button onClick={startGame} style={{
+          width:80,height:80,borderRadius:'50%',border:'none',cursor:'pointer',
+          background:'none',padding:0,fontFamily:"'Fredoka'",
+          animation:'planetFloat 3s ease-in-out infinite',transition:'transform .15s',
+        }}>
+          <span style={{fontSize:52,display:'block',filter:'drop-shadow(0 3px 8px rgba(0,0,0,.4))'}}>🚀</span>
+        </button>
+      </div>}
     </div>}
 
     {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div></div>
