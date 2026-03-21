@@ -2245,7 +2245,7 @@ export default function App(){
               flexDirection:'column',pointerEvents:'none',
             }}>
               <span style={{fontSize:22}}>{pp.avatar||'👤'}</span>
-              <span style={{position:'absolute',bottom:-16,fontSize:10,color:DIM,fontWeight:700,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{pp.name}</span>
+              <span style={{position:'absolute',bottom:-20,fontSize:14,color:'#E8E8F0',fontWeight:700,whiteSpace:'nowrap',textShadow:'0 1px 4px rgba(0,0,0,.6)'}}>{pp.name}</span>
             </div>})}
         </div>}
         <div style={{
@@ -2274,7 +2274,7 @@ export default function App(){
         }}>
           <span style={{fontSize:36}}>➕</span>
         </div>
-        <div style={{fontSize:16,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
+        <div style={{fontSize:18,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
       </button>}
       {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}><p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
         <label style={{fontSize:15,color:DIM}}>Nombre</label><input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Nico" style={{marginBottom:14,marginTop:6}}/>
