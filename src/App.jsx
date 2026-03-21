@@ -1436,20 +1436,24 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
   const posMap={encima:{ox:0,oy:-50},debajo:{ox:0,oy:75},dentro:{ox:0,oy:5},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
   const off=posMap[pos]||{ox:0,oy:0};
   // Furniture renderers — centered in 360x280 viewBox, recognizable shapes
-  function TableSVG(){return <g transform="translate(55,70)">
-    {/* 3D Table — strong isometric */}
-    {/* Back legs (partially hidden) */}
-    <path d="M40,25 L40,115 L52,115 L52,25 Z" fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
-    <path d="M218,15 L218,105 L230,105 L230,15 Z" fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
-    {/* Table top — 3D parallelogram with visible depth */}
-    <path d="M20,30 L50,12 L250,2 L230,20 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>{/* top */}
-    <path d="M20,30 L20,44 L230,34 L230,20 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>{/* front */}
-    <path d="M230,20 L250,2 L250,16 L230,34 Z" fill="#8B4513" stroke="#5A3218" strokeWidth={1.5}/>{/* right side */}
-    {/* Front legs */}
-    <path d="M20,44 L20,135 L32,135 L32,44 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    <path d="M218,34 L218,125 L230,125 L230,34 Z" fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
-    {/* Cross bar */}
-    <path d="M32,95 L218,85 L218,91 L32,101 Z" fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>
+  function TableSVG(){return <g transform="translate(50,55)">
+    {/* 3D Table — 3/4 view, all 4 legs visible */}
+    {/* Back left leg (furthest, darker) */}
+    <rect x={50} y={28} width={11} height={120} rx={3} fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
+    {/* Back right leg */}
+    <rect x={210} y={18} width={11} height={120} rx={3} fill="#6D3612" stroke="#5A2E10" strokeWidth={1.5}/>
+    {/* Table top — 3D with clear top surface, front edge, and right side */}
+    <path d="M30,30 L60,14 L260,4 L240,20 Z" fill="#B5651D" stroke="#6D4C2E" strokeWidth={2}/>{/* top surface */}
+    <path d="M30,30 L30,44 L240,34 L240,20 Z" fill="#A0522D" stroke="#6D4C2E" strokeWidth={2}/>{/* front edge */}
+    <path d="M240,20 L260,4 L260,18 L240,34 Z" fill="#8B4513" stroke="#5A3218" strokeWidth={1.5}/>{/* right side */}
+    {/* Front left leg */}
+    <rect x={30} y={44} width={12} height={110} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Front right leg */}
+    <rect x={228} y={34} width={12} height={110} rx={3} fill="#8B4513" stroke="#6D4C2E" strokeWidth={1.5}/>
+    {/* Cross bars for depth */}
+    <path d="M42,110 L228,100 L228,106 L42,116 Z" fill="#7A4420" stroke="#5A3218" strokeWidth={1}/>{/* front bar */}
+    <path d="M55,105 L55,28" stroke="#5A3218" strokeWidth={1.5} strokeDasharray="0"/>{/* left side bar hint */}
+    <path d="M215,95 L215,18" stroke="#5A3218" strokeWidth={1.5}/>{/* right side bar hint */}
   </g>}
   function ChairSVG(){return <g transform="translate(90,15)">
     {/* Side view chair — clear profile showing seat, legs, backrest */}
@@ -1495,40 +1499,57 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
     <line x1={146} y1={28} x2={160} y2={0} stroke="#8B7355" strokeWidth={2}/>
     <path d="M146,28 L160,0 L160,100 L146,128" fill="#A0522D" stroke="#8B7355" strokeWidth={1.5}/>
   </g>}
-  function BackpackSVG(){return <g transform="translate(115,40)">
-    <rect x={14} y={28} width={100} height={120} rx={20} fill="#E74C3C" stroke="#C0392B" strokeWidth={2.5}/>
-    <rect x={28} y={45} width={70} height={40} rx={10} fill="#F39C12" stroke="#E67E22" strokeWidth={2}/>
-    <path d="M35,28 Q64,6 93,28" fill="none" stroke="#333" strokeWidth={6} strokeLinecap="round"/>
-    <rect x={44} y={100} width={34} height={14} rx={4} fill="#C0392B" stroke="#922B21" strokeWidth={1.5}/>
+  function BackpackSVG(){return <g transform="translate(110,45)">
+    <rect x={14} y={28} width={110} height={130} rx={22} fill="#E74C3C" stroke="#C0392B" strokeWidth={2.5}/>
+    <rect x={30} y={48} width={76} height={44} rx={10} fill="#F39C12" stroke="#E67E22" strokeWidth={2}/>
+    <path d="M38,28 Q70,4 100,28" fill="none" stroke="#333" strokeWidth={6} strokeLinecap="round"/>
+    <rect x={48} y={108} width={38} height={14} rx={4} fill="#C0392B" stroke="#922B21" strokeWidth={1.5}/>
   </g>}
-  function DoorSVG(){return <g transform="translate(110,25)">
+  function DoorSVG(){return <g transform="translate(115,30)">
     {/* Door frame */}
-    <rect x={-8} y={-5} width={126} height={200} rx={4} fill="#6D4C2E" stroke="#5A3C1E" strokeWidth={2}/>
+    <rect x={-10} y={-6} width={130} height={210} rx={4} fill="#6D4C2E" stroke="#5A3C1E" strokeWidth={2}/>
     {/* Door */}
-    <rect x={0} y={0} width={110} height={190} rx={4} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <rect x={10} y={10} width={90} height={80} rx={3} fill="#A0522D"/>
-    <rect x={10} y={100} width={90} height={80} rx={3} fill="#A0522D"/>
-    <circle cx={92} cy={110} r={8} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+    <rect x={0} y={0} width={110} height={198} rx={4} fill="#8B4513" stroke="#6D4C2E" strokeWidth={2.5}/>
+    <rect x={10} y={10} width={90} height={84} rx={3} fill="#A0522D"/>
+    <rect x={10} y={104} width={90} height={84} rx={3} fill="#A0522D"/>
+    <circle cx={92} cy={115} r={8} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
   </g>}
-  function WardrobeSVG(){return <g transform="translate(65,25)">
-    <rect x={0} y={0} width={220} height={190} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2.5}/>
-    <line x1={110} y1={6} x2={110} y2={184} stroke="#6D4C2E" strokeWidth={2.5}/>
+  function WardrobeSVG(){return <g transform="translate(70,35)">
+    {/* Wardrobe body */}
+    <rect x={0} y={0} width={210} height={190} rx={6} fill="#8B5E3C" stroke="#6D4C2E" strokeWidth={2.5}/>
+    {/* Center divider */}
+    <line x1={105} y1={6} x2={105} y2={184} stroke="#6D4C2E" strokeWidth={2.5}/>
     {/* Handles */}
-    <circle cx={100} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
-    <circle cx={120} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+    <circle cx={95} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
+    <circle cx={115} cy={95} r={6} fill="#DAA520" stroke="#B8860B" strokeWidth={1.5}/>
     {/* Top molding */}
-    <rect x={-4} y={-4} width={228} height={10} rx={3} fill="#6D4C2E"/>
+    <rect x={-4} y={-6} width={218} height={12} rx={3} fill="#6D4C2E"/>
+    {/* Bottom base */}
+    <rect x={-2} y={186} width={214} height={10} rx={3} fill="#6D4C2E"/>
+    {/* Small feet */}
+    <rect x={8} y={196} width={16} height={8} rx={2} fill="#5A3218"/>
+    <rect x={186} y={196} width={16} height={8} rx={2} fill="#5A3218"/>
   </g>}
   const sceneMap={mesa:TableSVG,silla:ChairSVG,estantería:ShelfSVG,caja:BoxSVG,mochila:BackpackSVG,puerta:DoorSVG,armario:WardrobeSVG};
   const FurnitureCmp=sceneMap[scene]||TableSVG;
   // Surface reference point per furniture (where "encima" sits)
-  // surfaceY = y of the main surface where objects sit (seat top edge)
-  const surfaceY={mesa:70,silla:120,estantería:50,caja:70,mochila:55,puerta:40,armario:25};
-  const surfaceX={mesa:170,silla:170,estantería:180,caja:180,mochila:180,puerta:165,armario:175};
-  const sy=surfaceY[scene]||120; const sx=surfaceX[scene]||180;
-  const posAdj={encima:{ox:0,oy:-28},debajo:{ox:0,oy:70},dentro:{ox:0,oy:10},'al lado':{ox:110,oy:10},al_lado:{ox:110,oy:10},fuera:{ox:110,oy:10}};
+  // Per-scene reference: {x,y} = center of the main surface
+  // encima = just above surface, debajo = below, dentro = inside body, al lado = to the right
+  const ref={
+    mesa:{x:170,y:75},silla:{x:170,y:120},estantería:{x:180,y:55},
+    caja:{x:180,y:105},mochila:{x:175,y:110},puerta:{x:170,y:110},armario:{x:175,y:130}
+  };
+  const r=ref[scene]||{x:180,y:120};
+  const posAdj={
+    encima:{ox:0,oy:-28},
+    debajo:{ox:0,oy:70},
+    dentro:{ox:0,oy:15},
+    'al lado':{ox:110,oy:0},
+    al_lado:{ox:110,oy:0},
+    fuera:{ox:110,oy:0}
+  };
   const adj=posAdj[pos]||{ox:0,oy:0};
-  const cx=sx+adj.ox,cy=sy+adj.oy;
+  const cx=r.x+adj.ox,cy=r.y+adj.oy;
   return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
