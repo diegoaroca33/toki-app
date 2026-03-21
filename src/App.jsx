@@ -1554,8 +1554,8 @@ function SceneSVG({scene,obj,pos}){const w=360,h=280;
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
     <FurnitureCmp/>
-    <circle cx={cx} cy={cy} r={30} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="5 3"/>
-    <text x={cx} y={cy+8} textAnchor="middle" fontSize={32}>{objEm}</text>
+    <circle cx={cx} cy={cy} r={36} fill={GOLD+'33'} stroke={GOLD} strokeWidth={2.5} strokeDasharray="5 3"/>
+    <text x={cx} y={cy+10} textAnchor="middle" fontSize={42}>{objEm}</text>
     <text x={cx+38} y={cy+6} textAnchor="start" fill={GOLD} fontSize={14} fontWeight={700}>{obj}</text>
     <text x={w/2} y={h-8} textAnchor="middle" fill={DIM} fontSize={14} fontWeight={600}>{scene}</text>
   </svg>}
