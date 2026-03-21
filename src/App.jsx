@@ -2274,7 +2274,7 @@ export default function App(){
         }}>
           <span style={{fontSize:36}}>➕</span>
         </div>
-        <div style={{fontSize:18,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
+        <div style={{fontSize:16,fontWeight:700,color:DIM}}>Nuevo Jugador</div>
       </button>}
       {creating&&<div className="card af" style={{padding:24,textAlign:'left'}}><p style={{fontSize:22,color:GOLD,textAlign:'center',margin:'0 0 18px',fontWeight:700}}>Nuevo Jugador</p>
         <label style={{fontSize:15,color:DIM}}>Nombre</label><input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Nico" style={{marginBottom:14,marginTop:6}}/>
