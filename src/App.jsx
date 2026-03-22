@@ -393,13 +393,13 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Start mic BEFORE playing so it listens while Toki speaks — zero wait
-    sr.go();setMic(true);
-    ttsPlaying.current=true;
+    // Play TTS first, THEN open mic so it doesn't capture Toki's voice
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
-    ttsPlaying.current=false;
     if(!alive.current)return;
-    // Mic is already listening — no need to start again
+    // Small delay for speaker audio to finish
+    await new Promise(r=>setTimeout(r,250));
+    if(!alive.current)return;
+    sr.go();setMic(true);
   }
   useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
@@ -543,6 +543,9 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       const text=NUMS_1_100[n-1]||String(n);
       await sayFast(text);
       if(!alive.current)return;
+      // Small delay so TTS audio finishes before mic opens
+      await new Promise(r=>setTimeout(r,400));
+      if(!alive.current)return;
       setPhase('child');
       const heard=await listenQuick(2200);
       if(!alive.current)return;
@@ -574,9 +577,9 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
             boxShadow:cur?'0 0 16px '+bc+'aa':'none',
             animation:cur&&phase==='child'?'pulse .5s infinite':(rev&&inBatch?'countNum .35s ease-out':'none'),overflow:'hidden',
           }}>
-            <span style={{fontSize:cur?16:13,fontWeight:700,color:rev?'#fff':(inBatch?'#888':'#555'),lineHeight:1,zIndex:1}}>{n}</span>
-            {rev&&inBatch&&<div style={{display:'flex',gap:1.5,marginTop:1,flexWrap:'wrap',justifyContent:'center',maxWidth:20}}>
-              {Array.from({length:(n%10)||10},(_,di)=><div key={di} style={{width:3,height:3.5,borderRadius:'50%',background:'rgba(255,255,255,.85)'}}/>)}
+            <span style={{fontSize:cur?22:17,fontWeight:800,color:rev?'#fff':(inBatch?'#aaa':'#666'),lineHeight:1,zIndex:1}}>{n}</span>
+            {rev&&inBatch&&<div style={{display:'flex',gap:2,marginTop:2,flexWrap:'wrap',justifyContent:'center',maxWidth:28,minHeight:6}}>
+              {Array.from({length:Math.min((n%10)||10,6)},(_,di)=><div key={di} style={{width:4.5,height:4.5,borderRadius:'50%',background:'rgba(255,255,255,.9)'}}/>)}
             </div>}
             {rev&&<div style={{position:'absolute',bottom:0,left:0,right:0,height:'30%',background:'linear-gradient(transparent,rgba(0,0,0,.15))',borderRadius:'0 0 7px 7px'}}/>}
           </div>})}
@@ -1361,13 +1364,12 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
     // Reactivate mic permissions proactively
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Start mic BEFORE playing so it listens while Toki speaks
-    sr.go();setMic(true);
-    ttsPlaying.current=true;
+    // Play TTS first, THEN open mic so it doesn't capture Toki's voice
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
-    ttsPlaying.current=false;
     if(!alive.current)return;
-    // Mic is already listening
+    await new Promise(r=>setTimeout(r,250));
+    if(!alive.current)return;
+    sr.go();setMic(true);
   }
   useEffect(()=>{alive.current=true;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
