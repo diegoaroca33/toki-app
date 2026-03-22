@@ -1,9 +1,5 @@
 // Firebase config for Toki App
 // Uses Vite env vars (VITE_ prefix). Set them in .env.local or Vercel dashboard.
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FB_API_KEY || '',
@@ -14,14 +10,29 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FB_APP_ID || '',
 };
 
-// Only initialize if config is provided (cloud mode)
-let app = null, auth = null, db = null, storage = null;
 const hasConfig = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+
+let app = null, auth = null, db = null, storage = null;
+let signInWithEmailAndPassword = null, createUserWithEmailAndPassword = null, signOut = null, onAuthStateChanged = null;
+let doc = null, getDoc = null, setDoc = null, updateDoc = null;
+
 if (hasConfig) {
+  const { initializeApp } = await import('firebase/app');
+  const authMod = await import('firebase/auth');
+  const fsMod = await import('firebase/firestore');
+  const storageMod = await import('firebase/storage');
   app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+  auth = authMod.getAuth(app);
+  db = fsMod.getFirestore(app);
+  storage = storageMod.getStorage(app);
+  signInWithEmailAndPassword = authMod.signInWithEmailAndPassword;
+  createUserWithEmailAndPassword = authMod.createUserWithEmailAndPassword;
+  signOut = authMod.signOut;
+  onAuthStateChanged = authMod.onAuthStateChanged;
+  doc = fsMod.doc;
+  getDoc = fsMod.getDoc;
+  setDoc = fsMod.setDoc;
+  updateDoc = fsMod.updateDoc;
 }
 
-export { app, auth, db, storage, hasConfig };
+export { app, auth, db, storage, hasConfig, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, updateDoc };
