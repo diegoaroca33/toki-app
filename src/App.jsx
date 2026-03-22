@@ -198,12 +198,7 @@ const GROUPS=[
     {k:'distribute',l:'Reparte y Cuenta',defLv:1,lvKey:'distribute'},
     {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona'}]},
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
-    {k:'writing',l:'Letras MAYÚSCULAS',defLv:1,lvKey:'writing_1'},
-    {k:'writing',l:'Letras minúsculas',defLv:3,lvKey:'writing_3'},
-    {k:'writing',l:'Palabras MAYÚSCULAS',defLv:5,lvKey:'writing_5'},
-    {k:'writing',l:'Palabras minúsculas',defLv:52,lvKey:'writing_52'},
-    {k:'writing',l:'Frases MAYÚSCULAS',defLv:6,lvKey:'writing_6'},
-    {k:'writing',l:'Frases minúsculas',defLv:62,lvKey:'writing_62'}]},
+    {k:'writing',l:'Escritura',defLv:1,lvKey:'writing_1'}]},
   {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
     {k:'lee',l:'Intruso',defLv:1,lvKey:'lee_intruso'},
     {k:'lee',l:'Palabra+Imagen',defLv:2,lvKey:'lee_word_img'},
@@ -2195,6 +2190,10 @@ export default function App(){
   function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
   const[sec,setSec]=useState('decir');const[secLv,setSecLv]=useState(1);const[openGroup,setOpenGroup]=useState(null);
   const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
+  const[escribeCase,setEscribeCase]=useState(()=>loadData('escribe_case','upper'));
+  const[escribeTypes,setEscribeTypes]=useState(()=>loadData('escribe_types',['letras']));
+  const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
+  const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
@@ -2250,7 +2249,30 @@ export default function App(){
     if(section==='clock'){return genClock(slv)}
     if(section==='calendar'){return genCalendar(slv)}
     if(section==='distribute'){return genDistribute(slv,u)}
-    if(section==='writing'){return genWriting(slv)}
+    if(section==='writing'){
+      // Use escribe preferences to determine levels
+      const eCase=loadData('escribe_case','upper');
+      const eTypes=loadData('escribe_types',['letras']);
+      const eGuide=loadData('escribe_guide',{letras:true,palabras:true,frases:true});
+      const lvs=[];
+      eTypes.forEach(t=>{
+        const guide=eGuide[t]!==false;
+        if(t==='letras'){
+          if(eCase==='upper')lvs.push(guide?1:2);
+          else lvs.push(guide?3:4);
+        }else if(t==='palabras'){
+          if(eCase==='upper')lvs.push(guide?5:51);
+          else lvs.push(guide?52:53);
+        }else if(t==='frases'){
+          if(eCase==='upper')lvs.push(guide?6:61);
+          else lvs.push(guide?62:63);
+        }
+      });
+      if(lvs.length===0)lvs.push(1);
+      if(lvs.length===1)return genWriting(lvs[0]);
+      const merged=[];lvs.forEach(lv=>{merged.push(...genWriting(lv))});
+      return merged.sort(()=>Math.random()-.5)
+    }
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return genLee(slv)}
     if(section==='quiensoy'){return slv===2?[{ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img}]:QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:q.text,img:q.img,picto:q.picto}))}
@@ -2362,7 +2384,7 @@ export default function App(){
                   </button>})}
               </div>})}
           </>})()}</div>}</div>
-        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='levels'?null:'levels')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📋 Nivel por módulo</span><span style={{fontSize:16,color:DIM}}>{openSection==='levels'?'▼':'▸'}</span></button>{openSection==='levels'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📋 Nivel por módulo</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Selecciona uno o varios niveles por módulo</p>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='levels'?null:'levels')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📋 Nivel por módulo</span><span style={{fontSize:16,color:DIM}}>{openSection==='levels'?'▼':'▸'}</span></button>{openSection==='levels'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Selecciona uno o varios niveles por módulo</p>
           {(()=>{
             // Group LEE modules into a single row
             const LEE_KEYS=['lee_intruso','lee_word_img','lee_complete','lee_syllables','lee_read_do'];
@@ -2373,20 +2395,54 @@ export default function App(){
               return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
                 <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
                 {isLee?<div style={{marginBottom:8}}>
-                  <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>LEE</p>
                   <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
                     {LEE_ALL_OPTS.map(lv=>{
                       const lvKey=LEE_KEYS[lv.n-1];const curLvs=getModuleLv(lvKey)||[lv.n];const isSel=curLvs.includes(lv.n);
                       return <button key={lv.n} onClick={()=>{
                         if(isSel){setModuleLv(lvKey,[]);setActiveMods(a=>({...a}))}
                         else{setModuleLv(lvKey,[lv.n]);setActiveMods(a=>({...a}))}
-                      }} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40,position:'relative'}}>
+                      }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36,position:'relative'}}>
                         {isSel?'✓ ':''}{lv.l}
                       </button>
                     })}
-                    <button onClick={()=>{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]));setActiveMods(a=>({...a}))}} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:'pointer',minHeight:40}}>Todo</button>
+                    <button onClick={()=>{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>
                 </div>
+                :g.id==='escribe'?(()=>{
+                  const PAUTA_LABELS=['Principiante','Medio','Avanzado','Experto'];
+                  const PAUTA_SIZES=[32,26,20,16];
+                  const toggleCase=c=>{setEscribeCase(c);saveData('escribe_case',c)};
+                  const toggleType=t=>{
+                    let nt;
+                    if(escribeTypes.includes(t)){nt=escribeTypes.filter(x=>x!==t);if(nt.length===0)nt=[t]}
+                    else{if(escribeTypes.length>=2){nt=[...escribeTypes.slice(1),t]}else{nt=[...escribeTypes,t]}}
+                    setEscribeTypes(nt);saveData('escribe_types',nt)};
+                  const toggleGuide=(t)=>{const ng={...escribeGuide,[t]:!escribeGuide[t]};setEscribeGuide(ng);saveData('escribe_guide',ng)};
+                  const setPautaSize=v=>{setEscribePauta(v);saveData('escribe_pauta_size',v)};
+                  return <div>
+                    {/* Case toggle */}
+                    <div style={{display:'flex',gap:6,marginBottom:10}}>
+                      {[['upper','MAYÚSCULAS'],['lower','minúsculas']].map(([v,l])=><button key={v} onClick={()=>toggleCase(v)} style={{flex:1,padding:'8px 0',borderRadius:8,border:`2px solid ${escribeCase===v?PURPLE:BORDER}`,background:escribeCase===v?PURPLE+'22':BG3+'44',color:escribeCase===v?PURPLE:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:36}}>{escribeCase===v?'✓ ':''}{l}</button>)}
+                    </div>
+                    {/* Type checkboxes with guide toggles */}
+                    {[['letras','Letras'],['palabras','Palabras'],['frases','Frases']].map(([k,l])=>{
+                      const isOn=escribeTypes.includes(k);
+                      return <div key={k} style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                        <button onClick={()=>toggleType(k)} style={{flex:1,padding:'6px 10px',borderRadius:8,border:`2px solid ${isOn?PURPLE:BORDER}`,background:isOn?PURPLE+'22':BG3+'44',color:isOn?PURPLE:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36,textAlign:'left'}}>{isOn?'✓ ':''}{l}</button>
+                        {isOn&&<button onClick={()=>toggleGuide(k)} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${escribeGuide[k]?GREEN:BORDER}`,background:escribeGuide[k]?GREEN+'18':BG3+'44',color:escribeGuide[k]?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:12,cursor:'pointer',minHeight:36,whiteSpace:'nowrap'}}>Guía: {escribeGuide[k]?'ON':'OFF'}</button>}
+                      </div>})}
+                    <p style={{fontSize:12,color:DIM,margin:'2px 0 8px'}}>Máx. 2 tipos</p>
+                    {/* Pauta size slider */}
+                    <div style={{marginTop:4}}>
+                      <p style={{fontSize:14,fontWeight:600,margin:'0 0 4px',color:TXT}}>Tamaño pauta: <span style={{color:PURPLE}}>{PAUTA_LABELS[escribePauta]}</span></p>
+                      <input type="range" min={0} max={3} step={1} value={escribePauta} onChange={e=>setPautaSize(parseInt(e.target.value))} style={{width:'100%',accentColor:PURPLE,height:6,cursor:'pointer'}}/>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:DIM,marginTop:2}}>{PAUTA_LABELS.map(l=><span key={l}>{l}</span>)}</div>
+                      {/* Preview */}
+                      <div style={{marginTop:8,padding:10,borderRadius:8,background:BG3,border:`1px solid ${BORDER}`,textAlign:'center'}}>
+                        <span style={{fontSize:PAUTA_SIZES[escribePauta],fontFamily:"'Fredoka'",color:PURPLE,fontWeight:600}}>{escribeCase==='upper'?'HOLA':'hola'}</span>
+                      </div>
+                    </div>
+                  </div>})()
                 :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLvs=getModuleLv(m.lvKey)||[m.defLv];
                   return <div key={mi} style={{marginBottom:8}}>
                   <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
@@ -2397,9 +2453,9 @@ export default function App(){
                       if(isSel){newLvs=curLvs.filter(l=>l!==lv.n);if(newLvs.length===0)newLvs=[lv.n]}
                       else{if(curLvs.length>=MAX_SEL)return;newLvs=[...curLvs,lv.n]}
                       setModuleLv(m.lvKey,newLvs);setActiveMods(a=>({...a}))
-                    }} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40}}>{isSel?'✓ ':''}{lv.l}</button>
+                    }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36}}>{isSel?'✓ ':''}{lv.l}</button>
                   })}
-                  <button onClick={()=>{setModuleLv(m.lvKey,opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'8px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:40}}>Todo</button>
+                  <button onClick={()=>{setModuleLv(m.lvKey,opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
                 </div>})}
               </div>})})()}</div>}</div>
