@@ -1,38 +1,49 @@
 // Firebase config for Toki App
-// Uses Vite env vars (VITE_ prefix). Set them in .env.local or Vercel dashboard.
+// Without env vars = app works 100% offline with localStorage only.
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FB_API_KEY || '',
-  authDomain: import.meta.env.VITE_FB_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FB_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FB_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FB_MSG_SENDER_ID || '',
-  appId: import.meta.env.VITE_FB_APP_ID || '',
-};
+export const hasConfig = !!(
+  import.meta.env.VITE_FB_API_KEY &&
+  import.meta.env.VITE_FB_PROJECT_ID
+);
 
-const hasConfig = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+// All exports are null when no config — App.jsx checks hasConfig before calling anything
+export let app = null;
+export let auth = null;
+export let db = null;
+export let storage = null;
+export let fbFns = {};
 
-let app = null, auth = null, db = null, storage = null;
-let signInWithEmailAndPassword = null, createUserWithEmailAndPassword = null, signOut = null, onAuthStateChanged = null;
-let doc = null, getDoc = null, setDoc = null, updateDoc = null;
-
-if (hasConfig) {
-  const { initializeApp } = await import('firebase/app');
-  const authMod = await import('firebase/auth');
-  const fsMod = await import('firebase/firestore');
-  const storageMod = await import('firebase/storage');
-  app = initializeApp(firebaseConfig);
-  auth = authMod.getAuth(app);
-  db = fsMod.getFirestore(app);
-  storage = storageMod.getStorage(app);
-  signInWithEmailAndPassword = authMod.signInWithEmailAndPassword;
-  createUserWithEmailAndPassword = authMod.createUserWithEmailAndPassword;
-  signOut = authMod.signOut;
-  onAuthStateChanged = authMod.onAuthStateChanged;
-  doc = fsMod.doc;
-  getDoc = fsMod.getDoc;
-  setDoc = fsMod.setDoc;
-  updateDoc = fsMod.updateDoc;
+// Call this once on app start if hasConfig is true
+export async function initFirebase() {
+  if (!hasConfig || app) return;
+  try {
+    const { initializeApp } = await import('firebase/app');
+    const authMod = await import('firebase/auth');
+    const fsMod = await import('firebase/firestore');
+    const storageMod = await import('firebase/storage');
+    const cfg = {
+      apiKey: import.meta.env.VITE_FB_API_KEY,
+      authDomain: import.meta.env.VITE_FB_AUTH_DOMAIN,
+      projectId: import.meta.env.VITE_FB_PROJECT_ID,
+      storageBucket: import.meta.env.VITE_FB_STORAGE_BUCKET,
+      messagingSenderId: import.meta.env.VITE_FB_MSG_SENDER_ID,
+      appId: import.meta.env.VITE_FB_APP_ID,
+    };
+    app = initializeApp(cfg);
+    auth = authMod.getAuth(app);
+    db = fsMod.getFirestore(app);
+    storage = storageMod.getStorage(app);
+    fbFns = {
+      signInWithEmailAndPassword: authMod.signInWithEmailAndPassword,
+      createUserWithEmailAndPassword: authMod.createUserWithEmailAndPassword,
+      signOut: authMod.signOut,
+      onAuthStateChanged: authMod.onAuthStateChanged,
+      doc: fsMod.doc,
+      getDoc: fsMod.getDoc,
+      setDoc: fsMod.setDoc,
+      updateDoc: fsMod.updateDoc,
+    };
+  } catch (e) {
+    console.warn('Firebase init failed:', e);
+  }
 }
-
-export { app, auth, db, storage, hasConfig, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, doc, getDoc, setDoc, updateDoc };
