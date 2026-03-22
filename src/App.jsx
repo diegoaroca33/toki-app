@@ -177,10 +177,11 @@ const LV_OPTS={
   lee_read_do:[{n:5,l:'Lee y haz'}],
 };
 function getModuleLv(modKey){const v=loadData('mod_lv_'+modKey,null);if(Array.isArray(v))return v;if(v!==null)return[v];return null}
+function getModuleLvOrDef(modKey,defLv){const v=getModuleLv(modKey);if(v)return v;return Array.isArray(defLv)?defLv:[defLv]}
 function setModuleLv(modKey,lv){saveData('mod_lv_'+modKey,Array.isArray(lv)?lv:lv!==null?[lv]:null)}
 const GROUPS=[
   {id:'quiensoy',name:'QUIÉN SOY',emoji:'👤',color:'#E91E63',desc:'Mi presentación',modules:[
-    {k:'quiensoy',l:'Mi presentación',defLv:1,lvKey:'quiensoy'}]},
+    {k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'quiensoy'}]},
   {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
     {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
     {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
@@ -2129,6 +2130,8 @@ export default function App(){
   const[cloudSyncing,setCloudSyncing]=useState(false);
   const[revoked,setRevoked]=useState(false);
   // Init Firebase lazily if config exists
+  const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
+  function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
   useEffect(()=>{if(hasConfig)initFirebase().then(()=>setFbLoading(false)).catch(()=>setFbLoading(false))},[]);
   // Listen to Firebase auth state changes
   useEffect(()=>{if(!hasConfig||!auth||!fbFns.onAuthStateChanged)return;
@@ -2179,8 +2182,6 @@ export default function App(){
   const streak=useMemo(()=>getStreak(),[scr]);
   const totalStars=useMemo(()=>getTotalStars(),[scr,st]);
   const[showMiCielo,setShowMiCielo]=useState(false);
-  const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
-  function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
   // Auto cloud sync when profiles change (debounced)
   const cloudSyncTimer=useRef(null);
   useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
@@ -2444,7 +2445,7 @@ export default function App(){
                       </div>
                     </div>
                   </div>})()
-                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLvs=getModuleLv(m.lvKey)||[m.defLv];
+                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
                   return <div key={mi} style={{marginBottom:8}}>
                   <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
                   {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>{opts.map(lv=>{
@@ -2470,7 +2471,7 @@ export default function App(){
               <select disabled={isDisabled} style={{flex:1,padding:12,borderRadius:10,border:`2px solid ${BORDER}`,background:isDisabled?BG3+'44':BG3,color:isDisabled?DIM:TXT,fontFamily:"'Fredoka'",fontSize:18,minHeight:48,opacity:isDisabled?.5:1}} value={t?t.k+'_'+t.lv:''} onChange={e=>{const v=e.target.value;if(!v){const nt=[...guidedTasks];nt.splice(i,1);setGuidedTasks(nt);saveData('guided_tasks',nt);return}
                 const[k,lv]=v.split('_');const nt=[...guidedTasks];nt[i]={k,lv:parseInt(lv),count:10};setGuidedTasks(nt);saveData('guided_tasks',nt)}}>
                 <option value="">— vacío —</option>
-                {GROUPS.flatMap(g=>g.modules.map(m=>{const mLv=(getModuleLv(m.lvKey)||[m.defLv])[0];return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
+                {GROUPS.flatMap(g=>g.modules.map(m=>{const mLv=(getModuleLvOrDef(m.lvKey,m.defLv))[0];return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
               </select>
             </div>})}
             {guidedTasks.filter(Boolean).length>=4&&<p style={{fontSize:14,color:RED,fontWeight:700,margin:'4px 0 0'}}>Has alcanzado el máximo de 4 tareas</p>}
@@ -2481,7 +2482,7 @@ export default function App(){
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
             {GROUPS.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
               <p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
-              {g.modules.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||[m.defLv];return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:BORDER}`,background:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color+'33':BG3,color:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
+              {g.modules.map((m,mi)=>{const mLv=getModuleLvOrDef(m.lvKey,m.defLv);return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:BORDER}`,background:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color+'33':BG3,color:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
             </div>)}
           </div>}
         </div>}</div>
@@ -2750,7 +2751,7 @@ export default function App(){
                   const rad=angle*Math.PI/180;
                   const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
                   const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||[firstMod.defLv])}}} style={{
+                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv))}}} style={{
                     position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
                     padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
                     display:'flex',flexDirection:'column',alignItems:'center',gap:2,
@@ -2782,7 +2783,7 @@ export default function App(){
           <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
             {otherGroups.map(g=>{
               const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
-              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||[firstMod.defLv])}}} style={{
+              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv))}}} style={{
                 width:48,height:48,borderRadius:'50%',border:'none',cursor:'pointer',
                 background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
                 boxShadow:`0 2px 8px ${pc[1]}44`,
@@ -2821,7 +2822,7 @@ export default function App(){
                 width:'100%',maxWidth:500,
               }}>
                 {enabledMods.map((m,mi)=>{
-                  const mLv=getModuleLv(m.lvKey)||[m.defLv];
+                  const mLv=getModuleLvOrDef(m.lvKey,m.defLv);
                   const isActive=sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv);
                   const subSize=modCount<=3?100:modCount<=5?88:76;
                   return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{
