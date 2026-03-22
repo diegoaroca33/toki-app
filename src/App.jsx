@@ -98,7 +98,7 @@ function useSR(onResult){const recRef=useRef(null);const cbRef=useRef(onResult);
 function saveData(key,val){try{localStorage.setItem('toki_'+key,JSON.stringify(val))}catch(e){}}
 function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
 function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
-function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);return text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa')}
+function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);return text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole')}
 function srsUp(id,ok,u){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();d.srs[id].lv=ok?Math.min(d.srs[id].lv+1,5):Math.max(d.srs[id].lv-1,0);return d}
 function needsRev(id,u){const s=u.srs&&u.srs[id];if(!s)return true;const g=[0,30000,120000,600000,3600000,86400000];return(Date.now()-s.t)>=g[Math.min(s.lv,5)]}
 const AVS=['🧑‍🚀','👨‍🚀','👩‍🚀','🦸','🦸‍♂️','🦸‍♀️','🧙','🧙‍♂️','🧙‍♀️','🧑‍🎤','👨‍🎤','👩‍🎤','🧑‍🎨','🧑‍🏫','👨‍🍳','👩‍🔬','🧑‍✈️','👮','🥷','🧛','🧜‍♀️','🧜‍♂️','🧚','🧞','🦊','🐸','🐉','🦁','🐼','🐨','🦄','🐯','🐺','🦖','🐙','🦈','🦅','🦋','🤖','👾','🎮','⚡','🌟','🔥','💎','🎯','🏆','🎸','🛹','🏄','⚽','🎪','🚀','🌈'];
@@ -173,8 +173,8 @@ const LV_OPTS={
   lee_syllables:[{n:4,l:'Ordena sílabas'}],
   lee_read_do:[{n:5,l:'Lee y haz'}],
 };
-function getModuleLv(modKey){return loadData('mod_lv_'+modKey,null)}
-function setModuleLv(modKey,lv){saveData('mod_lv_'+modKey,lv)}
+function getModuleLv(modKey){const v=loadData('mod_lv_'+modKey,null);if(Array.isArray(v))return v;if(v!==null)return[v];return null}
+function setModuleLv(modKey,lv){saveData('mod_lv_'+modKey,Array.isArray(lv)?lv:lv!==null?[lv]:null)}
 const GROUPS=[
   {id:'quiensoy',name:'QUIÉN SOY',emoji:'👤',color:'#E91E63',desc:'Mi presentación',modules:[
     {k:'quiensoy',l:'Mi presentación',defLv:1,lvKey:'quiensoy'}]},
@@ -345,6 +345,19 @@ function Stars({n,sz=32,burst=false}){
   return <div style={{display:'flex',gap:6,justifyContent:'center'}}>{[1,2,3,4].map(i=><span key={i} style={{fontSize:sz,opacity:i<=n?1:0.15,animation:i<=n?`starPop 0.5s ${i*0.25}s both`:'none',filter:i<=n?'drop-shadow(0 0 8px #FFD700)':'grayscale(1)'}}>{i<=n?'⭐':'☆'}</span>)}</div>
 }
 
+// ===== CELEBRATION OVERLAY — reusable fireworks across screen =====
+function CelebrationOverlay({show,duration=2000}){
+  const[visible,setVisible]=useState(false);
+  useEffect(()=>{if(show){setVisible(true);const t=setTimeout(()=>setVisible(false),duration);return()=>clearTimeout(t)}else{setVisible(false)}},[show,duration]);
+  if(!visible)return null;
+  const stars=Array.from({length:24},(_,i)=>({i,x:Math.random()*100,y:Math.random()*80+5,sz:16+Math.random()*28,delay:Math.random()*0.8,em:['⭐','✨','🌟','💫'][i%4]}));
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:998,overflow:'hidden'}}>
+    {stars.map(s=><span key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',fontSize:s.sz,opacity:0,animation:`starPop 0.6s ${s.delay}s both`,filter:'drop-shadow(0 0 12px #FFD700)'}}>{s.em}</span>)}
+    {/* Rocket flying up */}
+    <div style={{position:'absolute',left:'25%',bottom:'10%',fontSize:48,animation:'rocketUp 1.8s 0.2s ease-in-out forwards'}}>🚀</div>
+    <div style={{position:'absolute',left:'65%',bottom:'20%',fontSize:36,animation:'rocketUp 2s 0.5s ease-in-out forwards'}}>🚀</div>
+  </div>}
+
 // ===== SPEAK PANEL — 4-star SingStar system =====
 function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
@@ -408,10 +421,10 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     </div>
     {/* Syllable display */}
     {sylShow&&<div className="af" style={{background:PURPLE+'12',borderRadius:18,padding:14,marginBottom:14}}>
-      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>{syllables.map((wordSyls,wi)=>{
+      <div style={{display:'flex',flexWrap:'wrap',gap:'clamp(2px, 1vw, 8px)',justifyContent:'center'}}>{syllables.map((wordSyls,wi)=>{
         const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:12}}/>);
         wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=fi<sylIdx;
-          items.push(<span key={wi+'_'+si} style={{fontSize:26,fontWeight:700,padding:'6px 10px',borderRadius:12,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
+          items.push(<span key={wi+'_'+si} style={{fontSize:'clamp(18px, 4vw, 26px)',fontWeight:700,padding:'6px 10px',borderRadius:12,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
         return items})}</div>
     </div>}
     {/* Stars */}
@@ -460,7 +473,7 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:16,minHeight:56}}>{pl.map((p,i)=><div key={i} className={'ws '+(p?'ws-f':'ws-e')}>{p?p.w:'___'}</div>)}</div>
-      {bf==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div>}
+      {bf==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div></>}
       {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
@@ -612,11 +625,11 @@ function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
       <NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>
       <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
-    {fb==='ok'&&<div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
+    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
       <Stars n={4} sz={32}/>
       <AnimCount from={a} to={ex.ans} color={GREEN}/>
       <p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'4px 0 0'}}>{a} {op} {b} = {ex.ans}</p>
-    </div>}
+    </div></>}
     {showHelp&&fb==='no'&&<div className="af" style={{background:GOLD+'0C',borderRadius:14,padding:20,marginBottom:14}}>
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¡Vamos a contarlo juntos!</p>
       <AnimCount from={op==='+'?a:0} to={op==='+'?ex.ans:a} color={op==='+'?GREEN:GOLD} speak={true}/>
@@ -901,7 +914,7 @@ function ExClock({ex,onOk,onSkip,name,uid,vids}){
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>
       <div style={{display:'flex',justifyContent:'center'}}><ClockFace h={ex.h} m={ex.m}/></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
-    {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
+    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>{ex.m===0?'Fíjate en la aguja pequeña, ¿dónde apunta?':ex.m===30?'La aguja grande en el 6 significa y media':ex.m===15?'La aguja grande en el 3 significa y cuarto':ex.m===45?'La aguja grande en el 9 significa menos cuarto':'¡Casi!'}</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
@@ -1205,14 +1218,29 @@ function ExWriting({ex,onOk,onSkip,name}){
         const sg=STROKE_GUIDES[letter.toUpperCase()];
         if(sg){
           const zone={x:w/2-fSz*.45,y:upperY,w:fSz*.9,h:baseY-upperY};
-          sg.forEach(s=>{
-            const sx=zone.x+s.x*zone.w,sy=zone.y+s.y*zone.h;
-            const endX=zone.x+(s.ex||s.x)*zone.w,endY=zone.y+(s.ey||s.y)*zone.h;
+          // For curved letters, clamp positions to stay within the letter zone
+          const clampX=(v)=>Math.max(zone.x+8,Math.min(zone.x+zone.w-8,v));
+          const clampY=(v)=>Math.max(zone.y+8,Math.min(zone.y+zone.h-8,v));
+          // Calculate all number positions first, then apply collision avoidance
+          const numPositions=sg.map(s=>({x:clampX(zone.x+s.x*zone.w),y:clampY(zone.y+s.y*zone.h)}));
+          // Collision detection: if two numbers are < 20px apart, offset the second
+          for(let i=1;i<numPositions.length;i++){
+            for(let j=0;j<i;j++){
+              const dx=numPositions[i].x-numPositions[j].x,dy=numPositions[i].y-numPositions[j].y;
+              const dist=Math.sqrt(dx*dx+dy*dy);
+              if(dist<20&&dist>0){const push=20-dist;const ux=dx/dist,uy=dy/dist;
+                numPositions[i].x=clampX(numPositions[i].x+ux*push);numPositions[i].y=clampY(numPositions[i].y+uy*push)}
+              else if(dist===0){numPositions[i].y=clampY(numPositions[i].y+20)}
+            }
+          }
+          sg.forEach((s,si)=>{
+            const sx=numPositions[si].x,sy=numPositions[si].y;
+            const endX=clampX(zone.x+(s.ex||s.x)*zone.w),endY=clampY(zone.y+(s.ey||s.y)*zone.h);
             ctx.fillStyle='#E74C3C';ctx.beginPath();ctx.arc(sx,sy,11,0,Math.PI*2);ctx.fill();
             ctx.fillStyle='#fff';ctx.font='bold 13px Fredoka';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(s.n),sx,sy);
-            const dx=endX-sx,dy=endY-sy;const len=Math.sqrt(dx*dx+dy*dy);
+            const ddx=endX-sx,ddy=endY-sy;const len=Math.sqrt(ddx*ddx+ddy*ddy);
             if(len>20){
-              const ux=dx/len,uy=dy/len;const arrowLen=Math.min(25,len*0.4);
+              const ux=ddx/len,uy=ddy/len;const arrowLen=Math.min(25,len*0.4);
               const ax=sx+ux*14,ay=sy+uy*14;const bx=ax+ux*arrowLen,by=ay+uy*arrowLen;
               ctx.strokeStyle='#E74C3C';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
               const headLen=8;const angle=Math.atan2(by-ay,bx-ax);
@@ -1224,7 +1252,7 @@ function ExWriting({ex,onOk,onSkip,name}){
     }else{
       // Words/phrases: size to fill pauta zone
       const zoneH=baseY-upperY;
-      const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);
+      const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);
       ctx.font=getModelFont(fSz);ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
     }
   }
@@ -1236,7 +1264,7 @@ function ExWriting({ex,onOk,onSkip,name}){
       const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);
       octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
     }else{
-      const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);
+      const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);
       octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
     }
     const imgData=octx.getImageData(0,0,cW,cH);
@@ -1274,7 +1302,7 @@ function ExWriting({ex,onOk,onSkip,name}){
     const c=canvasRef.current;if(c){const ctx=c.getContext('2d');const mask=modelRef.current||getModelMask();
       ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle='rgba(0,180,0,1)';
       if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      else{const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.6/0.72):Math.floor(zoneH*0.75/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+      else{const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
       ctx.restore();
       const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}}
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
@@ -1803,25 +1831,7 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
       {/* Left side — celebration zone (symmetry with buttons) */}
       <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220,position:'relative'}}>
-        {fb==='ok'&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',overflow:'hidden'}}>
-          <div style={{position:'relative',width:140,height:220}}>
-            {/* Cohete — órbita curva subiendo */}
-            <div style={{position:'absolute',left:'50%',bottom:10,transform:'translateX(-50%)',animation:'rocketUp 1.8s 0.15s ease-in-out forwards',fontSize:52}}>🚀</div>
-            {/* Estrellas — MUY dispersas, tamaños variados, orgánicas */}
-            <span style={{position:'absolute',left:-5,top:5,fontSize:36,opacity:0,animation:'starPop 0.6s 0.3s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:95,top:-8,fontSize:28,opacity:0,animation:'starPop 0.6s 0.55s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:25,top:65,fontSize:32,opacity:0,animation:'starPop 0.6s 0.8s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
-            <span style={{position:'absolute',left:110,top:50,fontSize:24,opacity:0,animation:'starPop 0.6s 1.05s both',filter:'drop-shadow(0 0 12px #FFD700)'}}>⭐</span>
-            {/* Destellos extras */}
-            <span style={{position:'absolute',left:50,top:-5,fontSize:18,opacity:0,animation:'starPop 0.4s 0.4s both'}}>✨</span>
-            <span style={{position:'absolute',left:120,top:25,fontSize:14,opacity:0,animation:'starPop 0.4s 0.65s both'}}>✨</span>
-            <span style={{position:'absolute',left:-10,top:45,fontSize:16,opacity:0,animation:'starPop 0.4s 0.9s both'}}>💫</span>
-            <span style={{position:'absolute',left:80,top:85,fontSize:13,opacity:0,animation:'starPop 0.4s 1.1s both'}}>✨</span>
-            <span style={{position:'absolute',left:5,top:90,fontSize:20,opacity:0,animation:'starPop 0.4s 1.2s both'}}>🌟</span>
-            {/* Texto */}
-            <p style={{position:'absolute',bottom:-5,left:-15,right:-15,fontSize:20,fontWeight:600,color:GREEN,margin:0,textAlign:'center',opacity:0,animation:'fadeIn 0.4s 0.5s both',whiteSpace:'nowrap',textShadow:'0 2px 6px rgba(0,0,0,0.4)'}}>¡Bien, vamos!</p>
-          </div>
-        </div>}
+        {fb==='ok'&&<CelebrationOverlay show={true} duration={1800}/>}
       </div>
       {/* Center — scene */}
       <div style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:6,minWidth:0}}>
@@ -2047,7 +2057,8 @@ export default function App(){
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');
-  const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');
+  const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
+  const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);
@@ -2080,11 +2091,24 @@ export default function App(){
   function tU(){pokeActive();if(audioOk)return;setAudioOk(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}
     // Request mic permission on any touch
     navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{})}
+  // Recording recovery: match orphaned toki_voice_* keys to current profiles by voice name
+  useEffect(()=>{try{const allKeys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))allKeys.push(k)}
+    if(!allKeys.length||!profs.length)return;
+    profs.forEach(p=>{if(!p.voices||!p.voices.length)return;const knownKeys=p.voices.map(v=>'toki_voice_'+p.id+'_'+v.id);
+      const orphans=allKeys.filter(k=>k.startsWith('toki_voice_')&&!knownKeys.includes(k));
+      orphans.forEach(ok=>{try{const raw=localStorage.getItem(ok);if(!raw)return;const d=JSON.parse(raw);if(!d||!d.name)return;
+        const matchVoice=p.voices.find(v=>v.name&&v.name.toLowerCase()===d.name.toLowerCase());
+        if(matchVoice){const targetKey='toki_voice_'+p.id+'_'+matchVoice.id;if(!localStorage.getItem(targetKey)){localStorage.setItem(targetKey,raw);console.log('[Toki] Recovered voice data:',ok,'->',targetKey)}}
+      }catch(e){}})})
+  }catch(e){}},[profs]);
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);
+    // Multi-level support: if slv is an array, merge exercises from all levels
+    if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
+    if(Array.isArray(slv))slv=slv[0]||1;
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
       const wRange=slv===1?[1,2]:slv===2?[2,3]:slv===3?[3,4]:slv===4?[4,5]:[5,99];
       const pool=EX.filter(e=>(e.ty==='flu'||e.ty==='sit')&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
@@ -2137,17 +2161,18 @@ export default function App(){
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={!!supPin&&parentPin.length<4} onClick={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
     {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>setOv(null)}>🎮 ¡A jugar!</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
-      {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:18}}>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🔒 PIN del supervisor</p><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></p><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>⏰ Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🎤 Tolerancia: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Aproximaciones en dicción</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>Flexible</span><span>Normal</span><span>Estricto</span></div></div>
-        <div className="card" style={{padding:20}}>{(()=>{
+      {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='pin'?null:'pin')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🔒 PIN del supervisor</span><span style={{fontSize:16,color:DIM}}>{openSection==='pin'?'▼':'▸'}</span></button>{openSection==='pin'&&<div style={{padding:'0 20px 20px'}}><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='session'?null:'session')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='session'?'▼':'▸'}</span></button>{openSection==='session'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='daily'?null:'daily')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏰ Límites y tolerancia</span><span style={{fontSize:16,color:DIM}}>{openSection==='daily'?'▼':'▸'}</span></button>{openSection==='daily'&&<div style={{padding:'0 20px 20px',display:'flex',flexDirection:'column',gap:16}}>
+          <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px'}}>Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
+          <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 4px'}}>🎤 Tolerancia: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Aproximaciones en dicción</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>Flexible</span><span>Normal</span><span>Estricto</span></div></div>
+        </div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='planets'?null:'planets')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🪐 Planetas activos</span><span style={{fontSize:16,color:DIM}}>{openSection==='planets'?'▼':'▸'}</span></button>{openSection==='planets'&&<div style={{padding:'0 20px 20px'}}>{(()=>{
           const PLANET_COLORS_P={quiensoy:['#F8BBD0','#E91E63','#AD1457'],dilo:['#A5D6A7','#4CAF50','#2E7D32'],cuenta:['#FFCC80','#FF9800','#E65100'],razona:['#90CAF9','#42A5F5','#1565C0'],escribe:['#CE93D8','#AB47BC','#6A1B9A'],lee:['#EF9A9A','#EF5350','#B71C1C']};
           const totalActive=GROUPS.reduce((n,g)=>n+g.modules.filter(m=>activeMods[m.lvKey]!==false).length,0);
           const parentOpenPlanet=pOpenPlanet;const setParentOpenPlanet=setPOpenPlanet;
           return <>
-            <p style={{fontSize:20,fontWeight:700,margin:'0 0 4px'}}>🪐 Planetas activos</p>
             <p style={{fontSize:14,color:DIM,margin:'0 0 4px'}}>Toca un planeta para ver sus módulos. Toca cada módulo para activarlo/desactivarlo.</p>
             <p style={{fontSize:15,fontWeight:600,margin:'0 0 12px',color:GREEN}}>
               {totalActive} activos
@@ -2204,21 +2229,49 @@ export default function App(){
                     <div style={{fontSize:11,fontWeight:600,color:isOn?TXT:DIM,textAlign:'center',lineHeight:1.15}}>{m.l}</div>
                   </button>})}
               </div>})}
-          </>})()}
-        </div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📋 Nivel por módulo</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Configura el nivel que verá el niño en cada módulo</p>
-          {GROUPS.map(g=><div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
-            <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
-            {g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLv=getModuleLv(m.lvKey)||m.defLv;
-              return <div key={mi} style={{marginBottom:8}}>
-              <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
-              {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap'}}>{opts.map(lv=>
-                <button key={lv.n} onClick={()=>{setModuleLv(m.lvKey,lv.n);setActiveMods(a=>({...a}))}} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${curLv===lv.n?g.color:BORDER}`,background:curLv===lv.n?g.color+'22':BG3+'44',color:curLv===lv.n?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40}}>{curLv===lv.n?'● ':''}{lv.l}</button>
-              )}</div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
-            </div>})}
-          </div>)}
-        </div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📝 Sesión de hoy</p>
+          </>})()}</div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='levels'?null:'levels')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📋 Nivel por módulo</span><span style={{fontSize:16,color:DIM}}>{openSection==='levels'?'▼':'▸'}</span></button>{openSection==='levels'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📋 Nivel por módulo</p><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Selecciona uno o varios niveles por módulo</p>
+          {(()=>{
+            // Group LEE modules into a single row
+            const LEE_KEYS=['lee_intruso','lee_word_img','lee_complete','lee_syllables','lee_read_do'];
+            const LEE_ALL_OPTS=[{n:1,l:'Intruso'},{n:2,l:'Pal+Img'},{n:3,l:'Completa'},{n:4,l:'Sílabas'},{n:5,l:'Lee+haz'}];
+            return GROUPS.map(g=>{
+              const isLee=g.id==='lee';
+              const MAX_SEL=g.id==='razona'?5:4;
+              return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
+                <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
+                {isLee?<div style={{marginBottom:8}}>
+                  <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>LEE</p>
+                  <div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>
+                    {LEE_ALL_OPTS.map(lv=>{
+                      const lvKey=LEE_KEYS[lv.n-1];const curLvs=getModuleLv(lvKey)||[lv.n];const isSel=curLvs.includes(lv.n);
+                      return <button key={lv.n} onClick={()=>{
+                        if(isSel){setModuleLv(lvKey,[]);setActiveMods(a=>({...a}))}
+                        else{setModuleLv(lvKey,[lv.n]);setActiveMods(a=>({...a}))}
+                      }} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40,position:'relative'}}>
+                        {isSel?'✓ ':''}{lv.l}
+                      </button>
+                    })}
+                    <button onClick={()=>{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]));setActiveMods(a=>({...a}))}} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:'pointer',minHeight:40}}>Todo</button>
+                  </div>
+                </div>
+                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLvs=getModuleLv(m.lvKey)||[m.defLv];
+                  return <div key={mi} style={{marginBottom:8}}>
+                  <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
+                  {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>{opts.map(lv=>{
+                    const isSel=curLvs.includes(lv.n);
+                    return <button key={lv.n} onClick={()=>{
+                      let newLvs;
+                      if(isSel){newLvs=curLvs.filter(l=>l!==lv.n);if(newLvs.length===0)newLvs=[lv.n]}
+                      else{if(curLvs.length>=MAX_SEL)return;newLvs=[...curLvs,lv.n]}
+                      setModuleLv(m.lvKey,newLvs);setActiveMods(a=>({...a}))
+                    }} style={{padding:'8px 12px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:40}}>{isSel?'✓ ':''}{lv.l}</button>
+                  })}
+                  <button onClick={()=>{setModuleLv(m.lvKey,opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'8px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:40}}>Todo</button>
+                  </div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
+                </div>})}
+              </div>})})()}</div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='today'?null:'today')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📝 Sesión de hoy</span><span style={{fontSize:16,color:DIM}}>{openSection==='today'?'▼':'▸'}</span></button>{openSection==='today'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📝 Sesión de hoy</p>
           <div style={{display:'flex',gap:8,marginBottom:12}}>{['free','guided'].map(m=><button key={m} onClick={()=>{setSessionMode(m);saveData('session_mode',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sessionMode===m?GOLD:BORDER}`,background:sessionMode===m?GOLD+'22':BG3,color:sessionMode===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m==='free'?'🆓 Libre':'📋 Guiada'}</button>)}</div>
           {sessionMode==='guided'&&<div>
             <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Elige hasta 4 tareas:</p>
@@ -2228,34 +2281,32 @@ export default function App(){
               <select disabled={isDisabled} style={{flex:1,padding:12,borderRadius:10,border:`2px solid ${BORDER}`,background:isDisabled?BG3+'44':BG3,color:isDisabled?DIM:TXT,fontFamily:"'Fredoka'",fontSize:18,minHeight:48,opacity:isDisabled?.5:1}} value={t?t.k+'_'+t.lv:''} onChange={e=>{const v=e.target.value;if(!v){const nt=[...guidedTasks];nt.splice(i,1);setGuidedTasks(nt);saveData('guided_tasks',nt);return}
                 const[k,lv]=v.split('_');const nt=[...guidedTasks];nt[i]={k,lv:parseInt(lv),count:10};setGuidedTasks(nt);saveData('guided_tasks',nt)}}>
                 <option value="">— vacío —</option>
-                {GROUPS.flatMap(g=>g.modules.map(m=>{const mLv=getModuleLv(m.lvKey)||m.defLv;return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
+                {GROUPS.flatMap(g=>g.modules.map(m=>{const mLv=(getModuleLv(m.lvKey)||[m.defLv])[0];return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
               </select>
             </div>})}
             {guidedTasks.filter(Boolean).length>=4&&<p style={{fontSize:14,color:RED,fontWeight:700,margin:'4px 0 0'}}>Has alcanzado el máximo de 4 tareas</p>}
           </div>}
-        </div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>🎯 Módulo de hoy</p>
+        </div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='module'?null:'module')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🎯 Módulo de hoy</span><span style={{fontSize:16,color:DIM}}>{openSection==='module'?'▼':'▸'}</span></button>{openSection==='module'&&<div style={{padding:'0 20px 20px'}}>
           <button onClick={()=>{setFreeChoice(!freeChoice)}} style={{width:'100%',padding:'14px 20px',borderRadius:10,border:`3px solid ${freeChoice?GREEN:BORDER}`,background:freeChoice?GREEN+'22':BG3,color:freeChoice?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',marginBottom:12,minHeight:52}}>{freeChoice?'✅ Elección libre (el niño elige)':'❌ Elección libre'}</button>
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
             {GROUPS.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
               <p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
-              {g.modules.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||m.defLv;return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&secLv===mLv?g.color:BORDER}`,background:sec===m.k&&secLv===mLv?g.color+'33':BG3,color:sec===m.k&&secLv===mLv?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
+              {g.modules.map((m,mi)=>{const mLv=getModuleLv(m.lvKey)||[m.defLv];return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:BORDER}`,background:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color+'33':BG3,color:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
             </div>)}
           </div>}
-        </div>
+        </div>}</div>
         <button className="btn btn-gold" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up)}} style={{fontSize:20,padding:'16px 20px',minHeight:52}}>💾 Guardar</button>
         <button className="btn btn-p" onClick={()=>{setOv(null);setShowRec(true)}} style={{marginTop:8,fontSize:18,padding:'14px 20px',minHeight:52}}>🎙️ Grabar voces</button>
         <div style={{marginTop:20,borderTop:'1px solid '+BORDER,paddingTop:20}}>{!delConf?<button className="btn btn-ghost" style={{color:RED,borderColor:RED+'44',fontSize:18,padding:'14px 20px',minHeight:52}} onClick={()=>setDelConf(true)}>🗑️ Borrar perfil de {user.name}</button>:<div className="card" style={{borderColor:RED+'66',background:RED+'0C',padding:20}}><p style={{fontSize:18,fontWeight:600,color:RED,margin:'0 0 10px'}}>¿Seguro? Se perderá todo el progreso</p><div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1,fontSize:18,minHeight:52}} onClick={()=>setDelConf(false)}>Cancelar</button><button className="btn btn-g" style={{flex:1,background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21',fontSize:18,minHeight:52}} onClick={()=>{setProfs(p=>p.filter(x=>x.id!==user.id));setUser(null);setOv(null);setDelConf(false);setScr('login')}}>Sí, borrar</button></div></div>}
         <button className="btn btn-ghost" style={{color:RED,borderColor:RED+'22',marginTop:12,fontSize:16,padding:'14px 20px',minHeight:52}} onClick={()=>{if(confirm('¿Borrar todos los perfiles y progreso? Las voces grabadas se conservan.')){const keep={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))keep[k]=localStorage.getItem(k)}localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));setProfs([]);setUser(null);setOv(null);setScr('setup')}}}>🔄 Resetear app (conserva voces)</button></div>
       </div>}
       {ptab==='familia'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👨 Nombre del padre</p><input className="inp" value={user.padre||''} onChange={e=>{const up={...user,padre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Paco" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👩 Nombre de la madre</p><input className="inp" value={user.madre||''} onChange={e=>{const up={...user,madre:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Ana" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👦 Hermanos (separados por coma)</p><input className="inp" value={user.hermanos||''} onChange={e=>{const up={...user,hermanos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Sofía, Miguel" style={{fontSize:18,padding:14}}/></div>
-        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>🤝 Mejores amigos (separados por coma)</p><input className="inp" value={user.amigos||''} onChange={e=>{const up={...user,amigos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Vega, Amir, Carlos" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👤 Apellidos</p><input className="inp" value={user.apellidos||''} onChange={e=>{const up={...user,apellidos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: García López" style={{fontSize:18,padding:14}}/></div>
+        <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>🏫 Colegio</p><input className="inp" value={user.colegio||''} onChange={e=>{const up={...user,colegio:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: CEIP San José" style={{fontSize:18,padding:14}}/></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>📱 Teléfono de emergencia</p><input className="inp" value={user.telefono||''} onChange={e=>{const up={...user,telefono:e.target.value};setUser(up);saveP(up)}} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{fontSize:18,padding:14}}/><p style={{fontSize:14,color:DIM,margin:'8px 0 0'}}>Con puntos para pronunciar: 6.1.2.3.4.5</p></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>🏠 Dirección de casa</p><input className="inp" value={user.direccion||''} onChange={e=>{const up={...user,direccion:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: Calle Mayor 10, Madrid" style={{fontSize:18,padding:14}}/></div>
-        <p style={{fontSize:16,color:DIM,margin:0}}>Estos datos se usan en frases personalizadas para que practique con su información real.</p>
+        <p style={{fontSize:16,color:DIM,margin:0}}>Estos datos se usan en frases personalizadas. Padre, madre, hermanos y amigos se gestionan en Mis Personas.</p>
         <div className="card" style={{marginTop:16,borderColor:PURPLE+'44',padding:20}}>
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:PURPLE}}>👥 Mis Personas</p>
           <p style={{fontSize:16,color:DIM,margin:'0 0 12px'}}>Se usan como nombres en ejercicios de Reparte y Cuenta</p>
@@ -2265,7 +2316,8 @@ export default function App(){
             <select value={p.relation||''} onChange={e=>{const np=[...personas];np[i]={...np[i],relation:e.target.value};savePersonas(np)}} style={{padding:12,borderRadius:10,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:16,maxWidth:130,minHeight:48}}>
               <option value="">Relación</option>{PERSONA_RELATIONS.map(r=><option key={r} value={r}>{r}</option>)}
             </select>
-            <button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np)}} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:10,padding:'8px 12px',color:RED,fontSize:18,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:48}}>✕</button>
+            {delPersonaIdx===i?<div style={{display:'flex',gap:4}}><button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np);setDelPersonaIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 10px',color:'#fff',fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:40}}>Sí</button><button onClick={()=>setDelPersonaIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 10px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:40}}>No</button></div>
+            :<button onClick={()=>setDelPersonaIdx(i)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:10,padding:'8px 12px',color:RED,fontSize:18,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:48}}>✕</button>}
           </div>)}
           {personas.length<10&&<button className="btn btn-ghost" onClick={()=>savePersonas([...personas,{name:'',relation:'',avatar:AVS[Math.floor(Math.random()*AVS.length)]}])} style={{fontSize:18,marginTop:8,padding:'14px 20px',minHeight:52}}>➕ Añadir persona</button>}
         </div>
@@ -2295,6 +2347,8 @@ export default function App(){
 
     {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
       {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=>{
+        // Auto-generate presentation if missing
+        if(!p.presentations||!p.presentations.length){const pres=[];pres.push('Hola, me llamo '+(p.name||''));if(p.padre)pres.push('Mi padre se llama '+p.padre);if(p.madre)pres.push('Mi madre se llama '+p.madre);const hArr=(p.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);if(hArr.length===1)pres.push('Mi hermano se llama '+hArr[0]);else if(hArr.length>1)pres.push('Tengo '+hArr.length+' hermanos');const aArr=(p.amigos||'').split(',').map(s=>s.trim()).filter(Boolean);if(aArr.length===1)pres.push('Mi amigo se llama '+aArr[0]);else if(aArr.length>1)pres.push('Tengo '+aArr.length+' amigos');if(p.direccion)pres.push('Vivo en '+p.direccion);if(p.telefono)pres.push('El teléfono de mi padre es '+p.telefono);if(p.colegio)pres.push('Voy al cole en '+p.colegio);if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres}]}
         const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
         const pN=myPersonas.length;
         const pOrbitR=140;const pSize=52;
@@ -2365,9 +2419,15 @@ export default function App(){
         <label style={{fontSize:14,color:DIM}}>Hermanos (separados por coma)</label><input className="inp" value={fHerm} onChange={e=>setFHerm(e.target.value)} placeholder="Ej: Sofía, Miguel" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>Mejores amigos (separados por coma)</label><input className="inp" value={fAmigos} onChange={e=>setFAmigos(e.target.value)} placeholder="Ej: Vega, Amir, Carlos" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>Teléfono de emergencia</label><input className="inp" value={fTel} onChange={e=>setFTel(e.target.value)} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Dirección de casa</label><input className="inp" value={fDir} onChange={e=>setFDir(e.target.value)} placeholder="Ej: Calle Mayor 10, Madrid" style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
+        <label style={{fontSize:14,color:DIM}}>Dirección de casa</label><input className="inp" value={fDir} onChange={e=>setFDir(e.target.value)} placeholder="Ej: Calle Mayor 10, Madrid" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <label style={{fontSize:14,color:DIM}}>Apellidos</label><input className="inp" value={fApellidos} onChange={e=>setFApellidos(e.target.value)} placeholder="Ej: García López" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <label style={{fontSize:14,color:DIM}}>Colegio</label><input className="inp" value={fColegio} onChange={e=>setFColegio(e.target.value)} placeholder="Ej: CEIP San José" style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
         <label style={{fontSize:15,color:DIM}}>Avatar</label><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
-        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:fPadre.trim(),madre:fMadre.trim(),hermanos:fHerm.trim(),amigos:fAmigos.trim(),telefono:fTel.trim(),direccion:fDir.trim()};setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
+        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:fPadre.trim(),madre:fMadre.trim(),hermanos:fHerm.trim(),amigos:fAmigos.trim(),telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
+                // Auto-generate default presentation
+                const pres=[];pres.push('Hola, me llamo '+cap(fn.trim()));if(fPadre.trim())pres.push('Mi padre se llama '+fPadre.trim());if(fMadre.trim())pres.push('Mi madre se llama '+fMadre.trim());const hArr=fHerm.trim().split(',').map(s=>s.trim()).filter(Boolean);if(hArr.length===1)pres.push('Mi hermano se llama '+hArr[0]);else if(hArr.length>1)pres.push('Tengo '+hArr.length+' hermanos');const aArr=fAmigos.trim().split(',').map(s=>s.trim()).filter(Boolean);if(aArr.length===1)pres.push('Mi amigo se llama '+aArr[0]);else if(aArr.length>1)pres.push('Tengo '+aArr.length+' amigos');if(fDir.trim())pres.push('Vivo en '+fDir.trim());if(fTel.trim())pres.push('El teléfono de mi padre es '+fTel.trim());if(fColegio.trim())pres.push('Voy al cole en '+fColegio.trim());
+                if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres}];
+                setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
     {showMiCielo&&<div className="ov" onClick={()=>setShowMiCielo(false)}><div className="ovp ab" onClick={e=>e.stopPropagation()}>
@@ -2440,7 +2500,7 @@ export default function App(){
                   const rad=angle*Math.PI/180;
                   const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
                   const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
+                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||[firstMod.defLv])}}} style={{
                     position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
                     padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
                     display:'flex',flexDirection:'column',alignItems:'center',gap:2,
@@ -2472,7 +2532,7 @@ export default function App(){
           <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
             {otherGroups.map(g=>{
               const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
-              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||firstMod.defLv)}}} style={{
+              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLv(firstMod.lvKey)||[firstMod.defLv])}}} style={{
                 width:48,height:48,borderRadius:'50%',border:'none',cursor:'pointer',
                 background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
                 boxShadow:`0 2px 8px ${pc[1]}44`,
@@ -2511,8 +2571,8 @@ export default function App(){
                 width:'100%',maxWidth:500,
               }}>
                 {enabledMods.map((m,mi)=>{
-                  const mLv=getModuleLv(m.lvKey)||m.defLv;
-                  const isActive=sec===m.k&&secLv===mLv;
+                  const mLv=getModuleLv(m.lvKey)||[m.defLv];
+                  const isActive=sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv);
                   const subSize=modCount<=3?100:modCount<=5?88:76;
                   return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{
                     width:subSize,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
