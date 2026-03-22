@@ -4,7 +4,7 @@
 // ============================================================
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
-import { auth, db, hasConfig, initFirebase, fbFns } from './firebase.js'
+import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT } from './firebase.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
 const VER='v21.3';
@@ -2072,36 +2072,27 @@ function processImage(file){return new Promise((resolve,reject)=>{
 // ===== CLOUD SYNC — Firestore save/load profile data =====
 async function cloudSaveProfile(uid,profileData){
   if(!hasConfig||!db||!uid)return;
-  try{const ref=fbFns.doc(db,'users',uid);
-    const snap=await fbFns.getDoc(ref);
-    const data={profiles:profileData.profiles||[],personas:profileData.personas||[],updated:new Date().toISOString()};
-    if(snap.exists())await fbFns.updateDoc(ref,data);
-    else await fbFns.setDoc(ref,{...data,created:new Date().toISOString(),email:profileData.email||''});
+  try{await fbSaveProfile(uid,{profiles:profileData.profiles||[],personas:profileData.personas||[],email:profileData.email||''});
   }catch(e){console.warn('[Toki Cloud] Save error:',e)}}
 
 async function cloudLoadProfile(uid){
   if(!hasConfig||!db||!uid)return null;
-  try{const ref=fbFns.doc(db,'users',uid);const snap=await fbFns.getDoc(ref);
-    if(snap.exists())return snap.data();
-    return null;
+  try{return await fbGetProfile(uid);
   }catch(e){console.warn('[Toki Cloud] Load error:',e);return null}}
 
-// Admin: list and revoke users
 async function cloudListUsers(){
   if(!hasConfig||!db)return[];
-  try{const{collection,getDocs}=await import('firebase/firestore');
-    const snap=await getDocs(collection(db,'users'));
-    return snap.docs.map(d=>({uid:d.id,...d.data()}));
+  try{return await fbListUsers();
   }catch(e){console.warn('[Toki Cloud] List error:',e);return[]}}
 
 async function cloudRevokeUser(uid){
   if(!hasConfig||!db||!uid)return;
-  try{await fbFns.updateDoc(doc(db,'users',uid),{revoked:true,revokedAt:new Date().toISOString()});
+  try{await fbRevokeUser(uid);
   }catch(e){console.warn('[Toki Cloud] Revoke error:',e)}}
 
 async function cloudUnrevokeUser(uid){
   if(!hasConfig||!db||!uid)return;
-  try{await fbFns.updateDoc(doc(db,'users',uid),{revoked:false,revokedAt:null});
+  try{await fbUnrevokeUser(uid);
   }catch(e){console.warn('[Toki Cloud] Unrevoke error:',e)}}
 
 export default function App(){
@@ -2132,10 +2123,10 @@ export default function App(){
   // Init Firebase lazily if config exists
   const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
   function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
-  useEffect(()=>{if(hasConfig)initFirebase().then(()=>setFbLoading(false)).catch(()=>setFbLoading(false))},[]);
+  useEffect(()=>{if(hasConfig)setFbLoading(false)},[]);
   // Listen to Firebase auth state changes
-  useEffect(()=>{if(!hasConfig||!auth||!fbFns.onAuthStateChanged)return;
-    const unsub=fbFns.onAuthStateChanged(auth,async(u)=>{
+  useEffect(()=>{if(!hasConfig||!auth)return;
+    const unsub=fbOnAuth(async(u)=>{
       setFbUser(u);setFbLoading(false);
       if(u){
         // Check if user is revoked
@@ -2156,7 +2147,7 @@ export default function App(){
   // Cloud sync moved below personas declaration
   async function handleLogin(){
     if(!auth)return;setAuthBusy(true);setAuthErr('');
-    try{await fbFns.signInWithEmailAndPassword(auth,authEmail.trim(),authPass);
+    try{await fbSignIn(authEmail.trim(),authPass);
       setAuthScreen('choice');setAuthEmail('');setAuthPass('');
     }catch(e){
       const msgs={'auth/invalid-credential':'Email o contraseña incorrectos','auth/user-not-found':'No existe esa cuenta','auth/wrong-password':'Contraseña incorrecta','auth/invalid-email':'Email no válido','auth/too-many-requests':'Demasiados intentos, espera un momento'};
@@ -2165,14 +2156,14 @@ export default function App(){
   async function handleRegister(){
     if(!auth)return;setAuthBusy(true);setAuthErr('');
     if(authPass.length<6){setAuthErr('La contraseña debe tener al menos 6 caracteres');setAuthBusy(false);return}
-    try{await fbFns.createUserWithEmailAndPassword(auth,authEmail.trim(),authPass);
+    try{await fbSignUp(authEmail.trim(),authPass);
       setAuthScreen('choice');setAuthEmail('');setAuthPass('');
     }catch(e){
       const msgs={'auth/email-already-in-use':'Ya existe una cuenta con ese email','auth/invalid-email':'Email no válido','auth/weak-password':'Contraseña demasiado débil'};
       setAuthErr(msgs[e.code]||'Error: '+e.message);
     }finally{setAuthBusy(false)}}
   async function handleLogout(){
-    if(!auth)return;try{await fbFns.signOut(auth)}catch(e){}setFbMode('guest');setFbUser(null)}
+    if(!auth)return;try{await fbSignOut()}catch(e){}setFbMode('guest');setFbUser(null)}
   function enterGuest(){setFbMode('guest');setFbLoading(false)}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
   // Sky theme based on time of day
