@@ -393,11 +393,8 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Play TTS first, THEN open mic so it doesn't capture Toki's voice
+    // Play TTS first, THEN open mic immediately when done
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
-    if(!alive.current)return;
-    // Small delay for speaker audio to finish
-    await new Promise(r=>setTimeout(r,250));
     if(!alive.current)return;
     sr.go();setMic(true);
   }
@@ -542,9 +539,6 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       setPhase('toki');stopVoice();
       const text=NUMS_1_100[n-1]||String(n);
       await sayFast(text);
-      if(!alive.current)return;
-      // Small delay so TTS audio finishes before mic opens
-      await new Promise(r=>setTimeout(r,400));
       if(!alive.current)return;
       setPhase('child');
       const heard=await listenQuick(2200);
@@ -1364,10 +1358,8 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
     // Reactivate mic permissions proactively
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Play TTS first, THEN open mic so it doesn't capture Toki's voice
+    // Play TTS first, THEN open mic immediately when done
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
-    if(!alive.current)return;
-    await new Promise(r=>setTimeout(r,250));
     if(!alive.current)return;
     sr.go();setMic(true);
   }
