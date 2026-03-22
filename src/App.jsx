@@ -2277,7 +2277,14 @@ export default function App(){
     }
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return genLee(slv)}
-    if(section==='quiensoy'){return slv===2?[{ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img}]:QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:q.text,img:q.img,picto:q.picto}))}
+    if(section==='quiensoy'){
+      const lvArr=Array.isArray(secLv)?secLv:[slv];
+      const hasEstudio=lvArr.includes(1),hasPres=lvArr.includes(2);
+      const items=[];
+      if(hasEstudio) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
+      if(hasPres) items.push({ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img});
+      if(!items.length) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
+      return items}
     return[]}
   function startGame(){setQ(buildQ(user,sec,secLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
