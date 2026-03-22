@@ -2150,14 +2150,7 @@ export default function App(){
         setFbMode('cloud')}
       else{setFbMode(hasConfig?'auth':'guest');setRevoked(false)}
     });return()=>unsub()},[]);
-  // Auto cloud sync when profiles change (debounced)
-  const cloudSyncTimer=useRef(null);
-  useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
-    clearTimeout(cloudSyncTimer.current);
-    cloudSyncTimer.current=setTimeout(()=>{
-      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email})
-    },2000)
-  },[profs,personas,fbMode,fbUser]);
+  // Cloud sync moved below personas declaration
   async function handleLogin(){
     if(!auth)return;setAuthBusy(true);setAuthErr('');
     try{await fbFns.signInWithEmailAndPassword(auth,authEmail.trim(),authPass);
@@ -2188,6 +2181,14 @@ export default function App(){
   const[showMiCielo,setShowMiCielo]=useState(false);
   const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
   function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
+  // Auto cloud sync when profiles change (debounced)
+  const cloudSyncTimer=useRef(null);
+  useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
+    clearTimeout(cloudSyncTimer.current);
+    cloudSyncTimer.current=setTimeout(()=>{
+      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email})
+    },2000)
+  },[profs,personas,fbMode,fbUser]);
   const[sec,setSec]=useState('decir');const[secLv,setSecLv]=useState(1);const[openGroup,setOpenGroup]=useState(null);
   const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
   const[escribeCase,setEscribeCase]=useState(()=>loadData('escribe_case','upper'));
