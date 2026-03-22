@@ -4,9 +4,14 @@
 // ============================================================
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
+import { auth, db, storage, hasConfig } from './firebase.js'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
-const VER='v21';
+const VER='v21.2';
+// Admin email — can revoke users from admin panel
+const ADMIN_EMAIL='diego@toki-app.es';
 const CSS=`
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min-height:100dvh;transition:background 2s}
@@ -2046,6 +2051,65 @@ function DoneScreen({st,elapsed,user,supPin,onExit}){
     </div>
   </div>}
 
+// ===== IMAGE PROCESSING — resize, compress, validate =====
+function processImage(file){return new Promise((resolve,reject)=>{
+  if(!file)return reject('No file');
+  if(!['image/jpeg','image/png'].includes(file.type))return reject('Solo JPEG o PNG');
+  if(file.size>5*1024*1024)return reject('Archivo demasiado grande (máx 5MB)');
+  const reader=new FileReader();
+  reader.onerror=()=>reject('Error leyendo archivo');
+  reader.onload=()=>{
+    const img=new Image();
+    img.onerror=()=>reject('Error cargando imagen');
+    img.onload=()=>{
+      const MAX=200;
+      let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      const b64=c.toDataURL('image/jpeg',0.6);
+      // Check final size (base64 is ~33% larger than binary)
+      const approxBytes=Math.ceil(b64.length*3/4);
+      if(approxBytes>500*1024)return reject('Imagen demasiado grande tras comprimir');
+      resolve(b64)};
+    img.src=reader.result};
+  reader.readAsDataURL(file)})}
+
+// ===== CLOUD SYNC — Firestore save/load profile data =====
+async function cloudSaveProfile(uid,profileData){
+  if(!hasConfig||!db||!uid)return;
+  try{const ref=doc(db,'users',uid);
+    const snap=await getDoc(ref);
+    const data={profiles:profileData.profiles||[],personas:profileData.personas||[],updated:new Date().toISOString()};
+    if(snap.exists())await updateDoc(ref,data);
+    else await setDoc(ref,{...data,created:new Date().toISOString(),email:profileData.email||''});
+  }catch(e){console.warn('[Toki Cloud] Save error:',e)}}
+
+async function cloudLoadProfile(uid){
+  if(!hasConfig||!db||!uid)return null;
+  try{const ref=doc(db,'users',uid);const snap=await getDoc(ref);
+    if(snap.exists())return snap.data();
+    return null;
+  }catch(e){console.warn('[Toki Cloud] Load error:',e);return null}}
+
+// Admin: list and revoke users
+async function cloudListUsers(){
+  if(!hasConfig||!db)return[];
+  try{const{collection,getDocs}=await import('firebase/firestore');
+    const snap=await getDocs(collection(db,'users'));
+    return snap.docs.map(d=>({uid:d.id,...d.data()}));
+  }catch(e){console.warn('[Toki Cloud] List error:',e);return[]}}
+
+async function cloudRevokeUser(uid){
+  if(!hasConfig||!db||!uid)return;
+  try{await updateDoc(doc(db,'users',uid),{revoked:true,revokedAt:new Date().toISOString()});
+  }catch(e){console.warn('[Toki Cloud] Revoke error:',e)}}
+
+async function cloudUnrevokeUser(uid){
+  if(!hasConfig||!db||!uid)return;
+  try{await updateDoc(doc(db,'users',uid),{revoked:false,revokedAt:null});
+  }catch(e){console.warn('[Toki Cloud] Unrevoke error:',e)}}
+
 export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
@@ -2059,6 +2123,66 @@ export default function App(){
   const[micOk,setMicOk]=useState(false);const[supervisorMode,setSupervisorMode]=useState(false);const supervisorTimer=useRef(null);
   const[exigencia,setExigenciaState]=useState(()=>getExigencia());
   function setExigencia(v){setExigenciaState(v);try{localStorage.setItem('toki_exigencia',String(v))}catch(e){}}
+  // ===== Firebase Auth State =====
+  const[fbUser,setFbUser]=useState(null); // Firebase user object
+  const[fbLoading,setFbLoading]=useState(hasConfig); // loading auth state
+  const[fbMode,setFbMode]=useState(hasConfig?'auth':'guest'); // 'auth' | 'guest'
+  const[authScreen,setAuthScreen]=useState('choice'); // 'choice' | 'login' | 'register' | 'admin'
+  const[authEmail,setAuthEmail]=useState('');
+  const[authPass,setAuthPass]=useState('');
+  const[authErr,setAuthErr]=useState('');
+  const[authBusy,setAuthBusy]=useState(false);
+  const[cloudUsers,setCloudUsers]=useState([]);
+  const[cloudSyncing,setCloudSyncing]=useState(false);
+  const[revoked,setRevoked]=useState(false);
+  // Listen to Firebase auth state changes
+  useEffect(()=>{if(!hasConfig||!auth)return;
+    const unsub=onAuthStateChanged(auth,async(u)=>{
+      setFbUser(u);setFbLoading(false);
+      if(u){
+        // Check if user is revoked
+        const data=await cloudLoadProfile(u.uid);
+        if(data&&data.revoked){setRevoked(true);return}
+        setRevoked(false);
+        // Load cloud data and merge with local
+        if(data&&data.profiles){
+          const localProfs=loadData('profiles',[]);
+          // Cloud has data — use cloud as source of truth if local is empty or cloud is newer
+          if(!localProfs.length||data.profiles.length>0){
+            saveData('profiles',data.profiles);setProfs(data.profiles)}
+          if(data.personas){saveData('personas',data.personas);setPersonas(data.personas)}
+        }
+        setFbMode('cloud')}
+      else{setFbMode(hasConfig?'auth':'guest');setRevoked(false)}
+    });return()=>unsub()},[]);
+  // Auto cloud sync when profiles change (debounced)
+  const cloudSyncTimer=useRef(null);
+  useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
+    clearTimeout(cloudSyncTimer.current);
+    cloudSyncTimer.current=setTimeout(()=>{
+      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email})
+    },2000)
+  },[profs,personas,fbMode,fbUser]);
+  async function handleLogin(){
+    if(!auth)return;setAuthBusy(true);setAuthErr('');
+    try{await signInWithEmailAndPassword(auth,authEmail.trim(),authPass);
+      setAuthScreen('choice');setAuthEmail('');setAuthPass('');
+    }catch(e){
+      const msgs={'auth/invalid-credential':'Email o contraseña incorrectos','auth/user-not-found':'No existe esa cuenta','auth/wrong-password':'Contraseña incorrecta','auth/invalid-email':'Email no válido','auth/too-many-requests':'Demasiados intentos, espera un momento'};
+      setAuthErr(msgs[e.code]||'Error: '+e.message);
+    }finally{setAuthBusy(false)}}
+  async function handleRegister(){
+    if(!auth)return;setAuthBusy(true);setAuthErr('');
+    if(authPass.length<6){setAuthErr('La contraseña debe tener al menos 6 caracteres');setAuthBusy(false);return}
+    try{await createUserWithEmailAndPassword(auth,authEmail.trim(),authPass);
+      setAuthScreen('choice');setAuthEmail('');setAuthPass('');
+    }catch(e){
+      const msgs={'auth/email-already-in-use':'Ya existe una cuenta con ese email','auth/invalid-email':'Email no válido','auth/weak-password':'Contraseña demasiado débil'};
+      setAuthErr(msgs[e.code]||'Error: '+e.message);
+    }finally{setAuthBusy(false)}}
+  async function handleLogout(){
+    if(!auth)return;try{await signOut(auth)}catch(e){}setFbMode('guest');setFbUser(null)}
+  function enterGuest(){setFbMode('guest');setFbLoading(false)}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
   // Sky theme based on time of day
   useEffect(()=>{function applySky(){document.body.classList.remove('sky-morning','sky-afternoon','sky-night');document.body.classList.add(getSkyClass())}applySky();const iv=setInterval(applySky,60000);return()=>clearInterval(iv)},[]);
@@ -2150,6 +2274,20 @@ export default function App(){
     {showRec&&user&&<VoiceRec user={user} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
+    {ov==='admin'&&fbUser&&fbUser.email===ADMIN_EMAIL&&<div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:'80vh',overflowY:'auto'}}>
+      <div style={{fontSize:48,marginBottom:8}}>⚙️</div>
+      <h2 style={{fontSize:22,color:PURPLE,margin:'0 0 16px'}}>Panel de Administración</h2>
+      <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Usuarios registrados: {cloudUsers.length}</p>
+      {cloudUsers.map(u=><div key={u.uid} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:12,border:'2px solid '+BORDER,marginBottom:8,background:u.revoked?RED+'11':CARD}}>
+        <div style={{flex:1}}><p style={{fontSize:16,fontWeight:600,margin:0,color:u.revoked?RED:TXT}}>{u.email||'Sin email'}</p>
+          <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{u.profiles?.length||0} perfiles {u.revoked?' — REVOCADO':''}</p></div>
+        {u.email!==ADMIN_EMAIL&&(u.revoked
+          ?<button onClick={async()=>{await cloudUnrevokeUser(u.uid);setCloudUsers(await cloudListUsers())}} style={{background:GREEN+'22',border:'2px solid '+GREEN+'44',borderRadius:10,padding:'8px 14px',color:GREEN,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600}}>Activar</button>
+          :<button onClick={async()=>{await cloudRevokeUser(u.uid);setCloudUsers(await cloudListUsers())}} style={{background:RED+'22',border:'2px solid '+RED+'44',borderRadius:10,padding:'8px 14px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600}}>Revocar</button>
+        )}
+      </div>)}
+      <button className="btn btn-ghost" onClick={()=>setOv(null)} style={{marginTop:12}}>Cerrar</button>
+    </div></div>}
     {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setUser(null);setScr('login')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
     {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={!!supPin&&parentPin.length<4} onClick={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
@@ -2305,7 +2443,17 @@ export default function App(){
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:PURPLE}}>👥 Mis Personas</p>
           <p style={{fontSize:16,color:DIM,margin:'0 0 12px'}}>Se usan como nombres en ejercicios de Reparte y Cuenta</p>
           {personas.map((p,i)=><div key={i} style={{display:'flex',gap:8,alignItems:'center',marginBottom:10}}>
-            <button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:28,background:'none',border:'none',cursor:'pointer',width:44,height:44}}>{p.avatar||AVS[0]}</button>
+            <div style={{position:'relative',width:44,height:44,flexShrink:0}}>
+              {p.photo?<img src={p.photo} alt="" style={{width:44,height:44,borderRadius:'50%',objectFit:'cover',cursor:'pointer'}} onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next,photo:null};savePersonas(np)}}/>
+              :<button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:28,background:'none',border:'none',cursor:'pointer',width:44,height:44}}>{p.avatar||AVS[0]}</button>}
+              <label style={{position:'absolute',bottom:-2,right:-2,width:18,height:18,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:10}}>📷
+                <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={async(e)=>{
+                  const f=e.target.files?.[0];if(!f)return;
+                  try{const b64=await processImage(f);const np=[...personas];np[i]={...np[i],photo:b64};savePersonas(np)}
+                  catch(err){alert('Error: '+err)}
+                  e.target.value=''}}/>
+              </label>
+            </div>
             <input className="inp" value={p.name||''} onChange={e=>{const np=[...personas];np[i]={...np[i],name:e.target.value};savePersonas(np)}} placeholder="Nombre" style={{fontSize:18,padding:12,flex:1}}/>
             <select value={p.relation||''} onChange={e=>{const np=[...personas];np[i]={...np[i],relation:e.target.value};savePersonas(np)}} style={{padding:12,borderRadius:10,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:16,maxWidth:130,minHeight:48}}>
               <option value="">Relación</option>{PERSONA_RELATIONS.map(r=><option key={r} value={r}>{r}</option>)}
@@ -2339,7 +2487,58 @@ export default function App(){
       <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
 
-    {scr==='login'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p><p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+    {/* Firebase Auth Gate — shown when hasConfig && not yet authenticated */}
+    {scr==='login'&&hasConfig&&fbMode==='auth'&&!fbUser&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
+      {authScreen==='choice'&&<div style={{display:'flex',flexDirection:'column',gap:14,maxWidth:340,margin:'0 auto'}}>
+        <button className="btn btn-gold" onClick={enterGuest} style={{fontSize:22,padding:'18px 24px'}}>👤 Invitado</button>
+        <p style={{fontSize:14,color:DIM,margin:0}}>Sin cuenta — datos solo en este dispositivo</p>
+        <div style={{borderTop:'1px solid '+BORDER,margin:'8px 0'}}/>
+        <button className="btn btn-b" onClick={()=>{setAuthScreen('login');setAuthErr('')}} style={{fontSize:20,padding:'16px 24px'}}>🔑 Iniciar sesión</button>
+        <button className="btn btn-p" onClick={()=>{setAuthScreen('register');setAuthErr('')}} style={{fontSize:20,padding:'16px 24px'}}>📝 Crear cuenta</button>
+      </div>}
+      {authScreen==='login'&&<div style={{maxWidth:360,margin:'0 auto'}} className="af">
+        <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>Iniciar sesión</h2>
+        <input className="inp" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} type="email" placeholder="Email" style={{marginBottom:12,fontSize:18,padding:14}}/>
+        <input className="inp" value={authPass} onChange={e=>setAuthPass(e.target.value)} type="password" placeholder="Contraseña" style={{marginBottom:12,fontSize:18,padding:14}} onKeyDown={e=>{if(e.key==='Enter')handleLogin()}}/>
+        {authErr&&<p style={{color:RED,fontSize:15,fontWeight:600,margin:'0 0 10px'}}>{authErr}</p>}
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAuthScreen('choice');setAuthErr('')}}>← Volver</button>
+          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass} onClick={handleLogin}>{authBusy?'...':'Entrar'}</button>
+        </div>
+      </div>}
+      {authScreen==='register'&&<div style={{maxWidth:360,margin:'0 auto'}} className="af">
+        <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>Crear cuenta</h2>
+        <input className="inp" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} type="email" placeholder="Email" style={{marginBottom:12,fontSize:18,padding:14}}/>
+        <input className="inp" value={authPass} onChange={e=>setAuthPass(e.target.value)} type="password" placeholder="Contraseña (mín. 6 caracteres)" style={{marginBottom:12,fontSize:18,padding:14}} onKeyDown={e=>{if(e.key==='Enter')handleRegister()}}/>
+        {authErr&&<p style={{color:RED,fontSize:15,fontWeight:600,margin:'0 0 10px'}}>{authErr}</p>}
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAuthScreen('choice');setAuthErr('')}}>← Volver</button>
+          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass} onClick={handleRegister}>{authBusy?'...':'Crear'}</button>
+        </div>
+        <p style={{fontSize:13,color:DIM,margin:'12px 0 0'}}>No necesitas aprobación. Tu cuenta se activa al instante.</p>
+      </div>}
+      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+    </div>}
+    {/* Revoked user screen */}
+    {scr==='login'&&hasConfig&&revoked&&fbUser&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:16}}>🚫</div>
+      <h2 style={{fontSize:24,color:RED,margin:'0 0 12px'}}>Cuenta suspendida</h2>
+      <p style={{fontSize:16,color:DIM,margin:'0 0 20px'}}>El administrador ha revocado el acceso de esta cuenta.</p>
+      <button className="btn btn-ghost" onClick={handleLogout} style={{fontSize:18}}>Cerrar sesión</button>
+    </div>}
+    {/* Firebase loading state */}
+    {scr==='login'&&hasConfig&&fbLoading&&<div className="af" style={{textAlign:'center',padding:'40px 0'}}><div style={{fontSize:48,animation:'pulse 1.5s infinite'}}>🗣️</div><p style={{color:DIM,fontSize:16,margin:'16px 0 0'}}>Cargando...</p></div>}
+    {/* Normal login screen — shown when guest mode, no Firebase, or already authenticated */}
+    {scr==='login'&&(!hasConfig||fbMode==='guest'||fbMode==='cloud')&&!revoked&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
+      {/* Cloud status badge */}
+      {fbUser&&fbMode==='cloud'&&<div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:16}}>
+        <div style={{background:GREEN+'22',border:'2px solid '+GREEN+'44',borderRadius:20,padding:'6px 16px',display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:13,color:GREEN,fontWeight:600}}>☁️ {fbUser.email}</span>
+          <button onClick={handleLogout} style={{background:'none',border:'none',color:DIM,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline'}}>Salir</button>
+        </div>
+        {fbUser.email===ADMIN_EMAIL&&<button onClick={async()=>{setCloudUsers(await cloudListUsers());setAuthScreen('admin');setOv('admin')}} style={{background:PURPLE+'22',border:'2px solid '+PURPLE+'44',borderRadius:20,padding:'6px 12px',color:PURPLE,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Fredoka'"}} title="Panel admin">⚙️ Admin</button>}
+      </div>}
+      {!fbUser&&hasConfig&&<button onClick={()=>{setFbMode('auth');setAuthScreen('choice')}} style={{background:'none',border:'none',color:BLUE,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline',marginBottom:16,display:'block',margin:'0 auto 16px'}}>🔑 Iniciar sesión / Crear cuenta</button>}
+      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
       {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=>{
         // Auto-generate presentation if missing
         if(!p.presentations||!p.presentations.length){const pres=[];pres.push('Hola, me llamo '+(p.name||''));if(p.padre)pres.push('Mi padre se llama '+p.padre);if(p.madre)pres.push('Mi madre se llama '+p.madre);const hArr=(p.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);if(hArr.length===1)pres.push('Mi hermano se llama '+hArr[0]);else if(hArr.length>1)pres.push('Tengo '+hArr.length+' hermanos');const aArr=(p.amigos||'').split(',').map(s=>s.trim()).filter(Boolean);if(aArr.length===1)pres.push('Mi amigo se llama '+aArr[0]);else if(aArr.length>1)pres.push('Tengo '+aArr.length+' amigos');if(p.direccion)pres.push('Vivo en '+p.direccion);if(p.telefono)pres.push('El teléfono de mi padre es '+p.telefono);if(p.colegio)pres.push('Voy al cole en '+p.colegio);if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres}]}

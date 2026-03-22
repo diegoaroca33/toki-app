@@ -2,3 +2,7 @@ node_modules
 dist
 .claude
 prev_session_msgs.txt
+.env.local
+.env
+
+.vercel
