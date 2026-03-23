@@ -400,7 +400,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
       else if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},800)}
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}}
   const sr=useSR(handleSR);
-  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
+  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     // Play TTS first, mark as playing so SR ignores Toki's voice
     ttsPlaying.current=true;
@@ -418,7 +418,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     if(na>=3){const pm='Despacio...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSlowPlay()},800)}
     else if(na>=2){const pm='Por sílabas...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSyllablePlay()},800)}
     else{const pm=pickMsg(false,null,'decir');sMsg(pm);sSf('wait');sayFB(pm);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
-  function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);setSylShow(false);doPlay()}
+  function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
   const fc=stars>=4?GOLD:stars>=3?GREEN:stars>=2?BLUE:'#E67E22';
   let sylFlatIdx=0;
@@ -483,7 +483,7 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
       {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
-      <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&<button onClick={()=>{poke();say(ex.fu)}} style={{width:62,height:62,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
+      <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&!pl.every(p=>p!==null)&&<button onClick={()=>{poke();say(ex.fu)}} style={{width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
       <div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
     {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
   </div>}
@@ -609,7 +609,7 @@ function Fingers({n,color=GOLD,color2=null}){const c2=color2||(color===GOLD?BLUE
   return <div style={{display:'flex',gap:8,justifyContent:'center',margin:'8px 0',flexWrap:'wrap'}}>{groups.map((g,gi)=>{const baseC=gi%2===0?color:c2;return <div key={gi} style={{display:'flex',gap:2,position:'relative'}}>{g===5&&<svg width={n>15?54:74} height={48} style={{position:'absolute',top:-2,left:-2,pointerEvents:'none'}}><path d={`M2,6 Q${n>15?27:37},0 ${n>15?52:72},6`} fill="none" stroke="#8B4513" strokeWidth={2} strokeLinecap="round"/><path d={`M${n>15?27:37},0 L${n>15?27:37},4`} fill="none" stroke="#8B4513" strokeWidth={2}/></svg>}{Array.from({length:g},(_,i)=>{const idx=gi*5+i;const int=intensities[i%5];return <div key={i} style={{width:n>15?10:14,height:40,borderRadius:n>15?5:7,background:baseC,border:'2px solid rgba(0,0,0,.2)',opacity:int,transition:'all .5s '+(idx*.12)+'s'}}/>})}</div>})}</div>}
 
 function AnimCount({from,to,color=GREEN,speak=false}){const[cur,setCur]=useState(0);
-  useEffect(()=>{setCur(0);let i=0;const interval=speak?1500:800;const t=setInterval(()=>{i++;setCur(i);if(speak&&i>from){stopVoice();say(NUMS_1_100[i-1]||String(i))}if(i>=to){clearInterval(t);if(speak){stopVoice();setTimeout(()=>say('¡'+NUMS_1_100[to-1]+'!'),300);beep(880,150)}}},interval);return()=>{clearInterval(t);if(speak)stopVoice()}},[to,from,speak]);
+  useEffect(()=>{setCur(0);let i=0;const interval=speak?1500:800;const t=setInterval(()=>{i++;setCur(i);if(speak&&i>=1){stopVoice();say(NUMS_1_100[i-1]||String(i))}if(i>=to){clearInterval(t);if(speak){stopVoice();setTimeout(()=>say('¡'+NUMS_1_100[to-1]+'!'),300);beep(880,150)}}},interval);return()=>{clearInterval(t);if(speak)stopVoice()}},[to,from,speak]);
   const sw=to>20?8:to>10?10:14;
   return <div style={{textAlign:'center'}}>
     <div style={{display:'flex',gap:to>20?2:4,justifyContent:'center',flexWrap:'wrap',margin:'8px 0',minHeight:50}}>{Array.from({length:to},(_,i)=><div key={i} style={{width:sw,height:46,borderRadius:Math.round(sw/2),background:i<cur?i<from?GOLD:color:BG3+'44',border:'2px solid '+(i<cur?'rgba(0,0,0,.2)':BORDER),transform:i<cur?'scaleY(1)':'scaleY(0.3)',transition:'all .6s',transformOrigin:'bottom',marginRight:(i+1)%5===0&&i<to-1?6:0}}/>)}</div>
