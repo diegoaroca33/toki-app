@@ -434,10 +434,11 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     </div>
     {/* Stars */}
     {stars>=4&&<CelebrationOverlay show={true} duration={1500}/>}
-    {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={40}/></div>}
-    {/* Feedback message */}
-    {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginBottom:12}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
-    {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <div style={{minHeight:70,marginBottom:12}}>
+    {stars>0&&<div className="ab"><Stars n={stars} sz={40}/></div>}
+    {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
+    {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    </div>
     {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
     <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
       <button onClick={hearAgain} style={{
@@ -479,9 +480,11 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:16,minHeight:56}}>{pl.map((p,i)=><div key={i} className={'ws '+(p?'ws-f':'ws-e')}>{p?p.w:'___'}</div>)}</div>
-      {bf==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div></>}
-      {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
-      {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+      <div style={{minHeight:60,marginBottom:14}}>
+      {bf==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div></>}
+      {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
+      {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+      </div>
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
       <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&!pl.every(p=>p!==null)&&<button onClick={()=>{poke();say(ex.fu)}} style={{width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
       <div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
