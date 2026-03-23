@@ -169,7 +169,7 @@ const LV_OPTS={
   writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
   writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
   writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
-  razona:[{n:1,l:'Posición'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'}],
+  razona:[{n:1,l:'¿Dónde está?'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'}],
   lee_intruso:[{n:1,l:'Intruso'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
   lee_complete:[{n:3,l:'Completa'}],
@@ -238,16 +238,16 @@ function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
   const[phase,setPhase]=useState('idle');const[num,setNum]=useState(3);
   const pc=planetColor||'#42A5F5';
   useEffect(()=>{if(!show)return;setPhase('ignite');setNum(3);
-    // Phase 1: ignite (fire appears) 0-800ms
-    const t0=setTimeout(()=>{setPhase('pickup');countdownBeep(3)},800);
-    // Phase 2: pickup (rocket goes to avatar, face appears) 800-1600ms
-    const t1=setTimeout(()=>{setPhase('fly');setNum(3);countdownBeep(3)},1600);
-    // Phase 3: fly (countdown 3,2,1) 1600-4600ms
-    const t2=setTimeout(()=>{setNum(2);countdownBeep(2)},2600);
-    const t3=setTimeout(()=>{setNum(1);countdownBeep(1)},3600);
-    const t4=setTimeout(()=>{setPhase('arrive');countdownBeep(0)},4600);
-    // Phase 4: arrive at planet 4600-5800ms
-    const t5=setTimeout(()=>{if(onDone)onDone()},5800);
+    // Phase 1: ignite (fire appears) 0-400ms
+    const t0=setTimeout(()=>{setPhase('pickup');countdownBeep(3)},400);
+    // Phase 2: pickup (rocket+avatar) 400-800ms
+    const t1=setTimeout(()=>{setPhase('fly');setNum(3);countdownBeep(3)},800);
+    // Phase 3: fly (countdown 3,2,1) 800-2400ms
+    const t2=setTimeout(()=>{setNum(2);countdownBeep(2)},1400);
+    const t3=setTimeout(()=>{setNum(1);countdownBeep(1)},2000);
+    const t4=setTimeout(()=>{setPhase('arrive');countdownBeep(0)},2600);
+    // Phase 4: arrive at planet 2600-3200ms
+    const t5=setTimeout(()=>{if(onDone)onDone()},3200);
     return()=>{[t0,t1,t2,t3,t4,t5].forEach(clearTimeout)}},[show]);
   if(!show)return null;
   const RocketSVG=({size=120,showFire=false,showFace=false})=>(
@@ -366,16 +366,16 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const syllables=useMemo(()=>splitSyllables(text),[text]);
   const flatSyls=useMemo(()=>syllables.flat(),[syllables]);
   const key=text+'|'+exId;
-  async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();
+  async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
     for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
       await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,1500)});
       await new Promise(r=>setTimeout(r,300))}
-    setSylIdx(-1);await new Promise(r=>setTimeout(r,300));
+    ttsPlaying.current=false;setSylIdx(-1);await new Promise(r=>setTimeout(r,300));
     if(!alive.current)return;sr.go();setMic(true)}
-  async function doSlowPlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();
+  async function doSlowPlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
     const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.35;u.pitch=1.0;u.volume=1.0;
     await new Promise(r=>{let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,Math.max(4000,text.length*400))});
-    if(!alive.current)return;setSylShow(false);
+    ttsPlaying.current=false;if(!alive.current)return;setSylShow(false);
     const pm='¡Seguimos!';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk()},800)}
   function handleSR(said){if(!alive.current)return;if(ttsPlaying.current){sr.go();return}poke();setMic(false);sr.stop();stopVoice();
     const rawB=Math.max(...said.split('|').map(a=>score(a,text)));const b=adjScore(rawB);
@@ -392,8 +392,10 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setSylShow(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Play TTS first, THEN open mic immediately when done
+    // Play TTS first, mark as playing so SR ignores Toki's voice
+    ttsPlaying.current=true;
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
+    ttsPlaying.current=false;
     if(!alive.current)return;
     sr.go();setMic(true);
   }
@@ -413,16 +415,13 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   return <div style={{textAlign:'center'}} onClick={poke}>
     {/* Phrase bubble */}
     <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)'}}>
-      <p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.3,color:TXT}}>"{text}"</p>
+      {!sylShow&&<p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.3,color:TXT}}>"{text}"</p>}
+      {sylShow&&<div style={{display:'flex',flexWrap:'wrap',gap:'clamp(4px, 1.5vw, 10px)',justifyContent:'center',alignItems:'center'}}>{syllables.map((wordSyls,wi)=>{
+        const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:16}}/>);
+        wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=sylIdx===-1||fi<sylIdx;
+          items.push(<span key={wi+'_'+si} style={{fontSize:'clamp(20px, 4.5vw, 28px)',fontWeight:700,padding:'8px 12px',borderRadius:14,transition:'all .3s',background:active?GOLD+'44':past&&sylIdx!==-1?GREEN+'22':'rgba(255,255,255,.08)',color:active?GOLD:past&&sylIdx!==-1?GREEN:TXT,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
+        return items})}</div>}
     </div>
-    {/* Syllable display */}
-    {sylShow&&<div className="af" style={{background:PURPLE+'12',borderRadius:18,padding:14,marginBottom:14}}>
-      <div style={{display:'flex',flexWrap:'wrap',gap:'clamp(2px, 1vw, 8px)',justifyContent:'center'}}>{syllables.map((wordSyls,wi)=>{
-        const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:12}}/>);
-        wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=fi<sylIdx;
-          items.push(<span key={wi+'_'+si} style={{fontSize:'clamp(18px, 4vw, 26px)',fontWeight:700,padding:'6px 10px',borderRadius:12,transition:'all .3s',background:active?GOLD+'44':past?GREEN+'22':'transparent',color:active?GOLD:past?GREEN:DIM,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
-        return items})}</div>
-    </div>}
     {/* Stars */}
     {stars>0&&<div className="ab" style={{marginBottom:12}}><Stars n={stars} sz={40}/></div>}
     {/* Feedback message */}
@@ -463,7 +462,7 @@ function ExFlu({ex,onOk,onSkip,sex,name,uid,vids}){return <div style={{textAlign
 function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);
   const words=useMemo(()=>ex.fu.replace(/[¿?¡!,\.]/g,'').split(/\s+/),[ex.fu]);const{idleMsg,poke}=useIdle(name,ph==='build'&&!bf);
-  useEffect(()=>{sPh('build');sBf(null);let sh=[...words];do{sh=[...words].sort(()=>Math.random()-.5)}while(sh.length>1&&sh.every((w,i)=>w===words[i]));sAv(sh.map((w,i)=>({w,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
+  useEffect(()=>{sPh('build');sBf(null);let sh;let tries=0;do{sh=[...words];for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]]}tries++}while(tries<20&&sh.length>1&&sh.every((w,i)=>w===words[i]));sAv(sh.map((w,i)=>({w,oi:i,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
   function place(item){poke();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');if(built===target){sBf('ok');(async()=>{await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));const phr=await playRec(uid,vids,textKey(ex.fu));if(!phr)await say(ex.fu);await new Promise(r=>setTimeout(r,600));stopVoice();sPh('speak')})()}else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
   function undo(){poke();let li=-1;pl.forEach((p,i)=>{if(p)li=i});if(li===-1)return;const it=pl[li];const np=[...pl];np[li]=null;sPl(np);sAv(a=>a.map(x=>x.i===it.i?{...x,u:false}:x))}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
@@ -1357,8 +1356,10 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
     // Reactivate mic permissions proactively
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Play TTS first, THEN open mic immediately when done
+    // Play TTS first, mark as playing so SR ignores Toki's voice
+    ttsPlaying.current=true;
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
+    ttsPlaying.current=false;
     if(!alive.current)return;
     sr.go();setMic(true);
   }
@@ -1959,7 +1960,7 @@ function ExLee({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
         {shuffledWords.map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:26,padding:22,fontWeight:700,minHeight:80,boxShadow:fb==='ok'&&w===ex.data.ans?'0 0 20px '+GREEN+'88':'',transition:'all .3s'}} disabled={!!fb}>{w}</button>)}
       </div>
-      {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:14,marginTop:12}}><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:0}}>{'¡Bien! '+ex.data.ans+' no es un '+ex.data.cat+'!'}</p></div>}
+      {fb==='ok'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:14,marginTop:12}}><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:0}}>{'¡Bien! '+ex.data.ans+' no es '+(ex.data.cat==='fruta'||ex.data.cat==='ropa'||ex.data.cat==='comida'?'una ':'un ')+ex.data.cat+'!'}</p></div>}
     </div>}
     {ex.mode==='word_img'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:36,fontWeight:700,margin:0,color:GOLD,letterSpacing:4}}>{ex.data.word}</p></div>
