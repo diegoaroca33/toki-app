@@ -62,6 +62,7 @@ input::placeholder{color:${DIM}}
 @keyframes rocketFly{0%{transform:translateY(100vh) scale(1);opacity:1}60%{transform:translateY(-20vh) scale(1.1);opacity:1}100%{transform:translateY(-120vh) scale(.6);opacity:0}}
 @keyframes rocketUp{0%{transform:translate(0,0) rotate(0deg);opacity:1}15%{transform:translate(5px,15px) rotate(10deg);opacity:1}40%{transform:translate(-20px,-80px) rotate(-15deg);opacity:1}65%{transform:translate(25px,-180px) rotate(10deg);opacity:0.9}100%{transform:translate(-10px,-350px) rotate(-5deg);opacity:0}}
 @keyframes starPop{0%{transform:scale(0) rotate(-30deg);opacity:0}30%{transform:scale(2) rotate(15deg);opacity:1;filter:drop-shadow(0 0 20px #FFD700)}60%{transform:scale(0.8) rotate(-5deg)}80%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:0.9}100%{transform:translateY(120px) rotate(360deg);opacity:0}}
 @keyframes starBurstRing{0%{transform:scale(0.1);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
 @keyframes starPass{0%{transform:translateY(-20px);opacity:0}20%{opacity:1}100%{transform:translateY(110vh);opacity:0}}
 @keyframes countNum{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
@@ -347,14 +348,23 @@ function Stars({n,sz=32,burst=false}){
 // ===== CELEBRATION OVERLAY — reusable fireworks across screen =====
 function CelebrationOverlay({show,duration=2000}){
   const[visible,setVisible]=useState(false);
+  const particles=useMemo(()=>{
+    const p=[];
+    // Burst from center — stars fly outward
+    for(let i=0;i<18;i++){const angle=Math.random()*360;const dist=30+Math.random()*45;const rad=angle*Math.PI/180;
+      p.push({i,x:50+dist*Math.cos(rad),y:45+dist*Math.sin(rad)*0.6,sz:20+Math.random()*24,delay:Math.random()*0.4,em:['⭐','✨','🌟','💫','⭐','✨'][i%6],type:'burst'})}
+    // Scattered sparkles across full screen
+    for(let i=0;i<14;i++)p.push({i:18+i,x:5+Math.random()*90,y:5+Math.random()*85,sz:12+Math.random()*18,delay:0.3+Math.random()*0.6,em:['✨','💫','🌟'][i%3],type:'sparkle'});
+    // Confetti-like colored circles
+    for(let i=0;i<10;i++)p.push({i:32+i,x:10+Math.random()*80,y:10+Math.random()*70,sz:8+Math.random()*14,delay:Math.random()*0.5,color:['#FF6B6B','#4ECDC4','#FFE66D','#95E1D3','#F38181','#AA96DA'][i%6],type:'confetti'});
+    return p},[]);
   useEffect(()=>{if(show){setVisible(true);const t=setTimeout(()=>setVisible(false),duration);return()=>clearTimeout(t)}else{setVisible(false)}},[show,duration]);
   if(!visible)return null;
-  const stars=Array.from({length:24},(_,i)=>({i,x:Math.random()*100,y:Math.random()*80+5,sz:16+Math.random()*28,delay:Math.random()*0.8,em:['⭐','✨','🌟','💫'][i%4]}));
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:998,overflow:'hidden'}}>
-    {stars.map(s=><span key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',fontSize:s.sz,opacity:0,animation:`starPop 0.6s ${s.delay}s both`,filter:'drop-shadow(0 0 12px #FFD700)'}}>{s.em}</span>)}
-    {/* Rocket flying up */}
-    <div style={{position:'absolute',left:'25%',bottom:'10%',fontSize:48,animation:'rocketUp 1.8s 0.2s ease-in-out forwards'}}>🚀</div>
-    <div style={{position:'absolute',left:'65%',bottom:'20%',fontSize:36,animation:'rocketUp 2s 0.5s ease-in-out forwards'}}>🚀</div>
+    {particles.filter(s=>s.type==='burst'||s.type==='sparkle').map(s=><span key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',fontSize:s.sz,opacity:0,animation:`starPop 0.7s ${s.delay}s both`,filter:'drop-shadow(0 0 10px #FFD700)'}}>{s.em}</span>)}
+    {particles.filter(s=>s.type==='confetti').map(s=><div key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',width:s.sz,height:s.sz,borderRadius:'50%',background:s.color,opacity:0,animation:`starPop 0.5s ${s.delay}s both, confettiFall 1.5s ${s.delay+0.3}s forwards`}}/>)}
+    {/* Rocket flying up orbit */}
+    <div style={{position:'absolute',left:'35%',bottom:'5%',fontSize:44,animation:'rocketUp 1.6s 0.15s ease-in-out forwards'}}>🚀</div>
   </div>}
 
 // ===== SPEAK PANEL — 4-star SingStar system =====
