@@ -4,7 +4,7 @@
 // ============================================================
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
-import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT } from './firebase.js'
+import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT } from './firebase.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
 const VER='v21.3';
@@ -2549,6 +2549,11 @@ export default function App(){
         <button className="btn btn-gold" onClick={enterGuest} style={{fontSize:22,padding:'18px 24px'}}>👤 Invitado</button>
         <p style={{fontSize:14,color:DIM,margin:0}}>Sin cuenta — datos solo en este dispositivo</p>
         <div style={{borderTop:'1px solid '+BORDER,margin:'8px 0'}}/>
+        <button onClick={async()=>{setAuthBusy(true);setAuthErr('');try{await fbSignInWithGoogle();setAuthScreen('choice')}catch(e){setAuthErr(e.message)}finally{setAuthBusy(false)}}} style={{fontSize:20,padding:'16px 24px',background:'#fff',color:'#333',border:'2px solid #ddd',borderRadius:16,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:10}} disabled={authBusy}>
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.8 33.4 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.2-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.5 18.8 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.7-3.6-11.3-8.5l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C36.8 39.3 44 34 44 24c0-1.3-.2-2.7-.4-3.9z"/></svg>
+          Acceder con Google
+        </button>
+        <div style={{display:'flex',alignItems:'center',gap:10,margin:'4px 0'}}><div style={{flex:1,height:1,background:BORDER}}/><span style={{color:DIM,fontSize:13}}>o con email</span><div style={{flex:1,height:1,background:BORDER}}/></div>
         <button className="btn btn-b" onClick={()=>{setAuthScreen('login');setAuthErr('')}} style={{fontSize:20,padding:'16px 24px'}}>🔑 Iniciar sesión</button>
         <button className="btn btn-p" onClick={()=>{setAuthScreen('register');setAuthErr('')}} style={{fontSize:20,padding:'16px 24px'}}>📝 Crear cuenta</button>
       </div>}

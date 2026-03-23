@@ -3,7 +3,7 @@
 // © 2026 Diego Aroca. Todos los derechos reservados.
 // ============================================================
 import { initializeApp } from 'firebase/app'
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage'
 
@@ -34,6 +34,11 @@ export async function fbSignUp(email, password) {
 
 export async function fbSignOut() {
   return signOut(auth)
+}
+
+const googleProvider = new GoogleAuthProvider()
+export async function fbSignInWithGoogle() {
+  return signInWithPopup(auth, googleProvider)
 }
 
 export function fbOnAuth(cb) {
