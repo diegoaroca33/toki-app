@@ -944,7 +944,7 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     return()=>stopVoice()},[ex]);
   function place(item){poke();const np=[...placed];const slot=np.indexOf(null);if(slot!==-1)np[slot]=item;else np.push(item);setPlaced(np);setAvail(a=>a.filter(x=>x!==item));const target=ex.mode==='order_days'?DIAS:MESES;
     if(np.length===target.length&&np.every(d=>d!==null)){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-    else{setFb('no');beep(200,200);setTimeout(()=>{const kept=np.map((d,i)=>d===target[i]?d:null);const wrong=np.filter((d,i)=>d!==target[i]);setPlaced(kept);setAvail([...wrong].sort(()=>Math.random()-.5));setFb(null)},1500)}}}
+    else{setFb('no');beep(200,200);const wrongNames=np.filter((d,i)=>d!==target[i]);sayFB(wrongNames.length===1?wrongNames[0]+' no va ahí':'Algunos no están en su sitio');setTimeout(()=>{const kept=np.map((d,i)=>d===target[i]?d:null);const wrong=np.filter((d,i)=>d!==target[i]);setPlaced(kept);setAvail([...wrong].sort(()=>Math.random()-.5));setFb(null)},2500)}}}
   function pickBA(slot,val){poke();const newAns={...baAns,[slot]:val};setBaAns(newAns);
     if(newAns.before&&newAns.after){const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;
       const correctBefore=target[(idx-1+max)%max];const correctAfter=target[(idx+1)%max];
