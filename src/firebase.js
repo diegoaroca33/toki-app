@@ -142,5 +142,53 @@ export async function fbGetStorageUsage(uid) {
 // Storage limit per user in bytes (3MB)
 export const STORAGE_LIMIT = 3 * 1024 * 1024
 
+// ---- Shared profiles ----
+function generateShareCode(name) {
+  const prefix = (name || 'TOK').substring(0, 3).toUpperCase()
+  const num = Math.floor(100 + Math.random() * 900)
+  return `${prefix}-${num}`
+}
+
+export async function fbCreateShareCode(ownerUid, profileId, profileName) {
+  const code = generateShareCode(profileName)
+  await setDoc(doc(db, 'shared_profiles', code), {
+    ownerUid,
+    profileId,
+    profileName,
+    createdAt: new Date().toISOString(),
+    linkedUsers: []
+  })
+  return code
+}
+
+export async function fbGetSharedProfile(code) {
+  const snap = await getDoc(doc(db, 'shared_profiles', code.toUpperCase()))
+  return snap.exists() ? { code: snap.id, ...snap.data() } : null
+}
+
+export async function fbLinkToSharedProfile(code, userUid, userEmail) {
+  const ref = doc(db, 'shared_profiles', code.toUpperCase())
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return null
+  const data = snap.data()
+  const linked = data.linkedUsers || []
+  if (!linked.find(u => u.uid === userUid)) {
+    linked.push({ uid: userUid, email: userEmail, linkedAt: new Date().toISOString() })
+    await updateDoc(ref, { linkedUsers: linked })
+  }
+  // Return owner's profile data
+  const ownerData = await fbGetProfile(data.ownerUid)
+  return { ...data, ownerData }
+}
+
+export async function fbRevokeShareLink(code, userUid) {
+  const ref = doc(db, 'shared_profiles', code.toUpperCase())
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+  const data = snap.data()
+  const linked = (data.linkedUsers || []).filter(u => u.uid !== userUid)
+  await updateDoc(ref, { linkedUsers: linked })
+}
+
 // Export Firestore functions for direct use
 export const fbFns = { doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where }

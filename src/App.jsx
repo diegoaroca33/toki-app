@@ -4,7 +4,7 @@
 // ============================================================
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
-import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT } from './firebase.js'
+import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink } from './firebase.js'
 
 const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
 const VER='v21.3';
@@ -2116,7 +2116,7 @@ export default function App(){
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
-  const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);
+  const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);const[shareCode,setShareCode]=useState(null);const[shareInput,setShareInput]=useState('');const[shareMsg,setShareMsg]=useState('');
   const[micOk,setMicOk]=useState(false);const[supervisorMode,setSupervisorMode]=useState(false);const supervisorTimer=useRef(null);
   const[exigencia,setExigenciaState]=useState(()=>getExigencia());
   function setExigencia(v){setExigenciaState(v);try{localStorage.setItem('toki_exigencia',String(v))}catch(e){}}
@@ -2497,6 +2497,14 @@ export default function App(){
           </div>}
         </div>}</div>
         <button className="btn btn-gold" onClick={()=>{if(pp.length===4){setSupPin(pp);saveData('sup_pin',pp)}const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up)}} style={{fontSize:20,padding:'16px 20px',minHeight:52}}>💾 Guardar</button>
+        {fbUser&&hasConfig&&<div style={{marginTop:12,display:'flex',gap:8}}>
+          <button className="btn btn-b" onClick={async()=>{try{const code=await fbCreateShareCode(fbUser.uid,user.id,user.name);setShareCode(code);setShareMsg('Código generado')}catch(e){setShareMsg('Error: '+e.message)}}} style={{flex:1,fontSize:16,padding:'12px 16px',minHeight:48}}>🔗 Compartir perfil</button>
+          {shareCode&&<div style={{flex:2,background:GOLD+'22',border:'2px solid '+GOLD,borderRadius:12,padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            <span style={{fontSize:22,fontWeight:800,color:GOLD,letterSpacing:4,fontFamily:'monospace'}}>{shareCode}</span>
+            <button onClick={()=>{navigator.clipboard?.writeText(shareCode);setShareMsg('¡Copiado!')}} style={{background:'none',border:'none',fontSize:18,cursor:'pointer'}}>📋</button>
+          </div>}
+        </div>}
+        {shareMsg&&<p style={{fontSize:14,color:GREEN,margin:'6px 0 0',fontWeight:600}}>{shareMsg}</p>}
         <button className="btn btn-p" onClick={()=>setShowRec(true)} style={{marginTop:8,fontSize:18,padding:'14px 20px',minHeight:52}}>🎙️ Grabar voces</button>
         <div style={{marginTop:20,borderTop:'1px solid '+BORDER,paddingTop:20}}>{!delConf?<button className="btn btn-ghost" style={{color:RED,borderColor:RED+'44',fontSize:18,padding:'14px 20px',minHeight:52}} onClick={()=>setDelConf(true)}>🗑️ Borrar perfil de {user.name}</button>:<div className="card" style={{borderColor:RED+'66',background:RED+'0C',padding:20}}><p style={{fontSize:18,fontWeight:600,color:RED,margin:'0 0 10px'}}>¿Seguro? Se perderá todo el progreso</p><div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1,fontSize:18,minHeight:52}} onClick={()=>setDelConf(false)}>Cancelar</button><button className="btn btn-g" style={{flex:1,background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21',fontSize:18,minHeight:52}} onClick={()=>{setProfs(p=>p.filter(x=>x.id!==user.id));setUser(null);setOv(null);setDelConf(false);setScr('login')}}>Sí, borrar</button></div></div>}
         <button className="btn btn-ghost" style={{color:RED,borderColor:RED+'22',marginTop:12,fontSize:16,padding:'14px 20px',minHeight:52}} onClick={()=>{if(confirm('¿Borrar todos los perfiles y progreso? Las voces grabadas se conservan.')){const keep={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))keep[k]=localStorage.getItem(k)}localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));setProfs([]);setUser(null);setOv(null);setScr('setup')}}}>🔄 Resetear app (conserva voces)</button></div>
@@ -2699,11 +2707,7 @@ export default function App(){
         <label style={{fontSize:15,color:DIM}}>Nombre</label><input className="inp" value={fn} onChange={e=>setFn(e.target.value)} placeholder="Ej: Nico" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label><input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Sexo</label><div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
-        <div style={{borderTop:'1px solid '+BORDER,paddingTop:14,marginBottom:14}}><p style={{fontSize:16,color:GOLD,fontWeight:700,margin:'0 0 12px'}}>👨‍👩‍👦 Familia (opcional, para frases personalizadas)</p>
-        <label style={{fontSize:14,color:DIM}}>Nombre del padre</label><input className="inp" value={fPadre} onChange={e=>setFPadre(e.target.value)} placeholder="Ej: Paco" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Nombre de la madre</label><input className="inp" value={fMadre} onChange={e=>setFMadre(e.target.value)} placeholder="Ej: Ana" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Hermanos (separados por coma)</label><input className="inp" value={fHerm} onChange={e=>setFHerm(e.target.value)} placeholder="Ej: Sofía, Miguel" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Mejores amigos (separados por coma)</label><input className="inp" value={fAmigos} onChange={e=>setFAmigos(e.target.value)} placeholder="Ej: Vega, Amir, Carlos" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <div style={{borderTop:'1px solid '+BORDER,paddingTop:14,marginBottom:14}}><p style={{fontSize:14,color:DIM,margin:'0 0 8px'}}>La familia y amigos se configuran después en Mis Personas</p>
         <label style={{fontSize:14,color:DIM}}>Teléfono de emergencia</label><input className="inp" value={fTel} onChange={e=>setFTel(e.target.value)} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>Dirección de casa</label><input className="inp" value={fDir} onChange={e=>setFDir(e.target.value)} placeholder="Ej: Calle Mayor 10, Madrid" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>Apellidos</label><input className="inp" value={fApellidos} onChange={e=>setFApellidos(e.target.value)} placeholder="Ej: García López" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
