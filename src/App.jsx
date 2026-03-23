@@ -438,7 +438,7 @@ function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginBottom:12}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
     {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
-    <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
+    <div style={{position:'fixed',bottom:'max(80px, 12vh)',left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
       <button onClick={hearAgain} style={{
         width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
         background:`radial-gradient(circle at 30% 25%,#90CAF9,${BLUE} 60%,#1565C0)`,
@@ -2228,6 +2228,15 @@ export default function App(){
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);
+    // Quién Soy: handle before multi-level merge (don't shuffle — order matters)
+    if(section==='quiensoy'){
+      const lvArr=Array.isArray(slv)?slv:[slv||1];
+      const hasEstudio=lvArr.includes(1),hasPres=lvArr.includes(2);
+      const items=[];
+      if(hasEstudio) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
+      if(hasPres) items.push({ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img});
+      if(!items.length) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
+      return items}
     // Multi-level support: if slv is an array, merge exercises from all levels
     if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
     if(Array.isArray(slv))slv=slv[0]||1;
@@ -2280,14 +2289,6 @@ export default function App(){
     }
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return genLee(slv)}
-    if(section==='quiensoy'){
-      const lvArr=Array.isArray(secLv)?secLv:[slv];
-      const hasEstudio=lvArr.includes(1),hasPres=lvArr.includes(2);
-      const items=[];
-      if(hasEstudio) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
-      if(hasPres) items.push({ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img});
-      if(!items.length) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
-      return items}
     return[]}
   function startGame(){setQ(buildQ(user,sec,secLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
@@ -2905,7 +2906,7 @@ export default function App(){
       </div>}
     </div>}
 
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div></div>
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{maxHeight:'100dvh',overflowY:'auto',WebkitOverflowScrolling:'touch'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div></div>
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,elapsed/sm*100)+'%'}}/></div>
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
