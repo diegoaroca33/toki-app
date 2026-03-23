@@ -570,8 +570,9 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
             animation:cur&&phase==='child'?'pulse .5s infinite':(rev&&inBatch?'countNum .35s ease-out':'none'),overflow:'hidden',
           }}>
             <span style={{fontSize:cur?22:17,fontWeight:800,color:rev?'#fff':(inBatch?'#aaa':'#666'),lineHeight:1,zIndex:1}}>{n}</span>
-            {rev&&inBatch&&<div style={{display:'flex',gap:2,marginTop:2,flexWrap:'wrap',justifyContent:'center',maxWidth:28,minHeight:6}}>
-              {Array.from({length:Math.min((n%10)||10,6)},(_,di)=><div key={di} style={{width:4.5,height:4.5,borderRadius:'50%',background:'rgba(255,255,255,.9)'}}/>)}
+            {rev&&inBatch&&<div style={{display:'flex',gap:1.5,marginTop:1,flexWrap:'wrap',justifyContent:'center',maxWidth:26,minHeight:5}}>
+              {n%10===0?<div style={{width:8,height:3,borderRadius:1.5,background:'rgba(255,255,255,.8)'}}/>
+              :Array.from({length:n%10},(_,di)=><div key={di} style={{width:3.5,height:3.5,borderRadius:'50%',background:'rgba(255,255,255,.85)'}}/>)}
             </div>}
             {rev&&<div style={{position:'absolute',bottom:0,left:0,right:0,height:'30%',background:'linear-gradient(transparent,rgba(0,0,0,.15))',borderRadius:'0 0 7px 7px'}}/>}
           </div>})}
@@ -2100,7 +2101,7 @@ export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
-  const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');
+  const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
   const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
@@ -2601,55 +2602,75 @@ export default function App(){
       </div>}
       {!fbUser&&hasConfig&&<button onClick={()=>{setFbMode('auth');setAuthScreen('choice')}} style={{background:'none',border:'none',color:BLUE,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline',marginBottom:16,display:'block',margin:'0 auto 16px'}}>🔑 Iniciar sesión / Crear cuenta</button>}
       <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
-      {profs.length>0&&!creating&&<div style={{display:'flex',justifyContent:'center',gap:28,marginBottom:28,flexWrap:'wrap'}}>{profs.map(p=>{
-        // Auto-generate presentation if missing
-        if(!p.presentations||!p.presentations.length){const pres=[];pres.push('Hola, me llamo '+(p.name||''));if(p.padre)pres.push('Mi padre se llama '+p.padre);if(p.madre)pres.push('Mi madre se llama '+p.madre);const hArr=(p.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);if(hArr.length===1)pres.push('Mi hermano se llama '+hArr[0]);else if(hArr.length>1)pres.push('Tengo '+hArr.length+' hermanos');const aArr=(p.amigos||'').split(',').map(s=>s.trim()).filter(Boolean);if(aArr.length===1)pres.push('Mi amigo se llama '+aArr[0]);else if(aArr.length>1)pres.push('Tengo '+aArr.length+' amigos');if(p.direccion)pres.push('Vivo en '+p.direccion);if(p.telefono)pres.push('El teléfono de mi padre es '+p.telefono);if(p.colegio)pres.push('Voy al cole en '+p.colegio);if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres}]}
-        const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
-        const pN=myPersonas.length;
-        const pOrbitR=140;const pSize=52;
-        return <button key={p.id} onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
-        background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
-        display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:0,transition:'transform .2s',position:'relative',
-      }}>
-        {/* Personas orbitando alrededor del avatar */}
-        {pN>0&&<div style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,zIndex:0,marginTop:-10}}>
-          {/* Orbit ring */}
-          <svg style={{position:'absolute',left:-pOrbitR,top:-pOrbitR*0.5,width:pOrbitR*2,height:pOrbitR,pointerEvents:'none',overflow:'visible'}}>
-            <ellipse cx={pOrbitR} cy={pOrbitR*0.5} rx={pOrbitR} ry={pOrbitR*0.45} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="1" strokeDasharray="4 3"/>
-          </svg>
-          {myPersonas.map((pp,i)=>{
-            const angle=(360/pN)*i - 45;
-            const rad=angle*Math.PI/180;
-            const px=pOrbitR*Math.cos(rad);
-            const py=pOrbitR*0.45*Math.sin(rad);
-            const relColors={'Padre':'#42A5F5','Madre':'#E91E63','Hermano':'#4CAF50','Hermana':'#AB47BC','Abuelo':'#FF9800','Abuela':'#FF7043','Amigo':'#26C6DA','Amiga':'#EC407A','Mejor amigo/a':'#FFCA28','Profe':'#7E57C2'};
-            const rc=relColors[pp.relation]||'#78909C';
-            return <div key={i} style={{position:'absolute',left:px-pSize/2,top:py-pSize/2,
-              width:pSize,height:pSize,borderRadius:'50%',
-              background:`radial-gradient(circle at 30% 25%,${rc}88,${rc} 70%,${rc}CC)`,
+      {profs.length>0&&!creating&&(()=>{
+        const selProf=hoveredProf;
+        const isCompact=profs.length>4;
+        const profSize=isCompact?80:130;
+        const profFontSize=isCompact?36:56;
+        return <div style={{display:'flex',justifyContent:'center',gap:isCompact?16:28,marginBottom:28,flexWrap:'wrap',position:'relative',minHeight:isCompact?120:300}}>
+        {profs.map((p,pi)=>{
+          // Auto-generate presentation if missing
+          if(!p.presentations||!p.presentations.length){const pres=[];pres.push('Hola, me llamo '+(p.name||''));
+            const myP=personas.filter(pp=>pp.name&&pp.name.trim());
+            const padre=myP.find(pp=>pp.relation==='Padre');const madre=myP.find(pp=>pp.relation==='Madre');
+            if(padre)pres.push('Mi padre se llama '+padre.name);if(madre)pres.push('Mi madre se llama '+madre.name);
+            const herms=myP.filter(pp=>pp.relation==='Hermano'||pp.relation==='Hermana');
+            if(herms.length===1)pres.push('Mi hermano se llama '+herms[0].name);else if(herms.length>1)pres.push('Tengo '+herms.length+' hermanos');
+            const amigos=myP.filter(pp=>pp.relation==='Amigo'||pp.relation==='Amiga'||pp.relation==='Mejor amigo/a');
+            if(amigos.length===1)pres.push('Mi amigo se llama '+amigos[0].name);else if(amigos.length>1)pres.push('Tengo '+amigos.length+' amigos');
+            if(p.direccion)pres.push('Vivo en '+p.direccion);if(p.telefono)pres.push('El teléfono de emergencia es '+p.telefono);if(p.colegio)pres.push('Voy al cole en '+p.colegio);
+            if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}]}
+          const isHovered=selProf===pi;
+          const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
+          const pN=myPersonas.length;
+          const pOrbitR=isCompact?90:120;const pSize=isCompact?38:48;
+          return <button key={p.id}
+            onMouseEnter={()=>setHoveredProf(pi)} onMouseLeave={()=>setHoveredProf(null)}
+            onTouchStart={()=>setHoveredProf(pi)}
+            onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
+            background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
+            display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:0,
+            transition:'transform .4s cubic-bezier(.34,1.56,.64,1)',position:'relative',
+            transform:isHovered?'scale(1.1)':'scale(1)',zIndex:isHovered?10:1,
+          }}>
+            {/* Personas orbit — only show for hovered/selected profile */}
+            {pN>0&&isHovered&&<div style={{position:'absolute',top:'50%',left:'50%',width:0,height:0,zIndex:0,marginTop:-10}}>
+              <svg style={{position:'absolute',left:-pOrbitR,top:-pOrbitR*0.5,width:pOrbitR*2,height:pOrbitR,pointerEvents:'none',overflow:'visible'}}>
+                <ellipse cx={pOrbitR} cy={pOrbitR*0.5} rx={pOrbitR} ry={pOrbitR*0.45} fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="1" strokeDasharray="4 3"/>
+              </svg>
+              {myPersonas.map((pp,i)=>{
+                const angle=(360/pN)*i - 45;const rad=angle*Math.PI/180;
+                const px=pOrbitR*Math.cos(rad);const py=pOrbitR*0.45*Math.sin(rad);
+                const relColors={'Padre':'#42A5F5','Madre':'#E91E63','Hermano':'#4CAF50','Hermana':'#AB47BC','Abuelo':'#FF9800','Abuela':'#FF7043','Amigo':'#26C6DA','Amiga':'#EC407A','Mejor amigo/a':'#FFCA28','Profe':'#7E57C2'};
+                const rc=relColors[pp.relation]||'#78909C';
+                return <div key={i} style={{position:'absolute',left:px-pSize/2,top:py-pSize/2,
+                  width:pSize,height:pSize,borderRadius:'50%',
+                  background:`radial-gradient(circle at 30% 25%,${rc}88,${rc} 70%,${rc}CC)`,
+                  display:'flex',alignItems:'center',justifyContent:'center',
+                  boxShadow:`0 2px 8px ${rc}44`,
+                  animation:`planetFloat ${3+i*0.5}s ease-in-out ${i*0.3}s infinite`,
+                  flexDirection:'column',pointerEvents:'none',
+                }}>
+                  <span style={{fontSize:isCompact?16:20}}>{pp.photo?<img src={pp.photo} alt="" style={{width:pSize-8,height:pSize-8,borderRadius:'50%',objectFit:'cover'}}/>:(pp.avatar||'👤')}</span>
+                  <span style={{position:'absolute',bottom:-18,fontSize:12,color:'#E8E8F0',fontWeight:500,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{pp.name}</span>
+                </div>})}
+            </div>}
+            <div style={{
+              width:profSize,height:profSize,borderRadius:'50%',
+              background:'radial-gradient(circle at 30% 25%,#90CAF9,#42A5F5 60%,#1565C0)',
               display:'flex',alignItems:'center',justifyContent:'center',
-              boxShadow:`0 2px 8px ${rc}44`,
-              animation:`planetFloat ${3+i*0.5}s ease-in-out ${i*0.3}s infinite`,
-              flexDirection:'column',pointerEvents:'none',
+              boxShadow:isHovered?'0 4px 30px #42A5F566':'0 4px 16px #42A5F533',
+              animation:'planetFloat 4s ease-in-out infinite',
+              animationDelay:(pi*0.7)+'s',
+              position:'relative',zIndex:1,transition:'all .3s',
             }}>
-              <span style={{fontSize:22}}>{pp.avatar||'👤'}</span>
-              <span style={{position:'absolute',bottom:-20,fontSize:14,color:'#E8E8F0',fontWeight:500,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)',letterSpacing:0.3}}>{pp.name}</span>
-            </div>})}
-        </div>}
-        <div style={{
-          width:130,height:130,borderRadius:'50%',
-          background:'radial-gradient(circle at 30% 25%,#90CAF9,#42A5F5 60%,#1565C0)',
-          display:'flex',alignItems:'center',justifyContent:'center',
-          boxShadow:'0 4px 24px #42A5F544, inset 0 -4px 12px #1565C066, inset 0 4px 8px #90CAF988',
-          animation:'planetFloat 4s ease-in-out infinite',
-          position:'relative',zIndex:1,
-        }}>
-          <span style={{fontSize:56,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
-        </div>
-        <div style={{fontSize:20,fontWeight:600,position:'relative',zIndex:1}}>{p.name}</div>
-        <div style={{fontSize:14,color:DIM,position:'relative',zIndex:1}}>{p.age} años</div>
-      </button>})}</div>}
-      {profs.length<4&&!creating&&<button onClick={()=>setCreating(true)} style={{
+              <span style={{fontSize:profFontSize,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
+            </div>
+            <div style={{fontSize:isCompact?16:20,fontWeight:600,position:'relative',zIndex:1}}>{p.name}</div>
+            <div style={{fontSize:isCompact?12:14,color:DIM,position:'relative',zIndex:1}}>{p.age} años</div>
+          </button>})}
+        </div>})()}
+      {profs.length<15&&!creating&&<button onClick={()=>setCreating(true)} style={{
         background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
         display:'flex',flexDirection:'column',alignItems:'center',gap:6,margin:'0 auto',padding:0,
       }}>
