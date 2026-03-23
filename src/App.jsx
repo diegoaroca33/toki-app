@@ -2159,7 +2159,7 @@ export default function App(){
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
-  const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
+  const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[presEdit,setPresEdit]=useState(null);const[presNewMode,setPresNewMode]=useState(null);const[presDelIdx,setPresDelIdx]=useState(null);const[selectedPresIdx,setSelectedPresIdx]=useState(null);const[showPresSelector,setShowPresSelector]=useState(false);
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
@@ -2247,7 +2247,7 @@ export default function App(){
   const[escribeTypes,setEscribeTypes]=useState(()=>loadData('escribe_types',['letras']));
   const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
-  const[freeChoice,setFreeChoice]=useState(true);
+  const[freeChoice,setFreeChoice]=useState(true);const[qsChoice,setQsChoice]=useState(null);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
@@ -2342,11 +2342,16 @@ export default function App(){
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return genLee(slv)}
     return[]}
-  function startGame(){
+  function startGame(overrideLv){
     // Always re-read level from storage to pick up Settings changes
     const mod=GROUPS.flatMap(g=>g.modules).find(m=>m.k===sec);
-    const freshLv=mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv;
-    setSecLv(freshLv);
+    const freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
+    // If quiensoy with both Estudio and Presentacion enabled, show choice screen
+    if(!overrideLv&&sec==='quiensoy'){
+      const lvArr=Array.isArray(freshLv)?freshLv:freshLv!==null?[freshLv]:[];
+      if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
+    }
+    setSecLv(freshLv);setQsChoice(null);
     setQ(buildQ(user,sec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
   // No longer auto-finish on timeUp - let kid continue freely after guided time
@@ -2366,6 +2371,15 @@ export default function App(){
     {showRec&&user&&<VoiceRec user={user} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
+    {qsChoice==='pick'&&<div className="ov"><div className="ovp ab" style={{maxWidth:380}}>
+      <div style={{fontSize:72,marginBottom:12}}>👤</div>
+      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 20px'}}>Quién Soy</h2>
+      <div style={{display:'flex',flexDirection:'column',gap:14}}>
+        <button className="btn btn-b" onClick={()=>{setQsChoice(null);startGame([1])}} style={{fontSize:22,padding:'22px 20px'}}>📖 Estudio</button>
+        <button className="btn btn-p" onClick={()=>{setQsChoice(null);startGame([2])}} style={{fontSize:22,padding:'22px 20px',background:'#E91E63',borderColor:'#C2185B',boxShadow:'4px 4px 0 #880E4F'}}>🎤 Presentación</button>
+      </div>
+      <button className="btn btn-ghost" onClick={()=>setQsChoice(null)} style={{marginTop:16,fontSize:16}}>Cancelar</button>
+    </div></div>}
     {ov==='admin'&&fbUser&&fbUser.email===ADMIN_EMAIL&&<div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:'80vh',overflowY:'auto'}}>
       <div style={{fontSize:48,marginBottom:8}}>⚙️</div>
       <h2 style={{fontSize:22,color:PURPLE,margin:'0 0 16px'}}>Panel de Administración</h2>
@@ -2507,9 +2521,16 @@ export default function App(){
                       <p style={{fontSize:14,fontWeight:600,margin:'0 0 4px',color:TXT}}>Tamaño pauta: <span style={{color:PURPLE}}>{PAUTA_LABELS[escribePauta]}</span></p>
                       <input type="range" min={0} max={3} step={1} value={escribePauta} onChange={e=>setPautaSize(parseInt(e.target.value))} style={{width:'100%',accentColor:PURPLE,height:6,cursor:'pointer'}}/>
                       <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:DIM,marginTop:2}}>{PAUTA_LABELS.map(l=><span key={l}>{l}</span>)}</div>
-                      {/* Preview */}
-                      <div style={{marginTop:8,padding:10,borderRadius:8,background:BG3,border:`1px solid ${BORDER}`,textAlign:'center'}}>
-                        <span style={{fontSize:PAUTA_SIZES[escribePauta],fontFamily:"'Fredoka'",color:PURPLE,fontWeight:600}}>{escribeCase==='upper'?'HOLA':'hola'}</span>
+                      {/* Preview with pauta lines */}
+                      <div style={{marginTop:8,padding:'12px 10px',borderRadius:8,background:'#fff',border:`1px solid ${BORDER}`,textAlign:'center',position:'relative',overflow:'hidden'}}>
+                        {(()=>{const fs=PAUTA_SIZES[escribePauta];const h=Math.round(fs*1.6);const baseY=Math.round(h*0.78);const upperY=Math.round(h*0.15);const midY=Math.round((upperY+baseY)/2);
+                          return <div style={{position:'relative',height:h}}>
+                            <div style={{position:'absolute',left:0,right:0,top:baseY,height:2,background:'#2E75B6'}}/>
+                            <div style={{position:'absolute',left:0,right:0,top:upperY,height:1,background:'#2E75B6',opacity:0.5}}/>
+                            <div style={{position:'absolute',left:0,right:0,top:midY,height:1,background:'#2E75B6',opacity:0.25,borderTop:'1px dashed #2E75B644'}}/>
+                            <div style={{position:'absolute',left:0,right:0,top:upperY,height:baseY-upperY,background:'rgba(46,117,182,0.04)'}}/>
+                            <span style={{position:'absolute',left:'50%',transform:'translateX(-50%)',bottom:h-baseY,fontSize:fs,fontFamily:"'Fredoka'",color:'#D0D0D0',fontWeight:600,lineHeight:1}}>{escribeCase==='upper'?'HOLA':'hola'}</span>
+                          </div>})()}
                       </div>
                     </div>
                   </div>})()
@@ -2580,7 +2601,7 @@ export default function App(){
             <div style={{position:'relative',width:52,height:52,flexShrink:0}}>
               {p.photo?<img src={p.photo} alt="" style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',cursor:'pointer'}} onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next,photo:null};savePersonas(np)}}/>
               :<button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:32,background:'none',border:'none',cursor:'pointer',width:52,height:52}}>{p.avatar||AVS[0]}</button>}
-              <label style={{position:'absolute',bottom:-4,right:-4,width:28,height:28,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:14,boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}>📷
+              <label style={{position:'absolute',bottom:-4,right:-4,width:36,height:36,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}>📷
                 <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={async(e)=>{
                   const f=e.target.files?.[0];if(!f)return;
                   try{const b64=await processImage(f);const np=[...personas];np[i]={...np[i],photo:b64};savePersonas(np)}
@@ -2593,7 +2614,7 @@ export default function App(){
               <option value="">Relación</option>{PERSONA_RELATIONS.map(r=><option key={r} value={r}>{r}</option>)}
             </select>
             {delPersonaIdx===i?<div style={{display:'flex',flexDirection:'column',gap:4,alignItems:'center'}}><p style={{fontSize:13,color:RED,margin:0,fontWeight:600,whiteSpace:'nowrap'}}>¿Borrar a {p.name||'esta persona'}?</p><div style={{display:'flex',gap:4}}><button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np);setDelPersonaIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 12px',color:'#fff',fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>Sí</button><button onClick={()=>setDelPersonaIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 12px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>No</button></div></div>
-            :<button onClick={()=>setDelPersonaIdx(i)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:32,width:32,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>}
+            :<button onClick={()=>setDelPersonaIdx(i)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'2px 6px',color:RED,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:26,width:26,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>}
           </div>)}
           {personas.length<10&&<button className="btn btn-ghost" onClick={()=>savePersonas([...personas,{name:'',relation:'',avatar:AVS[Math.floor(Math.random()*AVS.length)]}])} style={{fontSize:18,marginTop:8,padding:'14px 20px',minHeight:52}}>➕ Añadir persona</button>}
         </div>
@@ -2808,7 +2829,7 @@ export default function App(){
         <label style={{fontSize:14,color:DIM}}>Apellidos</label><input className="inp" value={fApellidos} onChange={e=>setFApellidos(e.target.value)} placeholder="Ej: García López" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
         <label style={{fontSize:14,color:DIM}}>{(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'🏢 Centro formación / Trabajo':'🏫 Colegio'})()}</label><input className="inp" value={fColegio} onChange={e=>setFColegio(e.target.value)} placeholder={(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'Ej: Centro ocupacional / Empresa':'Ej: CEIP San José'})()} style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
         <label style={{fontSize:15,color:DIM}}>Avatar</label><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
-        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:fPadre.trim(),madre:fMadre.trim(),hermanos:fHerm.trim(),amigos:fAmigos.trim(),telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
+        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:'',madre:'',hermanos:'',amigos:'',telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
                 // Auto-generate default presentation from user data and personas
                 const pres=generateAutoPresentation(p,personas);
                 if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}];
@@ -2986,7 +3007,7 @@ export default function App(){
       </div>})()
       :<div className="card" style={{padding:24,textAlign:'center',borderColor:GOLD+'55',background:GOLD+'0C'}}>
         <div style={{fontSize:56,marginBottom:8}}>{{quiensoy:'👤',decir:'🎤',frase:'🧱',contar:'🔢',math:'🧮',multi:'✖️',frac:'🍕',money:'💶',clock:'🕐',calendar:'📅',distribute:'🍬',writing:'✏️',razona:'🧠',lee:'📖'}[sec]||'🎤'}</div>
-        <h3 style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{{quiensoy:'Quién Soy',decir:'Aprende a decirlo',frase:'Forma la frase',contar:'Cuenta conmigo',math:'Sumas y Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas y Billetes',clock:'La Hora',calendar:'Calendario',distribute:'Reparte y Cuenta',writing:'Escritura',razona:'Razona',lee:'Lectura'}[sec]||sec}</h3>
+        <h3 style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{{quiensoy:'Quién Soy',decir:'Aprende a decirlo',frase:'Forma la frase',contar:'Cuenta conmigo',math:'Sumas y Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas y Billetes',clock:'La Hora',calendar:'Calendario',distribute:'Reparte y Cuenta',writing:'Escritura',razona:'¿Dónde está?',lee:'Lectura'}[sec]||sec}</h3>
       </div>}
       {/* Rocket button only when a group is open and module selected */}
       {openGroup&&<div style={{display:'flex',justifyContent:'center',marginTop:10}}>
