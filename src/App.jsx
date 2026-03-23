@@ -1230,14 +1230,18 @@ function ExWriting({ex,onOk,onSkip,name}){
           const clampY=(v)=>Math.max(zone.y+8,Math.min(zone.y+zone.h-8,v));
           // Calculate all number positions first, then apply collision avoidance
           const numPositions=sg.map(s=>({x:clampX(zone.x+s.x*zone.w),y:clampY(zone.y+s.y*zone.h)}));
-          // Collision detection: if two numbers are < 20px apart, offset the second
-          for(let i=1;i<numPositions.length;i++){
-            for(let j=0;j<i;j++){
-              const dx=numPositions[i].x-numPositions[j].x,dy=numPositions[i].y-numPositions[j].y;
-              const dist=Math.sqrt(dx*dx+dy*dy);
-              if(dist<20&&dist>0){const push=20-dist;const ux=dx/dist,uy=dy/dist;
-                numPositions[i].x=clampX(numPositions[i].x+ux*push);numPositions[i].y=clampY(numPositions[i].y+uy*push)}
-              else if(dist===0){numPositions[i].y=clampY(numPositions[i].y+20)}
+          // Collision detection: if two numbers are < 26px apart, offset them
+          // Multiple passes to resolve cascading overlaps
+          for(let pass=0;pass<3;pass++){
+            for(let i=1;i<numPositions.length;i++){
+              for(let j=0;j<i;j++){
+                const dx=numPositions[i].x-numPositions[j].x,dy=numPositions[i].y-numPositions[j].y;
+                const dist=Math.sqrt(dx*dx+dy*dy);
+                if(dist<26&&dist>0){const push=(26-dist)/2+2;const ux=dx/dist,uy=dy/dist;
+                  numPositions[i].x=clampX(numPositions[i].x+ux*push);numPositions[i].y=clampY(numPositions[i].y+uy*push);
+                  numPositions[j].x=clampX(numPositions[j].x-ux*push);numPositions[j].y=clampY(numPositions[j].y-uy*push)}
+                else if(dist===0){numPositions[i].y=clampY(numPositions[i].y+14);numPositions[j].y=clampY(numPositions[j].y-12)}
+              }
             }
           }
           sg.forEach((s,si)=>{
@@ -1257,9 +1261,15 @@ function ExWriting({ex,onOk,onSkip,name}){
         }
       }
     }else{
-      // Words/phrases: size to fill pauta zone
+      // Words/phrases: size text to fill pauta zone (upperY to baseY)
       const zoneH=baseY-upperY;
-      const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);
+      // Use canvas measureText to find a font size that actually fits the pauta height
+      let fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7):Math.floor(zoneH*0.85);
+      // Iteratively adjust: measure actual height and scale to fit
+      ctx.font=getModelFont(fSz);
+      const metrics=ctx.measureText(letter);
+      const actualH=(metrics.actualBoundingBoxAscent||fSz*0.7)+(metrics.actualBoundingBoxDescent||fSz*0.1);
+      if(actualH>0){const ratio=zoneH/actualH;fSz=Math.floor(fSz*Math.min(ratio*0.92,1.5))}
       ctx.font=getModelFont(fSz);ctx.fillStyle='#D0D0D0';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(letter,w/2,baseY);
     }
   }
@@ -1271,7 +1281,12 @@ function ExWriting({ex,onOk,onSkip,name}){
       const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);
       octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
     }else{
-      const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);
+      const zoneH=baseY-upperY;
+      let fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7):Math.floor(zoneH*0.85);
+      octx.font=getModelFont(fSz);
+      const metrics=octx.measureText(ex.letter);
+      const actualH=(metrics.actualBoundingBoxAscent||fSz*0.7)+(metrics.actualBoundingBoxDescent||fSz*0.1);
+      if(actualH>0){const ratio=zoneH/actualH;fSz=Math.floor(fSz*Math.min(ratio*0.92,1.5))}
       octx.font=getModelFont(fSz);octx.fillStyle='#000';octx.textAlign='center';octx.textBaseline='alphabetic';octx.fillText(ex.letter,cW/2,baseY);
     }
     const imgData=octx.getImageData(0,0,cW,cH);
@@ -1309,7 +1324,7 @@ function ExWriting({ex,onOk,onSkip,name}){
     const c=canvasRef.current;if(c){const ctx=c.getContext('2d');const mask=modelRef.current||getModelMask();
       ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle='rgba(0,180,0,1)';
       if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      else{const zoneH=baseY-upperY;const fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7/0.72):Math.floor(zoneH*0.85/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+      else{const zoneH=baseY-upperY;let fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7):Math.floor(zoneH*0.85);ctx.font=getModelFont(fSz);const mt=ctx.measureText(ex.letter);const ah=(mt.actualBoundingBoxAscent||fSz*0.7)+(mt.actualBoundingBoxDescent||fSz*0.1);if(ah>0){const r=zoneH/ah;fSz=Math.floor(fSz*Math.min(r*0.92,1.5))}ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
       ctx.restore();
       const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}}
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
@@ -1399,10 +1414,16 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   </div>}
 
 // ===== QUIÉN SOY — Presentación (mode 2, teleprompter limpio con barra lateral) =====
-function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids}){
+function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
+  const slides=useMemo(()=>{
+    // Use custom presentation lines if provided, otherwise fall back to QUIEN_SOY
+    if(presentation&&presentation.lines&&presentation.lines.length>0)
+      return presentation.lines.map((text,i)=>({text,id:'pres_'+i,img:QUIEN_SOY[0]?.img,picto:null}));
+    return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
+  },[presentation]);
   const[qi,setQi]=useState(0);const[finished,setFinished]=useState(false);const[barOn,setBarOn]=useState(false);
   const alive=useRef(true);const timers=useRef([]);
-  const cur=QUIEN_SOY[qi];
+  const cur=slides[qi];
   const waitSec=useMemo(()=>Math.max(Math.ceil(cur.text.length*0.12),2)+3,[cur]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();timers.current.forEach(clearTimeout)}},[]);
   useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);timers.current.forEach(clearTimeout);timers.current=[];
@@ -1410,7 +1431,7 @@ function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids}){
       say(cur.text).then(()=>{if(!alive.current)return;
         setBarOn(true);
         const t2=setTimeout(()=>{if(!alive.current)return;setBarOn(false);
-          if(qi+1>=QUIEN_SOY.length){setFinished(true);victoryBeeps()}
+          if(qi+1>=slides.length){setFinished(true);victoryBeeps()}
           else setQi(qi+1)},waitSec*1000);
         timers.current.push(t2)})},600);
     timers.current.push(t1);
@@ -1420,13 +1441,14 @@ function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids}){
     <div style={{fontSize:100,marginBottom:16}}>🏆</div>
     <h2 style={{fontSize:28,color:GOLD,margin:'0 0 12px'}}>¡Presentación completada!</h2>
     <p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'0 0 8px'}}>¡Genial, {name}!</p>
-    <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {QUIEN_SOY.length} frases</p>
+    <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {slides.length} frases</p>
     <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>🎉 ¡Terminado!</button>
   </div>;
   return <div style={{textAlign:'center',position:'relative'}}>
-    <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:600}}>{qi+1} / {QUIEN_SOY.length}</p>
+    <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:600}}>{qi+1} / {slides.length}</p>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      <img src={cur.img} alt="" style={{width:'100%',maxHeight:'80vh',objectFit:'cover',display:'block'}}/>
+      {cur.img?<img src={cur.img} alt="" style={{width:'100%',maxHeight:'80vh',objectFit:'cover',display:'block'}}/>
+        :<div style={{width:'100%',minHeight:'40vh',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
       </div>
@@ -2108,6 +2130,27 @@ async function cloudUnrevokeUser(uid){
   try{await fbUnrevokeUser(uid);
   }catch(e){console.warn('[Toki Cloud] Unrevoke error:',e)}}
 
+function generateAutoPresentation(u,personas){
+  const pres=[];
+  pres.push('Hola, me llamo '+(u.name||''));
+  if(u.apellidos)pres.push('Me apellido '+u.apellidos);
+  const myP=(personas||[]).filter(pp=>pp.name&&pp.name.trim());
+  const padre=myP.find(pp=>pp.relation==='Padre');
+  const madre=myP.find(pp=>pp.relation==='Madre');
+  if(padre)pres.push('Mi padre se llama '+padre.name);
+  if(madre)pres.push('Mi madre se llama '+madre.name);
+  const herms=myP.filter(pp=>pp.relation==='Hermano'||pp.relation==='Hermana');
+  if(herms.length===1){const fem=herms[0].relation==='Hermana';pres.push((fem?'Mi hermana':'Mi hermano')+' se llama '+herms[0].name)}
+  else if(herms.length>1)pres.push('Tengo '+herms.length+' hermanos: '+herms.map(h=>h.name).join(', '));
+  const amigos=myP.filter(pp=>pp.relation==='Amigo'||pp.relation==='Amiga');
+  if(amigos.length===1){const fem=amigos[0].relation==='Amiga';pres.push((fem?'Mi mejor amiga es ':'Mi mejor amigo es ')+amigos[0].name)}
+  else if(amigos.length>1)pres.push('Tengo '+amigos.length+' amigos');
+  if(u.direccion)pres.push('Vivo en '+u.direccion);
+  if(u.colegio)pres.push('Voy al cole en '+u.colegio);
+  if(u.telefono)pres.push('El teléfono de mi padre es '+u.telefono);
+  return pres;
+}
+
 export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
@@ -2115,6 +2158,7 @@ export default function App(){
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
   const[fPadre,setFPadre]=useState('');const[fMadre,setFMadre]=useState('');const[fHerm,setFHerm]=useState('');const[fAmigos,setFAmigos]=useState('');const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
+  const[presEdit,setPresEdit]=useState(null);const[presNewMode,setPresNewMode]=useState(null);const[presDelIdx,setPresDelIdx]=useState(null);const[selectedPresIdx,setSelectedPresIdx]=useState(null);const[showPresSelector,setShowPresSelector]=useState(false);
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);const[shareCode,setShareCode]=useState(null);const[shareInput,setShareInput]=useState('');const[shareMsg,setShareMsg]=useState('');
@@ -2235,7 +2279,11 @@ export default function App(){
       const hasEstudio=lvArr.includes(1),hasPres=lvArr.includes(2);
       const items=[];
       if(hasEstudio) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
-      if(hasPres) items.push({ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img});
+      if(hasPres){
+        const pres=u.presentations||[];
+        if(pres.length>1) items.push({ty:'quiensoy',id:'qs_pres_select',text:'Seleccionar presentación'});
+        else items.push({ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img,presentation:pres[0]||null});
+      }
       if(!items.length) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
       return items}
     // Multi-level support: if slv is an array, merge exercises from all levels
@@ -2525,11 +2573,11 @@ export default function App(){
         <div className="card" style={{marginTop:16,borderColor:PURPLE+'44',padding:20}}>
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:PURPLE}}>👥 Mis Personas</p>
           <p style={{fontSize:16,color:DIM,margin:'0 0 12px'}}>Se usan como nombres en ejercicios de Reparte y Cuenta</p>
-          {personas.map((p,i)=><div key={i} style={{display:'flex',gap:8,alignItems:'center',marginBottom:10}}>
-            <div style={{position:'relative',width:44,height:44,flexShrink:0}}>
-              {p.photo?<img src={p.photo} alt="" style={{width:44,height:44,borderRadius:'50%',objectFit:'cover',cursor:'pointer'}} onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next,photo:null};savePersonas(np)}}/>
-              :<button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:28,background:'none',border:'none',cursor:'pointer',width:44,height:44}}>{p.avatar||AVS[0]}</button>}
-              <label style={{position:'absolute',bottom:-2,right:-2,width:18,height:18,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:10}}>📷
+          {personas.map((p,i)=><div key={i} style={{display:'flex',gap:10,alignItems:'center',marginBottom:12,position:'relative'}}>
+            <div style={{position:'relative',width:52,height:52,flexShrink:0}}>
+              {p.photo?<img src={p.photo} alt="" style={{width:52,height:52,borderRadius:'50%',objectFit:'cover',cursor:'pointer'}} onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next,photo:null};savePersonas(np)}}/>
+              :<button onClick={()=>{const avIdx=AVS.indexOf(p.avatar||AVS[0]);const next=AVS[(avIdx+1)%AVS.length];const np=[...personas];np[i]={...np[i],avatar:next};savePersonas(np)}} style={{fontSize:32,background:'none',border:'none',cursor:'pointer',width:52,height:52}}>{p.avatar||AVS[0]}</button>}
+              <label style={{position:'absolute',bottom:-4,right:-4,width:28,height:28,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:14,boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}>📷
                 <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={async(e)=>{
                   const f=e.target.files?.[0];if(!f)return;
                   try{const b64=await processImage(f);const np=[...personas];np[i]={...np[i],photo:b64};savePersonas(np)}
@@ -2541,10 +2589,55 @@ export default function App(){
             <select value={p.relation||''} onChange={e=>{const np=[...personas];np[i]={...np[i],relation:e.target.value};savePersonas(np)}} style={{padding:12,borderRadius:10,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:16,maxWidth:130,minHeight:48}}>
               <option value="">Relación</option>{PERSONA_RELATIONS.map(r=><option key={r} value={r}>{r}</option>)}
             </select>
-            {delPersonaIdx===i?<div style={{display:'flex',gap:4}}><button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np);setDelPersonaIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 10px',color:'#fff',fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:40}}>Sí</button><button onClick={()=>setDelPersonaIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 10px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:40}}>No</button></div>
-            :<button onClick={()=>setDelPersonaIdx(i)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:10,padding:'8px 12px',color:RED,fontSize:18,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:48}}>✕</button>}
+            {delPersonaIdx===i?<div style={{display:'flex',flexDirection:'column',gap:4,alignItems:'center'}}><p style={{fontSize:13,color:RED,margin:0,fontWeight:600,whiteSpace:'nowrap'}}>¿Borrar a {p.name||'esta persona'}?</p><div style={{display:'flex',gap:4}}><button onClick={()=>{const np=personas.filter((_,j)=>j!==i);savePersonas(np);setDelPersonaIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 12px',color:'#fff',fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>Sí</button><button onClick={()=>setDelPersonaIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 12px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>No</button></div></div>
+            :<button onClick={()=>setDelPersonaIdx(i)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:32,width:32,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>}
           </div>)}
           {personas.length<10&&<button className="btn btn-ghost" onClick={()=>savePersonas([...personas,{name:'',relation:'',avatar:AVS[Math.floor(Math.random()*AVS.length)]}])} style={{fontSize:18,marginTop:8,padding:'14px 20px',minHeight:52}}>➕ Añadir persona</button>}
+        </div>
+        {/* ===== PRESENTACIONES SECTION ===== */}
+        <div className="card" style={{marginTop:16,borderColor:'#E91E63'+'44',padding:20}}>
+          <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:'#E91E63'}}>🎤 Presentaciones</p>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Para el planeta Quién Soy en modo Presentación</p>
+          {(user.presentations||[]).map((pr,pi)=><div key={pi} style={{background:BG3,border:'2px solid '+BORDER,borderRadius:12,padding:14,marginBottom:10}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+              <div><p style={{fontSize:17,fontWeight:700,color:TXT,margin:0}}>{pr.name||'Sin nombre'}</p>
+                <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{pr.date||''} · {(pr.lines||[]).length} frases{pr.auto?' · Auto':''}</p></div>
+              <div style={{display:'flex',gap:6}}>
+                <button onClick={()=>setPresEdit({idx:pi,name:pr.name||'',lines:[...(pr.lines||[])],auto:pr.auto||false})} style={{background:BLUE+'22',border:'1px solid '+BLUE+'44',borderRadius:8,padding:'6px 10px',color:BLUE,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>✏️</button>
+                {presDelIdx===pi?<div style={{display:'flex',gap:4}}><button onClick={()=>{const np=[...(user.presentations||[])];np.splice(pi,1);const up={...user,presentations:np};setUser(up);saveP(up);setPresDelIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 10px',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>Sí</button><button onClick={()=>setPresDelIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 10px',color:DIM,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>No</button></div>
+                :<button onClick={()=>setPresDelIdx(pi)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'6px 10px',color:RED,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>🗑️</button>}
+              </div>
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:4}}>{(pr.lines||[]).slice(0,3).map((l,li)=><span key={li} style={{fontSize:13,color:DIM,background:BG+'66',borderRadius:6,padding:'2px 8px'}}>"{l}"</span>)}{(pr.lines||[]).length>3&&<span style={{fontSize:13,color:DIM}}>...+{(pr.lines||[]).length-3}</span>}</div>
+          </div>)}
+          {/* New presentation buttons */}
+          {!presNewMode&&!presEdit&&(user.presentations||[]).length<5&&<div style={{display:'flex',gap:10,marginTop:8}}>
+            <button className="btn btn-ghost" onClick={()=>setPresNewMode('choose')} style={{fontSize:16,padding:'12px 16px',flex:1}}>➕ Nueva presentación</button>
+          </div>}
+          {presNewMode==='choose'&&<div className="af" style={{background:CARD,borderRadius:12,padding:16,marginTop:8}}>
+            <p style={{fontSize:16,fontWeight:600,color:GOLD,margin:'0 0 12px'}}>¿Qué tipo?</p>
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-b" onClick={()=>{const lines=generateAutoPresentation(user,personas);const np=[...(user.presentations||[]),{name:'Auto: '+user.name,date:new Date().toISOString().slice(0,10),lines,auto:true}];const up={...user,presentations:np};setUser(up);saveP(up);setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>🤖 Automática</button>
+              <button className="btn btn-p" onClick={()=>{setPresEdit({idx:-1,name:'',lines:[''],auto:false});setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>✏️ Personalizada</button>
+            </div>
+            <button className="btn btn-ghost" onClick={()=>setPresNewMode(null)} style={{marginTop:8,fontSize:14}}>Cancelar</button>
+          </div>}
+          {/* Edit/Create presentation overlay */}
+          {presEdit&&<div className="af" style={{background:CARD,border:'2px solid '+GOLD+'44',borderRadius:14,padding:20,marginTop:10}}>
+            <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{presEdit.idx===-1?'Nueva presentación':'Editar presentación'}</p>
+            <label style={{fontSize:14,color:DIM}}>Nombre</label>
+            <input className="inp" value={presEdit.name} onChange={e=>setPresEdit(pe=>({...pe,name:e.target.value}))} placeholder="Ej: Mi presentación del cole" style={{fontSize:16,padding:12,marginBottom:12,marginTop:4}}/>
+            <label style={{fontSize:14,color:DIM}}>Frases (una por línea)</label>
+            {presEdit.lines.map((l,li)=><div key={li} style={{display:'flex',gap:6,marginBottom:6,marginTop:li===0?4:0}}>
+              <input className="inp" value={l} onChange={e=>{const nl=[...presEdit.lines];nl[li]=e.target.value;setPresEdit(pe=>({...pe,lines:nl}))}} placeholder={'Frase '+(li+1)} style={{fontSize:15,padding:10,flex:1}}/>
+              {presEdit.lines.length>1&&<button onClick={()=>{const nl=presEdit.lines.filter((_,j)=>j!==li);setPresEdit(pe=>({...pe,lines:nl}))}} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'"}}>✕</button>}
+            </div>)}
+            {presEdit.lines.length<30&&<button onClick={()=>setPresEdit(pe=>({...pe,lines:[...pe.lines,'']}))} style={{background:'none',border:'1px dashed '+DIM,borderRadius:8,padding:'8px 14px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",width:'100%',marginBottom:12}}>➕ Añadir frase</button>}
+            <div style={{display:'flex',gap:10}}>
+              <button className="btn btn-ghost" onClick={()=>setPresEdit(null)} style={{flex:1,fontSize:16}}>Cancelar</button>
+              <button className="btn btn-g" disabled={!presEdit.name.trim()||presEdit.lines.filter(l=>l.trim()).length===0} onClick={()=>{const cleaned=presEdit.lines.filter(l=>l.trim());const entry={name:presEdit.name.trim(),date:new Date().toISOString().slice(0,10),lines:cleaned,auto:presEdit.auto||false};const np=[...(user.presentations||[])];if(presEdit.idx===-1)np.push(entry);else np[presEdit.idx]=entry;const up={...user,presentations:np};setUser(up);saveP(up);setPresEdit(null)}} style={{flex:2,fontSize:16}}>💾 Guardar</button>
+            </div>
+          </div>}
         </div>
       </div>}
       {ptab==='stats'&&(()=>{const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'%',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} className="sbox"><div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div><div style={{fontSize:13,color:DIM,marginTop:4}}>{s.l}</div></div>)}</div>})()}
@@ -2635,15 +2728,7 @@ export default function App(){
         return <div style={{display:isCompact?'grid':'flex',gridTemplateColumns:isCompact?'repeat(auto-fill,minmax(100px,1fr))':'none',justifyContent:isCompact?'center':'center',justifyItems:isCompact?'center':'initial',gap:isCompact?12:profs.length>=3?18:28,marginBottom:28,flexWrap:'wrap',position:'relative',minHeight:isCompact?120:300,maxWidth:isCompact?500:'none',margin:isCompact?'0 auto 28px':'0'}}>
         {profs.map((p,pi)=>{
           // Auto-generate presentation if missing
-          if(!p.presentations||!p.presentations.length){const pres=[];pres.push('Hola, me llamo '+(p.name||''));
-            const myP=personas.filter(pp=>pp.name&&pp.name.trim());
-            const padre=myP.find(pp=>pp.relation==='Padre');const madre=myP.find(pp=>pp.relation==='Madre');
-            if(padre)pres.push('Mi padre se llama '+padre.name);if(madre)pres.push('Mi madre se llama '+madre.name);
-            const herms=myP.filter(pp=>pp.relation==='Hermano'||pp.relation==='Hermana');
-            if(herms.length===1)pres.push('Mi hermano se llama '+herms[0].name);else if(herms.length>1)pres.push('Tengo '+herms.length+' hermanos');
-            const amigos=myP.filter(pp=>pp.relation==='Amigo'||pp.relation==='Amiga'||pp.relation==='Mejor amigo/a');
-            if(amigos.length===1)pres.push('Mi amigo se llama '+amigos[0].name);else if(amigos.length>1)pres.push('Tengo '+amigos.length+' amigos');
-            if(p.direccion)pres.push('Vivo en '+p.direccion);if(p.telefono)pres.push('El teléfono de emergencia es '+p.telefono);if(p.colegio)pres.push('Voy al cole en '+p.colegio);
+          if(!p.presentations||!p.presentations.length){const pres=generateAutoPresentation(p,personas);
             if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}]}
           const isHovered=selProf===pi;
           const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
@@ -2721,9 +2806,9 @@ export default function App(){
         <label style={{fontSize:14,color:DIM}}>{(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'🏢 Centro formación / Trabajo':'🏫 Colegio'})()}</label><input className="inp" value={fColegio} onChange={e=>setFColegio(e.target.value)} placeholder={(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'Ej: Centro ocupacional / Empresa':'Ej: CEIP San José'})()} style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
         <label style={{fontSize:15,color:DIM}}>Avatar</label><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
         <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:fPadre.trim(),madre:fMadre.trim(),hermanos:fHerm.trim(),amigos:fAmigos.trim(),telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
-                // Auto-generate default presentation
-                const pres=[];pres.push('Hola, me llamo '+cap(fn.trim()));if(fPadre.trim())pres.push('Mi padre se llama '+fPadre.trim());if(fMadre.trim())pres.push('Mi madre se llama '+fMadre.trim());const hArr=fHerm.trim().split(',').map(s=>s.trim()).filter(Boolean);if(hArr.length===1)pres.push('Mi hermano se llama '+hArr[0]);else if(hArr.length>1)pres.push('Tengo '+hArr.length+' hermanos');const aArr=fAmigos.trim().split(',').map(s=>s.trim()).filter(Boolean);if(aArr.length===1)pres.push('Mi amigo se llama '+aArr[0]);else if(aArr.length>1)pres.push('Tengo '+aArr.length+' amigos');if(fDir.trim())pres.push('Vivo en '+fDir.trim());if(fTel.trim())pres.push('El teléfono de mi padre es '+fTel.trim());if(fColegio.trim())pres.push('Voy al cole en '+fColegio.trim());
-                if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres}];
+                // Auto-generate default presentation from user data and personas
+                const pres=generateAutoPresentation(p,personas);
+                if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}];
                 setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
@@ -2931,7 +3016,21 @@ export default function App(){
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&cur.id!=='qs_pres'&&<ExQuienSoyEstudio ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&cur.id==='qs_pres'&&<ExQuienSoyPres onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
+        {cur.ty==='quiensoy'&&cur.id!=='qs_pres'&&cur.id!=='qs_pres_select'&&<ExQuienSoyEstudio ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
+        {cur.ty==='quiensoy'&&cur.id==='qs_pres'&&<ExQuienSoyPres onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null}/>}
+        {cur.ty==='quiensoy'&&cur.id==='qs_pres_select'&&<div className="af" style={{textAlign:'center',padding:'24px 18px'}}>
+          <div style={{fontSize:72,marginBottom:12}}>🎤</div>
+          <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>¿Qué presentación?</h2>
+          <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:400,margin:'0 auto'}}>
+            {(user.presentations||[]).map((pr,pi)=><button key={pi} className="btn btn-b" onClick={()=>{
+              // Replace current queue item with the selected presentation
+              setQ(q=>{const nq=[...q];nq[idx]={ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img,presentation:pr};return nq});
+              setSelectedPresIdx(pi);
+            }} style={{fontSize:20,padding:'18px 20px',textAlign:'left'}}>
+              <span style={{fontWeight:700}}>{pr.name}</span>
+              <span style={{fontSize:14,color:'rgba(255,255,255,.6)',marginLeft:8}}>{(pr.lines||[]).length} frases</span>
+            </button>)}
+          </div>
+        </div>}
       </div></div>}
   </div>}
