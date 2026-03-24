@@ -191,7 +191,7 @@ const LV_OPTS={
   writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
   writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
   writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
-  razona:[{n:1,l:'¿Dónde está?'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'}],
+  razona:[{n:1,l:'¿Dónde está?'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'},{n:6,l:'Series'}],
   lee_intruso:[{n:1,l:'Intruso'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
   lee_complete:[{n:3,l:'Completa'}],
@@ -272,12 +272,13 @@ function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
     const t5=setTimeout(()=>{if(onDone)onDone()},3200);
     return()=>{[t0,t1,t2,t3,t4,t5].forEach(clearTimeout)}},[show]);
   if(!show)return null;
+  const _rc=(()=>{try{const k=localStorage.getItem('toki_rocket_color')||'rojo';const m={rojo:{nose:RED,body:'#E0E0E0'},azul:{nose:'#2196F3',body:'#BBDEFB'},verde:{nose:'#4CAF50',body:'#C8E6C9'},dorado:{nose:'#FFD700',body:'#FFF8E1'},morado:{nose:'#9C27B0',body:'#E1BEE7'}};return m[k]||m.rojo}catch(e){return{nose:RED,body:'#E0E0E0'}}})();
   const RocketSVG=({size=120,showFire=false,showFace=false})=>(
     <svg width={size} height={size*1.5} viewBox="0 0 100 150">
       {/* Rocket body */}
-      <ellipse cx="50" cy="60" rx="22" ry="48" fill="#E0E0E0" stroke="#BDBDBD" strokeWidth="2"/>
+      <ellipse cx="50" cy="60" rx="22" ry="48" fill={_rc.body} stroke="#BDBDBD" strokeWidth="2"/>
       {/* Nose cone */}
-      <ellipse cx="50" cy="18" rx="12" ry="20" fill={RED}/>
+      <ellipse cx="50" cy="18" rx="12" ry="20" fill={_rc.nose}/>
       {/* Left fin */}
       <path d="M28,85 L15,110 L28,100 Z" fill={BLUE} stroke="#1565C0" strokeWidth="1"/>
       {/* Right fin */}
@@ -1702,11 +1703,25 @@ const RAZONA_EMOTIONS=[
   {emoji:'😴',emotion:'Cansado',q:'¿Cómo se siente?',opts:['Contento','Cansado','Enfadado','Asustado']},
 ];
 
+function genPatterns(difficulty){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  const COLORS=[{em:'🔴',n:'rojo'},{em:'🔵',n:'azul'},{em:'🟢',n:'verde'},{em:'🟡',n:'amarillo'},{em:'🟣',n:'morado'},{em:'🟠',n:'naranja'}];
+  const SHAPES=[{em:'⬜',n:'cuadrado'},{em:'⭕',n:'círculo'},{em:'🔺',n:'triángulo'},{em:'💠',n:'rombo'},{em:'⬟',n:'pentágono'}];
+  function mkPattern(pool,patType){const a=pool[0],b=pool[1],c=pool[2]||pool[0];
+    let seq;if(patType==='AB')seq=[a,b,a,b,a,b];else if(patType==='AAB')seq=[a,a,b,a,a,b];else if(patType==='ABC')seq=[a,b,c,a,b,c];else seq=[a,a,b,b,a,a,b,b];
+    const shown=seq.slice(0,4);const answer=seq[4];
+    const optsPool=sh([...pool]).filter(x=>x.em!==answer.em).slice(0,3);optsPool.push(answer);
+    return{q:'¿Qué sigue?',seq:shown.map(x=>x.em),ans:answer.em,opts:sh(optsPool).map(x=>x.em)}}
+  const pats=['AB','AAB','ABC','AABB'];
+  if(difficulty==='easy'){for(let i=0;i<12;i++){const pool=sh([...COLORS]).slice(0,3);items.push({ty:'razona',mode:'pattern',data:mkPattern(pool,pats[i%4]),id:'rz_pat_e'+i})}}
+  else if(difficulty==='medium'){for(let i=0;i<12;i++){const pool=sh([...SHAPES]).slice(0,3);items.push({ty:'razona',mode:'pattern',data:mkPattern(pool,pats[i%4]),id:'rz_pat_m'+i})}}
+  else{for(let i=0;i<12;i++){const cs=sh([...COLORS]).slice(0,3);const ss2=sh([...SHAPES]).slice(0,3);const combined=cs.map((c,j)=>({em:c.em+ss2[j%ss2.length].em,n:c.n+' '+ss2[j%ss2.length].n}));items.push({ty:'razona',mode:'pattern',data:mkPattern(combined,pats[i%4]),id:'rz_pat_h'+i})}}
+  return sh(items)}
 function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
   if(lv===2){RAZONA_INTRUSO.forEach((s,i)=>items.push({ty:'razona',mode:'intruso',data:s,id:'rz_int_'+i}));return sh(items)}
   if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
   if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
+  if(lv===6){const all=[...genPatterns('easy'),...genPatterns('medium'),...genPatterns('hard')];return sh(all).slice(0,20)}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -2013,6 +2028,19 @@ function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
+    </div>}
+    {ex.mode==='pattern'&&<div>
+      <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{ex.data.q}</p>
+        <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'center',flexWrap:'wrap'}}>
+          {ex.data.seq.map((s,i)=><span key={i} style={{fontSize:36,background:'rgba(255,255,255,.08)',borderRadius:10,padding:'6px 10px',minWidth:48,textAlign:'center'}}>{s}</span>)}
+          <span style={{fontSize:36,background:GOLD+'22',borderRadius:10,padding:'6px 10px',minWidth:48,textAlign:'center',border:`2px dashed ${GOLD}`,color:GOLD}}>❓</span>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:32,padding:16,minHeight:68}}>{o}</button>)}
+      </div>
+      {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Fíjate en el patrón que se repite 🔁</p></div>}
     </div>}
     {ex.mode==='emotion'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24}}>
       <div style={{flex:'0 0 auto',display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
@@ -2447,6 +2475,10 @@ export default function App(){
   const[theme,setThemeState]=useState(()=>{try{return localStorage.getItem('toki_theme')||'espacial'}catch(e){return'espacial'}});
   function setTheme(v){setThemeState(v);try{localStorage.setItem('toki_theme',v)}catch(e){};document.body.classList.toggle('theme-sober',v==='sober')}
   useEffect(()=>{document.body.classList.toggle('theme-sober',theme==='sober')},[]);
+  // Rocket color customization
+  const ROCKET_COLORS={rojo:{nose:RED,body:'#E0E0E0'},azul:{nose:'#2196F3',body:'#BBDEFB'},verde:{nose:'#4CAF50',body:'#C8E6C9'},dorado:{nose:'#FFD700',body:'#FFF8E1'},morado:{nose:'#9C27B0',body:'#E1BEE7'}};
+  const[rocketColor,setRocketColorState]=useState(()=>{try{return localStorage.getItem('toki_rocket_color')||'rojo'}catch(e){return'rojo'}});
+  function setRocketColor(v){setRocketColorState(v);try{localStorage.setItem('toki_rocket_color',v)}catch(e){}}
   // Sky theme based on time of day
   useEffect(()=>{function applySky(){document.body.classList.remove('sky-morning','sky-afternoon','sky-night');document.body.classList.add(getSkyClass())}applySky();const iv=setInterval(applySky,60000);return()=>clearInterval(iv)},[]);
   const[mascotMood,setMascotMood]=useState('idle');
@@ -2580,7 +2612,7 @@ export default function App(){
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=8&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));if(user&&sec){addGroupProgress(user.id,GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
+  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));if(user&&sec){addGroupProgress(user.id,GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
   function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}
   function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
@@ -2624,6 +2656,7 @@ export default function App(){
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='pin'?null:'pin')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🔒 PIN del supervisor</span><span style={{fontSize:16,color:DIM}}>{openSection==='pin'?'▼':'▸'}</span></button>{openSection==='pin'&&<div style={{padding:'0 20px 20px'}}><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='session'?null:'session')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='session'?'▼':'▸'}</span></button>{openSection==='session'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='theme'?null:'theme')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🎨 Tema visual: <span style={{color:GOLD}}>{theme==='sober'?'Sobrio':'Espacial'}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='theme'?'▼':'▸'}</span></button>{openSection==='theme'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:8}}>{[['espacial','🚀 Espacial'],['sober','📘 Sobrio']].map(([v,l])=><button key={v} onClick={()=>setTheme(v)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${theme===v?GOLD:BORDER}`,background:theme===v?GOLD+'22':BG3,color:theme===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{l}</button>)}</div><p style={{fontSize:13,color:DIM,margin:'8px 0 0'}}>{theme==='sober'?'Sin animaciones, colores sobrios, sin mascota':'Tema espacial con estrellas y animaciones'}</p></div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='rocket'?null:'rocket')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🚀 Color del cohete: <span style={{color:GOLD}}>{({rojo:'Rojo',azul:'Azul',verde:'Verde',dorado:'Dorado',morado:'Morado'})[rocketColor]}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='rocket'?'▼':'▸'}</span></button>{openSection==='rocket'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:12,justifyContent:'center'}}>{[['rojo','🔴','Rojo'],['azul','🔵','Azul'],['verde','🟢','Verde'],['dorado','🟡','Dorado'],['morado','🟣','Morado']].map(([k,em,l])=><button key={k} onClick={()=>setRocketColor(k)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:8,borderRadius:12,border:`3px solid ${rocketColor===k?GOLD:BORDER}`,background:rocketColor===k?GOLD+'22':BG3,cursor:'pointer',fontFamily:"'Fredoka'",minWidth:52}}><span style={{fontSize:28}}>{em}</span><span style={{fontSize:12,color:rocketColor===k?GOLD:DIM,fontWeight:600}}>{l}</span></button>)}</div></div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='daily'?null:'daily')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏰ Límites y tolerancia</span><span style={{fontSize:16,color:DIM}}>{openSection==='daily'?'▼':'▸'}</span></button>{openSection==='daily'&&<div style={{padding:'0 20px 20px',display:'flex',flexDirection:'column',gap:16}}>
           <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px'}}>Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
           <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 4px'}}>🎤 Tolerancia: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Aproximaciones en dicción</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>Flexible</span><span>Normal</span><span>Estricto</span></div></div>
@@ -2697,7 +2730,7 @@ export default function App(){
             const LEE_ALL_OPTS=[{n:1,l:'Intruso'},{n:2,l:'Pal+Img'},{n:3,l:'Completa'},{n:4,l:'Sílabas'},{n:5,l:'Lee+haz'}];
             return GROUPS.map(g=>{
               const isLee=g.id==='lee';
-              const MAX_SEL=g.id==='razona'?5:4;
+              const MAX_SEL=g.id==='razona'?6:4;
               return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
                 <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
                 {isLee?<div style={{marginBottom:8}}>
@@ -3059,17 +3092,44 @@ export default function App(){
                 setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
-    {showMiCielo&&<div className="ov" onClick={()=>setShowMiCielo(false)}><div className="ovp ab" onClick={e=>e.stopPropagation()}>
-      <div style={{fontSize:72,marginBottom:8}}>🌌</div>
-      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 12px'}}>Mi Cielo</h2>
-      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center',marginBottom:16,minHeight:60}}>
-        {Array.from({length:Math.min(totalStars,100)},(_,i)=><span key={i} style={{fontSize:totalStars>50?14:20,animation:`twinkle ${1+Math.random()*2}s ease-in-out ${Math.random()*2}s infinite alternate`}}>⭐</span>)}
-        {totalStars>100&&<span style={{fontSize:16,color:GOLD,fontWeight:700}}>+{totalStars-100} mas</span>}
-      </div>
-      <p style={{fontSize:36,fontWeight:900,color:GOLD}}>{totalStars}</p>
-      <p style={{fontSize:16,color:DIM}}>estrellas conseguidas</p>
-      <button className="btn btn-ghost" onClick={()=>setShowMiCielo(false)} style={{marginTop:16}}>Cerrar</button>
-    </div></div>}
+    {showMiCielo&&(()=>{
+      const s3p=user?.totalStars3plus||0;const constellations=Math.floor(s3p/10);
+      const CONST_NAMES=['El Cohete','La Corona','El Oso','La Estrella','El Planeta','La Luna'];
+      // Deterministic star positions seeded by index
+      function starPos(i){const a=i*2654435761;const x=((a>>>0)%1000)/10;const y=(((a*31)>>>0)%1000)/10;return{x,y}}
+      const totalStarDots=Math.max(s3p,60);
+      return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200,background:'radial-gradient(ellipse at 50% 30%,#0a1628 0%,#000810 100%)',overflow:'auto'}}>
+        {/* Back button */}
+        <button onClick={()=>setShowMiCielo(false)} style={{position:'absolute',top:16,left:16,zIndex:210,background:'rgba(255,255,255,.1)',border:'2px solid rgba(255,255,255,.2)',borderRadius:12,padding:'8px 16px',color:TXT,fontSize:16,fontFamily:"'Fredoka'",cursor:'pointer',fontWeight:600}}>← Volver</button>
+        {/* Title and counter */}
+        <div style={{position:'absolute',top:16,right:16,zIndex:210,textAlign:'right'}}>
+          <p style={{fontSize:16,color:GOLD,fontWeight:700,margin:0}}>Tienes {s3p} estrellas y {constellations} constelaciones</p>
+        </div>
+        {/* Star field */}
+        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{position:'absolute',top:0,left:0}}>
+          {Array.from({length:totalStarDots},(_,i)=>{const p=starPos(i);const lit=i<s3p;
+            return <circle key={i} cx={p.x} cy={p.y} r={lit?0.6:0.3} fill={lit?GOLD:'#555'} opacity={lit?0.9:0.3}>
+              {lit&&<animate attributeName="opacity" values=".6;1;.6" dur={`${2+((i*7)%3)}s`} repeatCount="indefinite"/>}
+            </circle>})}
+          {/* Constellation lines: connect groups of 10 lit stars */}
+          {Array.from({length:constellations},(_,ci)=>{
+            const starIdxs=Array.from({length:10},(__,si)=>ci*10+si);
+            const pts=starIdxs.map(si=>starPos(si));
+            // Sort pts by angle from centroid for a nice polygon shape
+            const cx2=pts.reduce((s,p2)=>s+p2.x,0)/10;const cy2=pts.reduce((s,p2)=>s+p2.y,0)/10;
+            const sorted=[...pts].sort((a2,b2)=>Math.atan2(a2.y-cy2,a2.x-cx2)-Math.atan2(b2.y-cy2,b2.x-cx2));
+            const pathD=sorted.map((p2,pi)=>`${pi===0?'M':'L'}${p2.x},${p2.y}`).join(' ')+'Z';
+            return <g key={'c'+ci}>
+              <path d={pathD} fill="none" stroke={GOLD+'66'} strokeWidth="0.15"/>
+              <text x={cx2} y={cy2} fill={GOLD} fontSize="1.8" textAnchor="middle" dominantBaseline="central" fontFamily="'Fredoka'" fontWeight="600">{CONST_NAMES[ci%CONST_NAMES.length]}</text>
+            </g>})}
+        </svg>
+        {/* Center label */}
+        <div style={{position:'absolute',bottom:40,left:0,right:0,textAlign:'center',zIndex:210}}>
+          <p style={{fontSize:28,fontWeight:900,color:GOLD,margin:0,textShadow:'0 0 20px '+GOLD+'88'}}>Mi Cielo</p>
+          <p style={{fontSize:14,color:DIM,margin:'4px 0 0'}}>Cada ejercicio perfecto enciende una estrella</p>
+        </div>
+      </div>})()}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{setOv('pin');setPi('')}}>← Cambiar</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp(supPin||'');setSm(user.sessionMin||25);setSec(user.sec||sec);setSecLv(user.secLv||secLv);setFreeChoice(user.freeChoice||false);setPtab('config');setDelConf(false);setOv('parentGate')}}>⚙️</button></div></div>
       <div style={{textAlign:'center',padding:'4px 0 2px'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:2}}>
