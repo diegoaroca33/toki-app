@@ -4,7 +4,7 @@
 // ============================================================
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where, orderBy } from 'firebase/firestore'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage'
 
 const firebaseConfig = {
@@ -190,5 +190,120 @@ export async function fbRevokeShareLink(code, userUid) {
   await updateDoc(ref, { linkedUsers: linked })
 }
 
+// ---- Public voices ----
+// Collection: public_voices/{phraseKey}
+// Document fields: { phrase, audioURL, speakerName, speakerAge, speakerSex, duration, uploadedBy, uploadedAt, moduleKey }
+
+export async function fbUploadPublicVoice(uid, phraseKey, blob, metadata) {
+  const sRef = storageRef(storage, `public_voices/${phraseKey}/${uid}.webm`)
+  await uploadBytes(sRef, blob)
+  const audioURL = await getDownloadURL(sRef)
+  const docId = `${phraseKey}_${uid}`
+  await setDoc(doc(db, 'public_voices', docId), {
+    phraseKey,
+    phrase: metadata.phrase || '',
+    audioURL,
+    speakerName: metadata.speakerName || '',
+    speakerAge: metadata.speakerAge || 0,
+    speakerSex: metadata.speakerSex || 'm',
+    duration: metadata.duration || 0,
+    uploadedBy: uid,
+    uploadedAt: new Date().toISOString(),
+    moduleKey: metadata.moduleKey || ''
+  })
+  return audioURL
+}
+
+export async function fbGetPublicVoices(phraseKey) {
+  const q2 = query(collection(db, 'public_voices'), where('phraseKey', '==', phraseKey))
+  const snap = await getDocs(q2)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function fbGetBestVoice(phraseKey, userSex, userAge) {
+  const voices = await fbGetPublicVoices(phraseKey)
+  if (!voices.length) return null
+  // Same gender first, then closest age
+  const sameSex = voices.filter(v => v.speakerSex === userSex)
+  const pool = sameSex.length ? sameSex : voices
+  pool.sort((a, b) => Math.abs((a.speakerAge || 12) - (userAge || 12)) - Math.abs((b.speakerAge || 12) - (userAge || 12)))
+  return pool[0]?.audioURL || null
+}
+
+export async function fbUploadUserVoice(uid, phraseKey, blob) {
+  const sRef = storageRef(storage, `users/${uid}/voices/${phraseKey}.webm`)
+  await uploadBytes(sRef, blob)
+  return getDownloadURL(sRef)
+}
+
+// ---- Voice validation helpers ----
+
+export function trimSilence(audioBlob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)()
+        const buffer = await ctx.decodeAudioData(reader.result)
+        const data = buffer.getChannelData(0)
+        const threshold = 0.01
+        let start = 0, end = data.length - 1
+        // Find first sample above threshold
+        while (start < data.length && Math.abs(data[start]) < threshold) start++
+        // Find last sample above threshold
+        while (end > start && Math.abs(data[end]) < threshold) end--
+        // Add small padding (50ms)
+        const pad = Math.floor(buffer.sampleRate * 0.05)
+        start = Math.max(0, start - pad)
+        end = Math.min(data.length - 1, end + pad)
+        const trimmedLength = end - start + 1
+        const trimmedBuffer = ctx.createBuffer(1, trimmedLength, buffer.sampleRate)
+        trimmedBuffer.getChannelData(0).set(data.subarray(start, end + 1))
+        // Encode back to blob via MediaRecorder offline rendering
+        const dest = ctx.createMediaStreamDestination()
+        const src = ctx.createBufferSource()
+        src.buffer = trimmedBuffer
+        src.connect(dest)
+        const mr = new MediaRecorder(dest.stream, {
+          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
+        })
+        const chunks = []
+        mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
+        mr.onstop = () => {
+          const trimmedBlob = new Blob(chunks, { type: 'audio/webm' })
+          ctx.close()
+          resolve(trimmedBlob)
+        }
+        mr.start()
+        src.start()
+        src.onended = () => { setTimeout(() => mr.stop(), 100) }
+      } catch (e) {
+        console.warn('[Toki] trimSilence fallback:', e)
+        resolve(audioBlob)
+      }
+    }
+    reader.onerror = () => resolve(audioBlob)
+    reader.readAsArrayBuffer(audioBlob)
+  })
+}
+
+export function validateVoiceDuration(blob, _expectedPhrase) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob)
+    const audio = new Audio(url)
+    audio.onloadedmetadata = () => {
+      const dur = audio.duration
+      URL.revokeObjectURL(url)
+      if (dur < 0.5) resolve({ ok: false, reason: 'too_short', duration: dur })
+      else if (dur > 10) resolve({ ok: false, reason: 'too_long', duration: dur })
+      else resolve({ ok: true, duration: dur })
+    }
+    audio.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve({ ok: false, reason: 'error', duration: 0 })
+    }
+  })
+}
+
 // Export Firestore functions for direct use
-export const fbFns = { doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where }
+export const fbFns = { doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where, orderBy }
