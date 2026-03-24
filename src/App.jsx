@@ -2957,7 +2957,7 @@ export default function App(){
                   </div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
                 </div>})}
               </div>})})()}</div>}</div>
-        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='today'?null:'today')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📝 Sesión de hoy</span><span style={{fontSize:16,color:DIM}}>{openSection==='today'?'▼':'▸'}</span></button>{openSection==='today'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px'}}>📝 Sesión de hoy</p>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='today'?null:'today')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📝 Sesión de hoy</span><span style={{fontSize:16,color:DIM}}>{openSection==='today'?'▼':'▸'}</span></button>{openSection==='today'&&<div style={{padding:'0 20px 20px'}}>
           <div style={{display:'flex',gap:8,marginBottom:12}}>{['free','guided'].map(m=><button key={m} onClick={()=>{setSessionMode(m);saveData('session_mode',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sessionMode===m?GOLD:BORDER}`,background:sessionMode===m?GOLD+'22':BG3,color:sessionMode===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m==='free'?'🆓 Libre':'📋 Guiada'}</button>)}</div>
           {sessionMode==='guided'&&<div>
             <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Elige hasta 4 tareas:</p>
@@ -3386,7 +3386,7 @@ export default function App(){
           {/* Central planet (the open group) */}
           {(()=>{
             const pc=PLANET_COLORS[openG.id]||[openG.color+'88',openG.color,openG.color];
-            const enabledMods=openG.modules.filter(m=>activeMods[m.lvKey]!==false);
+            const enabledMods=openG.modules.filter(m=>{if(activeMods[m.lvKey]===false)return false;const lv=getModuleLv(m.lvKey);if(lv&&lv.length===0)return false;return true});
             const modCount=enabledMods.length;
             return <div style={{position:'relative',width:'100%',display:'flex',flexDirection:'column',alignItems:'center'}}>
               {/* Back button */}
