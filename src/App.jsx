@@ -1209,6 +1209,7 @@ function genWriting(lv){const items=[];
 
 function ExWriting({ex,onOk,onSkip,name}){
   const canvasRef=useRef(null);const modelRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
+  const[ghostAnimating,setGhostAnimating]=useState(false);const ghostTimers=useRef([]);
   const isWide=ex.mode==='word'||ex.mode==='phrase';
   // Auto-size based on mode: letters=big pauta, words=medium, phrases=small
   const cW=ex.mode==='phrase'?800:isWide?700:400;
@@ -1338,10 +1339,55 @@ function ExWriting({ex,onOk,onSkip,name}){
   function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
   function detectStylus(e){if(e.touches&&e.touches[0]){const t=e.touches[0];if(t.touchType==='stylus'||t.radiusX<5)return true}return false}
   function getLineWidth(e){return detectStylus(e)?2:4}
-  function start(e){e.preventDefault();poke();drawing.current=true;isStylus.current=detectStylus(e);const p=getPos(e);lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=getLineWidth(e);ctx.lineCap='round';ctx.lineJoin='round'}
+  function start(e){e.preventDefault();if(ghostAnimating)return;poke();drawing.current=true;isStylus.current=detectStylus(e);const p=getPos(e);lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=getLineWidth(e);ctx.lineCap='round';ctx.lineJoin='round'}
   function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);const dx=p.x-lastDraw.current.x,dy=p.y-lastDraw.current.y;if(Math.sqrt(dx*dx+dy*dy)<2)return;lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const lw=isStylus.current?2:4;const ctx=canvasRef.current.getContext('2d');ctx.strokeStyle='#2E75B6';ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke()}
   function end(e){e.preventDefault();drawing.current=false}
   function clear(){strokePts.current=[];const c=canvasRef.current;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH)}
+  function playGhostHand(){
+    if(ghostAnimating||!canvasRef.current)return;
+    const L=(ex.mode==='letter'?ex.letter:'').toUpperCase();
+    const strokes=LETTER_STROKE_PATHS[L];
+    if(!strokes||!strokes.length)return;
+    setGhostAnimating(true);
+    strokePts.current=[];
+    const c=canvasRef.current;const ctx=c.getContext('2d');
+    drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
+    // Zone calculation
+    const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);
+    const fSz=Math.floor(zoneH/0.72);
+    const zoneX=cW/2-fSz*0.45,zoneW=fSz*0.9;
+    const zoneYTop=ex.isUpper?upperY:midY;
+    const STROKE_COLOR='rgba(76,175,80,0.5)';const STROKE_WIDTH=6;const POINTS_PER_STROKE=40;const MS_PER_POINT=35;
+    function interpolatePoints(pts,num){if(pts.length<2)return pts;const result=[];const totalSegs=pts.length-1;
+      for(let i=0;i<totalSegs;i++){const segPts=Math.ceil(num/totalSegs);for(let j=0;j<segPts;j++){const t=j/segPts;const p1=pts[i],p2=pts[i+1];result.push({x:p1.x+(p2.x-p1.x)*t,y:p1.y+(p2.y-p1.y)*t})}}
+      result.push(pts[pts.length-1]);return result}
+    const allStrokes=strokes.map(s=>{const absPoints=s.map(p=>({x:zoneX+p.x*zoneW,y:zoneYTop+p.y*zoneH}));return interpolatePoints(absPoints,POINTS_PER_STROKE)});
+    let strokeIdx=0,ptIdx=0;
+    // Clear old timers
+    ghostTimers.current.forEach(clearTimeout);ghostTimers.current=[];
+    function drawFrame(){
+      if(strokeIdx>=allStrokes.length){
+        let fadeAlpha=0.5;
+        const fadeInterval=setInterval(()=>{
+          fadeAlpha-=0.05;
+          if(fadeAlpha<=0){clearInterval(fadeInterval);drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);setGhostAnimating(false);return}
+          drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
+          ctx.save();ctx.globalAlpha=fadeAlpha;ctx.strokeStyle=STROKE_COLOR;ctx.lineWidth=STROKE_WIDTH;ctx.lineCap='round';ctx.lineJoin='round';
+          allStrokes.forEach(pts=>{if(pts.length<2)return;ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke()});
+          ctx.restore()},50);
+        return}
+      const pts=allStrokes[strokeIdx];
+      if(ptIdx<pts.length&&ptIdx>0){
+        ctx.strokeStyle=STROKE_COLOR;ctx.lineWidth=STROKE_WIDTH;ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.save();ctx.globalAlpha=0.5;
+        ctx.beginPath();ctx.moveTo(pts[ptIdx-1].x,pts[ptIdx-1].y);ctx.lineTo(pts[ptIdx].x,pts[ptIdx].y);ctx.stroke();
+        ctx.restore()}
+      ptIdx++;
+      if(ptIdx>=pts.length){strokeIdx++;ptIdx=0;ghostTimers.current.push(setTimeout(drawFrame,300));return}
+      ghostTimers.current.push(setTimeout(drawFrame,MS_PER_POINT))}
+    drawFrame()
+  }
+  useEffect(()=>()=>{ghostTimers.current.forEach(clearTimeout)},[]);
   function evaluate(){const pts=strokePts.current;if(pts.length<5){setStars(1);return 1;}
     const mask=getModelMask();let insideCount=0;
     for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&mask[py*cW+px])insideCount++;}
@@ -1373,9 +1419,10 @@ function ExWriting({ex,onOk,onSkip,name}){
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           onMouseDown={start} onMouseMove={move} onMouseUp={end}/>
       </div>
-      {!done&&<div style={{display:'flex',gap:10,justifyContent:'center'}}>
-        <button className="btn btn-o" onClick={clear} style={{maxWidth:120}}>🗑️ Borrar</button>
-        <button className="btn btn-g" onClick={accept} style={{maxWidth:180}}>✅ Listo</button>
+      {!done&&<div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
+        {ex.mode==='letter'&&ex.isUpper&&LETTER_STROKE_PATHS[ex.letter.toUpperCase()]&&<button className="btn btn-b" onClick={playGhostHand} disabled={ghostAnimating} style={{maxWidth:140,fontSize:16,padding:'10px 14px',opacity:ghostAnimating?0.5:1}}>{'▶️ Ver cómo'}</button>}
+        <button className="btn btn-o" onClick={clear} disabled={ghostAnimating} style={{maxWidth:120}}>🗑️ Borrar</button>
+        <button className="btn btn-g" onClick={accept} disabled={ghostAnimating} style={{maxWidth:180}}>✅ Listo</button>
         <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{maxWidth:100,fontSize:14}}>⏭️</button>
       </div>}
       {done&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:10}}><Stars n={stars} sz={36}/>
@@ -2398,6 +2445,111 @@ function generateAutoPresentation(u,personas){
   return pres;
 }
 
+// ===== MONTHLY REPORT FOR SUPERVISOR =====
+function MonthlyReport({user}){
+  const[show,setShow]=useState(false);
+  const[copied,setCopied]=useState(false);
+  function generateReport(){
+    const now=new Date();
+    const curMonth=now.getMonth(),curYear=now.getFullYear();
+    const prevMonth=curMonth===0?11:curMonth-1,prevYear=curMonth===0?curYear-1:curYear;
+    const MESES_N=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const monthName=MESES_N[curMonth]+' '+curYear;
+    const hist=user.hist||[];
+    // Filter entries for current month (dt format: YYYY-MM-DD or similar)
+    const curEntries=hist.filter(h=>{if(!h.dt)return false;const d=new Date(h.dt);return d.getMonth()===curMonth&&d.getFullYear()===curYear});
+    const prevEntries=hist.filter(h=>{if(!h.dt)return false;const d=new Date(h.dt);return d.getMonth()===prevMonth&&d.getFullYear()===prevYear});
+    // Days played
+    const daysPlayed=new Set(curEntries.map(h=>h.dt)).size;
+    const daysInMonth=new Date(curYear,curMonth+1,0).getDate();
+    // Total time
+    const totalMin=curEntries.reduce((s,h)=>s+(h.min||0),0);
+    const totalH=Math.floor(totalMin/60),totalM=totalMin%60;
+    // Max streak
+    const dates=[...new Set(curEntries.map(h=>h.dt))].sort();
+    let maxStreak=0,curStreak=1;
+    for(let i=1;i<dates.length;i++){const d1=new Date(dates[i-1]),d2=new Date(dates[i]);const diff=(d2-d1)/(86400000);if(diff===1)curStreak++;else{maxStreak=Math.max(maxStreak,curStreak);curStreak=1}}
+    maxStreak=Math.max(maxStreak,curStreak);if(!dates.length)maxStreak=0;
+    // Per module stats
+    const modMap={};
+    curEntries.forEach(h=>{const sec=h.section||'general';if(!modMap[sec])modMap[sec]={sessions:0,stars:0,total:0};modMap[sec].sessions++;modMap[sec].stars+=h.ok||0;modMap[sec].total+=(h.ok||0)+(h.sk||0)});
+    const MOD_NAMES={decir:'Dilo',frase:'Forma la frase',contar:'Cuenta',math:'Sumas/Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas',clock:'La Hora',calendar:'Calendario',distribute:'Reparte',writing:'Escribe',razona:'Razona',lee:'Lee',quiensoy:'Quién Soy',general:'General'};
+    let modLines='';
+    Object.keys(modMap).forEach(k=>{const m=modMap[k];const avg=m.total>0?(m.stars/m.total*4).toFixed(1):'--';modLines+='  '+(MOD_NAMES[k]||k)+': '+m.sessions+' sesiones, '+avg+' media\n'});
+    if(!modLines)modLines='  (Sin datos por módulo)\n';
+    // Worst phrases from SRS
+    const srs=user.srs||{};
+    const phraseStats=Object.entries(srs).map(([k,v])=>({phrase:k,lv:v.lv||0,attempts:(v.ok||0)+(v.fail||0)})).filter(p=>p.attempts>0).sort((a,b)=>a.lv-b.lv);
+    let worstLines='';
+    phraseStats.slice(0,5).forEach((p,i)=>{
+      const exMatch=EX.find(e=>e.id===p.phrase);
+      const txt=exMatch?(exMatch.ph||exMatch.fu||exMatch.su||p.phrase):p.phrase;
+      worstLines+='  '+(i+1)+'. "'+txt+'" — nivel '+p.lv+' ('+p.attempts+' intentos)\n'});
+    if(!worstLines)worstLines='  (Sin datos suficientes)\n';
+    // Progress comparison
+    const prevOk=prevEntries.reduce((s,h)=>s+(h.ok||0),0);
+    const prevTotal=prevEntries.reduce((s,h)=>s+(h.ok||0)+(h.sk||0),0);
+    const curOk=curEntries.reduce((s,h)=>s+(h.ok||0),0);
+    const curTotal=curEntries.reduce((s,h)=>s+(h.ok||0)+(h.sk||0),0);
+    const curPct=curTotal>0?curOk/curTotal:0;
+    const prevPct=prevTotal>0?prevOk/prevTotal:0;
+    let progress='Sin datos del mes anterior';
+    if(prevEntries.length>0){progress=curPct>prevPct+0.05?'Mejor que el mes anterior':curPct<prevPct-0.05?'Peor que el mes anterior':'Similar al mes anterior'}
+    const report=
+'INFORME MENSUAL — '+(user.name||'Alumno')+'\n'+
+'Periodo: '+monthName+'\n\n'+
+'Dias jugados: '+daysPlayed+' de '+daysInMonth+'\n'+
+'Tiempo total: '+totalH+'h '+totalM+'min\n'+
+'Racha maxima: '+maxStreak+' dias consecutivos\n\n'+
+'Por modulo:\n'+modLines+'\n'+
+'Frases con mas dificultad:\n'+worstLines+'\n'+
+'Progreso: '+progress+'\n';
+    return report;
+  }
+  if(!show)return <button onClick={()=>setShow(true)} style={{marginTop:16,width:'100%',padding:'16px 20px',borderRadius:14,border:'2px solid '+GOLD+'55',background:GOLD+'15',color:GOLD,fontSize:20,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>{'📊 Informe mensual'}</button>;
+  const report=generateReport();
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:300,background:'#fff',color:'#1a1a2e',overflowY:'auto',padding:24,display:'flex',flexDirection:'column'}}>
+    <div style={{maxWidth:700,width:'100%',margin:'0 auto',flex:1}}>
+      <pre style={{whiteSpace:'pre-wrap',wordBreak:'break-word',fontFamily:"'Fredoka','Segoe UI',sans-serif",fontSize:16,lineHeight:1.6,margin:0,color:'#1a1a2e'}}>{report}</pre>
+    </div>
+    <div style={{display:'flex',gap:12,justifyContent:'center',padding:'20px 0',position:'sticky',bottom:0,background:'#fff',borderTop:'1px solid #ddd'}}>
+      <button onClick={()=>{navigator.clipboard?.writeText(report).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000)}).catch(()=>{})}} style={{padding:'14px 28px',borderRadius:14,border:'2px solid #4CAF50',background:'#4CAF50',color:'#fff',fontSize:18,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer'}}>{copied?'Copiado!':'Copiar al portapapeles'}</button>
+      <button onClick={()=>{setShow(false);setCopied(false)}} style={{padding:'14px 28px',borderRadius:14,border:'2px solid #999',background:'#eee',color:'#333',fontSize:18,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer'}}>Cerrar</button>
+    </div>
+  </div>;
+}
+
+// ===== LETTER STROKE PATHS for Ghost Hand Animation =====
+const LETTER_STROKE_PATHS={
+  'A':[[{x:.5,y:1},{x:.25,y:0}],[{x:.25,y:0},{x:.5,y:0},{x:.75,y:1}],[{x:.3,y:.55},{x:.7,y:.55}]],
+  'B':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.6,y:0},{x:.7,y:.15},{x:.65,y:.45},{x:.25,y:.5}],[{x:.25,y:.5},{x:.65,y:.5},{x:.75,y:.65},{x:.7,y:.9},{x:.25,y:1}]],
+  'C':[[{x:.75,y:.15},{x:.5,y:0},{x:.25,y:.15},{x:.15,y:.5},{x:.25,y:.85},{x:.5,y:1},{x:.75,y:.85}]],
+  'D':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.55,y:0},{x:.75,y:.2},{x:.8,y:.5},{x:.75,y:.8},{x:.55,y:1},{x:.25,y:1}]],
+  'E':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.75,y:0}],[{x:.25,y:.5},{x:.65,y:.5}],[{x:.25,y:1},{x:.75,y:1}]],
+  'F':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.75,y:0}],[{x:.25,y:.5},{x:.65,y:.5}]],
+  'G':[[{x:.75,y:.15},{x:.5,y:0},{x:.25,y:.15},{x:.15,y:.5},{x:.25,y:.85},{x:.5,y:1},{x:.75,y:.85},{x:.75,y:.5}],[{x:.55,y:.5},{x:.75,y:.5}]],
+  'H':[[{x:.2,y:0},{x:.2,y:1}],[{x:.8,y:0},{x:.8,y:1}],[{x:.2,y:.5},{x:.8,y:.5}]],
+  'I':[[{x:.5,y:0},{x:.5,y:1}]],
+  'J':[[{x:.6,y:0},{x:.6,y:.8},{x:.5,y:.95},{x:.35,y:.95},{x:.25,y:.8}]],
+  'K':[[{x:.25,y:0},{x:.25,y:1}],[{x:.75,y:0},{x:.25,y:.5}],[{x:.25,y:.5},{x:.75,y:1}]],
+  'L':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:1},{x:.75,y:1}]],
+  'M':[[{x:.15,y:1},{x:.15,y:0}],[{x:.15,y:0},{x:.5,y:.55}],[{x:.5,y:.55},{x:.85,y:0}],[{x:.85,y:0},{x:.85,y:1}]],
+  'N':[[{x:.2,y:1},{x:.2,y:0}],[{x:.2,y:0},{x:.8,y:1}],[{x:.8,y:1},{x:.8,y:0}]],
+  'O':[[{x:.5,y:0},{x:.25,y:.1},{x:.15,y:.5},{x:.25,y:.9},{x:.5,y:1},{x:.75,y:.9},{x:.85,y:.5},{x:.75,y:.1},{x:.5,y:0}]],
+  'P':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.6,y:0},{x:.75,y:.12},{x:.75,y:.38},{x:.6,y:.5},{x:.25,y:.5}]],
+  'Q':[[{x:.5,y:0},{x:.25,y:.1},{x:.15,y:.5},{x:.25,y:.9},{x:.5,y:1},{x:.75,y:.9},{x:.85,y:.5},{x:.75,y:.1},{x:.5,y:0}],[{x:.6,y:.75},{x:.8,y:1}]],
+  'R':[[{x:.25,y:0},{x:.25,y:1}],[{x:.25,y:0},{x:.6,y:0},{x:.75,y:.12},{x:.75,y:.38},{x:.6,y:.5},{x:.25,y:.5}],[{x:.5,y:.5},{x:.75,y:1}]],
+  'S':[[{x:.7,y:.1},{x:.5,y:0},{x:.3,y:.1},{x:.25,y:.25},{x:.3,y:.45},{x:.5,y:.5},{x:.7,y:.55},{x:.75,y:.75},{x:.7,y:.9},{x:.5,y:1},{x:.3,y:.9}]],
+  'T':[[{x:.2,y:0},{x:.8,y:0}],[{x:.5,y:0},{x:.5,y:1}]],
+  'U':[[{x:.2,y:0},{x:.2,y:.75},{x:.35,y:.95},{x:.5,y:1},{x:.65,y:.95},{x:.8,y:.75},{x:.8,y:0}]],
+  'V':[[{x:.2,y:0},{x:.5,y:1}],[{x:.5,y:1},{x:.8,y:0}]],
+  'W':[[{x:.1,y:0},{x:.3,y:1}],[{x:.3,y:1},{x:.5,y:.4}],[{x:.5,y:.4},{x:.7,y:1}],[{x:.7,y:1},{x:.9,y:0}]],
+  'X':[[{x:.2,y:0},{x:.8,y:1}],[{x:.8,y:0},{x:.2,y:1}]],
+  'Y':[[{x:.2,y:0},{x:.5,y:.5}],[{x:.8,y:0},{x:.5,y:.5}],[{x:.5,y:.5},{x:.5,y:1}]],
+  'Z':[[{x:.2,y:0},{x:.8,y:0}],[{x:.8,y:0},{x:.2,y:1}],[{x:.2,y:1},{x:.8,y:1}]],
+};
+LETTER_STROKE_PATHS['\u00d1']=LETTER_STROKE_PATHS['N']; // Ñ same as N strokes
+
 export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
@@ -2920,7 +3072,7 @@ export default function App(){
           </div>}
         </div>
       </div>}
-      {ptab==='stats'&&(()=>{const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'%',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} className="sbox"><div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div><div style={{fontSize:13,color:DIM,marginTop:4}}>{s.l}</div></div>)}</div>})()}
+      {ptab==='stats'&&(()=>{const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);return <div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'%',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} className="sbox"><div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div><div style={{fontSize:13,color:DIM,marginTop:4}}>{s.l}</div></div>)}</div><MonthlyReport user={user}/></div>})()}
       {ptab==='srs'&&(()=>{const mas=Object.values(user.srs||{}).filter(s=>s.lv>=4).length,lrn=Object.values(user.srs||{}).filter(s=>s.lv>0&&s.lv<4).length,nw=EX.length-mas-lrn;return <div style={{textAlign:'center',padding:'20px 0'}}><div style={{display:'flex',justifyContent:'center',gap:20}}>{[{l:'Dominadas',v:mas,c:GREEN},{l:'Aprendiendo',v:lrn,c:GOLD},{l:'Nuevas',v:nw,c:PURPLE}].map((s,i)=><div key={i}><div style={{position:'relative',display:'inline-block'}}><Ring p={s.v/EX.length} sz={80} c={s.c}/><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:20,color:s.c,fontWeight:700}}>{s.v}</div></div><div style={{fontSize:13,color:DIM,marginTop:6}}>{s.l}</div></div>)}</div></div>})()}
     </div></div>}
 
