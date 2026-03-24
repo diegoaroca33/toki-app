@@ -120,7 +120,7 @@ function useSR(onResult){const recRef=useRef(null);const cbRef=useRef(onResult);
   const stop=useCallback(()=>{if(recRef.current){try{recRef.current.abort()}catch(e){}}recRef.current=null},[]);
   useEffect(()=>()=>stop(),[]);
   return{ok:SR_AVAILABLE,go,stop}}
-function saveData(key,val){try{localStorage.setItem('toki_'+key,JSON.stringify(val))}catch(e){}}
+function saveData(key,val){try{localStorage.setItem('toki_'+key,JSON.stringify(val,(k,v)=>{if(v instanceof HTMLElement||v instanceof Node)return undefined;if(typeof v==='object'&&v!==null&&v.$$typeof)return undefined;return v}))}catch(e){console.warn('[Toki] saveData error:',key,e)}}
 function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
 function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
 function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);return text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole')}
@@ -2978,7 +2978,7 @@ export default function App(){
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
             {GROUPS.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
               <p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
-              {g.modules.map((m,mi)=>{const mLv=getModuleLvOrDef(m.lvKey,m.defLv);return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:BORDER}`,background:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color+'33':BG3,color:sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
+              {g.modules.map((m,mi)=>{const mLv=getModuleLvOrDef(m.lvKey,m.defLv);return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&String(secLv)===String(mLv)?g.color:BORDER}`,background:sec===m.k&&String(secLv)===String(mLv)?g.color+'33':BG3,color:sec===m.k&&String(secLv)===String(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
             </div>)}
           </div>}
         </div>}</div>
@@ -3413,7 +3413,7 @@ export default function App(){
               }}>
                 {enabledMods.map((m,mi)=>{
                   const mLv=getModuleLvOrDef(m.lvKey,m.defLv);
-                  const isActive=sec===m.k&&JSON.stringify(secLv)===JSON.stringify(mLv);
+                  const isActive=sec===m.k&&String(secLv)===String(mLv);
                   const subSize=modCount<=3?100:modCount<=5?88:76;
                   return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{
                     width:subSize,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
