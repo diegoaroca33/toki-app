@@ -72,9 +72,15 @@ input::placeholder{color:${DIM}}
 @keyframes planetFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes orbitAll{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes counterSpin{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
+@keyframes sosPulse{0%,100%{transform:scale(1);box-shadow:0 4px 16px rgba(231,76,60,.4)}50%{transform:scale(1.08);box-shadow:0 4px 24px rgba(231,76,60,.7)}}
 .skip-btn{display:none}body.sup-mode .skip-btn{display:inline-block}
 .af{animation:fadeIn .4s ease-out}.ab{animation:bounceIn .45s}.ap{animation:pulse 1.4s infinite}.as{animation:shake .4s}
+body.theme-sober{background:linear-gradient(180deg,#1a1a2e 0%,#2d2d44 100%)!important}
+body.theme-sober::before{display:none!important}
+body.theme-sober .sky-morning,body.theme-sober .sky-afternoon,body.theme-sober .sky-night{background:none!important}
+body.theme-sober .sober-hide{display:none!important}
 `;
+function isSober(){return document.body.classList.contains('theme-sober')}
 function lev(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
 function digToText(s){const m={'0':'cero','1':'uno','2':'dos','3':'tres','4':'cuatro','5':'cinco','6':'seis','7':'siete','8':'ocho','9':'nueve','10':'diez','11':'once','12':'doce','13':'trece','14':'catorce','15':'quince','16':'dieciséis','17':'diecisiete','18':'dieciocho','19':'diecinueve','20':'veinte','30':'treinta','40':'cuarenta','50':'cincuenta','60':'sesenta','70':'setenta','80':'ochenta','90':'noventa','100':'cien'};return s.replace(/\d+/g,n=>{if(m[n])return m[n];const num=parseInt(n);if(num>20&&num<30)return'veinti'+['uno','dós','trés','cuatro','cinco','séis','siete','ocho','nueve'][num-21];const d=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];const t=Math.floor(num/10),r=num%10;if(r===0)return d[t]||n;const u=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve'];return(d[t]||'')+' y '+(u[r]||'')})}
 function score(said,tgt){if(!said||!said.trim())return 0;const c=s=>digToText(s.toLowerCase()).replace(/[^a-záéíóúñü\s]/g,'').trim();const a=c(said),b=c(tgt);if(!a)return 0;if(a===b)return 4;const sw=a.split(/\s+/),tw=b.split(/\s+/);let exact=0,close=0;tw.forEach(t=>{if(sw.some(s=>s===t))exact++;else{const maxLev=t.length<=3?0:t.length<=5?1:2;if(sw.some(s=>lev(s,t)<=maxLev))close++}});const exactR=exact/Math.max(tw.length,1);if(exactR>=1)return 4;if(exactR>=.8)return 3;const totalR=(exact+close*.7)/Math.max(tw.length,1);if(totalR>=.5||exact>=1)return 2;return 1}
@@ -239,7 +245,7 @@ function splitSyllables(text){const w=text.toLowerCase().replace(/[¿?¡!,\.;:]/
 function countdownBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=n===0?880:440;g.gain.value=n===0?0.06:0.04;o.start();o.stop(c.currentTime+(n===0?0.25:0.08));setTimeout(()=>c.close(),400)}catch(e){}}
 // Mascot SVG component
 function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
-  return <svg width={size} height={size} viewBox="0 0 48 48" style={{animation:anim,display:'block'}}>
+  return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" style={{animation:anim,display:'block'}}>
     <defs><filter id="starGlow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     <path d="M24,3 C25.5,12 27,14 28,16 C33,15.5 39,15 42,16 C37,19 33,21 31,23 C33,28 35,34 34,38 C30,34 27,31 24,29 C21,31 18,34 14,38 C13,34 15,28 17,23 C15,21 11,19 6,16 C9,15 15,15.5 20,16 C21,14 22.5,12 24,3Z" fill={GOLD} stroke="#d4ac0d" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" filter="url(#starGlow)"/>
     <circle cx={19} cy={19} r={2.8} fill="#1a1a2e"/><circle cx={29} cy={19} r={2.8} fill="#1a1a2e"/>
@@ -253,7 +259,7 @@ function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBou
 function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
   const[phase,setPhase]=useState('idle');const[num,setNum]=useState(3);
   const pc=planetColor||'#42A5F5';
-  useEffect(()=>{if(!show)return;setPhase('ignite');setNum(3);
+  useEffect(()=>{if(!show)return;if(isSober()){if(onDone)onDone();return}setPhase('ignite');setNum(3);
     // Phase 1: ignite (fire appears) 0-400ms
     const t0=setTimeout(()=>{setPhase('pickup');countdownBeep(3)},400);
     // Phase 2: pickup (rocket+avatar) 400-800ms
@@ -363,6 +369,7 @@ function Stars({n,sz=32,burst=false}){
 // ===== CELEBRATION OVERLAY — reusable fireworks across screen =====
 function CelebrationOverlay({show,duration=2000}){
   const[visible,setVisible]=useState(false);
+  const sober=isSober();
   const particles=useMemo(()=>{
     const p=[];
     // Burst from center — stars fly outward
@@ -375,6 +382,9 @@ function CelebrationOverlay({show,duration=2000}){
     return p},[]);
   useEffect(()=>{if(show){setVisible(true);const t=setTimeout(()=>setVisible(false),duration);return()=>clearTimeout(t)}else{setVisible(false)}},[show,duration]);
   if(!visible)return null;
+  if(sober)return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:998,display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <div style={{fontSize:80,color:'#4CAF50',animation:'bounceIn .45s',filter:'drop-shadow(0 0 12px rgba(76,175,80,.5))'}}>✓</div>
+  </div>;
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:998,overflow:'hidden'}}>
     {particles.filter(s=>s.type==='burst'||s.type==='sparkle').map(s=><span key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',fontSize:s.sz,opacity:0,animation:`starPop 0.7s ${s.delay}s both`,filter:'drop-shadow(0 0 10px #FFD700)'}}>{s.em}</span>)}
     {particles.filter(s=>s.type==='confetti').map(s=><div key={s.i} style={{position:'absolute',left:s.x+'%',top:s.y+'%',width:s.sz,height:s.sz,borderRadius:'50%',background:s.color,opacity:0,animation:`starPop 0.5s ${s.delay}s both, confettiFall 1.5s ${s.delay+0.3}s forwards`}}/>)}
@@ -1323,9 +1333,12 @@ function ExWriting({ex,onOk,onSkip,name}){
   }
   useEffect(()=>{setDone(false);setStars(0);setShowModel(false);strokePts.current=[];modelRef.current=null;const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
     stopVoice();const msg=ex.mode==='letter'?'Escribe la letra '+ex.letter:ex.mode==='word'?'Escribe '+ex.letter:'Escribe: '+ex.letter;setTimeout(()=>say(msg),400);return()=>stopVoice()},[ex]);
+  const lastDraw=useRef({x:0,y:0});const isStylus=useRef(false);
   function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
-  function start(e){e.preventDefault();poke();drawing.current=true;const p=getPos(e);strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round'}
-  function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.strokeStyle='#2E75B6';ctx.lineWidth=4;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke()}
+  function detectStylus(e){if(e.touches&&e.touches[0]){const t=e.touches[0];if(t.touchType==='stylus'||t.radiusX<5)return true}return false}
+  function getLineWidth(e){return detectStylus(e)?2:4}
+  function start(e){e.preventDefault();poke();drawing.current=true;isStylus.current=detectStylus(e);const p=getPos(e);lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=getLineWidth(e);ctx.lineCap='round';ctx.lineJoin='round'}
+  function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);const dx=p.x-lastDraw.current.x,dy=p.y-lastDraw.current.y;if(Math.sqrt(dx*dx+dy*dy)<2)return;lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const lw=isStylus.current?2:4;const ctx=canvasRef.current.getContext('2d');ctx.strokeStyle='#2E75B6';ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke()}
   function end(e){e.preventDefault();drawing.current=false}
   function clear(){strokePts.current=[];const c=canvasRef.current;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH)}
   function evaluate(){const pts=strokePts.current;if(pts.length<5){setStars(1);return 1;}
@@ -1424,7 +1437,7 @@ function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
       </div>
       <QSTimeBar dur={dur} on={mic} onEnd={onTimeUp}/>
     </div>
-    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><img src={ex.picto} alt="" style={{height:70,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:10,padding:'6px 12px',maxWidth:'100%'}}/></div>}
+    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4,margin:'0 auto'}}><img src={ex.picto} alt="" style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
     <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
       <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}}>🔊 Otra vez</button>
       <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
@@ -1474,7 +1487,7 @@ function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}
     </div>
-    {cur.picto&&<div style={{margin:'6px auto',maxWidth:'95%'}}><img src={cur.picto} alt="" style={{height:70,objectFit:'contain',display:'block',margin:'0 auto',background:'#fff',borderRadius:10,padding:'6px 12px',maxWidth:'100%'}}/></div>}
+    {cur.picto&&<div style={{margin:'6px auto',maxWidth:'95%',textAlign:'center'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt="" style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
   </div>}
 
 function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useState('menu');const[recLv,setRecLv]=useState(1);const[selV,setSelV]=useState(null);const[vn,setVn]=useState('');const[va,setVa]=useState('👨');const[vs,setVs]=useState('m');const[vAge,setVAge]=useState('');const[ri,setRi]=useState(0);const[rec,setRec]=useState(false);const[mr,setMr]=useState(null);const[saved,setSaved]=useState(0);const[pp,setPp]=useState(-1);const[showRules,setShowRules]=useState(false);const[recMsg,setRecMsg]=useState('');const[recBlobs,setRecBlobs]=useState({});const[showDone,setShowDone]=useState(false);const[cedeVoz,setCedeVoz]=useState(false);const[uploading,setUploading]=useState(false);const ch=useRef([]);const vid=useRef(null);const voices=user.voices||[];
@@ -1869,6 +1882,7 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
   const[dragPos,setDragPos]=useState(null);
   const[placed,setPlaced]=useState(false);
   const[nearZone,setNearZone]=useState(null);
+  const[snapAnim,setSnapAnim]=useState(null);
   const dragging=useRef(false);
   function getTouch(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY}}
   function checkZone(t){
@@ -1879,7 +1893,7 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
     const svgX=(t.x-rect.left)/rect.width*360;const svgY=(t.y-rect.top)/rect.height*280;
     let closest=null;let minD=Infinity;
     for(const[zn,zp] of Object.entries(sp)){const d=Math.hypot(svgX-zp.x,svgY-zp.y);if(d<minD){minD=d;closest=zn}}
-    return minD<55?closest:null}
+    return minD<84?closest:null}
   // Global move/end handlers
   useEffect(()=>{
     function handleMove(e){if(!dragging.current||placed||fb)return;
@@ -1888,8 +1902,15 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
       const correctPos=ex.data.pos==='al_lado'?'al lado':ex.data.pos;
       const zone=nearZone;
       dragging.current=false;
-      if(zone===correctPos){setPlaced(true);setDragPos(null);onCorrect()}
-      else if(zone){onWrong(correctPos);setDragPos(null);setNearZone(null)}
+      if(zone){
+        // Snap animation: move to target zone center then resolve
+        const rect=containerRef.current?.querySelector('svg')?.getBoundingClientRect();
+        const sp=SCENE_POS[ex.data.scene]||SCENE_POS.mesa;
+        const zp=sp[zone];
+        if(rect&&zp){const tx=rect.left+(zp.x/360)*rect.width;const ty=rect.top+(zp.y/280)*rect.height;setSnapAnim({x:tx,y:ty});setDragPos(null);
+          setTimeout(()=>{setSnapAnim(null);if(zone===correctPos){setPlaced(true);onCorrect()}else{onWrong(correctPos);setNearZone(null)}},220);return}
+        if(zone===correctPos){setPlaced(true);setDragPos(null);onCorrect()}
+        else{onWrong(correctPos);setDragPos(null);setNearZone(null)}}
       else{setDragPos(null);setNearZone(null)}}
     window.addEventListener('touchmove',handleMove,{passive:false});
     window.addEventListener('touchend',handleEnd);
@@ -1899,7 +1920,7 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
       window.removeEventListener('mousemove',handleMove);window.removeEventListener('mouseup',handleEnd)}
   });
   function onStart(e){e.preventDefault();poke();dragging.current=true;const t=getTouch(e);setDragPos(t)}
-  useEffect(()=>{setPlaced(false);setDragPos(null);setNearZone(null);dragging.current=false},[ex]);
+  useEffect(()=>{setPlaced(false);setDragPos(null);setNearZone(null);setSnapAnim(null);dragging.current=false},[ex]);
   return <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
     {/* Left — draggable object */}
     <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220}}>
@@ -1929,6 +1950,8 @@ function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
     <div style={{flex:'0 0 140px'}}/>
     {/* Floating dragged object */}
     {dragPos&&<div style={{position:'fixed',left:dragPos.x-28,top:dragPos.y-28,fontSize:56,pointerEvents:'none',zIndex:9999,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',transform:'scale(1.2)',transition:'transform 0.1s'}}>{objEm}</div>}
+    {/* Snap animation */}
+    {snapAnim&&<div style={{position:'fixed',left:snapAnim.x-28,top:snapAnim.y-28,fontSize:56,pointerEvents:'none',zIndex:9999,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',transform:'scale(1)',transition:'all 200ms ease-out'}}>{objEm}</div>}
   </div>}
 
 function ExRazona({ex,onOk,onSkip,name,uid,vids}){
@@ -2193,6 +2216,113 @@ function processImage(file){return new Promise((resolve,reject)=>{
     img.src=reader.result};
   reader.readAsDataURL(file)})}
 
+// ===== PHOTO CROP OVERLAY — WhatsApp-style circular crop =====
+function PhotoCropOverlay({imageSrc,onSave,onCancel}){
+  const canvasRef=useRef(null);const containerRef=useRef(null);
+  const[scale,setScale]=useState(1);const[translate,setTranslate]=useState({x:0,y:0});
+  const[imgSize,setImgSize]=useState({w:0,h:0});
+  const dragging=useRef(false);const lastTouch=useRef(null);const lastDist=useRef(0);
+  const imgRef=useRef(null);
+  const CIRCLE_R=120;
+  useEffect(()=>{const img=new Image();img.onload=()=>{setImgSize({w:img.width,h:img.height});imgRef.current=img};img.src=imageSrc},[imageSrc]);
+  function onTouchStart(e){e.preventDefault();
+    if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);lastDist.current=d}
+    else if(e.touches.length===1){dragging.current=true;lastTouch.current={x:e.touches[0].clientX,y:e.touches[0].clientY}}}
+  function onTouchMove(e){e.preventDefault();
+    if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(lastDist.current>0){const r=d/lastDist.current;setScale(s=>Math.max(0.3,Math.min(5,s*r)))}lastDist.current=d}
+    else if(e.touches.length===1&&dragging.current&&lastTouch.current){const dx=e.touches[0].clientX-lastTouch.current.x;const dy=e.touches[0].clientY-lastTouch.current.y;setTranslate(t=>({x:t.x+dx,y:t.y+dy}));lastTouch.current={x:e.touches[0].clientX,y:e.touches[0].clientY}}}
+  function onTouchEnd(e){e.preventDefault();dragging.current=false;lastTouch.current=null;lastDist.current=0}
+  function onMouseDown(e){e.preventDefault();dragging.current=true;lastTouch.current={x:e.clientX,y:e.clientY}}
+  function onMouseMove(e){if(!dragging.current||!lastTouch.current)return;const dx=e.clientX-lastTouch.current.x;const dy=e.clientY-lastTouch.current.y;setTranslate(t=>({x:t.x+dx,y:t.y+dy}));lastTouch.current={x:e.clientX,y:e.clientY}}
+  function onMouseUp(){dragging.current=false;lastTouch.current=null}
+  function onWheel(e){e.preventDefault();setScale(s=>Math.max(0.3,Math.min(5,s-(e.deltaY>0?0.1:-0.1))))}
+  function doSave(){
+    const c=document.createElement('canvas');const sz=CIRCLE_R*2;c.width=sz;c.height=sz;const ctx=c.getContext('2d');
+    ctx.beginPath();ctx.arc(sz/2,sz/2,sz/2,0,Math.PI*2);ctx.clip();
+    if(!imgRef.current){onCancel();return}
+    const img=imgRef.current;
+    // Calculate how the image maps to the circle
+    const cont=containerRef.current;if(!cont){onCancel();return}
+    const rect=cont.getBoundingClientRect();
+    const cx=rect.width/2;const cy=rect.height/2;
+    // The image is displayed centered with scale and translate
+    const dispW=img.width*scale*(Math.min(rect.width,rect.height)/Math.max(img.width,img.height));
+    const dispH=img.height*scale*(Math.min(rect.width,rect.height)/Math.max(img.width,img.height));
+    const imgLeft=cx-dispW/2+translate.x;const imgTop=cy-dispH/2+translate.y;
+    // Circle center on screen
+    const circLeft=cx-CIRCLE_R;const circTop=cy-CIRCLE_R;
+    // Map circle area back to image coordinates
+    const srcX=(circLeft-imgLeft)/dispW*img.width;
+    const srcY=(circTop-imgTop)/dispH*img.height;
+    const srcW=(CIRCLE_R*2)/dispW*img.width;
+    const srcH=(CIRCLE_R*2)/dispH*img.height;
+    ctx.drawImage(img,srcX,srcY,srcW,srcH,0,0,sz,sz);
+    const b64=c.toDataURL('image/jpeg',0.7);onSave(b64)}
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:300,background:'rgba(0,0,0,.95)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',touchAction:'none'}}
+    onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+    onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+    onWheel={onWheel} ref={containerRef}>
+    {/* Image layer */}
+    {imgRef.current&&<img src={imageSrc} alt="" style={{position:'absolute',maxWidth:'90%',maxHeight:'90%',transform:`translate(${translate.x}px,${translate.y}px) scale(${scale})`,userSelect:'none',pointerEvents:'none',WebkitUserDrag:'none'}} draggable={false}/>}
+    {/* Dark overlay with circular cutout using SVG */}
+    <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}}>
+      <defs><mask id="cropMask"><rect width="100%" height="100%" fill="white"/><circle cx="50%" cy="50%" r={CIRCLE_R} fill="black"/></mask></defs>
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)" mask="url(#cropMask)"/>
+      <circle cx="50%" cy="50%" r={CIRCLE_R} fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 4"/>
+    </svg>
+    {/* Buttons */}
+    <div style={{position:'absolute',bottom:40,display:'flex',gap:24}}>
+      <button onClick={onCancel} style={{padding:'14px 28px',borderRadius:16,border:'2px solid #fff',background:'rgba(0,0,0,.5)',color:'#fff',fontSize:20,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer'}}>✕ Cancelar</button>
+      <button onClick={doSave} style={{padding:'14px 28px',borderRadius:16,border:'2px solid '+GREEN,background:GREEN,color:'#fff',fontSize:20,fontWeight:700,fontFamily:"'Fredoka'",cursor:'pointer'}}>✓ Guardar</button>
+    </div>
+    <p style={{position:'absolute',top:30,color:'rgba(255,255,255,.6)',fontSize:14,fontWeight:600}}>Pellizca para zoom · Arrastra para mover</p>
+  </div>}
+
+// ===== EMERGENCY BUTTON — SOS overlay for game screens =====
+function EmergencyButton({user,personas,supPin}){
+  const[show,setShow]=useState(false);const[pinInput,setPinInput]=useState('');const[pinErr,setPinErr]=useState(false);
+  const speakTimer=useRef(null);
+  const padre=(personas||[]).find(p=>p.relation==='Padre');
+  const madre=(personas||[]).find(p=>p.relation==='Madre');
+  const telPadre=padre?.phone||user?.telefono||'';
+  const telMadre=madre?.phone||user?.telefono||'';
+  const nombre=user?.name||'';const apellidos=user?.apellidos||'';
+  const direccion=user?.direccion||'';
+  const lines=[];
+  lines.push('HOLA, ME LLAMO '+nombre.toUpperCase()+(apellidos?' '+apellidos.toUpperCase():''));
+  lines.push('TENGO SÍNDROME DE DOWN');
+  if(telPadre)lines.push('EL TELÉFONO DE MI PADRE ES '+telPadre);
+  if(telMadre&&telMadre!==telPadre)lines.push('EL TELÉFONO DE MI MADRE ES '+telMadre);
+  if(direccion)lines.push('MI DIRECCIÓN ES '+direccion.toUpperCase());
+  function speakAll(){
+    stopVoice();
+    const fullText=lines.join('. ');
+    const u=new SpeechSynthesisUtterance(fullText);u.lang='es-ES';u.rate=0.7;u.volume=1.0;
+    u.onend=()=>{speakTimer.current=setTimeout(speakAll,10000)};
+    u.onerror=()=>{speakTimer.current=setTimeout(speakAll,10000)};
+    window.speechSynthesis.speak(u)}
+  function openSOS(){setShow(true);setPinInput('');setPinErr(false);setTimeout(speakAll,500)}
+  function closeSOS(){stopVoice();clearTimeout(speakTimer.current);setShow(false);setPinInput('');setPinErr(false)}
+  function tryClose(){if(!supPin){closeSOS();return}
+    if(pinInput===supPin){closeSOS()}else{setPinErr(true);setPinInput('');setTimeout(()=>setPinErr(false),1500)}}
+  useEffect(()=>()=>{stopVoice();clearTimeout(speakTimer.current)},[]);
+  if(!nombre)return null;
+  return <>
+    <button onClick={openSOS} style={{position:'fixed',bottom:20,right:20,width:56,height:56,borderRadius:'50%',border:'none',background:RED,color:'#fff',fontSize:28,cursor:'pointer',zIndex:90,display:'flex',alignItems:'center',justifyContent:'center',animation:'sosPulse 2s infinite',boxShadow:'0 4px 16px rgba(231,76,60,.4)'}}>🆘</button>
+    {show&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:500,background:RED,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,overflow:'auto'}}>
+      <div style={{maxWidth:600,width:'100%',textAlign:'center'}}>
+        {lines.map((l,i)=><p key={i} style={{fontSize:i===0?36:28,fontWeight:900,color:'#fff',margin:'12px 0',lineHeight:1.3,textShadow:'0 2px 8px rgba(0,0,0,.3)'}}>{l}</p>)}
+      </div>
+      <div style={{position:'absolute',bottom:30,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+        <button onClick={()=>{if(!supPin){closeSOS();return}}} style={{background:'rgba(0,0,0,.3)',border:'2px solid rgba(255,255,255,.4)',borderRadius:12,padding:'10px 20px',color:'#fff',fontSize:16,fontWeight:600,fontFamily:"'Fredoka'",cursor:'pointer'}}>Cerrar</button>
+        {supPin&&<div style={{display:'flex',gap:6,alignItems:'center'}}>
+          <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="PIN" style={{width:100,padding:'8px 12px',borderRadius:8,border:pinErr?'2px solid #fff':'2px solid rgba(255,255,255,.4)',background:'rgba(0,0,0,.3)',color:'#fff',fontSize:20,textAlign:'center',fontFamily:"'Fredoka'",letterSpacing:8}}/>
+          <button onClick={tryClose} disabled={pinInput.length<4} style={{padding:'8px 16px',borderRadius:8,border:'2px solid rgba(255,255,255,.4)',background:'rgba(0,0,0,.3)',color:'#fff',fontSize:16,fontFamily:"'Fredoka'",cursor:'pointer'}}>OK</button>
+        </div>}
+      </div>
+    </div>}
+  </>}
+
 // ===== CLOUD SYNC — Firestore save/load profile data =====
 async function cloudSaveProfile(uid,profileData){
   if(!hasConfig||!db||!uid)return;
@@ -2248,6 +2378,7 @@ export default function App(){
   const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[presEdit,setPresEdit]=useState(null);const[presNewMode,setPresNewMode]=useState(null);const[presDelIdx,setPresDelIdx]=useState(null);const[selectedPresIdx,setSelectedPresIdx]=useState(null);const[showPresSelector,setShowPresSelector]=useState(false);
+  const[photoCrop,setPhotoCrop]=useState(null); // {src,onSave} for crop overlay
   const[ptab,setPtab]=useState('config');const[pp,setPp]=useState('');const[pi,setPi]=useState('');const[pe,setPe]=useState(false);const[pOpenPlanet,setPOpenPlanet]=useState(null);
   const[consec,setConsec]=useState(0);const[showLvAdj,setShowLvAdj]=useState(false);const[showRec,setShowRec]=useState(false);
   const[parentPin,setParentPin]=useState('');const[parentPinOk,setParentPinOk]=useState(false);const[delConf,setDelConf]=useState(false);const[shareCode,setShareCode]=useState(null);const[shareInput,setShareInput]=useState('');const[shareMsg,setShareMsg]=useState('');
@@ -2312,6 +2443,10 @@ export default function App(){
     if(!auth)return;try{await fbSignOut()}catch(e){}setFbMode('guest');setFbUser(null)}
   function enterGuest(){setFbMode('guest');setFbLoading(false)}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
+  // Theme: Espacial (default) or Sobrio
+  const[theme,setThemeState]=useState(()=>{try{return localStorage.getItem('toki_theme')||'espacial'}catch(e){return'espacial'}});
+  function setTheme(v){setThemeState(v);try{localStorage.setItem('toki_theme',v)}catch(e){};document.body.classList.toggle('theme-sober',v==='sober')}
+  useEffect(()=>{document.body.classList.toggle('theme-sober',theme==='sober')},[]);
   // Sky theme based on time of day
   useEffect(()=>{function applySky(){document.body.classList.remove('sky-morning','sky-afternoon','sky-night');document.body.classList.add(getSkyClass())}applySky();const iv=setInterval(applySky,60000);return()=>clearInterval(iv)},[]);
   const[mascotMood,setMascotMood]=useState('idle');
@@ -2453,7 +2588,7 @@ export default function App(){
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
-  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?avStr(user.av):null} planetEmoji={GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={quiensoy:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
+  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style>{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?avStr(user.av):null} planetEmoji={GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={quiensoy:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
     {showRec&&user&&<VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
@@ -2488,6 +2623,7 @@ export default function App(){
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='pin'?null:'pin')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🔒 PIN del supervisor</span><span style={{fontSize:16,color:DIM}}>{openSection==='pin'?'▼':'▸'}</span></button>{openSection==='pin'&&<div style={{padding:'0 20px 20px'}}><input className="inp" value={pp} onChange={e=>setPp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="1234" style={{textAlign:'center',fontSize:24,letterSpacing:12,padding:14}}/></div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='session'?null:'session')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏱️ Sesión: <span style={{color:GREEN}}>{sm===0?'∞':sm+' min'}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='session'?'▼':'▸'}</span></button>{openSection==='session'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:8}}>{SMINS.map(m=><button key={m} onClick={()=>setSm(m)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${sm===m?GOLD:BORDER}`,background:sm===m?GOLD+'22':BG3,color:sm===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{m===0?'∞':m+"'"}</button>)}</div></div>}</div>
+        <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='theme'?null:'theme')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🎨 Tema visual: <span style={{color:GOLD}}>{theme==='sober'?'Sobrio':'Espacial'}</span></span><span style={{fontSize:16,color:DIM}}>{openSection==='theme'?'▼':'▸'}</span></button>{openSection==='theme'&&<div style={{padding:'0 20px 20px'}}><div style={{display:'flex',gap:8}}>{[['espacial','🚀 Espacial'],['sober','📘 Sobrio']].map(([v,l])=><button key={v} onClick={()=>setTheme(v)} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${theme===v?GOLD:BORDER}`,background:theme===v?GOLD+'22':BG3,color:theme===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',minHeight:52}}>{l}</button>)}</div><p style={{fontSize:13,color:DIM,margin:'8px 0 0'}}>{theme==='sober'?'Sin animaciones, colores sobrios, sin mascota':'Tema espacial con estrellas y animaciones'}</p></div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='daily'?null:'daily')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>⏰ Límites y tolerancia</span><span style={{fontSize:16,color:DIM}}>{openSection==='daily'?'▼':'▸'}</span></button>{openSection==='daily'&&<div style={{padding:'0 20px 20px',display:'flex',flexDirection:'column',gap:16}}>
           <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 8px'}}>Tiempo máximo diario</p><div style={{display:'flex',gap:8}}>{[30,60,120,0].map(m=><button key={m} onClick={()=>{setMaxDaily(m);saveData('max_daily',m)}} style={{flex:1,padding:'14px 0',borderRadius:10,border:`3px solid ${maxDaily===m?GOLD:BORDER}`,background:maxDaily===m?GOLD+'22':BG3,color:maxDaily===m?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',minHeight:52}}>{m===0?'Sin límite':m+"'"}</button>)}</div></div>
           <div><p style={{fontSize:18,fontWeight:700,margin:'0 0 4px'}}>🎤 Tolerancia: <span style={{color:GOLD}}>{exigencia}%</span></p><p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Aproximaciones en dicción</p><input type="range" min={50} max={100} step={5} value={exigencia} onChange={e=>setExigencia(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD,height:8,cursor:'pointer'}}/><div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:DIM,marginTop:4}}><span>Flexible</span><span>Normal</span><span>Estricto</span></div></div>
@@ -2690,7 +2826,8 @@ export default function App(){
               <label style={{position:'absolute',bottom:-4,right:-4,width:36,height:36,borderRadius:'50%',background:BLUE,border:'2px solid '+BG,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,boxShadow:'0 2px 6px rgba(0,0,0,.3)'}}>📷
                 <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={async(e)=>{
                   const f=e.target.files?.[0];if(!f)return;
-                  try{const b64=await processImage(f);const np=[...personas];np[i]={...np[i],photo:b64};savePersonas(np)}
+                  try{const reader=new FileReader();reader.onload=()=>{
+                    setPhotoCrop({src:reader.result,onSave:(b64)=>{const np=[...personas];np[i]={...np[i],photo:b64};savePersonas(np);setPhotoCrop(null)},onCancel:()=>setPhotoCrop(null)})};reader.readAsDataURL(f)}
                   catch(err){alert('Error: '+err)}
                   e.target.value=''}}/>
               </label>
