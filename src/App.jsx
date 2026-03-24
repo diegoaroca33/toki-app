@@ -2751,9 +2751,9 @@ export default function App(){
     // Always re-read level from storage to pick up Settings changes
     const mod=GROUPS.flatMap(g=>g.modules).find(m=>m.k===sec);
     const freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
-    // If quiensoy with both Estudio and Presentacion enabled, show choice screen
+    // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
-      const lvArr=Array.isArray(freshLv)?freshLv:freshLv!==null?[freshLv]:[];
+      const lvArr=Array.isArray(freshLv)?freshLv:[freshLv||1];
       if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
     }
     setSecLv(freshLv);setQsChoice(null);
@@ -2948,7 +2948,7 @@ export default function App(){
                     const isSel=curLvs.includes(lv.n);
                     return <button key={lv.n} onClick={()=>{
                       let newLvs;
-                      if(isSel){newLvs=curLvs.filter(l=>l!==lv.n);if(newLvs.length===0)newLvs=[lv.n]}
+                      if(isSel){newLvs=curLvs.filter(l=>l!==lv.n)}
                       else{if(curLvs.length>=MAX_SEL)return;newLvs=[...curLvs,lv.n]}
                       setModuleLv(m.lvKey,newLvs);setActiveMods(a=>({...a}))
                     }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36}}>{isSel?'✓ ':''}{lv.l}</button>
