@@ -101,7 +101,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                         {isSel?'✓ ':''}{lv.l}
                       </button>
                     })}
-                    <button onClick={()=>{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
+                    <button onClick={()=>{const allOn=LEE_KEYS.every((k,i)=>{const c=getModuleLv(k);return c&&c.includes(i+1)});if(allOn){LEE_KEYS.forEach(k=>setModuleLv(k,[]))}else{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]))}setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>
                 </div>
                 :g.id==='escribe'?(()=>{
@@ -158,7 +158,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                       setModuleLv(m.lvKey,newLvs);setActiveMods(a=>({...a}))
                     }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36}}>{isSel?'✓ ':''}{lv.l}</button>
                   })}
-                  <button onClick={()=>{setModuleLv(m.lvKey,opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
+                  <button onClick={()=>{const allOn=opts.every(o=>curLvs.includes(o.n));setModuleLv(m.lvKey,allOn?[]:opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>:<p style={{fontSize:14,color:DIM+'88',margin:0}}>Nivel fijo</p>}
                 </div>})}
               </div>})})()}</div>}</div>

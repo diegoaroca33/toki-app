@@ -21,13 +21,13 @@ export function genCalendar(lv){const items=[];
 export function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
   const[placed,setPlaced]=useState([]);const[avail,setAvail]=useState([]);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const{idleMsg,poke}=useIdle(name,!fb);
   const[baAns,setBaAns]=useState({before:null,after:null});const[baOpts,setBaOpts]=useState([]);
-  const[ytAns,setYtAns]=useState({ayer:null,manana:null});
-  useEffect(()=>{setFb(null);setAns('');setBaAns({before:null,after:null});setYtAns({ayer:null,manana:null});stopVoice();
+  const[ytAns,setYtAns]=useState({ayer:null,manana:null});const[att,setAtt]=useState(0);const[showAns,setShowAns]=useState(null);
+  useEffect(()=>{setFb(null);setAns('');setBaAns({before:null,after:null});setYtAns({ayer:null,manana:null});setAtt(0);setShowAns(null);stopVoice();
     if(ex.mode==='order_days'){const s=[...DIAS].sort(()=>Math.random()-.5);setAvail(s);setPlaced([]);setTimeout(()=>say('Ordena los días de la semana'),400)}
     else if(ex.mode==='order_months'){const s=[...MESES].sort(()=>Math.random()-.5);setAvail(s);setPlaced([]);setTimeout(()=>say('Ordena los meses del año'),400)}
     else if(ex.mode==='before_after_day'){const target=DIAS;const idx=ex.dayIdx;const max=target.length;const before=target[(idx-1+max)%max];const after=target[(idx+1)%max];const distractors=target.filter(d=>d!==before&&d!==after&&d!==ex.day);const picks=[before,after,...[...distractors].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);setBaOpts(picks);setTimeout(()=>say('¿Qué día va antes y después de '+ex.day+'?'),400)}
     else if(ex.mode==='before_after_month'){const target=MESES;const idx=ex.monthIdx;const max=target.length;const before=target[(idx-1+max)%max];const after=target[(idx+1)%max];const distractors=target.filter(d=>d!==before&&d!==after&&d!==ex.month);const picks=[before,after,...[...distractors].sort(()=>Math.random()-.5).slice(0,2)].sort(()=>Math.random()-.5);setBaOpts(picks);setTimeout(()=>say('¿Qué mes va antes y después de '+ex.month+'?'),400)}
-    else{const hoy=DIAS[new Date().getDay()===0?6:new Date().getDay()-1];setTimeout(()=>say('Hoy es '+hoy+'. ¿Qué día fue ayer y cuál será mañana?'),400)}
+    else{const hoy=DIAS[new Date().getDay()===0?6:new Date().getDay()-1];setTimeout(()=>say('Hoy es '+hoy+'. Ayer es el día de antes. Mañana es el día de después.'),400)}
     return()=>stopVoice()},[ex]);
   function place(item){poke();const np=[...placed];const slot=np.indexOf(null);if(slot!==-1)np[slot]=item;else np.push(item);setPlaced(np);setAvail(a=>a.filter(x=>x!==item));const target=ex.mode==='order_days'?DIAS:MESES;
     if(np.length===target.length&&np.every(d=>d!==null)){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
@@ -36,11 +36,11 @@ export function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     if(newAns.before&&newAns.after){const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;
       const correctBefore=target[(idx-1+max)%max];const correctAfter=target[(idx+1)%max];
       if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-      else{setFb('no');beep(200,200);stopVoice();sayFB('Antes: '+correctBefore+'. Después: '+correctAfter);setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},3000)}}}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);stopVoice();sayFB('Antes: '+correctBefore+'. Después: '+correctAfter);if(na>=2){setShowAns({before:correctBefore,after:correctAfter});setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},4000)}else{setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},3000)}}}}
   function pickYT(slot,val){poke();const newAns={...ytAns,[slot]:val};setYtAns(newAns);
     if(newAns.ayer&&newAns.manana){const di=new Date().getDay()===0?6:new Date().getDay()-1;const correctAyer=DIAS[(di-1+7)%7];const correctMan=DIAS[(di+1)%7];
       if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-      else{setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}
+      else{const na=att+1;setAtt(na);setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);if(na>=2){setShowAns({ayer:correctAyer,manana:correctMan});setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},4000)}else{setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}}
   return <div style={{textAlign:'center',padding:'10px 14px'}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
       <div className="card" style={{padding:12,marginBottom:8}}><p style={{fontSize:18,fontWeight:700,margin:0,color:GOLD}}>{ex.mode==='order_days'?'Ordena los días':'Ordena los meses'}</p></div>
@@ -98,7 +98,7 @@ export function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       {!fb&&(ytAns.ayer||ytAns.manana)&&<button className="btn btn-o" onClick={()=>setYtAns({ayer:null,manana:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p>{showAns&&<p style={{fontSize:16,color:'#fff',fontWeight:600,margin:'8px 0 0'}}>{showAns.ayer?'Ayer = '+showAns.ayer+', Mañana = '+showAns.manana:showAns.before?'Antes = '+showAns.before+', Después = '+showAns.after:''}</p>}</div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}

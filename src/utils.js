@@ -24,7 +24,7 @@ export function pickMsg(positive,name,section){const pool=[];if(positive){if(Mat
 export function mkPerfect(name){if(Math.random()<0.2&&name){const msg=rnd(PERFECT_T).replace(/\{N\}/g,name);_lastMsg=msg;return msg}const short=rnd(SHORT_OK.filter(m=>m!==_lastMsg));_lastMsg=short;return short}
 export function cheerIdx(text){const clean=text.replace(/\{N\}/g,'').trim().toLowerCase();for(let i=0;i<CHEER_ALL.length;i++){if(CHEER_ALL[i].replace(/\{N\}/g,'').trim().toLowerCase()===clean)return i}return -1}
 export function getModuleLv(modKey){const v=loadData('mod_lv_'+modKey,null);if(Array.isArray(v))return v;if(v!==null)return[v];return null}
-export function getModuleLvOrDef(modKey,defLv){const v=getModuleLv(modKey);if(v&&v.length>0)return v;return Array.isArray(defLv)?defLv:[defLv]}
+export function getModuleLvOrDef(modKey,defLv){const v=getModuleLv(modKey);if(v!==null){if(v.length>0)return v;return[]}return Array.isArray(defLv)?defLv:[defLv]}
 export function setModuleLv(modKey,lv){saveData('mod_lv_'+modKey,Array.isArray(lv)?lv:lv!==null?[lv]:null)}
 export function beep(f,d){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.03;o.start();o.stop(c.currentTime+d/1000);setTimeout(()=>c.close(),d+100)}catch(e){}}
 export function countdownBeep(n){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=n===0?880:440;g.gain.value=n===0?0.06:0.04;o.start();o.stop(c.currentTime+(n===0?0.25:0.08));setTimeout(()=>c.close(),400)}catch(e){}}
@@ -36,4 +36,53 @@ export function getTotalStars(){const ps=loadData('profiles',[]);let total=0;ps.
 export function getGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;return loadData(key,0)}
 export function addGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;const cur=loadData(key,0);saveData(key,cur+1);return cur+1}
 export function getGroupStatus(userId,groupId){const n=getGroupProgress(userId,groupId);if(n===0)return'new';if(n>=50)return'mastered';return'progress'}
-export function splitSyllables(text){const w=text.toLowerCase().replace(/[¿?¡!,\.;:]/g,'').trim();const words=w.split(/\s+/);const result=[];const vowels='aeiouáéíóúü';words.forEach(word=>{const syls=[];let cur='';for(let i=0;i<word.length;i++){const c=word[i];const isV=vowels.includes(c);cur+=c;if(isV){const next=word[i+1],next2=word[i+2];if(i===word.length-1){syls.push(cur);cur=''}else if(next&&!vowels.includes(next)){if(next2&&!vowels.includes(next2)){if('lrLR'.includes(next2)){syls.push(cur);cur=''}else{cur+=next;syls.push(cur);cur='';i++}}else{if(next2&&vowels.includes(next2)){syls.push(cur);cur=''}else if(!next2){/* let it continue */}else{syls.push(cur);cur=''}}}else if(next&&vowels.includes(next)){syls.push(cur);cur=''}}}if(cur)syls.push(cur);result.push(syls)});return result}
+export function splitSyllables(text){
+  const w=text.toLowerCase().replace(/[¿?¡!,\.;:]/g,'').trim();
+  const words=w.split(/\s+/);const result=[];
+  const V='aeiouáéíóúü';const isV=c=>V.includes(c);
+  // Weak vowels (can form diphthongs), strong vowels break syllables
+  const WEAK='iuüíú';const isWeak=c=>WEAK.includes(c);
+  // Inseparable consonant pairs (onset clusters)
+  const ONSET2=new Set(['bl','br','cl','cr','dr','fl','fr','gl','gr','pl','pr','tr','ch','ll','rr','qu','gu']);
+  words.forEach(word=>{
+    const syls=[];let cur='';
+    for(let i=0;i<word.length;i++){
+      const c=word[i];cur+=c;
+      if(!isV(c))continue; // consonants just accumulate
+      // We're on a vowel — look ahead to decide where to cut
+      const n1=word[i+1],n2=word[i+2],n3=word[i+3];
+      // Check for diphthong/triphthong: vowel followed by weak vowel
+      if(n1&&isV(n1)){
+        // Two vowels together: diphthong if at least one is weak (and no accent on weak breaking it)
+        const accStrong='áéíóú';
+        if(isWeak(c)&&!accStrong.includes(c)&&!isWeak(n1)){continue}// ia,ie,io,ua,ue,uo — weak+strong diphthong, keep going
+        if(!isWeak(c)&&isWeak(n1)&&!accStrong.includes(n1)){continue}// ai,ei,oi,au,eu — strong+weak diphthong
+        if(isWeak(c)&&isWeak(n1)){continue}// ui,iu — two weak = diphthong
+        // Two strong vowels (ae,ao,ea,eo,oa,oe) → hiatus → cut here
+        syls.push(cur);cur='';continue;
+      }
+      if(!n1){syls.push(cur);cur='';continue}// end of word
+      // Vowel followed by consonant(s)
+      if(!isV(n1)){
+        if(!n2){continue}// consonant at end of word, let it accumulate
+        if(isV(n2)){
+          // V-C-V: consonant goes with next syllable (cut before consonant)
+          // BUT handle QU and GU specially
+          if((n1==='q'||n1==='g')&&n2==='u'&&n3&&isV(n3)){continue}// que,qui,gue,gui — don't cut
+          syls.push(cur);cur='';continue;
+        }
+        // V-C-C: check if CC is an onset cluster
+        if(!isV(n2)){
+          const pair=n1+n2;
+          if(n3!==undefined&&ONSET2.has(pair)){
+            // CC is inseparable → both go to next syllable
+            syls.push(cur);cur='';continue;
+          }
+          // CC not a cluster → first C stays, second goes to next
+          cur+=n1;i++;syls.push(cur);cur='';continue;
+        }
+      }
+    }
+    if(cur)syls.push(cur);
+    result.push(syls)});
+  return result}
