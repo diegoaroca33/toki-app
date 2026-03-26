@@ -3250,7 +3250,7 @@ export default function App(){
                 // Auto-generate default presentation from user data and personas
                 const pres=generateAutoPresentation(p,personas);
                 if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}];
-                setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFPadre('');setFMadre('');setFHerm('');setFAmigos('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
+                setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
     {showMiCielo&&(()=>{
