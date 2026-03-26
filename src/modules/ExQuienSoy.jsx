@@ -96,17 +96,17 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
     <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {slides.length} frases</p>
     <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>🎉 ¡Terminado!</button>
   </div>;
-  return <div style={{textAlign:'center',position:'relative',maxHeight:'100dvh',overflow:'hidden'}}>
-    <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt="" style={{width:'100%',maxHeight:'85dvh',objectFit:'cover',display:'block'}}/>
-        :<div style={{width:'100%',minHeight:'40vh',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
+  return <div style={{textAlign:'center',position:'relative',height:'100dvh',maxHeight:'100dvh',overflow:'hidden'}}>
+    <div style={{position:'relative',width:'100%',height:'100%',borderRadius:0,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
+      {cur.img?<img src={cur.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+        :<div style={{width:'100%',height:'100%',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
-        <p style={{fontSize:12,color:'rgba(255,255,255,.5)',margin:'6px 0 0',fontWeight:600}}>{qi+1} / {slides.length}</p>
+        <p style={{fontSize:11,color:'rgba(255,255,255,.35)',margin:'4px 0 0',fontWeight:600}}>{qi+1}/{slides.length}</p>
       </div>
-      {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:'0 18px 18px 0',overflow:'hidden',zIndex:5}}>
+      {cur.picto&&<div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.9)',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt="" style={{height:60,objectFit:'contain',display:'block'}}/></div>}
+      {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:0,overflow:'hidden',zIndex:5}}>
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}
     </div>
-    {cur.picto&&<div style={{margin:'6px auto',maxWidth:'95%',textAlign:'center'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt="" style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
   </div>}

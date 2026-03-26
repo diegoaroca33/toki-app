@@ -55,12 +55,14 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
   }
   const curNum=ci>=0?nums[ci]:null;
   return <div style={{textAlign:'center',padding:'10px 4px'}}>
-    <div style={{marginBottom:8,display:'flex',alignItems:'center',justifyContent:'center',gap:16,minHeight:72}}>
-      <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:0}}>{phase==='done'?'🎉 ¡Genial!':phase==='ready'?'🔢 Cuenta conmigo...':'🔢 ¡Cuenta!'}</p>
-      {curNum&&phase!=='done'&&<div style={{display:'flex',alignItems:'baseline',gap:10}}>
-        <p style={{fontSize:64,fontWeight:800,color:'#fff',margin:0,animation:phase==='child'?'pulse .6s infinite':'none',textShadow:'0 0 24px '+NUM_BLOCK_COLORS[(curNum-1)%10],lineHeight:1}}>{curNum}</p>
-        <p style={{fontSize:22,color:DIM,margin:0,fontStyle:'italic',fontWeight:600}}>{NUMS_1_100[curNum-1]}</p>
-      </div>}
+    <div style={{marginBottom:8,display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:72,padding:'0 8px'}}>
+      <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:0,flexShrink:0}}>{phase==='done'?'🎉 ¡Genial!':phase==='ready'?'🔢 Cuenta conmigo...':'🔢 ¡Cuenta!'}</p>
+      <div style={{display:'flex',alignItems:'baseline',gap:10,minWidth:120,justifyContent:'flex-end',minHeight:68}}>
+        {curNum&&phase!=='done'&&<>
+          <p style={{fontSize:64,fontWeight:800,color:'#fff',margin:0,animation:phase==='child'?'pulse .6s infinite':'none',textShadow:'0 0 24px '+NUM_BLOCK_COLORS[(curNum-1)%10],lineHeight:1}}>{curNum}</p>
+          <p style={{fontSize:18,color:DIM,margin:0,fontStyle:'italic',fontWeight:600}}>{NUMS_1_100[curNum-1]}</p>
+        </>}
+      </div>
     </div>
     <div style={{padding:8,borderRadius:16,background:CARD,border:'2px solid '+BORDER,marginBottom:8}}>
       {gridRows.map((row,ri)=><div key={ri} style={{display:'grid',gridTemplateColumns:'repeat(10,1fr)',gap:3,marginBottom:ri<gridRows.length-1?3:0,opacity:row.isFuture?0.2:row.isPast?0.65:1,transition:'opacity .4s'}}>

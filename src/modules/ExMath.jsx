@@ -24,6 +24,23 @@ export function AnimCount({from,to,color=GREEN,speak=false}){const[cur,setCur]=u
     <div style={{fontSize:56,fontWeight:700,color:cur>=to?GREEN:GOLD,transition:'all .3s',minHeight:68}}>{cur>0?cur:''}</div>
   </div>}
 
+function SubtractVisual({a,b,ans}){
+  const[phase,setPhase]=useState(0);// 0=show all a, 1=cross out b, 2=done
+  useEffect(()=>{setPhase(0);const t1=setTimeout(()=>setPhase(1),1200);const t2=setTimeout(()=>{setPhase(2);beep(880,150)},2400);return()=>{clearTimeout(t1);clearTimeout(t2)}},[a,b]);
+  const sw=a>20?8:a>10?10:14;
+  return <div style={{textAlign:'center'}}>
+    <div style={{display:'flex',gap:a>20?2:4,justifyContent:'center',flexWrap:'wrap',margin:'8px 0',minHeight:50}}>{Array.from({length:a},(_,i)=>{
+      const crossed=phase>=1&&i>=ans;
+      return <div key={i} style={{width:sw,height:46,borderRadius:Math.round(sw/2),position:'relative',
+        background:crossed?RED+'44':GOLD,border:'2px solid '+(crossed?RED+'66':'rgba(0,0,0,.2)'),
+        opacity:crossed?(phase>=2?0.25:0.5):1,transform:crossed?'scaleY(0.7)':'scaleY(1)',
+        transition:'all .5s',transformOrigin:'bottom',marginRight:(i+1)%5===0&&i<a-1?6:0}}>
+        {crossed&&<div style={{position:'absolute',top:'50%',left:-2,right:-2,height:3,background:RED,borderRadius:2,transform:'rotate(-20deg)'}}/>}
+      </div>})}</div>
+    <p style={{fontSize:16,color:RED,fontWeight:700,margin:'4px 0'}}>{phase>=1?'Quitamos '+b:'Tenemos '+a}</p>
+    <div style={{fontSize:56,fontWeight:700,color:phase>=2?GREEN:GOLD,transition:'all .3s',minHeight:68}}>{phase>=2?ans:a}</div>
+  </div>}
+
 export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[showHelp,setShowHelp]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
@@ -47,8 +64,8 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
     </div></>}
     {showHelp&&fb==='no'&&<div className="af" style={{background:GOLD+'0C',borderRadius:14,padding:20,marginBottom:14}}>
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¡Vamos a contarlo juntos!</p>
-      <AnimCount from={op==='+'?a:0} to={op==='+'?ex.ans:a} color={op==='+'?GREEN:GOLD} speak={true}/>
-      {op==='-'&&<div style={{margin:'8px 0'}}><p style={{fontSize:16,color:RED,fontWeight:700}}>Quitamos {b}</p><AnimCount from={0} to={ex.ans} color={GREEN}/></div>}
+      {op==='+'&&<AnimCount from={a} to={ex.ans} color={GREEN} speak={true}/>}
+      {op==='-'&&<SubtractVisual a={a} b={b} ans={ex.ans}/>}
       <Fingers n={ex.ans} color={GREEN}/>
       <p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{a} {op} {b} = {ex.ans}</p>
       <button className="btn btn-g" onClick={()=>{setAns('');setFb(null);setShowHelp(false)}} style={{marginTop:12,fontSize:18}}>🔄 Intentar otra vez</button>

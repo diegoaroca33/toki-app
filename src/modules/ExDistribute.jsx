@@ -130,12 +130,22 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
       <NumPad value={ans} onChange={setAns} onSubmit={checkEqual} maxLen={3}/>
     </div>}
     {ex.mode==='compare'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¿Quién tiene más?</p>
-        <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'stretch'}}>
-          <div style={{flex:1,background:BLUE+'15',border:'2px solid '+BLUE+'33',borderRadius:12,padding:12,textAlign:'center'}}><p style={{fontWeight:700,fontSize:18,margin:'0 0 8px',color:BLUE}}>{ex.nameA}</p><div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap'}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:24}}>🍬</span>)}</div><p style={{fontSize:14,color:DIM,margin:'6px 0 0',fontWeight:600}}>{ex.a}</p></div>
-          <div style={{display:'flex',alignItems:'center',fontSize:24,color:DIM,fontWeight:700}}>VS</div>
-          <div style={{flex:1,background:PURPLE+'15',border:'2px solid '+PURPLE+'33',borderRadius:12,padding:12,textAlign:'center'}}><p style={{fontWeight:700,fontSize:18,margin:'0 0 8px',color:PURPLE}}>{ex.nameB}</p><div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap'}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:24}}>🍬</span>)}</div><p style={{fontSize:14,color:DIM,margin:'6px 0 0',fontWeight:600}}>{ex.b}</p></div>
-        </div></div>
+      <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD,textAlign:'center'}}>¿Quién tiene más?</p>
+      <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'stretch',marginBottom:14}}>
+        <div style={{flex:1,background:'linear-gradient(135deg,'+BLUE+'22,'+BLUE+'08)',border:'3px solid '+BLUE+'55',borderRadius:16,padding:14,textAlign:'center',boxShadow:'0 2px 12px '+BLUE+'22'}}>
+          <p style={{fontWeight:800,fontSize:20,margin:'0 0 10px',color:BLUE,textShadow:'0 1px 4px rgba(0,0,0,.15)'}}>{ex.nameA}</p>
+          <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',minHeight:40}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:28}}>🍬</span>)}</div>
+          <p style={{fontSize:28,color:BLUE,margin:'8px 0 0',fontWeight:800}}>{ex.a}</p>
+        </div>
+        <div style={{display:'flex',alignItems:'center',flexDirection:'column',justifyContent:'center',gap:4}}>
+          <div style={{width:36,height:36,borderRadius:'50%',background:GOLD+'22',border:'2px solid '+GOLD+'44',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:GOLD,fontWeight:800}}>VS</div>
+        </div>
+        <div style={{flex:1,background:'linear-gradient(135deg,#E67E2222,#E67E2208)',border:'3px solid #E67E2255',borderRadius:16,padding:14,textAlign:'center',boxShadow:'0 2px 12px #E67E2222'}}>
+          <p style={{fontWeight:800,fontSize:20,margin:'0 0 10px',color:'#E67E22',textShadow:'0 1px 4px rgba(0,0,0,.15)'}}>{ex.nameB}</p>
+          <div style={{display:'flex',gap:4,justifyContent:'center',flexWrap:'wrap',minHeight:40}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:28}}>🍬</span>)}</div>
+          <p style={{fontSize:28,color:'#E67E22',margin:'8px 0 0',fontWeight:800}}>{ex.b}</p>
+        </div>
+      </div>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-b" onClick={()=>checkCompare('a')} style={{flex:1,maxWidth:140}}>{ex.nameA}</button>
         {ex.a===ex.b&&<button className="btn btn-p" onClick={()=>checkCompare('equal')} style={{flex:1,maxWidth:140}}>Igual</button>}
         <button className="btn btn-b" onClick={()=>checkCompare('b')} style={{flex:1,maxWidth:140}}>{ex.nameB}</button></div>
