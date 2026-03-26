@@ -199,7 +199,7 @@ const LV_OPTS={
   lee_read_do:[{n:5,l:'Lee y haz'}],
 };
 function getModuleLv(modKey){const v=loadData('mod_lv_'+modKey,null);if(Array.isArray(v))return v;if(v!==null)return[v];return null}
-function getModuleLvOrDef(modKey,defLv){const v=getModuleLv(modKey);if(v)return v;return Array.isArray(defLv)?defLv:[defLv]}
+function getModuleLvOrDef(modKey,defLv){const v=getModuleLv(modKey);if(v&&v.length>0)return v;return Array.isArray(defLv)?defLv:[defLv]}
 function setModuleLv(modKey,lv){saveData('mod_lv_'+modKey,Array.isArray(lv)?lv:lv!==null?[lv]:null)}
 const GROUPS=[
   {id:'quiensoy',name:'QUIÉN SOY',emoji:'👤',color:'#E91E63',desc:'Mi presentación',modules:[
@@ -501,7 +501,7 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);
   const words=useMemo(()=>ex.fu.replace(/[¿?¡!,\.]/g,'').split(/\s+/),[ex.fu]);const{idleMsg,poke}=useIdle(name,ph==='build'&&!bf);
   useEffect(()=>{sPh('build');sBf(null);let sh=[...words];if(sh.length>1){let tries=0;do{for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]]}tries++}while(tries<50&&sh.every((w,i)=>w===words[i]));if(sh.every((w,i)=>w===words[i])){const a=0,b=sh.length-1;[sh[a],sh[b]]=[sh[b],sh[a]]}}sAv(sh.map((w,i)=>({w,oi:i,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
-  function place(item){poke();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');if(built===target){sBf('ok');(async()=>{await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));const phr=await playRec(uid,vids,textKey(ex.fu));if(!phr)await say(ex.fu);await new Promise(r=>setTimeout(r,600));stopVoice();sPh('speak')})()}else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
+  function place(item){poke();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');if(built===target){sBf('ok');(async()=>{stopVoice();await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));stopVoice();const phr=await playRec(uid,vids,textKey(ex.fu));if(!phr)await say(ex.fu);await new Promise(r=>setTimeout(r,600));stopVoice();sPh('speak')})()}else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
   function undo(){poke();let li=-1;pl.forEach((p,i)=>{if(p)li=i});if(li===-1)return;const it=pl[li];const np=[...pl];np[li]=null;sPl(np);sAv(a=>a.map(x=>x.i===it.i?{...x,u:false}:x))}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
@@ -512,7 +512,7 @@ function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       </div>
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
-      <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&!pl.every(p=>p!==null)&&<button onClick={()=>{poke();say(ex.fu)}} style={{width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
+      <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&!pl.every(p=>p!==null)&&<button onClick={()=>{poke();stopVoice();say(ex.fu)}} style={{width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
       <div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
     {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
   </div>}
@@ -554,6 +554,7 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
   const[phase,setPhase]=useState('ready');
   const[revealed,setRevealed]=useState(new Set());
   const alive=useRef(true);
+  const ttsPlaying=useRef(false);
   const batchSet=useMemo(()=>new Set(nums),[nums]);
   // Build grid rows: show decades containing batch nums + context
   const gridRows=useMemo(()=>{
@@ -576,7 +577,12 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       setRevealed(prev=>{const s=new Set(prev);s.add(n);return s});
       setPhase('toki');stopVoice();
       const text=NUMS_1_100[n-1]||String(n);
+      ttsPlaying.current=true;
       await sayFast(text);
+      ttsPlaying.current=false;
+      if(!alive.current)return;
+      // Small delay so mic doesn't pick up Toki's voice echo
+      await new Promise(r=>setTimeout(r,200));
       if(!alive.current)return;
       setPhase('child');
       const heard=await listenQuick(2200);
@@ -590,11 +596,11 @@ function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
   }
   const curNum=ci>=0?nums[ci]:null;
   return <div style={{textAlign:'center',padding:'10px 4px'}}>
-    <div style={{marginBottom:8}}>
-      <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:'0 0 2px'}}>{phase==='done'?'🎉 ¡Genial!':phase==='ready'?'🔢 Cuenta conmigo...':'🔢 ¡Cuenta!'}</p>
-      {curNum&&phase!=='done'&&<div>
-        <p style={{fontSize:48,fontWeight:800,color:'#fff',margin:'4px 0',animation:phase==='child'?'pulse .6s infinite':'none',textShadow:'0 0 24px '+NUM_BLOCK_COLORS[(curNum-1)%10]}}>{curNum}</p>
-        <p style={{fontSize:16,color:DIM,margin:0,fontStyle:'italic'}}>{NUMS_1_100[curNum-1]}</p>
+    <div style={{marginBottom:8,display:'flex',alignItems:'center',justifyContent:'center',gap:16,minHeight:72}}>
+      <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:0}}>{phase==='done'?'🎉 ¡Genial!':phase==='ready'?'🔢 Cuenta conmigo...':'🔢 ¡Cuenta!'}</p>
+      {curNum&&phase!=='done'&&<div style={{display:'flex',alignItems:'baseline',gap:10}}>
+        <p style={{fontSize:64,fontWeight:800,color:'#fff',margin:0,animation:phase==='child'?'pulse .6s infinite':'none',textShadow:'0 0 24px '+NUM_BLOCK_COLORS[(curNum-1)%10],lineHeight:1}}>{curNum}</p>
+        <p style={{fontSize:22,color:DIM,margin:0,fontStyle:'italic',fontWeight:600}}>{NUMS_1_100[curNum-1]}</p>
       </div>}
     </div>
     <div style={{padding:8,borderRadius:16,background:CARD,border:'2px solid '+BORDER,marginBottom:8}}>
@@ -945,13 +951,13 @@ function ExClock({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
   function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
-    else{setFb('no');beep(200,200);const hint=ex.m===0?'Fíjate en la aguja pequeña, ¿dónde apunta?':ex.m===30?'La aguja grande en el 6 significa y media':ex.m===15?'La aguja grande en el 3 significa y cuarto':ex.m===45?'La aguja grande en el 9 significa menos cuarto':'¡Casi!';sayFB(hint);setTimeout(()=>setFb(null),2000)}}
+    else{setFb('no');beep(200,200);const bigHint=ex.m===0?'Fíjate en la aguja pequeña, ¿dónde apunta?':ex.m===30?'La aguja grande en el 6 significa y media':ex.m===15?'La aguja grande en el 3 significa y cuarto':ex.m===45?'La aguja grande en el 9 significa menos cuarto':'¡Casi!';const smallHint=ex.m!==0?'. La aguja pequeña apunta al '+ex.h:'';sayFB(bigHint+smallHint);setTimeout(()=>setFb(null),2500)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>
       <div style={{display:'flex',justifyContent:'center'}}><ClockFace h={ex.h} m={ex.m}/></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
     {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>{ex.m===0?'Fíjate en la aguja pequeña, ¿dónde apunta?':ex.m===30?'La aguja grande en el 6 significa y media':ex.m===15?'La aguja grande en el 3 significa y cuarto':ex.m===45?'La aguja grande en el 9 significa menos cuarto':'¡Casi!'}</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>{ex.m===0?'Fíjate en la aguja pequeña, ¿dónde apunta?':ex.m===30?'La aguja grande en el 6 significa y media':ex.m===15?'La aguja grande en el 3 significa y cuarto':ex.m===45?'La aguja grande en el 9 significa menos cuarto':'¡Casi!'}</p>{ex.m!==0&&<p style={{fontSize:16,color:BLUE,fontWeight:600,margin:'6px 0 0'}}>La aguja pequeña apunta al {ex.h}</p>}</div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
@@ -995,16 +1001,16 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     if(newAns.ayer&&newAns.manana){const di=new Date().getDay()===0?6:new Date().getDay()-1;const correctAyer=DIAS[(di-1+7)%7];const correctMan=DIAS[(di+1)%7];
       if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
       else{setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}
-  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+  return <div style={{textAlign:'center',padding:'10px 14px'}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
-      <div className="card" style={{padding:16,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:0,color:GOLD}}>{ex.mode==='order_days'?'Ordena los días':'Ordena los meses'}</p></div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,minHeight:44}}>{placed.map((d,i)=><span key={i} style={{background:GREEN+'33',borderRadius:8,padding:'8px 12px',fontSize:15,fontWeight:600,color:GREEN}}>{d}</span>)}</div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>{avail.map(d=><button key={d} className="btn btn-b btn-word" onClick={()=>place(d)} style={{fontSize:15,padding:'10px 14px'}}>{d}</button>)}</div>
+      <div className="card" style={{padding:12,marginBottom:8}}><p style={{fontSize:18,fontWeight:700,margin:0,color:GOLD}}>{ex.mode==='order_days'?'Ordena los días':'Ordena los meses'}</p></div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center',marginBottom:8,minHeight:36}}>{placed.map((d,i)=><span key={i} style={{background:GREEN+'33',borderRadius:6,padding:'5px 8px',fontSize:14,fontWeight:600,color:GREEN}}>{d}</span>)}</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:8}}>{avail.map(d=><button key={d} className="btn btn-b btn-word" onClick={()=>place(d)} style={{fontSize:14,padding:'8px 12px'}}>{d}</button>)}</div>
       {placed.length>0&&!fb&&<button className="btn btn-o" onClick={()=>{setPlaced([]);setAvail([...(ex.mode==='order_days'?DIAS:MESES)].sort(()=>Math.random()-.5))}} style={{fontSize:14,maxWidth:150,margin:'0 auto'}}>↩️ Borrar</button>}
     </div>}
     {(ex.mode==='before_after_day'||ex.mode==='before_after_month')&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px',color:GOLD}}>{ex.mode==='before_after_day'?'¿Qué va antes y después?':'¿Qué mes va antes y después?'}</p><p style={{fontSize:32,fontWeight:700,color:BLUE,margin:0}}>{ex.mode==='before_after_day'?ex.day:ex.month}</p></div>
-      <div style={{display:'flex',gap:16,justifyContent:'center',marginBottom:14}}>
+      <div className="card" style={{padding:14,marginBottom:10}}><p style={{fontSize:18,fontWeight:700,margin:'0 0 4px',color:GOLD}}>{ex.mode==='before_after_day'?'¿Qué va antes y después?':'¿Qué mes va antes y después?'}</p><p style={{fontSize:28,fontWeight:700,color:BLUE,margin:0}}>{ex.mode==='before_after_day'?ex.day:ex.month}</p><p style={{fontSize:13,color:DIM,margin:'4px 0 0'}}>Antes = lo que viene justo antes. Después = lo que viene justo después.</p></div>
+      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:10}}>
         <div style={{flex:1,maxWidth:180}}>
           <p style={{fontSize:16,color:BLUE,margin:'0 0 6px',fontWeight:700}}>← ANTES</p>
           <div style={{minHeight:60,background:baAns.before?BLUE+'22':CARD,border:'3px solid '+(baAns.before?BLUE:BORDER),borderRadius:14,display:'flex',alignItems:'center',justifyContent:'center',padding:10}}>
@@ -1029,7 +1035,7 @@ function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
       {!fb&&(baAns.before||baAns.after)&&<button className="btn btn-o" onClick={()=>setBaAns({before:null,after:null})} style={{fontSize:16,maxWidth:160,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
     {ex.mode==='yesterday_tomorrow'&&<div>
-      <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:16,color:DIM,margin:0}}>¿Qué día fue ayer y cuál será mañana?</p></div>
+      <div className="card" style={{padding:14,marginBottom:10}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 4px',color:GOLD}}>Hoy es {DIAS[new Date().getDay()===0?6:new Date().getDay()-1]}</p><p style={{fontSize:14,color:DIM,margin:'0 0 4px'}}>¿Qué día fue ayer y cuál será mañana?</p><p style={{fontSize:13,color:BLUE,margin:0}}>Ayer = el día de antes. Mañana = el día de después.</p></div>
       <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:14}}>
         <div style={{flex:1,maxWidth:160}}>
           <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:700}}>AYER</p>
@@ -1170,9 +1176,10 @@ function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     </div>}
     {ex.mode==='compare'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¿Quién tiene más?</p>
-        <div style={{display:'flex',gap:16,justifyContent:'center'}}>
-          <div><p style={{fontWeight:600,fontSize:16,margin:'0 0 4px'}}>{ex.nameA}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
-          <div><p style={{fontWeight:600,fontSize:16,margin:'0 0 4px'}}>{ex.nameB}</p><div style={{display:'flex',gap:2,justifyContent:'center'}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:20}}>🍬</span>)}</div></div>
+        <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'stretch'}}>
+          <div style={{flex:1,background:BLUE+'15',border:'2px solid '+BLUE+'33',borderRadius:12,padding:12,textAlign:'center'}}><p style={{fontWeight:700,fontSize:18,margin:'0 0 8px',color:BLUE}}>{ex.nameA}</p><div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap'}}>{Array.from({length:ex.a},(_,i)=><span key={i} style={{fontSize:24}}>🍬</span>)}</div><p style={{fontSize:14,color:DIM,margin:'6px 0 0',fontWeight:600}}>{ex.a}</p></div>
+          <div style={{display:'flex',alignItems:'center',fontSize:24,color:DIM,fontWeight:700}}>VS</div>
+          <div style={{flex:1,background:PURPLE+'15',border:'2px solid '+PURPLE+'33',borderRadius:12,padding:12,textAlign:'center'}}><p style={{fontWeight:700,fontSize:18,margin:'0 0 8px',color:PURPLE}}>{ex.nameB}</p><div style={{display:'flex',gap:3,justifyContent:'center',flexWrap:'wrap'}}>{Array.from({length:ex.b},(_,i)=><span key={i} style={{fontSize:24}}>🍬</span>)}</div><p style={{fontSize:14,color:DIM,margin:'6px 0 0',fontWeight:600}}>{ex.b}</p></div>
         </div></div>
       <div style={{display:'flex',gap:10,justifyContent:'center'}}><button className="btn btn-b" onClick={()=>checkCompare('a')} style={{flex:1,maxWidth:140}}>{ex.nameA}</button>
         {ex.a===ex.b&&<button className="btn btn-p" onClick={()=>checkCompare('equal')} style={{flex:1,maxWidth:140}}>Igual</button>}
@@ -1523,13 +1530,13 @@ function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
     <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {slides.length} frases</p>
     <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>🎉 ¡Terminado!</button>
   </div>;
-  return <div style={{textAlign:'center',position:'relative'}}>
-    <p style={{fontSize:14,color:DIM,margin:'0 0 6px',fontWeight:600}}>{qi+1} / {slides.length}</p>
+  return <div style={{textAlign:'center',position:'relative',maxHeight:'100dvh',overflow:'hidden'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt="" style={{width:'100%',maxHeight:'80vh',objectFit:'cover',display:'block'}}/>
+      {cur.img?<img src={cur.img} alt="" style={{width:'100%',maxHeight:'85dvh',objectFit:'cover',display:'block'}}/>
         :<div style={{width:'100%',minHeight:'40vh',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
+        <p style={{fontSize:12,color:'rgba(255,255,255,.5)',margin:'6px 0 0',fontWeight:600}}>{qi+1} / {slides.length}</p>
       </div>
       {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:'0 18px 18px 0',overflow:'hidden',zIndex:5}}>
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
@@ -2365,9 +2372,8 @@ function EmergencyButton({user,personas,supPin}){
   const direccion=user?.direccion||'';
   const lines=[];
   lines.push('HOLA, ME LLAMO '+nombre.toUpperCase()+(apellidos?' '+apellidos.toUpperCase():''));
-  lines.push('TENGO SÍNDROME DE DOWN');
-  if(telPadre)lines.push('EL TELÉFONO DE MI PADRE ES '+telPadre);
-  if(telMadre&&telMadre!==telPadre)lines.push('EL TELÉFONO DE MI MADRE ES '+telMadre);
+  if(telPadre)lines.push('TELÉFONO: '+telPadre);
+  if(telMadre&&telMadre!==telPadre)lines.push('TELÉFONO 2: '+telMadre);
   if(direccion)lines.push('MI DIRECCIÓN ES '+direccion.toUpperCase());
   function speakAll(){
     stopVoice();
@@ -2386,14 +2392,16 @@ function EmergencyButton({user,personas,supPin}){
     <button onClick={openSOS} style={{position:'fixed',bottom:20,right:20,width:56,height:56,borderRadius:'50%',border:'none',background:RED,color:'#fff',fontSize:28,cursor:'pointer',zIndex:90,display:'flex',alignItems:'center',justifyContent:'center',animation:'sosPulse 2s infinite',boxShadow:'0 4px 16px rgba(231,76,60,.4)'}}>🆘</button>
     {show&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:500,background:RED,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:24,overflow:'auto'}}>
       <div style={{maxWidth:600,width:'100%',textAlign:'center'}}>
-        {lines.map((l,i)=><p key={i} style={{fontSize:i===0?36:28,fontWeight:900,color:'#fff',margin:'12px 0',lineHeight:1.3,textShadow:'0 2px 8px rgba(0,0,0,.3)'}}>{l}</p>)}
+        {lines.map((l,i)=>{
+          const isPhone=l.startsWith('TELÉFONO');
+          const phoneNum=isPhone?l.replace(/^TELÉFONO[^:]*:\s*/,'').trim():'';
+          return <div key={i} style={{margin:'12px 0'}}>
+            <p style={{fontSize:i===0?36:isPhone?34:28,fontWeight:900,color:'#fff',margin:0,lineHeight:1.3,textShadow:'0 2px 8px rgba(0,0,0,.3)'}}>{l}</p>
+            {isPhone&&phoneNum&&<a href={'tel:'+phoneNum.replace(/\./g,'')} style={{display:'inline-block',marginTop:8,padding:'10px 24px',borderRadius:14,background:'rgba(255,255,255,.2)',border:'2px solid rgba(255,255,255,.5)',color:'#fff',fontSize:22,fontWeight:700,textDecoration:'none',fontFamily:"'Fredoka'"}}>📞 Llamar {phoneNum}</a>}
+          </div>})}
       </div>
       <div style={{position:'absolute',bottom:30,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
-        <button onClick={()=>{if(!supPin){closeSOS();return}}} style={{background:'rgba(0,0,0,.3)',border:'2px solid rgba(255,255,255,.4)',borderRadius:12,padding:'10px 20px',color:'#fff',fontSize:16,fontWeight:600,fontFamily:"'Fredoka'",cursor:'pointer'}}>Cerrar</button>
-        {supPin&&<div style={{display:'flex',gap:6,alignItems:'center'}}>
-          <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="PIN" style={{width:100,padding:'8px 12px',borderRadius:8,border:pinErr?'2px solid #fff':'2px solid rgba(255,255,255,.4)',background:'rgba(0,0,0,.3)',color:'#fff',fontSize:20,textAlign:'center',fontFamily:"'Fredoka'",letterSpacing:8}}/>
-          <button onClick={tryClose} disabled={pinInput.length<4} style={{padding:'8px 16px',borderRadius:8,border:'2px solid rgba(255,255,255,.4)',background:'rgba(0,0,0,.3)',color:'#fff',fontSize:16,fontFamily:"'Fredoka'",cursor:'pointer'}}>OK</button>
-        </div>}
+        <button onClick={closeSOS} style={{background:'rgba(0,0,0,.3)',border:'2px solid rgba(255,255,255,.4)',borderRadius:12,padding:'12px 28px',color:'#fff',fontSize:20,fontWeight:600,fontFamily:"'Fredoka'",cursor:'pointer'}}>← Volver</button>
       </div>
     </div>}
   </>}
@@ -2680,7 +2688,7 @@ export default function App(){
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
-  function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);
+  function buildQ(u,section,slv){console.log('[Toki buildQ]',{section,slv});const sh=a=>[...a].sort(()=>Math.random()-.5);
     // Quién Soy: handle before multi-level merge (don't shuffle — order matters)
     if(section==='quiensoy'){
       const lvArr=Array.isArray(slv)?slv:[slv||1];
@@ -2754,6 +2762,7 @@ export default function App(){
     // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
       const lvArr=Array.isArray(freshLv)?freshLv:[freshLv||1];
+      console.log('[Toki startGame quiensoy]',{freshLv,lvArr,has1:lvArr.includes(1),has2:lvArr.includes(2)});
       if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
     }
     setSecLv(freshLv);setQsChoice(null);
@@ -2799,7 +2808,7 @@ export default function App(){
       </div>)}
       <button className="btn btn-ghost" onClick={()=>setOv(null)} style={{marginTop:12}}>Cerrar</button>
     </div></div>}
-    {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setUser(null);setScr('login')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
+    {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
     {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={!!supPin&&parentPin.length<4} onClick={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
     {ov==='parent'&&user&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>setOv(null)}>🎮 ¡A jugar!</button></div>
