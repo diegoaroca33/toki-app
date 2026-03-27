@@ -211,17 +211,18 @@ export default function App(){
       return items}
     // Multi-level support: if slv is an array, merge exercises from all levels
     if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
-    if(Array.isArray(slv))slv=slv[0]||1;
+    if(Array.isArray(slv))slv=parseInt(slv[0])||1;
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
-      const wRange=slv===1?[1,2]:slv===2?[2,3]:slv===3?[3,4]:slv===4?[4,5]:[5,99];
+      const lv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;
+      const wRange=lv===1?[1,2]:lv===2?[2,3]:lv===3?[3,4]:lv===4?[4,5]:[5,99];
       const pool=EX.filter(e=>(e.ty==='flu'||e.ty==='sit')&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
       const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<40){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return sel.slice(0,40).sort(()=>Math.random()-.5).map(e=>{const p={...e};if(p.ph)p.ph=personalize(p.ph,u);if(p.fu)p.fu=personalize(p.fu,u);if(p.su)p.su=personalize(p.su,u);if(p.q)p.q=personalize(p.q,u);if(p.si)p.si=personalize(p.si,u);if(p.op)p.op=p.op.map(o=>personalize(o,u));return p})}
-    if(section==='frase'){const wc=slv===1?3:slv===2?4:slv===3?5:[6,7];
+    if(section==='frase'){const flv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;const wc=flv===1?3:flv===2?4:flv===3?5:[6,7];
       const pool=EX.filter(e=>e.ty==='flu'&&e.ph).filter(e=>{const w=e.ph.replace(/[¿?¡!,\.]/g,'').split(/\s+/).length;return Array.isArray(wc)?w>=wc[0]&&w<=wc[1]:w===wc});
       let sel=sh(pool).slice(0,40);return sel.map(e=>{const ph=personalize(e.ph,u);const q=ph.split(/\s+/).length<=3?'¿Cómo dices esto?':'¿Cómo se dice?';
         if(slv===4&&Math.random()>0.5){const words=ph.split(/\s+/);const bi=1+Math.floor(Math.random()*(words.length-2));const blank=words[bi];words[bi]='___';return{...e,ty:'frases_blank',q:'Completa la frase',fu:ph,blank,words,ph:personalize(e.ph,u)}}
         return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}})}
-    if(section==='contar'){let start=1,end=20;if(slv===2){start=20;end=50}else if(slv===3){start=50;end=100}else if(slv>=4){start=1;end=100}
+    if(section==='contar'){const clv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;let start=1,end=20;if(clv===2){start=20;end=50}else if(clv===3){start=50;end=100}else if(clv>=4){start=1;end=100}
       const firstD=Math.floor((start-1)/10),lastD=Math.floor((end-1)/10);const batches=[];
       for(let d=firstD;d<=lastD;d++){const b=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n>=start&&n<=end&&n<=100)b.push(n)}if(b.length>0)batches.push(b)}
       // Merge small batches (<5) with next/prev
