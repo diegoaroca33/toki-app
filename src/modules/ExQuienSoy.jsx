@@ -47,7 +47,8 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
     // Wait for image to load before playing voice
-    function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img){stopVoice();doPlay()}else{setTimeout(tryPlay,200)}}
+    const imgStart=Date.now();
+    function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img||Date.now()-imgStart>5000){stopVoice();doPlay()}else{setTimeout(tryPlay,200)}}
     const t=setTimeout(tryPlay,600);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
@@ -88,7 +89,8 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   const presImgLoaded=useRef(false);
   useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);presImgLoaded.current=false;timers.current.forEach(clearTimeout);timers.current=[];
     // Wait for image before speaking
-    function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
+    const imgStart=Date.now();
+    function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current||Date.now()-imgStart>5000){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
     function doSpeak(){
       say(cur.text).then(()=>{if(!alive.current)return;
         setBarOn(true);

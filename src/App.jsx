@@ -208,7 +208,7 @@ export default function App(){
       if(thisPres){
         const slides=thisPres.slides||(thisPres.lines||[]).map(t=>({text:t,img:null,picto:null}));
         if(hasEstudio&&slides.length>0){
-          items.push(...slides.map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(s.text||s,u),img:s.img||null,picto:s.picto||null})));
+          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||null,picto:s.picto||null})));
         }
         if(hasPres){
           items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:slides[0]?.img||null,presentation:{...thisPres,slides}});
@@ -551,13 +551,13 @@ export default function App(){
           const cW=orbitR*2*scX+planetSize+50;const cH=orbitR*2*scY+planetSize+70;
           const orbitDuration=60;
           return <div style={{position:'relative',width:cW,height:cH,margin:'0 auto'}}>
-            {/* Center: rocket (clickable start) */}
-            <button onClick={startGame} style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:2,
-              background:'none',border:'none',cursor:'pointer',padding:0,
+            {/* Center: rocket (decorative — must open a planet first) */}
+            <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:2,
+              padding:0,
               display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
               <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
-            </button>
+            </div>
             {/* Orbiting ring (visual — elliptical tilted via SVG) */}
             <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
               <ellipse cx={cW/2} cy={cH/2} rx={orbitR*scX} ry={orbitR*scY} fill="none" stroke="rgba(255,255,255,.10)" strokeWidth="1" strokeDasharray="6 4" transform={`rotate(${tilt},${cW/2},${cH/2})`}/>
