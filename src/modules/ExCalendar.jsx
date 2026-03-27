@@ -10,8 +10,8 @@ const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 export function genCalendar(lv){const items=[];
-  if(lv===1){DIAS.forEach((d,i)=>{items.push({ty:'calendar',mode:'order_days',correct:DIAS,id:'cal_days_'+i})});return[items[0]]}
-  if(lv===2){MESES.forEach((m,i)=>{items.push({ty:'calendar',mode:'order_months',correct:MESES,id:'cal_months_'+i})});return[items[0]]}
+  if(lv===1){items.push({ty:'calendar',mode:'order_days',correct:DIAS,id:'cal_days_0'});for(let i=0;i<5;i++){const di=Math.floor(Math.random()*7);items.push({ty:'calendar',mode:'before_after_day',day:DIAS[di],dayIdx:di,id:'cal_ba_d1_'+i})}return items.sort(()=>Math.random()-.5)}
+  if(lv===2){items.push({ty:'calendar',mode:'order_months',correct:MESES,id:'cal_months_0'});for(let i=0;i<5;i++){const mi=Math.floor(Math.random()*12);items.push({ty:'calendar',mode:'before_after_month',month:MESES[mi],monthIdx:mi,id:'cal_bam1_'+i})}return items.sort(()=>Math.random()-.5)}
   if(lv===3){for(let i=0;i<10;i++){const di=Math.floor(Math.random()*7);items.push({ty:'calendar',mode:'before_after_day',day:DIAS[di],dayIdx:di,id:'cal_ba_d_'+i})}return items}
   for(let i=0;i<10;i++){const r=Math.random();if(r<0.33){items.push({ty:'calendar',mode:'yesterday_tomorrow',id:'cal_yt_'+i})}
     else if(r<0.66){const di=Math.floor(Math.random()*7);items.push({ty:'calendar',mode:'before_after_day',day:DIAS[di],dayIdx:di,id:'cal_ba2_'+i})}

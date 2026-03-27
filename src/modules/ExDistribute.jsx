@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, DIM, CARD, BORDER } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { loadData, rnd, beep, mkPerfect } from '../utils.js'
@@ -62,36 +62,37 @@ export function BagSVG({name:bagName,size=80}){return <svg width={size} height={
 
 export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
   const[count,setCount]=useState(0);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const[att,setAtt]=useState(0);const[showCount,setShowCount]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
+  const timers=useRef([]);const setT=(fn,ms)=>{const id=setTimeout(fn,ms);timers.current.push(id);return id};const clearTimers=()=>{timers.current.forEach(clearTimeout);timers.current=[]};
   const objType=useMemo(()=>['candy','card','domino'][Math.floor(Math.random()*3)],[ex]);
   const objEmoji=objType==='candy'?'🍬':objType==='card'?'🃏':'🁣';
   const objName=objType==='candy'?'caramelos':objType==='card'?'cartas':'fichas';
   const ObjSVG=objType==='card'?CardSVG:objType==='domino'?DominoSVG:null;
   const uniqueCards=useMemo(()=>{const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];const suits=['♥','♦','♠','♣'];const all=[];for(const s of suits)for(const r of ranks)all.push({rank:r,suit:s});const sh=[...all].sort(()=>Math.random()-.5);return sh.slice(0,20)},[ex]);
   const uniqueDominos=useMemo(()=>{const all=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)all.push([a,b]);const sh=[...all].sort(()=>Math.random()-.5);return sh.slice(0,20)},[ex]);
-  useEffect(()=>{setCount(0);setFb(null);setAns('');setAtt(0);setShowCount(false);stopVoice();
-    if(ex.mode==='put')setTimeout(()=>say('Pon '+ex.count+' '+objName),400);
-    else if(ex.mode==='equal')setTimeout(()=>say('Reparte '+ex.total+' '+objName+' en '+ex.bags+' bolsas iguales'),400);
-    else setTimeout(()=>say('¿Quién tiene más?'),400);
-    return()=>stopVoice()},[ex]);
+  useEffect(()=>{setCount(0);setFb(null);setAns('');setAtt(0);setShowCount(false);clearTimers();stopVoice();
+    if(ex.mode==='put')setT(()=>say('Pon '+ex.count+' '+objName),400);
+    else if(ex.mode==='equal')setT(()=>say('Reparte '+ex.total+' '+objName+' en '+ex.bags+' bolsas iguales'),400);
+    else setT(()=>say('¿Quién tiene más?'),400);
+    return()=>{clearTimers();stopVoice()}},[ex]);
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
-  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
+  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
     else{const na=att+1;setAtt(na);
       if(na>=2){/* 2nd fail: Toki counts WITH the child */
         setFb('counting');setShowCount(true);beep(200,200);
         let i=0;const target=ex.count;
         function countNext(){if(i>=target){
-          setTimeout(()=>{if(count>target){sayFB('¡Sobran '+(count-target)+'!')}else if(count<target){sayFB('¡Faltan '+(target-count)+'!')}
-            setTimeout(()=>{setFb(null);setCount(0);setShowCount(false)},2000)},600);return}
-          i++;say(''+i,0.9);setTimeout(countNext,900)}
-        setTimeout(countNext,500)}
+          setT(()=>{if(count>target){sayFB('¡Sobran '+(count-target)+'!')}else if(count<target){sayFB('¡Faltan '+(target-count)+'!')}
+            setT(()=>{setFb(null);setCount(0);setShowCount(false)},2000)},600);return}
+          i++;say(''+i,0.9);setT(countNext,900)}
+        setT(countNext,500)}
       else{setFb('wrong');beep(200,200);sayFB(rnd(['¡Casi!','¡Inténtalo otra vez!','¡Cuenta bien!']));
-        setTimeout(()=>{setFb(null);setCount(0)},2000)}}}
-  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-    else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setTimeout(()=>{setFb(null);setAns('')},2500)}}
+        setT(()=>{setFb(null);setCount(0)},2000)}}}
+  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
+    else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setT(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
-    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
-    else{setFb('no');beep(200,200);setTimeout(()=>setFb(null),1200)}}
+    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
+    else{setFb('no');beep(200,200);setT(()=>setFb(null),1200)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}>

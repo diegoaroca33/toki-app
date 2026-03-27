@@ -2,8 +2,8 @@
 // TOKI · Constants & Static Data
 // ============================================================
 
-export const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#7F8FA6',CARD='#152D55',BORDER='#1E3A6A';
-export const VER='v21.3';
+export const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#A0AEC0',CARD='#152D55',BORDER='#1E3A6A';
+export const VER='v24.0';
 export const ADMIN_EMAIL='diego@toki-app.es';
 
 export const CSS=`
@@ -27,7 +27,7 @@ input::placeholder{color:${DIM}}
 .btn-o{background:#E67E22;border-color:#d35400;box-shadow:4px 4px 0 #a04000}
 .btn-gold{background:${GOLD};border-color:#d4ac0d;box-shadow:4px 4px 0 #b7950b;color:#1a1a2e}
 .btn-ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:none;color:${DIM};font-size:16px}
-.btn-half{display:inline-block;width:48%;font-size:15px;padding:12px 0}
+.btn-half{display:inline-block;width:48%;font-size:18px;padding:12px 0}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
 .inp{width:100%;padding:16px;background:${BG3};border:2px solid ${BORDER};border-radius:12px;color:${TXT};font-size:20px;outline:none}
@@ -42,7 +42,7 @@ input::placeholder{color:${DIM}}
 .avbtn{font-size:30px;width:52px;height:52px;border-radius:14px;border:2px solid ${BORDER};background:${BG3}}
 .avbtn.on{border-color:${GOLD};background:${GOLD}22}
 .tabs{display:flex;gap:4px;background:${BG3};border-radius:12px;padding:4px}
-.tab{flex:1;padding:12px;border-radius:10px;border:none;font-weight:600;font-size:15px;background:transparent;color:${DIM}}
+.tab{flex:1;padding:12px;border-radius:10px;border:none;font-weight:600;font-size:17px;background:transparent;color:${DIM}}
 .tab.on{background:${GOLD};color:#1a1a2e}
 .sbox{background:${CARD};border:2px solid ${BORDER};border-radius:12px;padding:16px;text-align:center}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -75,6 +75,32 @@ body.theme-sober{background:linear-gradient(180deg,#1a1a2e 0%,#2d2d44 100%)!impo
 body.theme-sober::before{display:none!important}
 body.theme-sober .sky-morning,body.theme-sober .sky-afternoon,body.theme-sober .sky-night{background:none!important}
 body.theme-sober .sober-hide{display:none!important}
+@media (max-width:480px){
+  #root{padding:8px 10px;max-width:100%}
+  .btn{padding:14px 16px;font-size:18px;border-radius:12px;min-height:44px}
+  .btn-word{padding:10px 14px;font-size:17px}
+  .btn-half{font-size:14px;padding:10px 0}
+  .card{padding:14px;border-radius:14px}
+  .inp{padding:12px;font-size:17px}
+  .ovp{padding:20px 16px;border-radius:16px;max-width:340px}
+  .ws{min-width:44px;height:42px;font-size:17px;padding:0 10px}
+}
+@media (max-width:360px){
+  #root{padding:6px 8px}
+  .btn{padding:12px 12px;font-size:16px;border-width:2px;border-radius:10px}
+  .card{padding:10px;border-radius:12px}
+  .ovp{padding:16px 12px;max-width:300px}
+}
+@media (min-width:768px) and (orientation:landscape){
+  #root{max-width:1100px;padding:12px 24px}
+  .btn{font-size:22px;padding:20px 24px}
+}
+@media (hover:none){
+  *{-webkit-user-select:none;user-select:none}
+  input,textarea{-webkit-user-select:text;user-select:text}
+}
+.btn:focus-visible,button:focus-visible{outline:3px solid #FFD700;outline-offset:2px}
+input:focus-visible{outline:3px solid #FFD700;outline-offset:2px}
 `;
 
 export const AVS=['🧑‍🚀','👨‍🚀','👩‍🚀','🦸','🦸‍♂️','🦸‍♀️','🧙','🧙‍♂️','🧙‍♀️','🧑‍🎤','👨‍🎤','👩‍🎤','🧑‍🎨','🧑‍🏫','👨‍🍳','👩‍🔬','🧑‍✈️','👮','🥷','🧛','🧜‍♀️','🧜‍♂️','🧚','🧞','🦊','🐸','🐉','🦁','🐼','🐨','🦄','🐯','🐺','🦖','🐙','🦈','🦅','🦋','🤖','👾','🎮','⚡','🌟','🔥','💎','🎯','🏆','🎸','🛹','🏄','⚽','🎪','🚀','🌈'];
@@ -87,7 +113,7 @@ export const PERFECT_T=['¡Muy bien {N}!','¡Eres un crack {N}!','¡Genial {N}, 
 export const GOOD_MSG=['¡Bien!','¡Genial!','¡Muy bien!','¡Fenomenal!','¡Estupendo!','¡Olé!'];
 export const RETRY_MSG=['Otra vez','Venga, otra','Una más','Casi casi'];
 export const FAIL_MSG=['Poco a poco','No pasa nada','Seguimos','Ánimo'];
-export const SHORT_OK=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!'];
+export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Fenómeno!','¡Adelante!','¡Arriba!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!'];
 export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!'];
 export const MODULE_MSG={decir:['¡Dilo!','¡Dilo tú!','¡Dilo otra vez!','¡Venga, dilo!'],frase:['¡Dilo!','¡Dilo tú!','¡Venga, dilo!'],math:['¡Cuenta!','¡Cuenta conmigo!','¡Cuenta otra vez!'],multi:['¡Cuenta!','¡Cuenta conmigo!'],frac:['¡Cuenta!','¡Cuenta otra vez!'],contar:['¡Cuenta!','¡Cuenta conmigo!'],writing:['¡Escríbelo!','¡Escribe otra vez!'],calendar:['¡Piensa!','¡Tú puedes!','¡Razona!'],distribute:['¡Piensa!','¡Tú puedes!'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','¡Tú puedes!'],quiensoy:['¡Dilo!','¡Dilo tú!'],razona:['¡Piensa!','¡Tú puedes!','¡Razona!','¡Piensa bien!'],lee:['¡Léelo!','¡Lee otra vez!','¡Tú sabes leer!','¡Venga, lee!']};
 export const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK,...SHORT_OK];
@@ -124,6 +150,11 @@ export const QUIEN_SOY=[
 
 export const LV_OPTS={
   quiensoy:[{n:1,l:'Estudio'},{n:2,l:'Presentación'}],
+  razona_spatial:[{n:1,l:'Elige'},{n:2,l:'Arrastra'}],
+  razona_series:[{n:6,l:'Colores'},{n:7,l:'Formas'},{n:8,l:'Combinado'}],
+  razona_piensa:[{n:4,l:'Causa-efecto'}],
+  razona_clasifica:[{n:3,l:'Clasifica'}],
+  razona_emociones:[{n:5,l:'Emociones'}],
   decir:[{n:1,l:'N1'},{n:2,l:'N2'},{n:3,l:'N3'},{n:4,l:'N4'},{n:5,l:'N5'}],
   frase:[{n:1,l:'3 pal'},{n:2,l:'4 pal'},{n:3,l:'5 pal'}],
   contar:[{n:1,l:'1-20'},{n:2,l:'20-50'},{n:3,l:'50-100'},{n:4,l:'1-100'}],
@@ -140,7 +171,6 @@ export const LV_OPTS={
   writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
   writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
   writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
-  razona:[{n:1,l:'¿Dónde está?'},{n:2,l:'Intruso'},{n:3,l:'Clasificar'},{n:4,l:'Causa-efecto'},{n:5,l:'Emociones'},{n:6,l:'Series'}],
   lee_intruso:[{n:1,l:'Intruso'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
   lee_complete:[{n:3,l:'Completa'}],
@@ -149,7 +179,7 @@ export const LV_OPTS={
 };
 
 export const GROUPS=[
-  {id:'quiensoy',name:'QUIÉN SOY',emoji:'👤',color:'#E91E63',desc:'Mi presentación',modules:[
+  {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones y estudio',modules:[
     {k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'quiensoy'}]},
   {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
     {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
@@ -160,11 +190,15 @@ export const GROUPS=[
     {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
     {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'}]},
   {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
+    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
+    {k:'razona',l:'Series',defLv:6,lvKey:'razona_series'},
+    {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
+    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
+    {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
     {k:'money',l:'Monedas y Billetes',defLv:1,lvKey:'money'},
     {k:'clock',l:'La Hora',defLv:1,lvKey:'clock'},
     {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
-    {k:'distribute',l:'Reparte y Cuenta',defLv:1,lvKey:'distribute'},
-    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona'}]},
+    {k:'distribute',l:'Reparte y Cuenta',defLv:1,lvKey:'distribute'}]},
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
     {k:'writing',l:'Escritura',defLv:1,lvKey:'writing_1'}]},
   {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[

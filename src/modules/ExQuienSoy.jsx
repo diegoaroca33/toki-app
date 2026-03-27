@@ -52,13 +52,13 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
   return <div style={{textAlign:'center'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      <img src={ex.img} alt="" style={{width:'100%',maxHeight:'75vh',objectFit:'cover',display:'block'}}/>
+      <img src={ex.img} alt={ex.text} style={{width:'100%',maxHeight:'75vh',objectFit:'cover',display:'block'}}/>
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'36px 16px 14px'}}>
         <p style={{fontSize:24,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
       </div>
       <QSTimeBar dur={dur} on={mic} onEnd={onTimeUp}/>
     </div>
-    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4,margin:'0 auto'}}><img src={ex.picto} alt="" style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
+    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4,margin:'0 auto'}}><img src={ex.picto} alt={'Pictograma: '+ex.text} style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
     <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
       <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}}>🔊 Otra vez</button>
       <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
@@ -98,13 +98,13 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   </div>;
   return <div style={{textAlign:'center',position:'relative',height:'100dvh',maxHeight:'100dvh',overflow:'hidden'}}>
     <div style={{position:'relative',width:'100%',height:'100%',borderRadius:0,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+      {cur.img?<img src={cur.img} alt={cur.text} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
         :<div style={{width:'100%',height:'100%',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
         <p style={{fontSize:11,color:'rgba(255,255,255,.35)',margin:'4px 0 0',fontWeight:600}}>{qi+1}/{slides.length}</p>
       </div>
-      {cur.picto&&<div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.9)',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt="" style={{height:60,objectFit:'contain',display:'block'}}/></div>}
+      {cur.picto&&<div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.9)',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt={'Pictograma: '+cur.text} style={{height:60,objectFit:'contain',display:'block'}}/></div>}
       {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:0,overflow:'hidden',zIndex:5}}>
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}

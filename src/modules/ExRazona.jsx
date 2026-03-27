@@ -63,7 +63,7 @@ const RAZONA_EMOTIONS=[
   {emoji:'😊',emotion:'Contento',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
   {emoji:'😢',emotion:'Triste',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
   {emoji:'😠',emotion:'Enfadado',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
-  {emoji:'😨',emotion:'Asustado',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Sorprendido']},
+  {emoji:'😨',emotion:'Asustado',q:'¿Cómo se siente?',opts:['Contento','Asustado','Enfadado','Sorprendido']},
   {emoji:'😲',emotion:'Sorprendido',q:'¿Cómo se siente?',opts:['Contento','Sorprendido','Enfadado','Triste']},
   {emoji:'😴',emotion:'Cansado',q:'¿Cómo se siente?',opts:['Contento','Cansado','Enfadado','Asustado']},
 ];
@@ -82,11 +82,14 @@ export function genPatterns(difficulty){const sh=a=>[...a].sort(()=>Math.random(
   else{for(let i=0;i<12;i++){const cs=sh([...COLORS]).slice(0,3);const ss2=sh([...SHAPES]).slice(0,3);const combined=cs.map((c,j)=>({em:c.em+ss2[j%ss2.length].em,n:c.n+' '+ss2[j%ss2.length].n}));items.push({ty:'razona',mode:'pattern',data:mkPattern(combined,pats[i%4]),id:'rz_pat_h'+i})}}
   return sh(items)}
 export function genRazona(lv){const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
-  if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
-  if(lv===2){RAZONA_INTRUSO.forEach((s,i)=>items.push({ty:'razona',mode:'intruso',data:s,id:'rz_int_'+i}));return sh(items)}
+  if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
+  if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
   if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
   if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
-  if(lv===6){const all=[...genPatterns('easy'),...genPatterns('medium'),...genPatterns('hard')];return sh(all).slice(0,20)}
+  if(lv===5){RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+  if(lv===6){return genPatterns('easy')}
+  if(lv===7){return genPatterns('medium')}
+  if(lv===8){return genPatterns('hard')}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -234,7 +237,7 @@ export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZon
     armario:['encima','debajo','dentro','al lado']
   };
   const allPositions=validZones[scene]||['encima','debajo','dentro','al lado'];
-  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}}>
+  return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{maxWidth:'100%'}} role="img" aria-label={`Escena: ${obj} ${pos} de ${scene}`}>
     <rect x={0} y={0} width={w} height={h} rx={14} fill={BG3} stroke={BORDER} strokeWidth={2}/>
     <rect x={10} y={h-20} width={w-20} height={12} rx={4} fill="#3a3a4a" opacity={.3}/>
     <FurnitureCmp/>
@@ -335,6 +338,8 @@ export function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
   </div>}
 
 export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
+  const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
+  const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);setAtt(0);setPlaced({});stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
@@ -369,7 +374,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-        {[...ex.data.words].sort(()=>Math.random()-.5).map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
+        {shuffledWords.map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
       </div>
     </div>}
     {ex.mode==='classify'&&<div>
@@ -391,7 +396,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='cause'&&<div>
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
+        {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
     {ex.mode==='pattern'&&<div>
@@ -413,7 +418,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         <div style={{fontSize:90}}>{ex.data.emoji}</div>
       </div>
       <div style={{flex:'0 0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:280}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
+        {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
     {fb==='ok'&&ex.mode!=='spatial'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}

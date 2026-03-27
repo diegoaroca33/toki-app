@@ -9,7 +9,7 @@ import { NUMS_1_100 } from '../constants.js'
 
 // Mascot SVG component
 export function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
-  return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" style={{animation:anim,display:'block'}}>
+  return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="Mascota" style={{animation:anim,display:'block'}}>
     <defs><filter id="starGlow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     <path d="M24,3 C25.5,12 27,14 28,16 C33,15.5 39,15 42,16 C37,19 33,21 31,23 C33,28 35,34 34,38 C30,34 27,31 24,29 C21,31 18,34 14,38 C13,34 15,28 17,23 C15,21 11,19 6,16 C9,15 15,15.5 20,16 C21,14 22.5,12 24,3Z" fill={GOLD} stroke="#d4ac0d" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" filter="url(#starGlow)"/>
     <circle cx={19} cy={19} r={2.8} fill="#1a1a2e"/><circle cx={29} cy={19} r={2.8} fill="#1a1a2e"/>
@@ -51,6 +51,30 @@ export function NumPad({value,onChange,onSubmit,maxLen=5,decimal=false}){
         <span style={{fontSize:11,lineHeight:1}}>¡Listo!</span>
       </button>
     </div>
+  </div>}
+
+// ===== ASTRONAUT AVATAR — Photo/emoji with optional space helmet =====
+export function AstronautAvatar({photo,emoji,size=80,helmet=true,onClick,style={}}){
+  const r=size/2;const sw=size*0.04;
+  return <div onClick={onClick} style={{position:'relative',width:size,height:size,cursor:onClick?'pointer':'default',flexShrink:0,...style}}>
+    {/* Circular photo or emoji */}
+    <div style={{width:size,height:size,borderRadius:'50%',overflow:'hidden',background:photo?'transparent':BG3,border:`${Math.max(2,sw)}px solid ${GOLD}55`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+      {photo?<img src={photo} alt="Foto de perfil" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
+        :<span style={{fontSize:size*0.5,lineHeight:1}}>{emoji||'🧑‍🚀'}</span>}
+    </div>
+    {/* Helmet overlay */}
+    {helmet&&<svg width={size} height={size} viewBox="0 0 100 100" style={{position:'absolute',top:0,left:0,pointerEvents:'none'}}>
+      {/* Helmet dome — arc over the top */}
+      <ellipse cx={50} cy={48} rx={48} ry={46} fill="none" stroke="#B0BEC5" strokeWidth={4} strokeDasharray="180 200" strokeDashoffset={-10} opacity={0.85}/>
+      {/* Helmet rim — thicker at top */}
+      <path d="M8,55 Q8,8 50,5 Q92,8 92,55" fill="none" stroke="#90A4AE" strokeWidth={5} strokeLinecap="round" opacity={0.7}/>
+      {/* Visor reflection */}
+      <ellipse cx={35} cy={30} rx={12} ry={8} fill="#fff" opacity={0.12} transform="rotate(-20,35,30)"/>
+      <ellipse cx={60} cy={25} rx={6} ry={4} fill="#fff" opacity={0.08} transform="rotate(-15,60,25)"/>
+      {/* Ear connectors */}
+      <circle cx={6} cy={55} r={4} fill="#78909C" stroke="#546E7A" strokeWidth={1.5}/>
+      <circle cx={94} cy={55} r={4} fill="#78909C" stroke="#546E7A" strokeWidth={1.5}/>
+    </svg>}
   </div>}
 
 // ===== ABACUS HELP — Visual counting aid =====

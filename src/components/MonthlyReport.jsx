@@ -29,7 +29,7 @@ export function MonthlyReport({user}){
     // Per module stats
     const modMap={};
     curEntries.forEach(h=>{const sec=h.section||'general';if(!modMap[sec])modMap[sec]={sessions:0,stars:0,total:0};modMap[sec].sessions++;modMap[sec].stars+=h.ok||0;modMap[sec].total+=(h.ok||0)+(h.sk||0)});
-    const MOD_NAMES={decir:'Dilo',frase:'Forma la frase',contar:'Cuenta',math:'Sumas/Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas',clock:'La Hora',calendar:'Calendario',distribute:'Reparte',writing:'Escribe',razona:'Razona',lee:'Lee',quiensoy:'Quién Soy',general:'General'};
+    const MOD_NAMES={decir:'Dilo',frase:'Forma la frase',contar:'Cuenta',math:'Sumas/Restas',multi:'Multiplicaciones',frac:'Fracciones',money:'Monedas',clock:'La Hora',calendar:'Calendario',distribute:'Reparte',writing:'Escribe',razona:'Razona',lee:'Lee',quiensoy:'Aprende',general:'General'};
     let modLines='';
     Object.keys(modMap).forEach(k=>{const m=modMap[k];const avg=m.total>0?(m.stars/m.total*4).toFixed(1):'--';modLines+='  '+(MOD_NAMES[k]||k)+': '+m.sessions+' sesiones, '+avg+' media\n'});
     if(!modLines)modLines='  (Sin datos por módulo)\n';

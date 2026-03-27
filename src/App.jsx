@@ -9,7 +9,7 @@ import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, V
 import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
-import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp } from './components/UIKit.jsx'
+import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar } from './components/UIKit.jsx'
 import { RocketTransition } from './components/RocketTransition.jsx'
 import { CelebrationOverlay, Stars } from './components/CelebrationOverlay.jsx'
 import { PhotoCropOverlay } from './components/PhotoCropOverlay.jsx'
@@ -46,7 +46,7 @@ export default function App(){
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
-  const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');
+  const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');const[fPhoto,setFPhoto]=useState(null);
   const[openSection,setOpenSection]=useState('pin');const[delPersonaIdx,setDelPersonaIdx]=useState(null);
   const[presEdit,setPresEdit]=useState(null);const[presNewMode,setPresNewMode]=useState(null);const[presDelIdx,setPresDelIdx]=useState(null);const[selectedPresIdx,setSelectedPresIdx]=useState(null);const[showPresSelector,setShowPresSelector]=useState(false);
   const[photoCrop,setPhotoCrop]=useState(null); // {src,onSave} for crop overlay
@@ -118,6 +118,10 @@ export default function App(){
   const[theme,setThemeState]=useState(()=>{try{return localStorage.getItem('toki_theme')||'espacial'}catch(e){return'espacial'}});
   function setTheme(v){setThemeState(v);try{localStorage.setItem('toki_theme',v)}catch(e){};document.body.classList.toggle('theme-sober',v==='sober')}
   useEffect(()=>{document.body.classList.toggle('theme-sober',theme==='sober')},[]);
+  // Helmet mode
+  const[helmetMode,setHelmetModeState]=useState(()=>{try{return localStorage.getItem('toki_helmet')!=='false'}catch(e){return true}});
+  function setHelmetMode(v){setHelmetModeState(v);try{localStorage.setItem('toki_helmet',String(v))}catch(e){}}
+  const showHelmet=helmetMode&&theme!=='sober';
   // Rocket color customization
   const ROCKET_COLORS={rojo:{nose:RED,body:'#E0E0E0'},azul:{nose:'#2196F3',body:'#BBDEFB'},verde:{nose:'#4CAF50',body:'#C8E6C9'},dorado:{nose:'#FFD700',body:'#FFF8E1'},morado:{nose:'#9C27B0',body:'#E1BEE7'}};
   const[rocketColor,setRocketColorState]=useState(()=>{try{return localStorage.getItem('toki_rocket_color')||'rojo'}catch(e){return'rojo'}});
@@ -171,7 +175,7 @@ export default function App(){
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
-  function buildQ(u,section,slv){console.log('[Toki buildQ]',{section,slv});const sh=a=>[...a].sort(()=>Math.random()-.5);
+  function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);
     // Quién Soy: handle before multi-level merge (don't shuffle — order matters)
     if(section==='quiensoy'){
       const lvArr=Array.isArray(slv)?slv:[slv||1];
@@ -245,7 +249,6 @@ export default function App(){
     // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
       const lvArr=Array.isArray(freshLv)?freshLv:[freshLv||1];
-      console.log('[Toki startGame quiensoy]',{freshLv,lvArr,has1:lvArr.includes(1),has2:lvArr.includes(2)});
       if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
     }
     setSecLv(freshLv);setQsChoice(null);
@@ -256,15 +259,15 @@ export default function App(){
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=8&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);setSt(s=>({ok:s.ok+1,sk:s.sk}));if(user&&sec){addGroupProgress(user.id,GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin({ok:st.ok+1,sk:st.sk});else setIdx(idx+1)},200)}
-  function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);setSt(s=>({ok:s.ok,sk:s.sk+1}));if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin({ok:st.ok,sk:st.sk+1});else setIdx(idx+1)}}
+  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)},200)}
+  function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}
   function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
   function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
-  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style>{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?avStr(user.av):null} planetEmoji={GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={quiensoy:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
+  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style>{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?avStr(user.av):null} planetEmoji={GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={aprende:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=GROUPS.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
     {showRec&&user&&<VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
@@ -291,17 +294,17 @@ export default function App(){
       </div>)}
       <button className="btn btn-ghost" onClick={()=>setOv(null)} style={{marginTop:12}}>Cerrar</button>
     </div></div>}
-    {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><input className="inp" value={pi} onChange={e=>setPi(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Volver</button><button className="btn btn-g" style={{flex:1}} disabled={pi.length<4} onClick={()=>{if(pi===supPin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}}>Salir</button></div></div></div>}
+    {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><NumPad value={pi} onChange={setPi} onSubmit={()=>{if(pi===supPin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>setOv(null)}>Volver</button></div></div>}
     {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
-    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><input className="inp" value={parentPin} onChange={e=>setParentPin(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{textAlign:'center',fontSize:30,letterSpacing:16,borderColor:pe?RED:BORDER}}/><div style={{display:'flex',gap:10,marginTop:16}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button><button className="btn btn-g" style={{flex:1}} disabled={!!supPin&&parentPin.length<4} onClick={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}}>Entrar</button></div></div></div>}
-    {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr}/>}
+    {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
+    {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet}/>}
 
     {scr==='setup'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:8,animation:'glow 3s infinite'}}>🗣️</div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       <div className="card" style={{padding:24,textAlign:'left',marginBottom:16}}>
         <p style={{fontSize:20,color:GOLD,fontWeight:700,textAlign:'center',margin:'0 0 16px'}}>Configuración inicial</p>
         <p style={{fontSize:15,color:DIM,margin:'0 0 14px'}}>Este PIN lo usará el supervisor (padre, madre o tutor) para gestionar la app. El niño no podrá salir sin él.</p>
         <label style={{fontSize:16,fontWeight:600,color:TXT}}>🔒 PIN del supervisor (4 dígitos)</label>
-        <input className="inp" value={supInp} onChange={e=>setSupInp(e.target.value.replace(/\D/g,'').slice(0,4))} type="tel" placeholder="· · · ·" style={{marginTop:8,marginBottom:20,textAlign:'center',fontSize:30,letterSpacing:16}}/>
+        <div style={{display:'flex',justifyContent:'center',margin:'10px 0 20px'}}><NumPad value={supInp} onChange={setSupInp} onSubmit={()=>{if(supInp.length===4&&micOk){setSupPin(supInp);saveData('sup_pin',supInp);setSupInp('');setScr('login')}}} maxLen={4}/></div>
         <div style={{background:BLUE+'15',border:'2px solid '+BLUE+'33',borderRadius:14,padding:16,marginBottom:16}}>
           <p style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>🎤 Permiso del micrófono</p>
           <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Toki necesita el micrófono para escuchar al niño. Sin él, la app no funciona.</p>
@@ -413,20 +416,12 @@ export default function App(){
                   animation:`planetFloat ${3+i*0.5}s ease-in-out ${i*0.3}s infinite`,
                   flexDirection:'column',pointerEvents:'none',
                 }}>
-                  <span style={{fontSize:16}}>{pp.photo?<img src={pp.photo} alt="" style={{width:pSize-8,height:pSize-8,borderRadius:'50%',objectFit:'cover'}}/>:(pp.avatar||'👤')}</span>
+                  <AstronautAvatar photo={pp.photo} emoji={pp.avatar||'👤'} size={pSize-4} helmet={showHelmet} style={{margin:2}}/>
                   <span style={{position:'absolute',bottom:-16,fontSize:11,color:'#E8E8F0',fontWeight:500,whiteSpace:'nowrap',textShadow:'0 1px 3px rgba(0,0,0,.5)'}}>{pp.name}</span>
                 </div>})}
             </div>}
-            <div style={{
-              width:profSize,height:profSize,borderRadius:'50%',
-              background:'radial-gradient(circle at 30% 25%,#90CAF9,#42A5F5 60%,#1565C0)',
-              display:'flex',alignItems:'center',justifyContent:'center',
-              boxShadow:isHovered?'0 4px 30px #42A5F566':'0 4px 16px #42A5F533',
-              animation:isCompact?'none':'planetFloat 4s ease-in-out infinite',
-              animationDelay:(pi*0.7)+'s',
-              position:'relative',zIndex:1,transition:'all .3s',
-            }}>
-              <span style={{fontSize:profFontSize,filter:'drop-shadow(0 2px 6px rgba(0,0,0,.3))'}}>{avStr(p.av)}</span>
+            <div style={{animation:isCompact?'none':'planetFloat 4s ease-in-out infinite',animationDelay:(pi*0.7)+'s',position:'relative',zIndex:1}}>
+              <AstronautAvatar photo={p.photo} emoji={avStr(p.av)} size={profSize} helmet={showHelmet}/>
             </div>
             <div style={{fontSize:isCompact?14:profs.length>=3?16:20,fontWeight:600,position:'relative',zIndex:1}}>{p.name}</div>
             <div style={{fontSize:isCompact?11:profs.length>=3?12:14,color:DIM,position:'relative',zIndex:1}}>{p.age} años</div>
@@ -452,23 +447,31 @@ export default function App(){
         <label style={{fontSize:15,color:DIM}}>Fecha de nacimiento</label><input className="inp" value={fa} onChange={e=>setFa(e.target.value)} type="date" style={{marginBottom:14,marginTop:6}}/>
         <label style={{fontSize:15,color:DIM}}>Sexo</label><div style={{display:'flex',gap:10,margin:'8px 0 14px'}}>{[['m','👦 Chico'],['f','👧 Chica']].map(([v,l])=><button key={v} onClick={()=>setFsex(v)} style={{flex:1,padding:'14px 0',borderRadius:12,border:`3px solid ${fsex===v?GOLD:BORDER}`,background:fsex===v?GOLD+'22':BG3,color:fsex===v?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer'}}>{l}</button>)}</div>
         <div style={{borderTop:'1px solid '+BORDER,paddingTop:14,marginBottom:14}}><p style={{fontSize:14,color:DIM,margin:'0 0 8px'}}>La familia y amigos se configuran después en Mis Personas</p>
-        <label style={{fontSize:14,color:DIM}}>Teléfono de emergencia</label><input className="inp" value={fTel} onChange={e=>setFTel(e.target.value)} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Dirección de casa</label><input className="inp" value={fDir} onChange={e=>setFDir(e.target.value)} placeholder="Ej: Calle Mayor 10, Madrid" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>Apellidos</label><input className="inp" value={fApellidos} onChange={e=>setFApellidos(e.target.value)} placeholder="Ej: García López" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
-        <label style={{fontSize:14,color:DIM}}>{(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'🏢 Centro formación / Trabajo':'🏫 Colegio'})()}</label><input className="inp" value={fColegio} onChange={e=>setFColegio(e.target.value)} placeholder={(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'Ej: Centro ocupacional / Empresa':'Ej: CEIP San José'})()} style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
-        <label style={{fontSize:15,color:DIM}}>Avatar</label><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'10px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
-        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:'',madre:'',hermanos:'',amigos:'',telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
+        <label style={{fontSize:16,color:DIM}}>Teléfono de emergencia</label><input className="inp" value={fTel} onChange={e=>setFTel(e.target.value)} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <label style={{fontSize:16,color:DIM}}>Dirección de casa</label><input className="inp" value={fDir} onChange={e=>setFDir(e.target.value)} placeholder="Ej: Calle Mayor 10, Madrid" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <label style={{fontSize:16,color:DIM}}>Apellidos</label><input className="inp" value={fApellidos} onChange={e=>setFApellidos(e.target.value)} placeholder="Ej: García López" style={{marginBottom:10,marginTop:4,fontSize:17}}/>
+        <label style={{fontSize:16,color:DIM}}>{(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'🏢 Centro formación / Trabajo':'🏫 Colegio'})()}</label><input className="inp" value={fColegio} onChange={e=>setFColegio(e.target.value)} placeholder={(()=>{const bd=new Date(fa),now=new Date(),age=fa?Math.floor((now-bd)/31557600000):0;return age>=16?'Ej: Centro ocupacional / Empresa':'Ej: CEIP San José'})()} style={{marginBottom:14,marginTop:4,fontSize:17}}/></div>
+        <label style={{fontSize:15,color:DIM}}>Avatar</label>
+        <div style={{display:'flex',alignItems:'center',gap:14,margin:'10px 0 8px',justifyContent:'center'}}>
+          <AstronautAvatar photo={fPhoto} emoji={fav} size={72} helmet={showHelmet}/>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <button className="btn btn-b" style={{fontSize:14,padding:'8px 14px',width:'auto'}} onClick={()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;const b64=await processImage(f);if(b64)setPhotoCrop({src:b64,onSave:cropped=>{setFPhoto(cropped);setPhotoCrop(null)},onCancel:()=>setPhotoCrop(null)})};inp.click()}}>📷 Foto</button>
+            {fPhoto&&<button className="btn btn-ghost" style={{fontSize:12,padding:'4px 10px',width:'auto'}} onClick={()=>setFPhoto(null)}>✕ Quitar</button>}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'6px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
+        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,photo:fPhoto||null,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:'',madre:'',hermanos:'',amigos:'',telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
                 // Auto-generate default presentation from user data and personas
                 const pres=generateAutoPresentation(p,personas);
                 if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}];
-                setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
+                setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setFPhoto(null);setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
     {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
-    {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setOv('pin');setPi('')}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp(supPin||'');setSm(user.sessionMin||25);setSec(user.sec||sec);setSecLv(user.secLv||secLv);setFreeChoice(user.freeChoice||false);setPtab('config');setDelConf(false);setOv('parentGate')}}>⚙️</button></div></div>
+    {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setOv('pin');setPi('')}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp(supPin||'');setSm(user.sessionMin||25);setSec(user.sec||sec);setSecLv(user.secLv||secLv);setFreeChoice(user.freeChoice||false);setPtab('config');setDelConf(false);setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}}>⚙️</button></div></div>
       <div style={{textAlign:'center',padding:'4px 0 2px'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:2}}>
-          <div style={{fontSize:36}}>{avStr(user.av)}</div>
+          <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={44} helmet={showHelmet}/>
           <SpaceMascot mood={mascotMood} size={36}/>
           <div><h2 style={{fontSize:18,margin:0,color:GOLD,textAlign:'left'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:DIM,margin:0,textAlign:'left'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
         </div>
@@ -480,7 +483,7 @@ export default function App(){
       {freeChoice?(()=>{
         const visibleGroups=GROUPS.filter(g=>g.modules.some(m=>activeMods[m.lvKey]!==false));
         const PLANET_COLORS={
-          quiensoy:['#F8BBD0','#E91E63','#AD1457'],
+          aprende:['#F8BBD0','#E91E63','#AD1457'],
           dilo:['#A5D6A7','#4CAF50','#2E7D32'],
           cuenta:['#FFCC80','#FF9800','#E65100'],
           razona:['#90CAF9','#42A5F5','#1565C0'],

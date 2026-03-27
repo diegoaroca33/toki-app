@@ -27,7 +27,7 @@ export function ClockFace({h,m,size=160}){
   </svg>}
 
 export function ExClock({ex,onOk,onSkip,name,uid,vids}){
-  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=clockText(h,m);if(t!==correct)pool.push(t)}}const wrong=[];const shuffled=[...pool].sort(()=>Math.random()-.5);for(const t of shuffled){if(wrong.length>=3)break;if(t!==correct&&!wrong.includes(t))wrong.push(t)}const result=[...wrong,correct];const unique=[...new Set(result)];if(!unique.includes(correct)){unique.pop();unique.push(correct)}return unique.sort(()=>Math.random()-.5)},[ex]);
+  const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=clockText(h,m);if(t!==correct)pool.push(t)}}const wrong=[];const shuffled=[...pool].sort(()=>Math.random()-.5);for(const t of shuffled){if(wrong.length>=3)break;if(t!==correct&&!wrong.includes(t))wrong.push(t)}const result=[...wrong,correct];const unique=[...new Set(result)];if(!unique.includes(correct)){unique.pop();unique.push(correct)}while(unique.length<4){const extra=pool[Math.floor(Math.random()*pool.length)];if(!unique.includes(extra))unique.push(extra)}return unique.slice(0,4).sort(()=>Math.random()-.5)},[ex]);
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   useEffect(()=>{setFb(null);stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
   function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
