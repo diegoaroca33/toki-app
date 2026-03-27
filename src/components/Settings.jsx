@@ -261,7 +261,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
         {/* ===== PRESENTACIONES SECTION ===== */}
         <div className="card" style={{marginTop:16,borderColor:'#E91E63'+'44',padding:20}}>
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:'#E91E63'}}>🎤 Presentaciones</p>
-          <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Para el planeta Quién Soy en modo Presentación</p>
+          <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Para el planeta APRENDE</p>
           {(user.presentations||[]).map((pr,pi)=><div key={pi} style={{background:BG3,border:'2px solid '+BORDER,borderRadius:12,padding:14,marginBottom:10}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
               <div><p style={{fontSize:17,fontWeight:700,color:TXT,margin:0}}>{pr.name||'Sin nombre'}</p>

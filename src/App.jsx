@@ -292,8 +292,9 @@ export default function App(){
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
     {qsChoice==='pick'&&<div className="ov"><div className="ovp ab" style={{maxWidth:380}}>
-      <div style={{fontSize:72,marginBottom:12}}>👤</div>
-      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 20px'}}>Quién Soy</h2>
+      <div style={{fontSize:72,marginBottom:12}}>📚</div>
+      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¿Cómo quieres practicar?</h2>
+      <p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>{(()=>{const mod=dynGroups.flatMap(g=>g.modules).find(m=>m.k===sec);return mod?.l||'Presentación'})()}</p>
       <div style={{display:'flex',flexDirection:'column',gap:14}}>
         <button className="btn btn-b" onClick={()=>{setQsChoice(null);startGame([1])}} style={{fontSize:22,padding:'22px 20px'}}>📖 Estudio</button>
         <button className="btn btn-p" onClick={()=>{setQsChoice(null);startGame([2])}} style={{fontSize:22,padding:'22px 20px',background:'#E91E63',borderColor:'#C2185B',boxShadow:'4px 4px 0 #880E4F'}}>🎤 Presentación</button>
@@ -411,16 +412,12 @@ export default function App(){
         {profs.map((p,pi)=>{
           // Auto-generate "Quién Soy" if no presentations exist
           if(!p.presentations||!p.presentations.length){const gen=generateAutoPresentation(p,personas);
-            if(gen.lines.length>1)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}]}
-          // Migrate QUIEN_SOY slides (Síndrome de Down) for existing profiles that have the photos
-          if(p.presentations&&!p.presentations.some(pr=>pr.specific)){
-            const hasSDown=QUIEN_SOY.length>0&&p.name;
-            if(hasSDown){
-              const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
-              // Rename existing auto to "Quién Soy" if it was "Mi presentación"
-              p.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
-              p.presentations.unshift(sdownPres);
-            }
+            if(gen.lines.length>0)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}]}
+          // Migrate QUIEN_SOY slides (Síndrome de Down) ONLY for Guillermo's profile
+          if(p.presentations&&!p.presentations.some(pr=>pr.specific)&&p.name&&p.name.toLowerCase().includes('guillermo')){
+            const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
+            p.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
+            p.presentations.unshift(sdownPres);
           }
           const isHovered=selProf===pi;
           const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
