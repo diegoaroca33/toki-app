@@ -4,11 +4,6 @@ import { stopVoice } from '../voice.js'
 
 const SAFETY_TIPS=['🚶 Camina por la acera, nunca por la carretera','🦓 Cruza siempre por el paso de cebra','👀 Mira a la izquierda, derecha e izquierda antes de cruzar','🔴 Si el semáforo está rojo, PARA y espera','🙋 Si estás perdido, pide ayuda a un policía o a un adulto con niños','📱 No mires el móvil mientras caminas'];
 
-function canMakeCalls(){
-  // Check if device likely can make phone calls
-  // On tablets without SIM, tel: links don't work
-  try{return typeof navigator!=='undefined'&&/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)}catch(e){return false}
-}
 
 function hasDataConnection(){
   try{return navigator.onLine}catch(e){return false}

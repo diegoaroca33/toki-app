@@ -79,7 +79,7 @@ body.theme-sober .sober-hide{display:none!important}
   #root{padding:8px 10px;max-width:100%}
   .btn{padding:14px 16px;font-size:18px;border-radius:12px;min-height:44px}
   .btn-word{padding:10px 14px;font-size:17px}
-  .btn-half{font-size:14px;padding:10px 0}
+  .btn-half{font-size:16px;padding:12px 0}
   .card{padding:14px;border-radius:14px}
   .inp{padding:12px;font-size:17px}
   .ovp{padding:20px 16px;border-radius:16px;max-width:340px}
