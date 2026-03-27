@@ -275,7 +275,7 @@ export default function App(){
     if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
     // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
-      const lvArr=Array.isArray(freshLv)?freshLv:[freshLv||1];
+      const lvArr=Array.isArray(freshLv)?freshLv.map(Number):[parseInt(freshLv)||1];
       if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
     }
     setSecLv(freshLv);setQsChoice(null);
