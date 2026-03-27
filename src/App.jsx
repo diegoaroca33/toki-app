@@ -168,7 +168,7 @@ export default function App(){
       const orphans=allKeys.filter(k=>k.startsWith('toki_voice_')&&!knownKeys.includes(k));
       orphans.forEach(ok=>{try{const raw=localStorage.getItem(ok);if(!raw)return;const d=JSON.parse(raw);if(!d||!d.name)return;
         const matchVoice=p.voices.find(v=>v.name&&v.name.toLowerCase()===d.name.toLowerCase());
-        if(matchVoice){const targetKey='toki_voice_'+p.id+'_'+matchVoice.id;if(!localStorage.getItem(targetKey)){localStorage.setItem(targetKey,raw);console.log('[Toki] Recovered voice data:',ok,'->',targetKey)}}
+        if(matchVoice){const targetKey='toki_voice_'+p.id+'_'+matchVoice.id;if(!localStorage.getItem(targetKey)){localStorage.setItem(targetKey,raw)}}
       }catch(e){}})})
   }catch(e){}},[profs]);
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
