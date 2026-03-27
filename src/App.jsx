@@ -413,8 +413,8 @@ export default function App(){
           // Auto-generate "Quién Soy" if no presentations exist
           if(!p.presentations||!p.presentations.length){const gen=generateAutoPresentation(p,personas);
             if(gen.lines.length>0)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}]}
-          // Migrate QUIEN_SOY slides (Síndrome de Down) ONLY for Diego's account
-          if(p.presentations&&!p.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'){
+          // Migrate QUIEN_SOY slides (Síndrome de Down) ONLY for Diego's account + Guillermo's profile
+          if(p.presentations&&!p.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'&&p.name&&p.name.toLowerCase().includes('guillermo')){
             const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
             p.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
             p.presentations.unshift(sdownPres);
