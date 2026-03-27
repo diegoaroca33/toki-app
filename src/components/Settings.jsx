@@ -267,7 +267,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
               <div><p style={{fontSize:17,fontWeight:700,color:TXT,margin:0}}>{pr.name||'Sin nombre'}</p>
                 <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{pr.date||''} · {(pr.lines||[]).length} frases{pr.auto?' · Auto':''}</p></div>
               <div style={{display:'flex',gap:6}}>
-                <button onClick={()=>setPresEdit({idx:pi,name:pr.name||'',lines:[...(pr.lines||[])],auto:pr.auto||false})} style={{background:BLUE+'22',border:'1px solid '+BLUE+'44',borderRadius:8,padding:'6px 10px',color:BLUE,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>✏️</button>
+                <button onClick={()=>setPresEdit({idx:pi,name:pr.name||'',lines:[...(pr.lines||[])],slides:[...(pr.slides||pr.lines||[]).map((s,si)=>typeof s==='string'?{text:s,img:null,picto:null}:{...s})],auto:pr.auto||false,specific:pr.specific||false})} style={{background:BLUE+'22',border:'1px solid '+BLUE+'44',borderRadius:8,padding:'6px 10px',color:BLUE,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>✏️</button>
                 {presDelIdx===pi?<div style={{display:'flex',gap:4}}><button onClick={()=>{const np=[...(user.presentations||[])];np.splice(pi,1);const up={...user,presentations:np};setUser(up);saveP(up);setPresDelIdx(null)}} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'6px 10px',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>Sí</button><button onClick={()=>setPresDelIdx(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'6px 10px',color:DIM,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>No</button></div>
                 :<button onClick={()=>setPresDelIdx(pi)} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'6px 10px',color:RED,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'"}}>🗑️</button>}
               </div>
@@ -282,7 +282,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             <p style={{fontSize:16,fontWeight:600,color:GOLD,margin:'0 0 12px'}}>¿Qué tipo?</p>
             <div style={{display:'flex',gap:10}}>
               <button className="btn btn-b" onClick={()=>{const lines=generateAutoPresentation(user,personas);const np=[...(user.presentations||[]),{name:'Auto: '+user.name,date:new Date().toISOString().slice(0,10),lines,auto:true}];const up={...user,presentations:np};setUser(up);saveP(up);setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>🤖 Automática</button>
-              <button className="btn btn-p" onClick={()=>{setPresEdit({idx:-1,name:'',lines:[''],auto:false});setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>✏️ Personalizada</button>
+              <button className="btn btn-p" onClick={()=>{setPresEdit({idx:-1,name:'',lines:[''],slides:[{text:'',img:null,picto:null}],auto:false,specific:false});setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>✏️ Personalizada</button>
             </div>
             <button className="btn btn-ghost" onClick={()=>setPresNewMode(null)} style={{marginTop:8,fontSize:14}}>Cancelar</button>
           </div>}
@@ -291,15 +291,34 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{presEdit.idx===-1?'Nueva presentación':'Editar presentación'}</p>
             <label style={{fontSize:14,color:DIM}}>Nombre</label>
             <input className="inp" value={presEdit.name} onChange={e=>setPresEdit(pe=>({...pe,name:e.target.value}))} placeholder="Ej: Mi presentación del cole" style={{fontSize:16,padding:12,marginBottom:12,marginTop:4}}/>
-            <label style={{fontSize:14,color:DIM}}>Frases (una por línea)</label>
-            {presEdit.lines.map((l,li)=><div key={li} style={{display:'flex',gap:6,marginBottom:6,marginTop:li===0?4:0}}>
-              <input className="inp" value={l} onChange={e=>{const nl=[...presEdit.lines];nl[li]=e.target.value;setPresEdit(pe=>({...pe,lines:nl}))}} placeholder={'Frase '+(li+1)} style={{fontSize:15,padding:10,flex:1}}/>
-              {presEdit.lines.length>1&&<button onClick={()=>{const nl=presEdit.lines.filter((_,j)=>j!==li);setPresEdit(pe=>({...pe,lines:nl}))}} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'"}}>✕</button>}
+            <label style={{fontSize:14,color:DIM}}>Frases y fotos</label>
+            {(presEdit.slides||presEdit.lines.map(t=>({text:t,img:null,picto:null}))).map((sl,li)=><div key={li} style={{display:'flex',gap:6,marginBottom:8,marginTop:li===0?4:0,alignItems:'center'}}>
+              {/* Photo thumbnail + upload */}
+              <label style={{width:52,height:52,borderRadius:8,border:`2px dashed ${sl.img?'transparent':BORDER}`,background:sl.img?'none':BG3,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',flexShrink:0,position:'relative'}}>
+                {sl.img?<img src={sl.img} alt="" style={{width:52,height:52,objectFit:'cover',borderRadius:6}}/>
+                :<span style={{fontSize:20,color:DIM}}>📷</span>}
+                <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(!f)return;
+                  const reader=new FileReader();reader.onload=()=>{
+                    setPhotoCrop({src:reader.result,onSave:(b64)=>{
+                      const ns=[...(presEdit.slides||[])];ns[li]={...ns[li],img:b64};
+                      const nl=[...presEdit.lines];nl[li]=ns[li].text;
+                      setPresEdit(pe=>({...pe,slides:ns,lines:nl}));setPhotoCrop(null)},
+                      onCancel:()=>setPhotoCrop(null)})};reader.readAsDataURL(f)}}/>
+              </label>
+              <input className="inp" value={sl.text} onChange={e=>{
+                const ns=[...(presEdit.slides||[])];ns[li]={...ns[li],text:e.target.value};
+                const nl=ns.map(s=>s.text);
+                setPresEdit(pe=>({...pe,slides:ns,lines:nl}))
+              }} placeholder={'Frase '+(li+1)} style={{fontSize:15,padding:10,flex:1}}/>
+              {presEdit.slides.length>1&&<button onClick={()=>{
+                const ns=presEdit.slides.filter((_,j)=>j!==li);const nl=ns.map(s=>s.text);
+                setPresEdit(pe=>({...pe,slides:ns,lines:nl}))
+              }} style={{background:RED+'22',border:'1px solid '+RED+'44',borderRadius:8,padding:'4px 8px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'"}}>✕</button>}
             </div>)}
-            {presEdit.lines.length<30&&<button onClick={()=>setPresEdit(pe=>({...pe,lines:[...pe.lines,'']}))} style={{background:'none',border:'1px dashed '+DIM,borderRadius:8,padding:'8px 14px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",width:'100%',marginBottom:12}}>➕ Añadir frase</button>}
+            {presEdit.slides.length<30&&<button onClick={()=>setPresEdit(pe=>({...pe,slides:[...pe.slides,{text:'',img:null,picto:null}],lines:[...pe.lines,'']}))} style={{background:'none',border:'1px dashed '+DIM,borderRadius:8,padding:'8px 14px',color:DIM,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",width:'100%',marginBottom:12}}>➕ Añadir frase</button>}
             <div style={{display:'flex',gap:10}}>
               <button className="btn btn-ghost" onClick={()=>setPresEdit(null)} style={{flex:1,fontSize:16}}>Cancelar</button>
-              <button className="btn btn-g" disabled={!presEdit.name.trim()||presEdit.lines.filter(l=>l.trim()).length===0} onClick={()=>{const cleaned=presEdit.lines.filter(l=>l.trim());const entry={name:presEdit.name.trim(),date:new Date().toISOString().slice(0,10),lines:cleaned,auto:presEdit.auto||false};const np=[...(user.presentations||[])];if(presEdit.idx===-1)np.push(entry);else np[presEdit.idx]=entry;const up={...user,presentations:np};setUser(up);saveP(up);setPresEdit(null)}} style={{flex:2,fontSize:16}}>💾 Guardar</button>
+              <button className="btn btn-g" disabled={!presEdit.name.trim()||presEdit.lines.filter(l=>l.trim()).length===0} onClick={()=>{const cleanedSlides=(presEdit.slides||[]).filter(s=>s.text.trim());const cleaned=cleanedSlides.map(s=>s.text);const entry={name:presEdit.name.trim(),date:new Date().toISOString().slice(0,10),lines:cleaned,slides:cleanedSlides,auto:presEdit.auto||false,specific:presEdit.specific||false};const np=[...(user.presentations||[])];if(presEdit.idx===-1)np.push(entry);else np[presEdit.idx]=entry;const up={...user,presentations:np};setUser(up);saveP(up);setPresEdit(null)}} style={{flex:2,fontSize:16}}>💾 Guardar</button>
             </div>
           </div>}
         </div>
