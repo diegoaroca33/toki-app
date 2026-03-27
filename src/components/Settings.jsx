@@ -123,13 +123,13 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                     {LEE_ALL_OPTS.map(lv=>{
                       const lvKey=LEE_KEYS[lv.n-1];const curLvs=getModuleLv(lvKey)||[lv.n];const isSel=curLvs.includes(lv.n);
                       return <button key={lv.n} onClick={()=>{
-                        if(isSel){setModuleLv(lvKey,[]);setActiveMods(a=>({...a}))}
-                        else{setModuleLv(lvKey,[lv.n]);setActiveMods(a=>({...a}))}
+                        if(isSel){setModuleLv(lvKey,[]);const na={...activeMods,[lvKey]:false};setActiveMods(na);saveData('active_mods',na)}
+                        else{setModuleLv(lvKey,[lv.n]);const na={...activeMods,[lvKey]:true};setActiveMods(na);saveData('active_mods',na)}
                       }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36,position:'relative'}}>
                         {isSel?'✓ ':''}{lv.l}
                       </button>
                     })}
-                    <button onClick={()=>{const allOn=LEE_KEYS.every((k,i)=>{const c=getModuleLv(k);return c&&c.includes(i+1)});if(allOn){LEE_KEYS.forEach(k=>setModuleLv(k,[]))}else{LEE_KEYS.forEach((k,i)=>setModuleLv(k,[i+1]))}setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
+                    <button onClick={()=>{const allOn=LEE_KEYS.every((k,i)=>{const c=getModuleLv(k);return c&&c.includes(i+1)});const na={...activeMods};if(allOn){LEE_KEYS.forEach(k=>{setModuleLv(k,[]);na[k]=false})}else{LEE_KEYS.forEach((k,i)=>{setModuleLv(k,[i+1]);na[k]=true})}setActiveMods(na);saveData('active_mods',na)}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>
                 </div>
                 :g.id==='escribe'?(()=>{
