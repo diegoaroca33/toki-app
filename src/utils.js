@@ -86,3 +86,23 @@ export function splitSyllables(text){
     if(cur)syls.push(cur);
     result.push(syls)});
   return result}
+
+// Build GROUPS with dynamic Aprende modules from user.presentations
+export function getGroupsForUser(user,GROUPS){
+  if(!user)return GROUPS;
+  const pres=user.presentations||[];
+  return GROUPS.map(g=>{
+    if(g.id!=='aprende')return g;
+    // Build modules from user presentations
+    const mods=[];
+    if(pres.length===0){
+      // No presentations yet - use default
+      mods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
+    } else {
+      pres.forEach((p,i)=>{
+        mods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
+      });
+    }
+    return {...g,modules:mods};
+  });
+}

@@ -6,7 +6,7 @@ import { fbCreateShareCode } from '../firebase.js'
 import { Ring, NumPad, AstronautAvatar } from './UIKit.jsx'
 import { MonthlyReport } from './MonthlyReport.jsx'
 
-export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, sm, setSm, sec, setSec, secLv, setSecLv, freeChoice, setFreeChoice, activeMods, setActiveMods, openSection, setOpenSection, ptab, setPtab, theme, setTheme, rocketColor, setRocketColor, exigencia, setExigencia, maxDaily, setMaxDaily, sessionMode, setSessionMode, guidedTasks, setGuidedTasks, escribeCase, setEscribeCase, escribeTypes, setEscribeTypes, escribeGuide, setEscribeGuide, escribePauta, setEscribePauta, personas, savePersonas, setOv, setOpenGroup, setPhotoCrop, setShowRec, delConf, setDelConf, delPersonaIdx, setDelPersonaIdx, presEdit, setPresEdit, presNewMode, setPresNewMode, presDelIdx, setPresDelIdx, shareCode, setShareCode, shareMsg, setShareMsg, fbUser, hasConfig, pOpenPlanet, setPOpenPlanet, setProfs, setScr, helmetMode, setHelmetMode, showHelmet }) {
+export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, sm, setSm, sec, setSec, secLv, setSecLv, freeChoice, setFreeChoice, activeMods, setActiveMods, openSection, setOpenSection, ptab, setPtab, theme, setTheme, rocketColor, setRocketColor, exigencia, setExigencia, maxDaily, setMaxDaily, sessionMode, setSessionMode, guidedTasks, setGuidedTasks, escribeCase, setEscribeCase, escribeTypes, setEscribeTypes, escribeGuide, setEscribeGuide, escribePauta, setEscribePauta, personas, savePersonas, setOv, setOpenGroup, setPhotoCrop, setShowRec, delConf, setDelConf, delPersonaIdx, setDelPersonaIdx, presEdit, setPresEdit, presNewMode, setPresNewMode, presDelIdx, setPresDelIdx, shareCode, setShareCode, shareMsg, setShareMsg, fbUser, hasConfig, pOpenPlanet, setPOpenPlanet, setProfs, setScr, helmetMode, setHelmetMode, showHelmet, dynGroups }) {
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>{setOv(null);setOpenGroup(null)}}>🎮 ¡A jugar!</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -29,7 +29,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
         </div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='planets'?null:'planets')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🪐 Planetas activos</span><span style={{fontSize:16,color:DIM}}>{openSection==='planets'?'▼':'▸'}</span></button>{openSection==='planets'&&<div style={{padding:'0 20px 20px'}}>{(()=>{
           const PLANET_COLORS_P={aprende:['#F8BBD0','#E91E63','#AD1457'],dilo:['#A5D6A7','#4CAF50','#2E7D32'],cuenta:['#FFCC80','#FF9800','#E65100'],razona:['#90CAF9','#42A5F5','#1565C0'],escribe:['#CE93D8','#AB47BC','#6A1B9A'],lee:['#EF9A9A','#EF5350','#B71C1C']};
-          const totalActive=GROUPS.reduce((n,g)=>n+g.modules.filter(m=>activeMods[m.lvKey]!==false).length,0);
+          const totalActive=dynGroups.reduce((n,g)=>n+g.modules.filter(m=>activeMods[m.lvKey]!==false).length,0);
           const parentOpenPlanet=pOpenPlanet;const setParentOpenPlanet=setPOpenPlanet;
           return <>
             <p style={{fontSize:14,color:DIM,margin:'0 0 4px'}}>Toca un planeta para ver sus módulos. Toca cada módulo para activarlo/desactivarlo.</p>
@@ -38,7 +38,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             </p>
             {/* Planets as circles */}
             <div style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:12,marginBottom:12}}>
-              {GROUPS.map(g=>{
+              {dynGroups.map(g=>{
                 const pc=PLANET_COLORS_P[g.id]||[g.color+'88',g.color,g.color];
                 const anyOn=g.modules.some(m=>activeMods[m.lvKey]!==false);
                 const isOpenP=parentOpenPlanet===g.id;
@@ -61,7 +61,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                 </button>})}
             </div>
             {/* Satellites for open planet */}
-            {parentOpenPlanet&&GROUPS.filter(g=>g.id===parentOpenPlanet).map(g=>{
+            {parentOpenPlanet&&dynGroups.filter(g=>g.id===parentOpenPlanet).map(g=>{
               const pc=PLANET_COLORS_P[g.id]||[g.color+'88',g.color,g.color];
               return <div key={g.id} className="af" style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:12,padding:'12px 0',borderTop:`2px solid ${g.color}33`}}>
                 {g.modules.map((m,mi)=>{
@@ -101,7 +101,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             // Group LEE modules into a single row
             const LEE_KEYS=['lee_intruso','lee_word_img','lee_complete','lee_syllables','lee_read_do'];
             const LEE_ALL_OPTS=[{n:1,l:'Intruso'},{n:2,l:'Pal+Img'},{n:3,l:'Completa'},{n:4,l:'Sílabas'},{n:5,l:'Lee+haz'}];
-            return GROUPS.map(g=>{
+            return dynGroups.map(g=>{
               const isLee=g.id==='lee';
               const MAX_SEL=g.id==='razona'?6:4;
               return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
@@ -162,7 +162,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                       </div>
                     </div>
                   </div>})()
-                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||[];const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
+                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||(m.lvKey.startsWith('pres_')?LV_OPTS.quiensoy:[]);const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
                   return <div key={mi} style={{marginBottom:8}}>
                   <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
                   {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>{opts.map(lv=>{
@@ -188,7 +188,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
               <select disabled={isDisabled} style={{flex:1,padding:12,borderRadius:10,border:`2px solid ${BORDER}`,background:isDisabled?BG3+'44':BG3,color:isDisabled?DIM:TXT,fontFamily:"'Fredoka'",fontSize:18,minHeight:48,opacity:isDisabled?.5:1}} value={t?t.k+'_'+t.lv:''} onChange={e=>{const v=e.target.value;if(!v){const nt=[...guidedTasks];nt.splice(i,1);setGuidedTasks(nt);saveData('guided_tasks',nt);return}
                 const[k,lv]=v.split('_');const nt=[...guidedTasks];nt[i]={k,lv:parseInt(lv),count:10};setGuidedTasks(nt);saveData('guided_tasks',nt)}}>
                 <option value="">— vacío —</option>
-                {GROUPS.flatMap(g=>g.modules.map(m=>{const mLv=(getModuleLvOrDef(m.lvKey,m.defLv))[0];return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
+                {dynGroups.flatMap(g=>g.modules.map(m=>{const mLv=(getModuleLvOrDef(m.lvKey,m.defLv))[0];return <option key={m.k+'_'+mLv} value={m.k+'_'+mLv}>{g.emoji} {m.l}</option>}))}
               </select>
             </div>})}
             {guidedTasks.filter(Boolean).length>=4&&<p style={{fontSize:14,color:RED,fontWeight:700,margin:'4px 0 0'}}>Has alcanzado el máximo de 4 tareas</p>}
@@ -197,7 +197,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='module'?null:'module')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>🎯 Módulo de hoy</span><span style={{fontSize:16,color:DIM}}>{openSection==='module'?'▼':'▸'}</span></button>{openSection==='module'&&<div style={{padding:'0 20px 20px'}}>
           <button onClick={()=>{setFreeChoice(!freeChoice)}} style={{width:'100%',padding:'14px 20px',borderRadius:10,border:`3px solid ${freeChoice?GREEN:BORDER}`,background:freeChoice?GREEN+'22':BG3,color:freeChoice?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',marginBottom:12,minHeight:52}}>{freeChoice?'✅ Elección libre (el niño elige)':'❌ Elección libre'}</button>
           {!freeChoice&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
-            {GROUPS.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
+            {dynGroups.map(g=><div key={g.id} style={{border:`2px solid ${g.color+'44'}`,borderRadius:12,padding:12,background:g.color+'08'}}>
               <p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:g.color}}>{g.emoji} {g.name}</p>
               {g.modules.map((m,mi)=>{const mLv=getModuleLvOrDef(m.lvKey,m.defLv);return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{display:'block',width:'100%',marginBottom:8,padding:'14px 16px',borderRadius:10,border:`2px solid ${sec===m.k&&String(secLv)===String(mLv)?g.color:BORDER}`,background:sec===m.k&&String(secLv)===String(mLv)?g.color+'33':BG3,color:sec===m.k&&String(secLv)===String(mLv)?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:18,cursor:'pointer',textAlign:'left',minHeight:52}}>{m.l}</button>})}
             </div>)}
