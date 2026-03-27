@@ -473,7 +473,7 @@ export default function App(){
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:2}}>
           <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={44} helmet={showHelmet}/>
           <SpaceMascot mood={mascotMood} size={36}/>
-          <div><h2 style={{fontSize:18,margin:0,color:GOLD,textAlign:'left'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:DIM,margin:0,textAlign:'left'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
+          <div><h2 style={{fontSize:18,margin:0,color:'#FFF',textShadow:'0 1px 6px rgba(0,0,0,.6)',textAlign:'left'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:'rgba(255,255,255,.8)',textShadow:'0 1px 4px rgba(0,0,0,.5)',margin:0,textAlign:'left'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
         </div>
         <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:4}}>
           <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'4px 12px',cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:6}}><span style={{fontSize:16}}>🌌</span><span style={{fontSize:13,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
@@ -547,7 +547,7 @@ export default function App(){
                       }}>
                         <span style={{fontSize:42,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.3))'}}>{g.emoji}</span>
                       </div>
-                      <div style={{fontSize:13,fontWeight:600,textShadow:'0 1px 4px rgba(0,0,0,.5)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
+                      <div style={{fontSize:13,fontWeight:700,textShadow:'0 1px 6px rgba(0,0,0,.7), 0 0 10px rgba(0,0,0,.4)',lineHeight:1.1,textAlign:'center',whiteSpace:'nowrap'}}>{g.name}</div>
                     </div>
                   </button>})}
               </div>
@@ -620,7 +620,7 @@ export default function App(){
                         {m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐'}
                       </span>
                     </div>
-                    <div style={{fontSize:12,fontWeight:600,color:isActive?TXT:DIM,textAlign:'center',lineHeight:1.15,transition:'color .25s'}}>{m.l}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:isActive?TXT:'rgba(255,255,255,.75)',textShadow:'0 1px 4px rgba(0,0,0,.6)',textAlign:'center',lineHeight:1.15,transition:'color .25s'}}>{m.l}</div>
                   </button>})}
               </div>
             </div>})()}

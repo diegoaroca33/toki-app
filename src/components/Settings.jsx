@@ -93,7 +93,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                     </div>
                     <div style={{fontSize:11,fontWeight:600,color:isOn?TXT:DIM,textAlign:'center',lineHeight:1.15}}>{m.l}</div>
                   </button>})}
-                {(()=>{const activeInPlanet=g.modules.filter(m=>activeMods[m.lvKey]!==false).length;return <p style={{fontSize:12,color:activeInPlanet>=5?RED:DIM,margin:'8px 0 0',fontWeight:600,width:'100%',textAlign:'center'}}>{activeInPlanet}/5 módulos activos {activeInPlanet>=5?'(máximo)':''}</p>})()}
+                {(()=>{const activeInPlanet=g.modules.filter(m=>activeMods[m.lvKey]!==false).length;const total=g.modules.length;const atMax=total>5&&activeInPlanet>=5;return <p style={{fontSize:12,color:atMax?RED:DIM,margin:'8px 0 0',fontWeight:600,width:'100%',textAlign:'center'}}>{total>5?`${activeInPlanet}/5 módulos activos`:`${activeInPlanet}/${total} módulos activos`} {atMax?'(máximo)':''}</p>})()}
               </div>})}
           </>})()}</div>}</div>
         <div className="card" style={{padding:0,overflow:'hidden'}}><button onClick={()=>setOpenSection(openSection==='levels'?null:'levels')} style={{width:'100%',padding:'16px 20px',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',fontFamily:"'Fredoka'",color:TXT}}><span style={{fontSize:20,fontWeight:700}}>📋 Nivel por módulo</span><span style={{fontSize:16,color:DIM}}>{openSection==='levels'?'▼':'▸'}</span></button>{openSection==='levels'&&<div style={{padding:'0 20px 20px'}}><p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Selecciona uno o varios niveles por módulo</p>
