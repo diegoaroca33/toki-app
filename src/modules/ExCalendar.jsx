@@ -9,7 +9,7 @@ import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-export function genCalendar(lv){const items=[];
+export function genCalendar(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
   if(lv===1){items.push({ty:'calendar',mode:'order_days',correct:DIAS,id:'cal_days_0'});for(let i=0;i<5;i++){const di=Math.floor(Math.random()*7);items.push({ty:'calendar',mode:'before_after_day',day:DIAS[di],dayIdx:di,id:'cal_ba_d1_'+i})}return items.sort(()=>Math.random()-.5)}
   if(lv===2){items.push({ty:'calendar',mode:'order_months',correct:MESES,id:'cal_months_0'});for(let i=0;i<5;i++){const mi=Math.floor(Math.random()*12);items.push({ty:'calendar',mode:'before_after_month',month:MESES[mi],monthIdx:mi,id:'cal_bam1_'+i})}return items.sort(()=>Math.random()-.5)}
   if(lv===3){for(let i=0;i<10;i++){const di=Math.floor(Math.random()*7);items.push({ty:'calendar',mode:'before_after_day',day:DIAS[di],dayIdx:di,id:'cal_ba_d_'+i})}return items}

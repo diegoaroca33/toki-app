@@ -8,7 +8,7 @@ import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 // ===== LA HORA =====
 export function clockText(h,m){if(m===0)return h===1?'la una en punto':'las '+h+' en punto';if(m===30)return(h===1?'la una':'las '+h)+' y media';if(m===15)return(h===1?'la una':'las '+h)+' y cuarto';const nh=h===12?1:h+1;return(nh===1?'la una':'las '+nh)+' menos cuarto'}
 
-export function genClock(lv){const items=[];
+export function genClock(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
   if(lv===1){for(let h=1;h<=12;h++)items.push({ty:'clock',h,m:0,text:clockText(h,0),id:'clk_'+h+'_0'})}
   else if(lv===2){for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:30,text:clockText(h,30),id:'clk_'+h+'_30'})}}
   else{for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:15,text:clockText(h,15),id:'clk_'+h+'_15'});items.push({ty:'clock',h,m:45,text:clockText(h,45),id:'clk_'+h+'_45'})}}
