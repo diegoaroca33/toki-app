@@ -67,8 +67,10 @@ export function splitSyllables(text){
         if(!n2){continue}// consonant at end of word, let it accumulate
         if(isV(n2)){
           // V-C-V: consonant goes with next syllable (cut before consonant)
-          // BUT handle QU and GU specially
-          if((n1==='q'||n1==='g')&&n2==='u'&&n3&&isV(n3)){continue}// que,qui,gue,gui — don't cut
+          // QU always stays together (que,qui)
+          if(n1==='q'&&n2==='u'&&n3&&isV(n3)){continue}
+          // GU stays together only at word start or after consonant (gue,gui = u muda)
+          // But in V-GU-V (like si-gue), we DO cut: the g goes to next syllable
           syls.push(cur);cur='';continue;
         }
         // V-C-C: check if CC is an onset cluster
