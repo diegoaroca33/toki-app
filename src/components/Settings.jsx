@@ -227,6 +227,18 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
         <button className="btn btn-ghost" style={{color:RED,borderColor:RED+'22',marginTop:12,fontSize:16,padding:'14px 20px',minHeight:52}} onClick={()=>{if(confirm('¿Borrar todos los perfiles y progreso? Las voces grabadas se conservan.')){const keep={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_voice_'))keep[k]=localStorage.getItem(k)}localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));setProfs([]);setUser(null);setOv(null);setScr('setup')}}}>🔄 Resetear app (conserva voces)</button></div>
       </div>}
       {ptab==='familia'&&<div style={{display:'flex',flexDirection:'column',gap:16}}>
+        <div className="card" style={{padding:20,display:'flex',alignItems:'center',gap:16}}>
+          <div style={{position:'relative',flexShrink:0}}>
+            <AstronautAvatar photo={user.photo} emoji={user.av?String.fromCodePoint(...[...user.av].map(c=>c.codePointAt(0))):''} size={72} helmet={helmetMode}/>
+          </div>
+          <div style={{flex:1}}>
+            <p style={{fontSize:18,fontWeight:700,margin:'0 0 8px',color:GOLD}}>📷 Foto de {user.name}</p>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button className="btn btn-b" style={{fontSize:14,padding:'8px 14px',width:'auto',minHeight:44}} onClick={()=>{const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=async e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{setPhotoCrop({src:reader.result,onSave:cropped=>{const up={...user,photo:cropped};setUser(up);saveP(up);setPhotoCrop(null)},onCancel:()=>setPhotoCrop(null)})};reader.readAsDataURL(f)};inp.click()}}>{user.photo?'Cambiar':'Añadir'} foto</button>
+              {user.photo&&<button className="btn btn-ghost" style={{fontSize:14,padding:'8px 14px',width:'auto',minHeight:44,color:RED,borderColor:RED+'44'}} onClick={()=>{const up={...user,photo:null};setUser(up);saveP(up)}}>✕ Quitar</button>}
+            </div>
+          </div>
+        </div>
         <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>👤 Apellidos</p><input className="inp" value={user.apellidos||''} onChange={e=>{const up={...user,apellidos:e.target.value};setUser(up);saveP(up)}} placeholder="Ej: García López" style={{fontSize:18,padding:14}}/></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>{(user.age||0)>=16?'🏢 Centro formación / Trabajo':'🏫 Colegio'}</p><input className="inp" value={user.colegio||''} onChange={e=>{const up={...user,colegio:e.target.value};setUser(up);saveP(up)}} placeholder={(user.age||0)>=16?'Ej: Centro ocupacional / Empresa':'Ej: CEIP San José'} style={{fontSize:18,padding:14}}/></div>
         <div className="card" style={{padding:20}}><p style={{fontSize:18,fontWeight:600,margin:'0 0 10px',color:GOLD}}>📱 Teléfono de emergencia</p><input className="inp" value={user.telefono||''} onChange={e=>{const up={...user,telefono:e.target.value};setUser(up);saveP(up)}} type="tel" placeholder="Ej: 6.1.2.3.4.5.6.7.8" style={{fontSize:18,padding:14}}/><p style={{fontSize:14,color:DIM,margin:'8px 0 0'}}>Con puntos para pronunciar: 6.1.2.3.4.5</p></div>
