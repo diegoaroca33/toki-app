@@ -44,6 +44,9 @@ import { Settings } from './components/Settings.jsx'
 export default function App(){
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':hasConfig?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
+  const[pinStep,setPinStep]=useState('enter'); // 'enter' | 'confirm'
+  const[pinFirst,setPinFirst]=useState(''); // first PIN entry for confirmation
+  const[pinErr,setPinErr]=useState(''); // error message for PIN mismatch
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
   const[fTel,setFTel]=useState('');const[fDir,setFDir]=useState('');const[fApellidos,setFApellidos]=useState('');const[fColegio,setFColegio]=useState('');const[fPhoto,setFPhoto]=useState(null);
@@ -320,17 +323,24 @@ export default function App(){
       <div className="card" style={{padding:24,textAlign:'left',marginBottom:16}}>
         <p style={{fontSize:20,color:GOLD,fontWeight:700,textAlign:'center',margin:'0 0 16px'}}>Configuración inicial</p>
         <p style={{fontSize:15,color:DIM,margin:'0 0 14px'}}>Este PIN lo usará el supervisor (padre, madre o tutor) para gestionar la app. El niño no podrá salir sin él.</p>
-        <label style={{fontSize:16,fontWeight:600,color:TXT}}>🔒 PIN del supervisor (4 dígitos)</label>
-        <div style={{display:'flex',justifyContent:'center',margin:'10px 0 20px'}}><NumPad value={supInp} onChange={setSupInp} onSubmit={()=>{if(supInp.length===4&&micOk){setSupPin(supInp);saveData('sup_pin',supInp);setSupInp('');setScr('login')}}} maxLen={4}/></div>
+        <label style={{fontSize:16,fontWeight:600,color:TXT}}>🔒 {pinStep==='enter'?'Elige un PIN (4 dígitos)':'Confirma el PIN'}</label>
+        {pinErr&&<p style={{fontSize:14,color:RED,fontWeight:600,margin:'8px 0 0',textAlign:'center'}}>{pinErr}</p>}
+        <div style={{display:'flex',justifyContent:'center',margin:'10px 0 20px'}}><NumPad value={supInp} onChange={v=>{setSupInp(v);setPinErr('')}} onSubmit={()=>{
+          if(supInp.length!==4)return;
+          if(pinStep==='enter'){setPinFirst(supInp);setSupInp('');setPinStep('confirm')}
+          else{
+            if(supInp===pinFirst){setSupPin(supInp);saveData('sup_pin',supInp);setSupInp('');setPinStep('enter');setPinFirst('');setScr('login')}
+            else{setPinErr('Los PIN no coinciden. Inténtalo de nuevo.');setSupInp('');setPinStep('enter');setPinFirst('')}
+          }
+        }} maxLen={4}/></div>
+        {pinStep==='confirm'&&<p style={{fontSize:14,color:GOLD,fontWeight:600,textAlign:'center',margin:'-10px 0 10px'}}>Escríbelo otra vez para confirmar</p>}
         <div style={{background:BLUE+'15',border:'2px solid '+BLUE+'33',borderRadius:14,padding:16,marginBottom:16}}>
           <p style={{fontSize:16,fontWeight:600,margin:'0 0 8px'}}>🎤 Permiso del micrófono</p>
           <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Toki necesita el micrófono para escuchar al niño. Sin él, la app no funciona.</p>
           {!micOk?<button className="btn btn-b" onClick={()=>{navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop());setMicOk(true)}).catch(()=>alert('No se ha podido activar el micrófono. Revisa los permisos del navegador.'))}} style={{fontSize:18}}>🎤 Activar micrófono</button>
           :<p style={{fontSize:18,color:GREEN,fontWeight:700,margin:0}}>✅ Micrófono activado</p>}
         </div>
-        <button className="btn btn-gold" disabled={supInp.length<4||!micOk} onClick={()=>{setSupPin(supInp);saveData('sup_pin',supInp);setSupInp('');setScr('login')}} style={{fontSize:22}}>Empezar 🚀</button>
-        {supInp.length<4&&<p style={{fontSize:13,color:DIM,textAlign:'center',margin:'10px 0 0'}}>Escribe 4 dígitos para el PIN</p>}
-        {supInp.length===4&&!micOk&&<p style={{fontSize:13,color:GOLD,textAlign:'center',margin:'10px 0 0'}}>Activa el micrófono para continuar</p>}
+        {supInp.length<4&&pinStep==='enter'&&<p style={{fontSize:13,color:DIM,textAlign:'center',margin:'10px 0 0'}}>Escribe 4 dígitos para el PIN</p>}
       </div>
       <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
