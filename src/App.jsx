@@ -215,7 +215,7 @@ export default function App(){
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
       const lv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;
       const wRange=lv===1?[1,2]:lv===2?[2,3]:lv===3?[3,4]:lv===4?[4,5]:[5,99];
-      const pool=EX.filter(e=>(e.ty==='flu'||e.ty==='sit')&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
+      const pool=EX.filter(e=>e.ty==='flu'&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
       const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<40){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return sel.slice(0,40).sort(()=>Math.random()-.5).map(e=>{const p={...e};if(p.ph)p.ph=personalize(p.ph,u);if(p.fu)p.fu=personalize(p.fu,u);if(p.su)p.su=personalize(p.su,u);if(p.q)p.q=personalize(p.q,u);if(p.si)p.si=personalize(p.si,u);if(p.op)p.op=p.op.map(o=>personalize(o,u));return p})}
     if(section==='frase'){const flv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;const wc=flv===1?3:flv===2?4:flv===3?5:[6,7];
       const pool=EX.filter(e=>e.ty==='flu'&&e.ph).filter(e=>{const w=e.ph.replace(/[¿?¡!,\.]/g,'').split(/\s+/).length;return Array.isArray(wc)?w>=wc[0]&&w<=wc[1]:w===wc});
@@ -273,10 +273,16 @@ export default function App(){
     // Ensure freshLv is never empty for quiensoy
     if(sec==='quiensoy'&&Array.isArray(freshLv)&&freshLv.length===0)freshLv=[1,2];
     if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
-    // If quiensoy, always show choice screen when both modes are enabled
+    // If quiensoy: ALWAYS show choice if both Estudio and Presentación are available
     if(!overrideLv&&sec==='quiensoy'){
-      const lvArr=Array.isArray(freshLv)?freshLv.map(Number):[parseInt(freshLv)||1];
-      if(lvArr.includes(1)&&lvArr.includes(2)){setQsChoice('pick');return}
+      // Read fresh from storage to be sure
+      const modKey=mod?.lvKey||curPresLvKeyRef.current||'pres_0';
+      const storedLv=getModuleLvOrDef(modKey,[1,2]);
+      const lvArr=Array.isArray(storedLv)?storedLv.map(Number):[parseInt(storedLv)||1];
+      const hasE=lvArr.includes(1),hasP=lvArr.includes(2);
+      if(hasE&&hasP){setQsChoice('pick');return}
+      // If only one mode, use it directly
+      freshLv=hasE?[1]:hasP?[2]:[1];
     }
     setSecLv(freshLv);setQsChoice(null);
     setQ(buildQ(user,sec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}

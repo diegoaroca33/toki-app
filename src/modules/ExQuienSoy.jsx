@@ -42,17 +42,20 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     if(!alive.current)return;
     sr.go();setMic(true);
   }
-  useEffect(()=>{alive.current=true;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
+  const imgLoaded=useRef(false);
+  useEffect(()=>{alive.current=true;imgLoaded.current=false;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
-    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);
+    // Wait for image to load before playing voice
+    function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img){stopVoice();doPlay()}else{setTimeout(tryPlay,200)}}
+    const t=setTimeout(tryPlay,600);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);if(na>=2){sSf('pass');setTimeout(()=>sayFB('¡Ánimo! Seguimos'),300);setTimeout(()=>{if(alive.current)onOk()},1800)}
     else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
   return <div style={{textAlign:'center'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {ex.img?<img src={ex.img} alt={ex.text} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
+      {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
       :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1a237e,#4a148c)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>📚</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'36px 16px 14px'}}>
         <p style={{fontSize:24,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
@@ -82,15 +85,18 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   const cur=slides[qi];
   const waitSec=useMemo(()=>Math.max(Math.ceil(cur.text.length*0.12),2)+3,[cur]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();timers.current.forEach(clearTimeout)}},[]);
-  useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);timers.current.forEach(clearTimeout);timers.current=[];
-    const t1=setTimeout(()=>{if(!alive.current)return;
+  const presImgLoaded=useRef(false);
+  useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);presImgLoaded.current=false;timers.current.forEach(clearTimeout);timers.current=[];
+    // Wait for image before speaking
+    function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
+    function doSpeak(){
       say(cur.text).then(()=>{if(!alive.current)return;
         setBarOn(true);
         const t2=setTimeout(()=>{if(!alive.current)return;setBarOn(false);
           if(qi+1>=slides.length){setFinished(true);victoryBeeps()}
           else setQi(qi+1)},waitSec*1000);
-        timers.current.push(t2)})},600);
-    timers.current.push(t1);
+        timers.current.push(t2)})}
+    const t1=setTimeout(trySpeak,400);timers.current.push(t1);
     return()=>{timers.current.forEach(clearTimeout);timers.current=[];stopVoice()}
   },[qi,finished]);
   if(finished)return <div className="ab" style={{textAlign:'center',padding:'40px 18px'}}>
@@ -102,7 +108,7 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   </div>;
   return <div style={{textAlign:'center',position:'relative',maxHeight:'100dvh',overflow:'hidden'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt={cur.text} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
+      {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
         :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
