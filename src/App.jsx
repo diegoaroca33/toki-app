@@ -182,31 +182,32 @@ export default function App(){
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
   const curPresLvKeyRef=useRef('pres_0');
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);const curPresLvKey=curPresLvKeyRef.current;
-    // Quién Soy: handle before multi-level merge (don't shuffle — order matters)
+    // APRENDE: find the selected presentation and build exercises
     if(section==='quiensoy'){
       const lvArr=Array.isArray(slv)?slv:[slv||1];
       const hasEstudio=lvArr.includes(1),hasPres=lvArr.includes(2);
-      // Find which presentation to use from the current module's presIdx
-      const curMod=dynGroups.flatMap(g=>g.modules).find(m=>m.k==='quiensoy'&&m.lvKey===curPresLvKey);
-      const pi=curMod?.presIdx??0;
+      // Find presentation by presIdx from the selected module
       const pres=u.presentations||[];
+      const allMods=dynGroups.flatMap(g=>g.modules).filter(m=>m.k==='quiensoy');
+      const curMod=allMods.find(m=>m.lvKey===curPresLvKey)||allMods[0];
+      const pi=curMod?.presIdx??0;
       const thisPres=pres[pi]||pres[0]||null;
-      const isFirstPres=pi===0;
+      // Build slides from whatever data we have
       const items=[];
-      if(hasEstudio&&thisPres){
-        // Use slides if available (have photos), otherwise just text lines
-        const sl=thisPres.slides||[];
-        if(sl.length>0){
-          items.push(...sl.map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(s.text,u),img:s.img||null,picto:s.picto||null})));
-        } else {
-          items.push(...(thisPres.lines||[]).map((line,li)=>({ty:'quiensoy',id:`pres${pi}_e${li}`,text:personalize(line,u),img:null,picto:null})));
+      if(thisPres){
+        const slides=thisPres.slides||(thisPres.lines||[]).map(t=>({text:t,img:null,picto:null}));
+        if(hasEstudio&&slides.length>0){
+          items.push(...slides.map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(s.text||s,u),img:s.img||null,picto:s.picto||null})));
+        }
+        if(hasPres){
+          items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:slides[0]?.img||null,presentation:{...thisPres,slides}});
         }
       }
-      if(hasPres&&thisPres){
-        const firstSlide=thisPres.slides?.[0]||{};
-        items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:firstSlide.img||null,presentation:thisPres});
+      // Ultimate fallback: if nothing found, create from user data
+      if(!items.length){
+        const fallback='Hola, me llamo '+(u.name||'');
+        items.push({ty:'quiensoy',id:'pres_fb_0',text:fallback,img:u.photo||null,picto:null});
       }
-      if(!items.length) items.push({ty:'quiensoy',id:'qs_empty',text:'No hay presentación configurada',img:null,picto:null});
       return items}
     // Multi-level support: if slv is an array, merge exercises from all levels
     if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
@@ -266,7 +267,10 @@ export default function App(){
     // Find the specific module - for Aprende, use curPresLvKeyRef to distinguish between presentations
     const allMods=dynGroups.flatMap(g=>g.modules);
     const mod=sec==='quiensoy'?allMods.find(m=>m.lvKey===curPresLvKeyRef.current)||allMods.find(m=>m.k===sec):allMods.find(m=>m.k===sec);
-    const freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
+    let freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
+    // Ensure freshLv is never empty for quiensoy
+    if(sec==='quiensoy'&&Array.isArray(freshLv)&&freshLv.length===0)freshLv=[1,2];
+    if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
     // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
       const lvArr=Array.isArray(freshLv)?freshLv:[freshLv||1];
