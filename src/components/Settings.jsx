@@ -79,10 +79,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                 {g.modules.map((m,mi)=>{
                   const isOn=activeMods[m.lvKey]!==false;
                   return <button key={mi} onClick={()=>{
-                    if(!isOn){
-                      const activeCount=g.modules.filter(mm=>mm.lvKey!==m.lvKey&&activeMods[mm.lvKey]!==false).length;
-                      // No limit on active modules per planet
-                    }
+                    if(!isOn){const curLv=getModuleLv(m.lvKey);if(!curLv||curLv.length===0)setModuleLv(m.lvKey,Array.isArray(m.defLv)?m.defLv:[m.defLv])}
                     const na={...activeMods,[m.lvKey]:!isOn};setActiveMods(na);saveData('active_mods',na)
                   }} style={{
                     width:90,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
@@ -115,7 +112,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             const LEE_ALL_OPTS=[{n:1,l:'Intruso'},{n:2,l:'Pal+Img'},{n:3,l:'Completa'},{n:4,l:'Sílabas'},{n:5,l:'Lee+haz'}];
             return dynGroups.map(g=>{
               const isLee=g.id==='lee';
-              const MAX_SEL=g.id==='razona'?6:4;
+              const MAX_SEL=99; // Sin límite de niveles por módulo
               return <div key={g.id} style={{marginBottom:10,border:`1px solid ${g.color+'33'}`,borderRadius:10,padding:12,background:g.color+'06'}}>
                 <p style={{fontSize:18,fontWeight:600,margin:'0 0 6px',color:g.color}}>{g.emoji} {g.name}</p>
                 {isLee?<div style={{marginBottom:8}}>
