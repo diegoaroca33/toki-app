@@ -42,7 +42,7 @@ import { Settings } from './components/Settings.jsx'
 // ===== NUMPAD — Custom numeric keypad =====
 
 export default function App(){
-  const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':'setup');const[ov,setOv]=useState(null);
+  const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':hasConfig?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[queue,setQ]=useState([]);const[idx,setIdx]=useState(0);const[st,setSt]=useState({ok:0,sk:0});const[conf,setConf]=useState(false);
   const[creating,setCreating]=useState(false);const[fn,setFn]=useState('');const[fa,setFa]=useState('');const[fav,setFav]=useState(AVS[0]);const[flv,setFlv]=useState(1);const[fsex,setFsex]=useState('m');const[hoveredProf,setHoveredProf]=useState(null);
@@ -114,7 +114,7 @@ export default function App(){
     }finally{setAuthBusy(false)}}
   async function handleLogout(){
     if(!auth)return;try{await fbSignOut()}catch(e){}setFbMode('guest');setFbUser(null)}
-  function enterGuest(){setFbMode('guest');setFbLoading(false)}
+  function enterGuest(){setFbMode('guest');setFbLoading(false);if(!supPin)setScr('setup')}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
   // Theme: Espacial (default) or Sobrio
   const[theme,setThemeState]=useState(()=>{try{return localStorage.getItem('toki_theme')||'espacial'}catch(e){return'espacial'}});
