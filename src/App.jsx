@@ -278,7 +278,8 @@ export default function App(){
     // Always re-read level from storage to pick up Settings changes
     // Find the specific module - for Aprende, use curPresLvKeyRef to distinguish between presentations
     const allMods=dynGroups.flatMap(g=>g.modules);
-    const mod=sec==='quiensoy'?allMods.find(m=>m.lvKey===curPresLvKeyRef.current)||allMods.find(m=>m.k===sec):allMods.find(m=>m.k===sec);
+    // Use curPresLvKeyRef for ALL modules (razona/lee have multiple modules with same k)
+    const mod=allMods.find(m=>m.lvKey===curPresLvKeyRef.current)||allMods.find(m=>m.k===sec);
     let freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
     if(import.meta.env.DEV)console.log('[Toki startGame]',{sec,modLvKey:mod?.lvKey,freshLv,overrideLv,secLv});
     // Ensure freshLv is never empty for quiensoy
