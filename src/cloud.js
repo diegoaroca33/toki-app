@@ -54,22 +54,25 @@ export async function cloudUnrevokeUser(uid){
   }catch(e){console.warn('[Toki Cloud] Unrevoke error:',e)}}
 
 export function generateAutoPresentation(u,personas){
-  const pres=[];
-  pres.push('Hola, me llamo '+(u.name||''));
-  if(u.apellidos)pres.push('Me apellido '+u.apellidos);
+  // Returns {lines, slides} where slides have optional photo from personas
+  const lines=[];const slides=[];
   const myP=(personas||[]).filter(pp=>pp.name&&pp.name.trim());
   const padre=myP.find(pp=>pp.relation==='Padre');
   const madre=myP.find(pp=>pp.relation==='Madre');
-  if(padre)pres.push('Mi padre se llama '+padre.name);
-  if(madre)pres.push('Mi madre se llama '+madre.name);
   const herms=myP.filter(pp=>pp.relation==='Hermano'||pp.relation==='Hermana');
-  if(herms.length===1){const fem=herms[0].relation==='Hermana';pres.push((fem?'Mi hermana':'Mi hermano')+' se llama '+herms[0].name)}
-  else if(herms.length>1)pres.push('Tengo '+herms.length+' hermanos: '+herms.map(h=>h.name).join(', '));
   const amigos=myP.filter(pp=>pp.relation==='Amigo'||pp.relation==='Amiga');
-  if(amigos.length===1){const fem=amigos[0].relation==='Amiga';pres.push((fem?'Mi mejor amiga es ':'Mi mejor amigo es ')+amigos[0].name)}
-  else if(amigos.length>1)pres.push('Tengo '+amigos.length+' amigos');
-  if(u.direccion)pres.push('Vivo en '+u.direccion);
-  if(u.colegio)pres.push('Voy al cole en '+u.colegio);
-  if(u.telefono)pres.push('El teléfono de mi padre es '+u.telefono);
-  return pres;
+  // Slide helper: text + optional photo from persona
+  function add(text,photo){lines.push(text);slides.push({text,img:photo||null,picto:null})}
+  add('Hola, me llamo '+(u.name||''),u.photo||null);
+  if(u.apellidos)add('Me apellido '+u.apellidos,u.photo||null);
+  if(padre)add('Mi padre se llama '+padre.name,padre.photo||null);
+  if(madre)add('Mi madre se llama '+madre.name,madre.photo||null);
+  if(herms.length===1){const fem=herms[0].relation==='Hermana';add((fem?'Mi hermana':'Mi hermano')+' se llama '+herms[0].name,herms[0].photo||null)}
+  else if(herms.length>1)add('Tengo '+herms.length+' hermanos: '+herms.map(h=>h.name).join(', '),herms[0]?.photo||null);
+  if(amigos.length===1){const fem=amigos[0].relation==='Amiga';add((fem?'Mi mejor amiga es ':'Mi mejor amigo es ')+amigos[0].name,amigos[0].photo||null)}
+  else if(amigos.length>1)add('Tengo '+amigos.length+' amigos',amigos[0]?.photo||null);
+  if(u.direccion)add('Vivo en '+u.direccion,null);
+  if(u.colegio)add('Voy al cole en '+u.colegio,null);
+  if(u.telefono)add('El teléfono de emergencia es '+u.telefono,null);
+  return{lines,slides};
 }

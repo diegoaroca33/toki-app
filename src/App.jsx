@@ -190,19 +190,20 @@ export default function App(){
       const thisPres=pres[pi]||pres[0]||null;
       const isFirstPres=pi===0;
       const items=[];
-      if(hasEstudio){
-        if(isFirstPres&&QUIEN_SOY.length>0){
-          // First presentation uses hardcoded QUIEN_SOY slides with images/pictos
-          items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
-        } else if(thisPres){
-          // Other presentations: use the text lines as estudio slides
+      if(hasEstudio&&thisPres){
+        // Use slides if available (have photos), otherwise just text lines
+        const sl=thisPres.slides||[];
+        if(sl.length>0){
+          items.push(...sl.map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(s.text,u),img:s.img||null,picto:s.picto||null})));
+        } else {
           items.push(...(thisPres.lines||[]).map((line,li)=>({ty:'quiensoy',id:`pres${pi}_e${li}`,text:personalize(line,u),img:null,picto:null})));
         }
       }
       if(hasPres&&thisPres){
-        items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:isFirstPres?QUIEN_SOY[0]?.img:null,presentation:thisPres});
+        const firstSlide=thisPres.slides?.[0]||{};
+        items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:firstSlide.img||null,presentation:thisPres});
       }
-      if(!items.length&&QUIEN_SOY.length>0) items.push(...QUIEN_SOY.map(q=>({ty:'quiensoy',id:q.id,text:personalize(q.text,u),img:q.img,picto:q.picto})));
+      if(!items.length) items.push({ty:'quiensoy',id:'qs_empty',text:'No hay presentación configurada',img:null,picto:null});
       return items}
     // Multi-level support: if slv is an array, merge exercises from all levels
     if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
@@ -398,9 +399,19 @@ export default function App(){
         const profFontSize=isCompact?28:profs.length>=3?42:56;
         return <div style={{display:isCompact?'grid':'flex',gridTemplateColumns:isCompact?'repeat(auto-fill,minmax(100px,1fr))':'none',justifyContent:isCompact?'center':'center',justifyItems:isCompact?'center':'initial',gap:isCompact?12:profs.length>=3?18:28,marginBottom:28,flexWrap:'wrap',position:'relative',minHeight:isCompact?120:300,maxWidth:isCompact?500:'none',margin:isCompact?'0 auto 28px':'0'}}>
         {profs.map((p,pi)=>{
-          // Auto-generate presentation if missing
-          if(!p.presentations||!p.presentations.length){const pres=generateAutoPresentation(p,personas);
-            if(pres.length>1)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}]}
+          // Auto-generate "Quién Soy" if no presentations exist
+          if(!p.presentations||!p.presentations.length){const gen=generateAutoPresentation(p,personas);
+            if(gen.lines.length>1)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}]}
+          // Migrate QUIEN_SOY slides (Síndrome de Down) for existing profiles that have the photos
+          if(p.presentations&&!p.presentations.some(pr=>pr.specific)){
+            const hasSDown=QUIEN_SOY.length>0&&p.name;
+            if(hasSDown){
+              const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
+              // Rename existing auto to "Quién Soy" if it was "Mi presentación"
+              p.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
+              p.presentations.unshift(sdownPres);
+            }
+          }
           const isHovered=selProf===pi;
           const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
           const pN=myPersonas.length;
@@ -478,8 +489,8 @@ export default function App(){
         <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'center',margin:'6px 0 18px'}}>{AVS.map(a=><button key={a} className={'avbtn'+(fav===a?' on':'')} onClick={()=>setFav(a)}>{a}</button>)}</div>
         <div style={{display:'flex',gap:10}}><button className="btn btn-ghost" style={{flex:1}} onClick={()=>setCreating(false)}>Cancelar</button><button className="btn btn-g" style={{flex:2}} disabled={!fn.trim()||!fa} onClick={()=>{const bd=new Date(fa),now=new Date(),age=Math.floor((now-bd)/31557600000);const p={id:Date.now()+'',name:cap(fn.trim()),birthdate:fa,age:Math.max(1,age),sex:fsex,av:fav,photo:fPhoto||null,hist:[],srs:{},level:1,maxLv:1,sessionMin:25,voices:[],padre:'',madre:'',hermanos:'',amigos:'',telefono:fTel.trim(),direccion:fDir.trim(),apellidos:fApellidos.trim(),colegio:fColegio.trim()};
                 // Auto-generate default presentation from user data and personas
-                const pres=generateAutoPresentation(p,personas);
-                if(pres.length>0)p.presentations=[{name:'Mi presentación',date:new Date().toISOString().slice(0,10),lines:pres,auto:true}];
+                const gen=generateAutoPresentation(p,personas);
+                if(gen.lines.length>0)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}];
                 setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setFPhoto(null);setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
