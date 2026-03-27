@@ -181,12 +181,12 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                     const isSel=curLvs.includes(lv.n);
                     return <button key={lv.n} onClick={()=>{
                       let newLvs;
-                      if(isSel){newLvs=curLvs.filter(l=>l!==lv.n);if(newLvs.length===0)return}
+                      if(isSel){newLvs=curLvs.filter(l=>l!==lv.n)}
                       else{if(curLvs.length>=MAX_SEL)return;newLvs=[...curLvs,lv.n]}
-                      setModuleLv(m.lvKey,newLvs);setActiveMods(a=>({...a}))
+                      setModuleLv(m.lvKey,newLvs);const na={...activeMods,[m.lvKey]:newLvs.length>0};setActiveMods(na);saveData('active_mods',na)
                     }} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${isSel?g.color:BORDER}`,background:isSel?g.color+'22':BG3+'44',color:isSel?g.color:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36}}>{isSel?'✓ ':''}{lv.l}</button>
                   })}
-                  <button onClick={()=>{const allOn=opts.every(o=>curLvs.includes(o.n));setModuleLv(m.lvKey,allOn?[opts[0].n]:opts.map(o=>o.n));setActiveMods(a=>({...a}))}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
+                  <button onClick={()=>{const allOn=opts.every(o=>curLvs.includes(o.n));const newLvs=allOn?[]:opts.map(o=>o.n);setModuleLv(m.lvKey,newLvs);const na={...activeMods,[m.lvKey]:newLvs.length>0};setActiveMods(na);saveData('active_mods',na)}} style={{padding:'6px 10px',borderRadius:8,border:`2px solid ${GOLD}`,background:GOLD+'22',color:GOLD,fontFamily:"'Fredoka'",fontWeight:700,fontSize:13,cursor:'pointer',minHeight:36}}>Todo</button>
                   </div>:(()=>{const singleLv=opts[0]||{n:Array.isArray(m.defLv)?m.defLv[0]:m.defLv,l:m.l};const isOn=curLvs.includes(singleLv.n);return <button onClick={()=>{setModuleLv(m.lvKey,isOn?[]:[singleLv.n]);const na={...activeMods,[m.lvKey]:!isOn};setActiveMods(na);saveData('active_mods',na)}} style={{padding:'6px 14px',borderRadius:8,border:`2px solid ${isOn?GREEN:BORDER}`,background:isOn?GREEN+'22':BG3+'44',color:isOn?GREEN:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:13,cursor:'pointer',minHeight:36}}>{isOn?'✓ Activo':'Desactivado'}</button>})()}
                 </div>})}
               </div>})})()}</div>}</div>
