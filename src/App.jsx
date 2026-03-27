@@ -268,6 +268,7 @@ export default function App(){
     const allMods=dynGroups.flatMap(g=>g.modules);
     const mod=sec==='quiensoy'?allMods.find(m=>m.lvKey===curPresLvKeyRef.current)||allMods.find(m=>m.k===sec):allMods.find(m=>m.k===sec);
     let freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
+    if(import.meta.env.DEV)console.log('[Toki startGame]',{sec,modLvKey:mod?.lvKey,freshLv,overrideLv,secLv});
     // Ensure freshLv is never empty for quiensoy
     if(sec==='quiensoy'&&Array.isArray(freshLv)&&freshLv.length===0)freshLv=[1,2];
     if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
