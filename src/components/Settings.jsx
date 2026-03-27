@@ -299,7 +299,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                 :<span style={{fontSize:20,color:DIM}}>📷</span>}
                 <input type="file" accept="image/jpeg,image/png" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(!f)return;
                   const reader=new FileReader();reader.onload=()=>{
-                    setPhotoCrop({src:reader.result,onSave:(b64)=>{
+                    setPhotoCrop({src:reader.result,shape:'rect',onSave:(b64)=>{
                       const ns=[...(presEdit.slides||[])];ns[li]={...ns[li],img:b64};
                       const nl=[...presEdit.lines];nl[li]=ns[li].text;
                       setPresEdit(pe=>({...pe,slides:ns,lines:nl}));setPhotoCrop(null)},
