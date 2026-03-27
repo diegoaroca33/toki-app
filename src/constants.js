@@ -180,7 +180,7 @@ export const LV_OPTS={
 
 export const GROUPS=[
   {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones y estudio',dynamic:true,modules:[
-    {k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'quiensoy',presIdx:0}]},
+    {k:'quiensoy',l:'Quién Soy',defLv:[1,2],lvKey:'pres_0',presIdx:0}]},
   {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
     {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
     {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},

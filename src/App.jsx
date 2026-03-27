@@ -74,6 +74,17 @@ export default function App(){
   // Init Firebase lazily if config exists
   const[personas,setPersonas]=useState(()=>{const p=loadData('personas',null);if(p)return p;const def=[{name:'',relation:'Padre',avatar:'👨'},{name:'',relation:'Madre',avatar:'👩'},{name:'',relation:'Hermano',avatar:'👦'},{name:'',relation:'Amigo',avatar:'🧑‍🚀'}];saveData('personas',def);return def});
   function savePersonas(ps){setPersonas(ps);saveData('personas',ps)}
+  // Auto-generate presentations and migrate Síndrome de Down (persisted, runs once)
+  useEffect(()=>{if(!profs.length)return;let changed=false;const updated=profs.map(p=>{
+    const pp={...p};
+    if(!pp.presentations||!pp.presentations.length){const gen=generateAutoPresentation(pp,personas);
+      if(gen.lines.length>0){pp.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}];changed=true}}
+    if(pp.presentations&&!pp.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'&&pp.name&&pp.name.toLowerCase().includes('guillermo')){
+      const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
+      pp.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
+      pp.presentations.unshift(sdownPres);changed=true}
+    return pp});
+    if(changed){setProfs(updated);saveData('profiles',updated)}},[profs.length,fbUser?.email]);
   // Dynamic GROUPS: Aprende modules generated from user.presentations
   const dynGroups=useMemo(()=>getGroupsForUser(user,GROUPS),[user,user?.presentations])
   useEffect(()=>{if(hasConfig)setFbLoading(false)},[]);
@@ -307,7 +318,7 @@ export default function App(){
     {qsChoice==='pick'&&<div className="ov"><div className="ovp ab" style={{maxWidth:380}}>
       <div style={{fontSize:72,marginBottom:12}}>📚</div>
       <h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¿Cómo quieres practicar?</h2>
-      <p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>{(()=>{const mod=dynGroups.flatMap(g=>g.modules).find(m=>m.k===sec);return mod?.l||'Presentación'})()}</p>
+      <p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>{(()=>{const mod=dynGroups.flatMap(g=>g.modules).find(m=>m.lvKey===curPresLvKeyRef.current)||dynGroups.flatMap(g=>g.modules).find(m=>m.k===sec);return mod?.l||'Presentación'})()}</p>
       <div style={{display:'flex',flexDirection:'column',gap:14}}>
         <button className="btn btn-b" onClick={()=>{setQsChoice(null);startGame([1])}} style={{fontSize:22,padding:'22px 20px'}}>📖 Estudio</button>
         <button className="btn btn-p" onClick={()=>{setQsChoice(null);startGame([2])}} style={{fontSize:22,padding:'22px 20px',background:'#E91E63',borderColor:'#C2185B',boxShadow:'4px 4px 0 #880E4F'}}>🎤 Presentación</button>
@@ -423,15 +434,6 @@ export default function App(){
         const profFontSize=isCompact?28:profs.length>=3?42:56;
         return <div style={{display:isCompact?'grid':'flex',gridTemplateColumns:isCompact?'repeat(auto-fill,minmax(100px,1fr))':'none',justifyContent:isCompact?'center':'center',justifyItems:isCompact?'center':'initial',gap:isCompact?12:profs.length>=3?18:28,marginBottom:28,flexWrap:'wrap',position:'relative',minHeight:isCompact?120:300,maxWidth:isCompact?500:'none',margin:isCompact?'0 auto 28px':'0'}}>
         {profs.map((p,pi)=>{
-          // Auto-generate "Quién Soy" if no presentations exist
-          if(!p.presentations||!p.presentations.length){const gen=generateAutoPresentation(p,personas);
-            if(gen.lines.length>0)p.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}]}
-          // Migrate QUIEN_SOY slides (Síndrome de Down) ONLY for Diego's account + Guillermo's profile
-          if(p.presentations&&!p.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'&&p.name&&p.name.toLowerCase().includes('guillermo')){
-            const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
-            p.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
-            p.presentations.unshift(sdownPres);
-          }
           const isHovered=selProf===pi;
           const myPersonas=personas.filter(pp=>pp.name&&pp.name.trim());
           const pN=myPersonas.length;

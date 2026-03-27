@@ -279,7 +279,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
           {presNewMode==='choose'&&<div className="af" style={{background:CARD,borderRadius:12,padding:16,marginTop:8}}>
             <p style={{fontSize:16,fontWeight:600,color:GOLD,margin:'0 0 12px'}}>¿Qué tipo?</p>
             <div style={{display:'flex',gap:10}}>
-              <button className="btn btn-b" onClick={()=>{const lines=generateAutoPresentation(user,personas);const np=[...(user.presentations||[]),{name:'Auto: '+user.name,date:new Date().toISOString().slice(0,10),lines,auto:true}];const up={...user,presentations:np};setUser(up);saveP(up);setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>🤖 Automática</button>
+              <button className="btn btn-b" onClick={()=>{const gen=generateAutoPresentation(user,personas);const np=[...(user.presentations||[]),{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}];const up={...user,presentations:np};setUser(up);saveP(up);setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>🤖 Automática</button>
               <button className="btn btn-p" onClick={()=>{setPresEdit({idx:-1,name:'',lines:[''],slides:[{text:'',img:null,picto:null}],auto:false,specific:false});setPresNewMode(null)}} style={{flex:1,fontSize:16,padding:'14px 10px'}}>✏️ Personalizada</button>
             </div>
             <button className="btn btn-ghost" onClick={()=>setPresNewMode(null)} style={{marginTop:8,fontSize:14}}>Cancelar</button>
