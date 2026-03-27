@@ -263,8 +263,9 @@ export default function App(){
     return[]}
   function startGame(overrideLv){
     // Always re-read level from storage to pick up Settings changes
-    const mod=dynGroups.flatMap(g=>g.modules).find(m=>m.k===sec);
-    if(mod?.lvKey)curPresLvKeyRef.current=mod.lvKey;
+    // Find the specific module - for Aprende, use curPresLvKeyRef to distinguish between presentations
+    const allMods=dynGroups.flatMap(g=>g.modules);
+    const mod=sec==='quiensoy'?allMods.find(m=>m.lvKey===curPresLvKeyRef.current)||allMods.find(m=>m.k===sec):allMods.find(m=>m.k===sec);
     const freshLv=overrideLv||(mod?getModuleLvOrDef(mod.lvKey,mod.defLv):secLv);
     // If quiensoy, always show choice screen when both modes are enabled
     if(!overrideLv&&sec==='quiensoy'){
@@ -561,7 +562,7 @@ export default function App(){
                   const rad=angle*Math.PI/180;
                   const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
                   const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv))}}} style={{
+                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey}}} style={{
                     position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
                     padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
                     display:'flex',flexDirection:'column',alignItems:'center',gap:2,
@@ -593,7 +594,7 @@ export default function App(){
           <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
             {otherGroups.map(g=>{
               const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
-              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv))}}} style={{
+              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey}}} style={{
                 width:48,height:48,borderRadius:'50%',border:'none',cursor:'pointer',
                 background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
                 boxShadow:`0 2px 8px ${pc[1]}44`,
@@ -635,7 +636,7 @@ export default function App(){
                   const mLv=getModuleLvOrDef(m.lvKey,m.defLv);
                   const isActive=sec===m.k&&String(secLv)===String(mLv);
                   const subSize=modCount<=3?100:modCount<=5?88:76;
-                  return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv)}} style={{
+                  return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv);if(m.lvKey)curPresLvKeyRef.current=m.lvKey}} style={{
                     width:subSize,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
                     padding:8,border:'none',background:'none',cursor:'pointer',fontFamily:"'Fredoka'",
                     transition:'all .25s',transform:isActive?'scale(1.08)':'scale(1)',
