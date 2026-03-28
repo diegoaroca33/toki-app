@@ -31,7 +31,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.35;u.pitch=1.0;u.volume=1.0;
     await new Promise(r=>{let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,Math.max(4000,text.length*400))});
     ttsPlaying.current=false;if(!alive.current)return;setSylShow(false);
-    const pm='¡Seguimos!';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk()},800)}
+    const pm='¡Seguimos!';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk(1,3)},800)}
   function handleSR(said){if(!alive.current)return;if(ttsPlaying.current){sr.go();return}poke();setMic(false);sr.stop();stopVoice();
     const rawB=Math.max(...said.split('|').map(a=>score(a,text)));const b=adjScore(rawB);
     setStars(b);starBeep(b);

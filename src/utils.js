@@ -124,12 +124,12 @@ export function updateRepCount(userId, phraseKey, stars) {
 
 // M5: Adaptive TTS speed per phrase
 export function getPhraseSpeed(userId, phraseKey) {
-  return loadData(`toki_speed_${userId}_${phraseKey}`, 0.85);
+  return loadData(`speed_${userId}_${phraseKey}`, 0.85);
 }
 export function updatePhraseSpeed(userId, phraseKey, succeeded) {
   const speeds = [0.7, 0.85, 1.0, 1.1];
   const current = getPhraseSpeed(userId, phraseKey);
-  const consecutiveKey = `toki_speedstreak_${userId}_${phraseKey}`;
+  const consecutiveKey = `speedstreak_${userId}_${phraseKey}`;
   let streak = loadData(consecutiveKey, {ok:0, fail:0});
   if (succeeded) { streak.ok++; streak.fail=0; }
   else { streak.fail++; streak.ok=0; }
@@ -139,7 +139,7 @@ export function updatePhraseSpeed(userId, phraseKey, succeeded) {
   if (streak.ok >= 3) { idx = Math.min(idx + 1, speeds.length - 1); streak.ok = 0; saveData(consecutiveKey, streak); }
   if (streak.fail >= 2) { idx = Math.max(idx - 1, 0); streak.fail = 0; saveData(consecutiveKey, streak); }
   const newSpeed = speeds[idx];
-  saveData(`toki_speed_${userId}_${phraseKey}`, newSpeed);
+  saveData(`speed_${userId}_${phraseKey}`, newSpeed);
   return newSpeed;
 }
 

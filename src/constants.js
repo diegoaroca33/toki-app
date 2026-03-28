@@ -83,7 +83,7 @@ body.theme-sober .sober-hide{display:none!important}
   .card{padding:14px;border-radius:14px}
   .inp{padding:12px;font-size:17px}
   .ovp{padding:20px 16px;border-radius:16px;max-width:340px}
-  .ws{min-width:44px;height:42px;font-size:17px;padding:0 10px}
+  .ws{min-width:44px;height:44px;font-size:17px;padding:0 10px}
 }
 @media (max-width:360px){
   #root{padding:6px 8px}

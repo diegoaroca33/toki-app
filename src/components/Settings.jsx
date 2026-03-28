@@ -8,7 +8,7 @@ import { Ring, NumPad, AstronautAvatar } from './UIKit.jsx'
 import { MonthlyReport } from './MonthlyReport.jsx'
 
 export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, sm, setSm, sec, setSec, secLv, setSecLv, freeChoice, setFreeChoice, activeMods, setActiveMods, openSection, setOpenSection, ptab, setPtab, theme, setTheme, rocketColor, setRocketColor, exigencia, setExigencia, maxDaily, setMaxDaily, sessionMode, setSessionMode, guidedTasks, setGuidedTasks, escribeCase, setEscribeCase, escribeTypes, setEscribeTypes, escribeGuide, setEscribeGuide, escribePauta, setEscribePauta, personas, savePersonas, setOv, setOpenGroup, setPhotoCrop, setShowRec, delConf, setDelConf, delPersonaIdx, setDelPersonaIdx, presEdit, setPresEdit, presNewMode, setPresNewMode, presDelIdx, setPresDelIdx, shareCode, setShareCode, shareMsg, setShareMsg, fbUser, hasConfig, pOpenPlanet, setPOpenPlanet, setProfs, setScr, helmetMode, setHelmetMode, showHelmet, dynGroups }) {
-  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>{setFreeChoice(true);setOv(null);setOpenGroup(null)}}>🎮 ¡A jugar!</button></div>
+  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>{const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up);setFreeChoice(true);setOv(null);setOpenGroup(null)}}>🎮 ¡A jugar!</button></div>
       <div className="tabs" style={{marginBottom:18}}>{['config','familia','progreso','metodo'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👥':t==='progreso'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
         {(()=>{
@@ -222,7 +222,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             </div>)}
           </div>}
         </div>}</div>
-        <button className="btn btn-gold" onClick={()=>{const up={...user,sessionMin:sm,freeChoice,sec,secLv};setUser(up);saveP(up)}} style={{fontSize:20,padding:'16px 20px',minHeight:52}}>💾 Guardar</button>
+        {/* Auto-save: session settings saved on change, no manual button needed */}
         {fbUser&&hasConfig&&<div style={{marginTop:12,display:'flex',gap:8}}>
           <button className="btn btn-b" onClick={async()=>{try{const code=await fbCreateShareCode(fbUser.uid,user.id,user.name);setShareCode(code);setShareMsg('Código generado')}catch(e){setShareMsg('Error: '+e.message)}}} style={{flex:1,fontSize:16,padding:'12px 16px',minHeight:48}}>🔗 Compartir perfil</button>
           {shareCode&&<div style={{flex:2,background:GOLD+'22',border:'2px solid '+GOLD,borderRadius:12,padding:'10px 16px',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
