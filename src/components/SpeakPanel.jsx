@@ -81,7 +81,10 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);setBurstFade(false);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
-    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
+    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:900);
+    const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()};
+    window.addEventListener('toki-sos',sosKill);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-sos',sosKill)}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);
     // M1: Count timeout as 0-star attempt

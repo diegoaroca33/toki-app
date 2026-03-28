@@ -43,6 +43,7 @@ export function EmergencyButton({user,personas}){
 
   function openSOS(){
     stopAllAudio(); // Cancel any exercise audio FIRST
+    window.dispatchEvent(new Event('toki-sos')); // Kill all exercise timers/mic
     setShow(true);
     setTimeout(speakAll,500);
   }

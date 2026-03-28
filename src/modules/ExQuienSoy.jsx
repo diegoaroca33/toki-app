@@ -121,7 +121,9 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     const imgStart=Date.now();
     function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img||Date.now()-imgStart>5000){stopVoice();doPlay(0)}else{setTimeout(tryPlay,200)}}
     const t=setTimeout(tryPlay,burstMode?300:600);
-    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
+    const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()};
+    window.addEventListener('toki-sos',sosKill);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-sos',sosKill)}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);
     // M1: Count timeout as 0-star attempt
@@ -169,7 +171,10 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
   function handleSR(said){if(!alive.current)return;spokeSlide.current=true;spokeAny.current=true;}
   const sr=useSR(handleSR);
 
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();sr.stop();timers.current.forEach(clearTimeout)}},[]);
+  useEffect(()=>{alive.current=true;
+    const sosKill=()=>{alive.current=false;stopVoice();sr.stop();timers.current.forEach(clearTimeout)};
+    window.addEventListener('toki-sos',sosKill);
+    return()=>{alive.current=false;stopVoice();sr.stop();timers.current.forEach(clearTimeout);window.removeEventListener('toki-sos',sosKill)}},[]);
   const presImgLoaded=useRef(false);
 
   function advanceOrFinish(){
