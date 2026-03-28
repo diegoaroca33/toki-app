@@ -14,12 +14,12 @@ export function processImage(file){return new Promise((resolve,reject)=>{
     const img=new Image();
     img.onerror=()=>reject('Error cargando imagen');
     img.onload=()=>{
-      const MAX=200;
+      const MAX=1200;
       let w=img.width,h=img.height;
       if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r)}
       const c=document.createElement('canvas');c.width=w;c.height=h;
       const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
-      const b64=c.toDataURL('image/jpeg',0.6);
+      const b64=c.toDataURL('image/jpeg',0.85);
       // Check final size (base64 is ~33% larger than binary)
       const approxBytes=Math.ceil(b64.length*3/4);
       if(approxBytes>500*1024)return reject('Imagen demasiado grande tras comprimir');
