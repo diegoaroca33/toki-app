@@ -1,7 +1,7 @@
 import React from 'react'
 import { EX } from '../exercises.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, AVS, SMINS, PERSONA_RELATIONS, LV_OPTS, GROUPS } from '../constants.js'
-import { saveData, getModuleLv, getModuleLvOrDef, setModuleLv } from '../utils.js'
+import { saveData, loadData, getModuleLv, getModuleLvOrDef, setModuleLv, getGroupProgress } from '../utils.js'
 import { generateAutoPresentation } from '../cloud.js'
 import { fbCreateShareCode } from '../firebase.js'
 import { Ring, NumPad, AstronautAvatar } from './UIKit.jsx'
@@ -9,7 +9,7 @@ import { MonthlyReport } from './MonthlyReport.jsx'
 
 export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, sm, setSm, sec, setSec, secLv, setSecLv, freeChoice, setFreeChoice, activeMods, setActiveMods, openSection, setOpenSection, ptab, setPtab, theme, setTheme, rocketColor, setRocketColor, exigencia, setExigencia, maxDaily, setMaxDaily, sessionMode, setSessionMode, guidedTasks, setGuidedTasks, escribeCase, setEscribeCase, escribeTypes, setEscribeTypes, escribeGuide, setEscribeGuide, escribePauta, setEscribePauta, personas, savePersonas, setOv, setOpenGroup, setPhotoCrop, setShowRec, delConf, setDelConf, delPersonaIdx, setDelPersonaIdx, presEdit, setPresEdit, presNewMode, setPresNewMode, presDelIdx, setPresDelIdx, shareCode, setShareCode, shareMsg, setShareMsg, fbUser, hasConfig, pOpenPlanet, setPOpenPlanet, setProfs, setScr, helmetMode, setHelmetMode, showHelmet, dynGroups }) {
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:BG,overflowY:'auto',zIndex:100,padding:16}}><div style={{maxWidth:600,margin:'0 auto'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}><p style={{fontSize:22,color:GOLD,fontWeight:700,margin:0}}>👨‍👩‍👦 Panel</p><button className="btn btn-gold" style={{width:'auto',padding:'12px 20px',fontSize:18,minHeight:52}} onClick={()=>{setFreeChoice(true);setOv(null);setOpenGroup(null)}}>🎮 ¡A jugar!</button></div>
-      <div className="tabs" style={{marginBottom:18}}>{['config','familia','stats','srs'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👨‍👩‍👦':t==='stats'?'📊':'🧠'}</button>)}</div>
+      <div className="tabs" style={{marginBottom:18}}>{['config','familia','progreso','metodo'].map(t=><button key={t} className={'tab'+(ptab===t?' on':'')} onClick={()=>setPtab(t)} style={{fontSize:16,padding:14}}>{t==='config'?'⚙️':t==='familia'?'👥':t==='progreso'?'📊':'🧠'}</button>)}</div>
       {ptab==='config'&&<div style={{display:'flex',flexDirection:'column',gap:12}}>
         {(()=>{
           const[chgStep,setChgStep]=React.useState('closed'); // 'closed'|'current'|'new'|'confirm'
@@ -342,7 +342,85 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
           </div>}
         </div>
       </div>}
-      {ptab==='stats'&&(()=>{const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);return <div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'%',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} className="sbox"><div style={{fontSize:28,color:s.c,fontWeight:700}}>{s.v}</div><div style={{fontSize:13,color:DIM,marginTop:4}}>{s.l}</div></div>)}</div><MonthlyReport user={user}/></div>})()}
-      {ptab==='srs'&&(()=>{const mas=Object.values(user.srs||{}).filter(s=>s.lv>=4).length,lrn=Object.values(user.srs||{}).filter(s=>s.lv>0&&s.lv<4).length,nw=EX.length-mas-lrn;return <div style={{textAlign:'center',padding:'20px 0'}}><div style={{display:'flex',justifyContent:'center',gap:20}}>{[{l:'Dominadas',v:mas,c:GREEN},{l:'Aprendiendo',v:lrn,c:GOLD},{l:'Nuevas',v:nw,c:PURPLE}].map((s,i)=><div key={i}><div style={{position:'relative',display:'inline-block'}}><Ring p={s.v/EX.length} sz={80} c={s.c}/><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:20,color:s.c,fontWeight:700}}>{s.v}</div></div><div style={{fontSize:13,color:DIM,marginTop:6}}>{s.l}</div></div>)}</div></div>})()}
+      {ptab==='progreso'&&(()=>{
+        const h=user.hist||[],tc=h.reduce((s,x)=>s+x.ok,0),ta=h.reduce((s,x)=>s+x.ok+x.sk,0),pct=ta>0?Math.round(tc/ta*100):0,tm=h.reduce((s,x)=>s+(x.min||0),0);
+        const mas=Object.values(user.srs||{}).filter(s=>s.lv>=4).length,lrn=Object.values(user.srs||{}).filter(s=>s.lv>0&&s.lv<4).length,nw=EX.length-mas-lrn;
+        // Module breakdown: collect modules with progress > 0
+        const modRows=[];
+        dynGroups.forEach(g=>{
+          g.modules.forEach(m=>{
+            const prog=getGroupProgress(user.id,g.id);
+            const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
+            const isActive=activeMods[m.lvKey]!==false;
+            if(prog>0&&isActive){
+              const lvLabel=Array.isArray(curLvs)?curLvs.join(','):''+curLvs;
+              modRows.push({emoji:g.emoji,planet:g.name,mod:m.l,prog,lvLabel,color:g.color});
+            }
+          });
+        });
+        // Deduplicate by planet (progress is per-planet, not per-module)
+        const seenPlanets=new Set();
+        const dedupRows=[];
+        dynGroups.forEach(g=>{
+          const prog=getGroupProgress(user.id,g.id);
+          if(prog>0){
+            const activeModsInGroup=g.modules.filter(m=>activeMods[m.lvKey]!==false);
+            if(activeModsInGroup.length>0){
+              activeModsInGroup.forEach(m=>{
+                const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
+                const lvLabel=Array.isArray(curLvs)?curLvs.join(','):''+curLvs;
+                dedupRows.push({emoji:g.emoji,planet:g.name,mod:m.l,prog,lvLabel,color:g.color});
+              });
+            }
+          }
+        });
+        return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* BLOQUE 1 — Resumen general */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8}}>
+            {[{l:'Sesiones',v:h.length,c:GREEN},{l:'Aciertos',v:tc,c:BLUE},{l:'% Acierto',v:pct+'%',c:GOLD},{l:'Minutos',v:tm,c:PURPLE}].map((s,i)=><div key={i} style={{textAlign:'center',background:BG3,borderRadius:10,padding:'10px 4px'}}>
+              <div style={{fontSize:22,color:s.c,fontWeight:700}}>{s.v}</div>
+              <div style={{fontSize:11,color:DIM,marginTop:2}}>{s.l}</div>
+            </div>)}
+          </div>
+          {/* BLOQUE 2 — SRS circles */}
+          <div style={{display:'flex',justifyContent:'center',gap:20,padding:'8px 0'}}>
+            {[{l:'Dominadas',v:mas,c:GREEN},{l:'Aprendiendo',v:lrn,c:GOLD},{l:'Nuevas',v:nw,c:PURPLE}].map((s,i)=><div key={i} style={{textAlign:'center'}}>
+              <div style={{position:'relative',display:'inline-block'}}><Ring p={EX.length>0?s.v/EX.length:0} sz={70} c={s.c}/><div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:18,color:s.c,fontWeight:700}}>{s.v}</div></div>
+              <div style={{fontSize:12,color:DIM,marginTop:4}}>{s.l}</div>
+            </div>)}
+          </div>
+          {/* BLOQUE 3 — Desglose por planeta y módulo */}
+          {dedupRows.length>0&&<div style={{background:BG3,borderRadius:10,padding:12}}>
+            <p style={{fontSize:14,fontWeight:700,color:TXT,margin:'0 0 8px'}}>Desglose por módulo</p>
+            <div style={{display:'flex',flexDirection:'column',gap:4}}>
+              {dedupRows.map((r,i)=><div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 0',borderBottom:i<dedupRows.length-1?'1px solid '+BORDER:'none'}}>
+                <span style={{fontSize:14,width:22,textAlign:'center'}}>{r.emoji}</span>
+                <span style={{fontSize:13,fontWeight:600,color:r.color,flex:1}}>{r.planet} — {r.mod}</span>
+                <span style={{fontSize:12,color:DIM}}>{r.prog} ej.</span>
+                <span style={{fontSize:11,color:DIM,background:BG+'66',borderRadius:6,padding:'1px 6px'}}>N{r.lvLabel}</span>
+              </div>)}
+            </div>
+          </div>}
+          {/* BLOQUE 4 — Informe mensual */}
+          <MonthlyReport user={user}/>
+        </div>})()}
+      {ptab==='metodo'&&<div style={{display:'flex',flexDirection:'column',gap:14,padding:'4px 0'}}>
+        <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:0}}>Sobre el m\u00e9todo de Toki</p>
+        <p style={{fontSize:14,color:TXT,lineHeight:1.55,margin:0}}>Toki se basa en un enfoque de entrenamiento auditivo-motor intensivo: el ni\u00f1o escucha un modelo auditivo claro, lo repite en voz alta, recibe retroalimentaci\u00f3n inmediata, y lo practica tantas veces como sea necesario hasta consolidar la producci\u00f3n.</p>
+        <p style={{fontSize:14,color:TXT,lineHeight:1.55,margin:0}}>La producci\u00f3n del habla es, en parte, una habilidad motora. Como toda habilidad motora, mejora con pr\u00e1ctica repetida y frecuente. Las personas con s\u00edndrome de Down y otras discapacidades intelectuales necesitan significativamente m\u00e1s repeticiones que sus pares neurot\u00edpicos para consolidar las secuencias motoras del habla.</p>
+        <p style={{fontSize:14,color:TXT,lineHeight:1.55,margin:0}}>Toki permite una frecuencia de pr\u00e1ctica diaria que ser\u00eda imposible en el contexto cl\u00ednico habitual de una o dos sesiones semanales de logopedia. No sustituye la intervenci\u00f3n profesional \u2014 la complementa extendiendo la pr\u00e1ctica al hogar.</p>
+        <p style={{fontSize:16,fontWeight:700,color:GOLD,margin:'6px 0 0'}}>Evidencia cient\u00edfica</p>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {[
+            '\ud83d\udcd6 Hodson & Paden (1983) \u2014 Estimulaci\u00f3n auditiva focalizada: la exposici\u00f3n repetida a modelos auditivos desarrolla representaciones internas que permiten al ni\u00f1o autocorregirse.',
+            '\ud83d\udcd6 Camarata, Yoder & Camarata (2006, Vanderbilt University) \u2014 Intervenci\u00f3n naturalista: el tratamiento simult\u00e1neo de inteligibilidad y gram\u00e1tica es eficaz en s\u00edndrome de Down.',
+            '\ud83d\udcd6 Rvachew & Brosseau-Lapr\u00e9 (2018) \u2014 Integraci\u00f3n auditivo-motora: demostr\u00f3 ser superior a la planificaci\u00f3n visual para la generalizaci\u00f3n del habla en s\u00edndrome de Down.',
+            '\ud83d\udcd6 Schmidt & Lee (2011) \u2014 Principios de aprendizaje motor: m\u00e1s pr\u00e1ctica = mejor rendimiento = mayor aprendizaje.',
+            '\ud83d\udcd6 Kumin (2006) \u2014 Apraxia verbal en s\u00edndrome de Down: las habilidades de programaci\u00f3n del habla deben ense\u00f1arse y practicarse de forma deliberada e intensa.',
+            '\ud83d\udcd6 Down Syndrome Education International \u2014 See and Learn Speech: la pr\u00e1ctica repetitiva acelera el desarrollo fonol\u00f3gico.'
+          ].map((ref,i)=><p key={i} style={{fontSize:13,color:DIM,lineHeight:1.45,margin:0}}>{ref}</p>)}
+        </div>
+        <p style={{fontSize:12,color:DIM+'99',margin:'10px 0 0',textAlign:'center'}}>Toki \u00b7 Aprende a decirlo \u2014 by Diego Aroca \u00a9 2026</p>
+      </div>}
     </div></div>
 }

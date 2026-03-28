@@ -103,7 +103,7 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     </div>
   </div>}
 
-// ===== QUIÉN SOY — Presentación (solo ayuda auditiva, sin valoración) =====
+// ===== QUIÉN SOY — Presentación (Toki lee modelo, niño repite al público, sin feedback entre slides) =====
 export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   const slides=useMemo(()=>{
     if(!presentation)return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
@@ -115,30 +115,49 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   },[presentation]);
   const[qi,setQi]=useState(0);const[finished,setFinished]=useState(false);const[barOn,setBarOn]=useState(false);
   const alive=useRef(true);const timers=useRef([]);
+  // Track if child spoke on ANY slide (mic detection, no feedback)
+  const spokeAny=useRef(false);const spokeSlide=useRef(false);
   const cur=slides[qi];
   const waitSec=useMemo(()=>Math.max(Math.ceil(cur.text.split(/\s+/).length*0.9),2)+3,[cur]);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();timers.current.forEach(clearTimeout)}},[]);
+
+  // Silent mic listener — only marks that speech was detected, NO feedback/evaluation
+  function handleSR(said){if(!alive.current)return;spokeSlide.current=true;spokeAny.current=true;}
+  const sr=useSR(handleSR);
+
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();sr.stop();timers.current.forEach(clearTimeout)}},[]);
   const presImgLoaded=useRef(false);
-  useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);presImgLoaded.current=false;timers.current.forEach(clearTimeout);timers.current=[];
+
+  function advanceOrFinish(){
+    if(!alive.current)return;setBarOn(false);sr.stop();
+    if(qi+1>=slides.length){setFinished(true);victoryBeeps()}
+    else setQi(qi+1);
+  }
+
+  useEffect(()=>{if(finished)return;stopVoice();sr.stop();setBarOn(false);spokeSlide.current=false;presImgLoaded.current=false;timers.current.forEach(clearTimeout);timers.current=[];
     const imgStart=Date.now();
     function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current||Date.now()-imgStart>5000){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
     function doSpeak(){
+      // Toki reads phrase aloud as model — this is the ONLY TTS call per slide
       say(cur.text).then(()=>{if(!alive.current)return;
-        setBarOn(true);
-        const t2=setTimeout(()=>{if(!alive.current)return;setBarOn(false);
-          if(qi+1>=slides.length){setFinished(true);victoryBeeps()}
-          else setQi(qi+1)},waitSec*1000);
+        // Start silent mic listening + countdown bar
+        setBarOn(true);sr.go();
+        const t2=setTimeout(()=>{if(!alive.current)return;sr.stop();advanceOrFinish()},waitSec*1000);
         timers.current.push(t2)})}
     const t1=setTimeout(trySpeak,400);timers.current.push(t1);
-    return()=>{timers.current.forEach(clearTimeout);timers.current=[];stopVoice()}
+    return()=>{timers.current.forEach(clearTimeout);timers.current=[];stopVoice();sr.stop()}
   },[qi,finished]);
-  if(finished)return <div className="ab" style={{textAlign:'center',padding:'40px 18px'}}>
-    <div style={{fontSize:100,marginBottom:16}}>🏆</div>
-    <h2 style={{fontSize:28,color:GOLD,margin:'0 0 12px'}}>¡Presentación completada!</h2>
-    <p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'0 0 8px'}}>¡Genial, {name}!</p>
-    <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {slides.length} frases</p>
-    <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>🎉 ¡Terminado!</button>
-  </div>;
+
+  // === Completion screen (visual only, Toki does NOT speak) ===
+  if(finished){
+    const spoke=spokeAny.current;
+    return <div className="ab" style={{textAlign:'center',padding:'40px 18px'}}>
+      <div style={{fontSize:100,marginBottom:16}}>{spoke?'🏆':'📚'}</div>
+      <h2 style={{fontSize:28,color:spoke?GOLD:'#90CAF9',margin:'0 0 12px'}}>{spoke?'¡Presentación completada!':'¡Presentación lista!'}</h2>
+      {spoke&&<p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>{slides.length} frases presentadas</p>}
+      {!spoke&&<p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>{slides.length} frases revisadas</p>}
+      <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>Terminado</button>
+    </div>}
+
   return <div style={{textAlign:'center',position:'relative',overflow:'hidden'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
       {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} onError={()=>{presImgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
@@ -151,5 +170,9 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
       {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:0,overflow:'hidden',zIndex:5}}>
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}
+    </div>
+    <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:8}}>
+      <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();timers.current.forEach(clearTimeout);timers.current=[];advanceOrFinish()}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>}
