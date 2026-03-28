@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, DIM, CARD, BORDER } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { loadData, rnd, beep, mkPerfect } from '../utils.js'
-import { useIdle, NumPad } from '../components/UIKit.jsx'
+import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== CARD and DOMINO SVGs for Distribute =====
@@ -62,6 +62,7 @@ export function BagSVG({name:bagName,size=80}){return <svg width={size} height={
 
 export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
   const[count,setCount]=useState(0);const[fb,setFb]=useState(null);const[ans,setAns]=useState('');const[att,setAtt]=useState(0);const[showCount,setShowCount]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const timers=useRef([]);const setT=(fn,ms)=>{const id=setTimeout(fn,ms);timers.current.push(id);return id};const clearTimers=()=>{timers.current.forEach(clearTimeout);timers.current=[]};
   const objType=useMemo(()=>['candy','card','domino'][Math.floor(Math.random()*3)],[ex]);
   const objEmoji=objType==='candy'?'🍬':objType==='card'?'🃏':'🁣';
@@ -69,14 +70,14 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
   const ObjSVG=objType==='card'?CardSVG:objType==='domino'?DominoSVG:null;
   const uniqueCards=useMemo(()=>{const ranks=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];const suits=['♥','♦','♠','♣'];const all=[];for(const s of suits)for(const r of ranks)all.push({rank:r,suit:s});const sh=[...all].sort(()=>Math.random()-.5);return sh.slice(0,20)},[ex]);
   const uniqueDominos=useMemo(()=>{const all=[];for(let a=0;a<=6;a++)for(let b=a;b<=6;b++)all.push([a,b]);const sh=[...all].sort(()=>Math.random()-.5);return sh.slice(0,20)},[ex]);
-  useEffect(()=>{setCount(0);setFb(null);setAns('');setAtt(0);setShowCount(false);clearTimers();stopVoice();
+  useEffect(()=>{setCount(0);setFb(null);setAns('');setAtt(0);setShowCount(false);resetOral();clearTimers();stopVoice();
     if(ex.mode==='put')setT(()=>say('Pon '+ex.count+' '+objName),400);
     else if(ex.mode==='equal')setT(()=>say('Reparte '+ex.total+' '+objName+' en '+ex.bags+' bolsas iguales'),400);
     else setT(()=>say('¿Quién tiene más?'),400);
     return()=>{clearTimers();stopVoice()}},[ex]);
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
-  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
+  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.count+' '+objName;setT(()=>triggerOral(phrase),300)})}
     else{const na=att+1;setAtt(na);
       if(na>=2){/* 2nd fail: Toki counts WITH the child */
         setFb('counting');setShowCount(true);beep(200,200);
@@ -88,10 +89,10 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         setT(countNext,500)}
       else{setFb('wrong');beep(200,200);sayFB(rnd(['¡Casi!','¡Inténtalo otra vez!','¡Cuenta bien!']));
         setT(()=>{setFb(null);setCount(0)},2000)}}}
-  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
+  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.each+' para cada uno';setT(()=>triggerOral(phrase),300)})}
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setT(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
-    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setT(onOk,300))}
+    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const winner=correct==='a'?ex.nameA:correct==='b'?ex.nameB:'igual';const phrase=winner+' tiene más';setT(()=>triggerOral(phrase),300)})}
     else{setFb('no');beep(200,200);setT(()=>setFb(null),1200)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
@@ -151,7 +152,8 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         {ex.a===ex.b&&<button className="btn btn-p" onClick={()=>checkCompare('equal')} style={{flex:1,maxWidth:140}}>Igual</button>}
         <button className="btn btn-b" onClick={()=>checkCompare('b')} style={{flex:1,maxWidth:140}}>{ex.nameB}</button></div>
     </div>}
-    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>

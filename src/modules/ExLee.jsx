@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, DIM, CARD, BORDER, BG3 } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
-import { useIdle } from '../components/UIKit.jsx'
+import { useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== LEE MODULE =====
@@ -57,22 +57,31 @@ export function genLee(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:ra
 
 export function ExLee({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState([]);const[avail,setAvail]=useState([]);const[filledLetter,setFilledLetter]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced([]);setFilledLetter(null);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced([]);setFilledLetter(null);resetOral();
     if(ex.mode==='syllables'){setAvail([...ex.data.syllables].sort(()=>Math.random()-.5))}
     stopVoice();return()=>stopVoice()},[ex]);
+  function getOralPhrase(){
+    if(ex.mode==='intruso')return ex.data.ans;
+    if(ex.mode==='word_img')return ex.data.word;
+    if(ex.mode==='complete')return ex.data.word;
+    if(ex.mode==='syllables')return ex.data.word;
+    if(ex.mode==='read_do')return ex.data.instruction;
+    return '';
+  }
   function pick(ans){poke();
-    if(ex.mode==='intruso'){if(ans===ex.data.ans){setFb('ok');starBeep(4);say('¡Bien! '+ans+' no es '+(ex.data.cat==='fruta'||ex.data.cat==='ropa'||ex.data.cat==='comida'?'una ':'un ')+ex.data.cat).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,300))}
+    if(ex.mode==='intruso'){if(ans===ex.data.ans){setFb('ok');starBeep(4);say('¡Bien! '+ans+' no es '+(ex.data.cat==='fruta'||ex.data.cat==='ropa'||ex.data.cat==='comida'?'una ':'un ')+ex.data.cat).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase()),300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La respuesta es '+ex.data.ans);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{say(ex.data.q);setTimeout(()=>setFb(null),1500)}}}
-    if(ex.mode==='word_img'){if(ans===ex.data.ans){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,250))}
+    if(ex.mode==='word_img'){if(ans===ex.data.ans){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase()),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.word);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{sayFB('Fíjate, empieza por '+ex.data.word.charAt(0));setTimeout(()=>setFb(null),1500)}}}
-    if(ex.mode==='complete'){if(ans===ex.data.missing){setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,300))}
+    if(ex.mode==='complete'){if(ans===ex.data.missing){setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase()),300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setFilledLetter(ex.data.missing);setFb('show');say(ex.data.word);setTimeout(()=>{setTimeout(onOk,400)},2500)}else{const letterHints={A:'Avión',B:'Balón',C:'Casa',D:'Dado',E:'Elefante',F:'Foca',G:'Gato',H:'Huevo',I:'Iguana',J:'Jirafa',K:'Koala',L:'León',M:'Manzana',N:'Nube',O:'Oso',P:'Perro',Q:'Queso',R:'Rana',S:'Sol',T:'Tigre',U:'Uva',V:'Vaca',W:'Wafle',X:'Xilófono',Y:'Yate',Z:'Zapato'};const ltr=ex.data.missing.toUpperCase();const hintWord=letterHints[ltr]||ltr;sayFB('Es la primera letra de '+hintWord);setTimeout(()=>setFb(null),2000)}}}
     if(ex.mode==='read_do'){const isCorrect=ex.data.opts[ans]?.correct;
-      if(isCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,250))}
+      if(isCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase()),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.instruction);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}else{setTimeout(()=>setFb(null),1200)}}}}
   function placeSyl(s){poke();const np=[...placed,s];setPlaced(np);setAvail(a=>a.filter(x=>x!==s));
-    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
+    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase()),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
         if(na>=2){say(ex.data.word);setTimeout(()=>{setFb(null);setTimeout(onOk,400)},2500)}
         else{sayFB('La primera sílaba es '+ex.data.syllables[0]);setTimeout(()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5));setFb(null)},2000)}}}}
@@ -115,7 +124,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
         {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||56,padding:20,minHeight:90}}>{o.l}</button>)}
       </div>
     </div>}
-    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>

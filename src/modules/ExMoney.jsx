@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { GOLD, BLUE, GREEN, RED, BG3, DIM, TXT, BORDER } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
-import { NumPad, useIdle } from '../components/UIKit.jsx'
+import { NumPad, useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== MONEDAS Y BILLETES =====
@@ -17,16 +17,17 @@ export function genMoney(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:
 
 export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[sel,setSel]=useState([]);const{idleMsg,poke}=useIdle(name,!fb);
-  useEffect(()=>{setAns('');setFb(null);setSel([]);stopVoice();
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setAns('');setFb(null);setSel([]);resetOral();stopVoice();
     if(ex.mode==='recognize')setTimeout(()=>say('¿Cuánto vale esta moneda?'),400);
     else if(ex.mode==='sum')setTimeout(()=>say('¿Cuánto hay en total?'),400);
     else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),400);
     else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
     return()=>stopVoice()},[ex]);
   function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='recognize'?ex.coin.v:ex.mode==='sum'?ex.total:ex.mode==='change'?ex.change:ex.price;
-    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
+    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='recognize'?ex.coin.l:'son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase),300)})}
     else{setFb('no');stopVoice();sayFB('La respuesta es '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setAns('')},2500)}}
-  function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}}
+  function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='son '+ex.price.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase),300)})}}
   const CoinSVG=({c,sz})=>{const copper=c.v<=0.05;const gold=c.v>=0.10&&c.v<=0.50;const bi=c.bi;
     const outerC=bi?'#C0C0C0':copper?'#B87333':gold?'#FFD700':'#C0C0C0';
     const borderC=copper?'#7A4E2D':gold?'#B8860B':bi?'#909090':'#888';
@@ -101,7 +102,8 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
         <p style={{fontSize:18,color:TXT,margin:0}}>Pagas con {ex.paid} €. ¿Cuánto cambio?</p></div>
       <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
     </div>}
-    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! Prueba otra vez 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}

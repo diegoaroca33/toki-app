@@ -1,7 +1,7 @@
 import React from 'react'
 import { EX } from '../exercises.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, AVS, SMINS, PERSONA_RELATIONS, LV_OPTS, GROUPS } from '../constants.js'
-import { saveData, loadData, getModuleLv, getModuleLvOrDef, setModuleLv, getGroupProgress } from '../utils.js'
+import { saveData, loadData, getModuleLv, getModuleLvOrDef, setModuleLv, getGroupProgress, getDynamicDilo, setDynamicDilo, getDynamicDiloLevel } from '../utils.js'
 import { generateAutoPresentation } from '../cloud.js'
 import { fbCreateShareCode } from '../firebase.js'
 import { Ring, NumPad, AstronautAvatar } from './UIKit.jsx'
@@ -176,9 +176,16 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                   const isPres=m.lvKey.startsWith('pres_');
                   const opts=isPres?[]:LV_OPTS[m.lvKey]||[];
                   const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
+                  // M7a: Dynamic DILO toggle
+                  const isDiloDecir=m.lvKey==='decir';
+                  const dynOn=isDiloDecir&&user?getDynamicDilo(user.id):false;
                   return <div key={mi} style={{marginBottom:8}}>
                   <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
-                  {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>{opts.map(lv=>{
+                  {isDiloDecir&&user&&<div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                    <button onClick={()=>{const nv=!dynOn;setDynamicDilo(user.id,nv)}} style={{padding:'6px 14px',borderRadius:8,border:`2px solid ${dynOn?GOLD:BORDER}`,background:dynOn?GOLD+'22':BG3+'44',color:dynOn?GOLD:DIM,fontFamily:"'Fredoka'",fontWeight:600,fontSize:14,cursor:'pointer',minHeight:44}}>{'🎯 Modo dinámico'+(dynOn?' ON':'')}</button>
+                    {dynOn&&<span style={{fontSize:13,color:GOLD,fontWeight:600}}>Nivel actual: N{getDynamicDiloLevel(user.id)}</span>}
+                  </div>}
+                  {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center',opacity:dynOn?0.4:1,pointerEvents:dynOn?'none':'auto'}}>{opts.map(lv=>{
                     const isSel=curLvs.includes(lv.n);
                     return <button key={lv.n} onClick={()=>{
                       const freshLvs=getModuleLvOrDef(m.lvKey,m.defLv);
@@ -381,21 +388,10 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
 
           return <div className="card" style={{marginTop:16,borderColor:RED+'44',padding:20}}>
             <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:RED}}>🎙️ Grabaciones de referencia</p>
-            <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Graba la voz del niño repitiendo frases para seguir su progreso</p>
+            <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Graba siempre la misma frase para comparar el progreso a lo largo del tiempo</p>
+            <p style={{fontSize:16,fontWeight:700,color:GOLD,margin:'0 0 12px',padding:'10px 14px',background:BG3,borderRadius:10,border:'2px solid '+BORDER}}>"{`Soy ${user.name||'yo'}, me gusta ir al cine con mis amigos`}"</p>
 
-            {!refMode&&<button className="btn btn-ghost" onClick={()=>setRefMode('choose')} style={{fontSize:16,padding:'12px 16px',borderColor:RED+'44',color:RED}}>🎙️ Grabar referencia</button>}
-
-            {refMode==='choose'&&<div className="af" style={{background:CARD,borderRadius:12,padding:16,marginTop:8}}>
-              <p style={{fontSize:16,fontWeight:600,color:GOLD,margin:'0 0 10px'}}>Elige una frase:</p>
-              {allPhrases.length>0&&<div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
-                {allPhrases.slice(0,8).map((ph,i)=><button key={i} onClick={()=>startRef(ph)} style={{padding:'10px 14px',borderRadius:10,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:15,cursor:'pointer',textAlign:'left',minHeight:44}}>"{ph}"</button>)}
-              </div>}
-              <div style={{display:'flex',gap:8}}>
-                <input className="inp" value={refCustom} onChange={e=>setRefCustom(e.target.value)} placeholder="Frase personalizada..." style={{fontSize:15,padding:10,flex:1}}/>
-                <button className="btn btn-b" disabled={!refCustom.trim()} onClick={()=>{startRef(refCustom.trim());setRefCustom('')}} style={{width:'auto',padding:'10px 16px',fontSize:15,minHeight:44}}>Grabar</button>
-              </div>
-              <button className="btn btn-ghost" onClick={()=>{setRefMode(null);setRefCustom('')}} style={{marginTop:8,fontSize:14}}>Cancelar</button>
-            </div>}
+            {!refMode&&<button className="btn btn-ghost" onClick={()=>startRef(`Soy ${user.name||'yo'}, me gusta ir al cine con mis amigos`)} style={{fontSize:16,padding:'12px 16px',borderColor:RED+'44',color:RED}}>🎙️ Grabar referencia</button>}
 
             {refMode==='recording'&&<div className="af" style={{background:CARD,borderRadius:12,padding:20,marginTop:8,textAlign:'center'}}>
               <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Frase:</p>
@@ -415,7 +411,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                 <button className="btn btn-b" onClick={()=>{const a=new Audio(refAudio);a.play()}} style={{width:'auto',padding:'12px 20px',fontSize:16}}>▶️ Escuchar</button>
               </div>
               <div style={{display:'flex',gap:10}}>
-                <button className="btn btn-ghost" onClick={()=>{setRefMode('choose');setRefAudio(null)}} style={{flex:1,fontSize:15}}>Repetir</button>
+                <button className="btn btn-ghost" onClick={()=>{setRefMode(null);setRefAudio(null)}} style={{flex:1,fontSize:15}}>Repetir</button>
                 <button className="btn btn-g" onClick={saveRef} style={{flex:2,fontSize:16}}>💾 Guardar</button>
               </div>
             </div>}

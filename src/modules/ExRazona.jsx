@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, DIM, CARD, BORDER, BG3, TXT } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
-import { useIdle, NumPad } from '../components/UIKit.jsx'
+import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== RAZONA MODULE =====
@@ -341,16 +341,26 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
   const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
+  function getOralPhrase(ans){
+    if(ex.mode==='emotion')return ex.data.emotion;
+    if(ex.mode==='spatial'||ex.mode==='spatial_drag')return ex.data.ans||ex.data.pos;
+    if(ex.mode==='cause')return ex.data.ans;
+    if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
+    if(ex.mode==='classify')return 'bien clasificado';
+    if(ex.mode==='pattern')return ex.data.ans;
+    return String(ans);
+  }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
     const celebTime=ex.mode==='spatial'?1800:300;
-    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,celebTime))}
+    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=getOralPhrase(ans);setTimeout(()=>triggerOral(phrase),celebTime)})}
     else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(onOk,250)},2500)}
       else{setTimeout(()=>setFb(null),1200)}}}
   function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
-      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,300))}
+      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado'),300))}
       else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
@@ -368,7 +378,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:19,padding:14,minHeight:52,fontWeight:600,letterSpacing:0.5,opacity:fb==='ok'&&o!==ex.data.ans?0.35:1,transition:'opacity 0.3s'}}>{o}</button>)}
       </div>
     </div>}
-    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(onOk,1800))}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
+    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.data.pos;setTimeout(()=>triggerOral(phrase),1800)})}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
     {ex.mode==='intruso'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>
@@ -421,7 +431,8 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
-    {fb==='ok'&&ex.mode!=='spatial'&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
+    {fb==='ok'&&ex.mode!=='spatial'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>

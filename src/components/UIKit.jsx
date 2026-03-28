@@ -1,10 +1,10 @@
 // ============================================================
 // TOKI · Reusable UI Components
 // ============================================================
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { BG3, GOLD, GREEN, RED, BLUE, TXT, BORDER, CLS } from '../constants.js'
 import { beep } from '../utils.js'
-import { say, stopVoice } from '../voice.js'
+import { say, stopVoice, useSR } from '../voice.js'
 import { NUMS_1_100 } from '../constants.js'
 
 // Mascot SVG component with evolution tiers (0-5)
@@ -124,6 +124,48 @@ export function AstronautAvatar({photo,emoji,size=80,helmet=true,onClick,style={
       <circle cx={94} cy={55} r={4} fill="#78909C" stroke="#546E7A" strokeWidth={1.5}/>
     </svg>}
   </div>}
+
+// ===== ORAL PROMPT — M8 oral production after correct answers =====
+export function OralPrompt({phrase,onDone}){
+  const doneRef=useRef(false);
+  const timerRef=useRef(null);
+  const sr=useSR(useCallback(()=>{},[]));
+  useEffect(()=>{
+    doneRef.current=false;
+    // 1. Say the phrase via TTS
+    stopVoice();
+    say(phrase).then(()=>{
+      if(doneRef.current)return;
+      // 3. Beep 880Hz 150ms
+      beep(880,150);
+      // 4. Listen for 3-4 seconds
+      if(sr.ok)sr.go();
+      timerRef.current=setTimeout(()=>{
+        if(!doneRef.current){doneRef.current=true;sr.stop();onDone()}
+      },3500);
+    });
+    return()=>{doneRef.current=true;sr.stop();stopVoice();if(timerRef.current)clearTimeout(timerRef.current)}
+  },[phrase]);
+  return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:20}}>
+    <p style={{fontSize:18,fontWeight:600,color:'#E8E8F0',margin:0}}>Repite:</p>
+    <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0,textAlign:'center'}}>{phrase}</p>
+    <div style={{width:64,height:64,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px #E74C3C55',animation:'pulse 1.2s infinite'}}>
+      <span style={{fontSize:32,color:'#fff'}}>🎤</span>
+    </div>
+  </div>
+}
+
+export function useOralPhase(onOk){
+  const[oralPhrase,setOralPhrase]=useState(null);
+  const oralEnabled=useCallback(()=>{try{const v=localStorage.getItem('toki_oral_all_planets');if(v===null)return true;return v==='true'}catch(e){return true}},[]);
+  const triggerOral=useCallback((phrase)=>{
+    if(oralEnabled()){setOralPhrase(phrase)}
+    else{onOk()}
+  },[onOk]);
+  const oralDone=useCallback(()=>{setOralPhrase(null);onOk()},[onOk]);
+  const resetOral=useCallback(()=>setOralPhrase(null),[]);
+  return{oralPhrase,triggerOral,oralDone,resetOral}
+}
 
 // ===== ABACUS HELP — Visual counting aid =====
 export function AbacusHelp({a,b,op='+',result}){

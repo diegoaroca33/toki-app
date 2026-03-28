@@ -143,6 +143,49 @@ export function updatePhraseSpeed(userId, phraseKey, succeeded) {
   return newSpeed;
 }
 
+// M7a: Dynamic DILO level helpers
+export function getDynamicDilo(userId){return loadData(`dynamic_dilo_${userId}`,false)}
+export function setDynamicDilo(userId,v){saveData(`dynamic_dilo_${userId}`,v)}
+export function getDynamicDiloLevel(userId){return loadData(`dynamic_dilo_level_${userId}`,1)}
+export function setDynamicDiloLevel(userId,v){saveData(`dynamic_dilo_level_${userId}`,v)}
+export function getDynamicDiloHistory(userId){return loadData(`dynamic_dilo_history_${userId}`,[])}
+export function pushDynamicDiloResult(userId,ok){
+  const h=getDynamicDiloHistory(userId);
+  h.push(ok?1:0);
+  if(h.length>8)h.splice(0,h.length-8);
+  saveData(`dynamic_dilo_history_${userId}`,h);
+  return h;
+}
+export function getDynamicDiloSessions(userId){return loadData(`dynamic_dilo_sessions_${userId}`,0)}
+export function setDynamicDiloSessions(userId,v){saveData(`dynamic_dilo_sessions_${userId}`,v)}
+export function checkDynamicDiloLevel(userId){
+  const h=getDynamicDiloHistory(userId);
+  const lv=getDynamicDiloLevel(userId);
+  const sessions=getDynamicDiloSessions(userId);
+  // DOWN: 3+ fails in last 4 → immediate drop
+  if(h.length>=4){
+    const last4=h.slice(-4);
+    const fails4=last4.filter(x=>x===0).length;
+    if(fails4>=3&&lv>1){
+      setDynamicDiloLevel(userId,lv-1);
+      setDynamicDiloSessions(userId,0);
+      saveData(`dynamic_dilo_history_${userId}`,[]);
+      return{change:'down',newLv:lv-1};
+    }
+  }
+  // UP: 75%+ of last 8 (6/8) AND 2+ sessions
+  if(h.length>=8&&sessions>=2){
+    const ok8=h.slice(-8).filter(x=>x===1).length;
+    if(ok8>=6&&lv<5){
+      setDynamicDiloLevel(userId,lv+1);
+      setDynamicDiloSessions(userId,0);
+      saveData(`dynamic_dilo_history_${userId}`,[]);
+      return{change:'up',newLv:lv+1};
+    }
+  }
+  return{change:null,newLv:lv};
+}
+
 // Build GROUPS with dynamic Aprende modules from user.presentations
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;

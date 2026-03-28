@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { GOLD, BLUE, GREEN, RED, BG3, TXT, DIM } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
-import { useIdle } from '../components/UIKit.jsx'
+import { useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== LA HORA =====
@@ -29,14 +29,16 @@ export function ClockFace({h,m,size=160}){
 export function ExClock({ex,onOk,onSkip,name,uid,vids}){
   const opts=useMemo(()=>{const correct=ex.text;const pool=[];for(let h=1;h<=12;h++){for(const m of [0,15,30,45]){const t=clockText(h,m);if(t!==correct)pool.push(t)}}const wrong=[];const shuffled=[...pool].sort(()=>Math.random()-.5);for(const t of shuffled){if(wrong.length>=3)break;if(t!==correct&&!wrong.includes(t))wrong.push(t)}const result=[...wrong,correct];const unique=[...new Set(result)];if(!unique.includes(correct)){unique.pop();unique.push(correct)}while(unique.length<4){const extra=pool[Math.floor(Math.random()*pool.length)];if(!unique.includes(extra))unique.push(extra)}return unique.slice(0,4).sort(()=>Math.random()-.5)},[ex]);
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
-  useEffect(()=>{setFb(null);stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
-  function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(onOk,250))}
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setFb(null);resetOral();stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
+  function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const phrase='son '+ex.text;setTimeout(()=>triggerOral(phrase),250)})}
     else{setFb('no');beep(200,200);const minHint=ex.m===0?'La aguja GRANDE apunta al 12':ex.m===30?'La aguja GRANDE apunta al 6, significa y media':ex.m===15?'La aguja GRANDE apunta al 3, significa y cuarto':'La aguja GRANDE apunta al 9, significa menos cuarto';const hrHint='La aguja PEQUEÑA apunta al '+ex.h;sayFB(hrHint+'. '+minHint);setTimeout(()=>setFb(null),2500)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>
       <div style={{display:'flex',justifyContent:'center'}}><ClockFace h={ex.h} m={ex.m}/></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
-    {fb==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:16,color:GOLD,fontWeight:600,margin:0}}>La aguja PEQUEÑA apunta al {ex.h}</p><p style={{fontSize:16,color:BLUE,fontWeight:600,margin:'6px 0 0'}}>{ex.m===0?'La aguja GRANDE apunta al 12':ex.m===30?'La aguja GRANDE apunta al 6 = y media':ex.m===15?'La aguja GRANDE apunta al 3 = y cuarto':'La aguja GRANDE apunta al 9 = menos cuarto'}</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
