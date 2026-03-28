@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, DIM, GOOD_MSG, QUIEN_SOY } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay, playRec, useSR } from '../voice.js'
-import { score, adjScore, rnd, beep, mkPerfect, textKey } from '../utils.js'
+import { score, adjScore, rnd, beep, mkPerfect, textKey, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
 import { victoryBeeps } from '../components/DoneScreen.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== QUIÉN SOY — Barra lateral de tiempo =====
 export function QSTimeBar({dur,on,onEnd}){
@@ -41,7 +42,7 @@ function ModeSwitch({mode,onToggle,canToggle}){
   </div>}
 
 // ===== QUIÉN SOY UNIFICADO — con switch Estudio/Presentación =====
-export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation,canToggle}){
+export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation,canToggle,burstMode,burstSpeed,burstReps}){
   const[mode,setMode]=useState('estudio');
   // When mode changes mid-exercise, reset
   const modeRef=useRef(mode);
@@ -50,43 +51,86 @@ export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation
   return <div>
     <ModeSwitch mode={mode} onToggle={setMode} canToggle={canToggle}/>
     {mode==='estudio'
-      ?<ExQuienSoyEstudio key={'est_'+ex.id+'_'+mode} ex={ex} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>
-      :<ExQuienSoyPres key={'pres_'+mode} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} presentation={presentation}/>
+      ?<ExQuienSoyEstudio key={'est_'+ex.id+'_'+mode} ex={ex} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>
+      :<ExQuienSoyPres key={'pres_'+mode} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} presentation={presentation} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>
     }
   </div>}
 
 // ===== QUIÉN SOY — Estudio (repetición + ánimos) =====
-export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
+export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps}){
   const[sf,sSf]=useState(null);const[att,sAtt]=useState(0);const[mic,setMic]=useState(false);
+  const[burstStars,setBurstStars]=useState(0);const[burstFade,setBurstFade]=useState(false);
+  const[burstRepsDone,setBurstRepsDone]=useState(0);
   const alive=useRef(true);const ttsPlaying=useRef(false);
   const dur=useMemo(()=>Math.max(6,Math.ceil(ex.text.split(/\s+/).length*0.9)+4),[ex.text]);
   const key=ex.text+'|'+ex.id;
+  const phraseKey=useMemo(()=>textKey(ex.text),[ex.text]);
+  const repsTarget=burstReps||1;
+  function getAdaptiveRate(repIdx){
+    if(burstMode&&typeof burstSpeed==='number'){
+      // Each rep slightly faster when repsTarget>1
+      return repsTarget>1?burstSpeed+repIdx*0.05:burstSpeed;
+    }
+    if(uid)return getPhraseSpeed(uid,phraseKey);
+    return undefined;
+  }
   function handleSR(said){if(!alive.current)return;if(ttsPlaying.current){sr.go();return}setMic(false);sr.stop();stopVoice();
     const rawB=Math.max(...said.split('|').map(a=>score(a,ex.text)));const b=adjScore(rawB);
     starBeep(b);
-    if(b>=3){sSf('ok');cheerOrSay(b>=4?mkPerfect(name):rnd(GOOD_MSG),uid,vids,b>=4?'perfect':'good').then(()=>{if(alive.current)onOk()})}
-    else{const na=att+1;sAtt(na);sSf('try');sayFB(rnd(['¡Vas bien!','¡Casi!','¡Sigue así!']));
-      if(na>=2){setTimeout(()=>{if(alive.current){sSf('pass');sayFB('¡Seguimos!');setTimeout(onOk,300)}},600)}
-      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
+    // M1: Update repetition counter
+    if(uid&&ex.id)updateRepCount(uid,ex.id,b);
+    // M5: Update adaptive speed
+    if(uid)updatePhraseSpeed(uid,phraseKey,b>=3);
+
+    // === BURST MODE ===
+    if(burstMode){
+      setBurstStars(b);setBurstFade(true);
+      const nextRep=burstRepsDone+1;
+      setBurstRepsDone(nextRep);
+      setTimeout(()=>{if(!alive.current)return;setBurstFade(false);
+        if(nextRep<repsTarget){sSf(null);doPlay(nextRep)}
+        else{onOk(b,1)}
+      },300);
+      return;
+    }
+
+    // M3: Smart repetition — 60% of exigencia threshold, max 3 attempts
+    const exPct=getExigencia()/100;
+    const passThreshold=exPct*0.6*4;
+    const na=att+1;sAtt(na);
+    if(b>=passThreshold){sSf('ok');cheerOrSay(b>=4?mkPerfect(name):rnd(GOOD_MSG),uid,vids,b>=4?'perfect':'good').then(()=>{if(alive.current)onOk(b,na)})}
+    else if(na>=3){
+      // M3: Auto-pass after 3 attempts
+      sSf('pass');sayFB(rnd(['¡Buen esfuerzo!','¡Seguimos!']));setTimeout(()=>{if(alive.current)onOk(1,na)},800)
+    }
+    else{sSf('try');sayFB(rnd(['¡Otra vez!','¡Tú puedes!','¡Inténtalo!']));
+      setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}
   const sr=useSR(handleSR);
-  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
+  async function doPlay(repIdx){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     ttsPlaying.current=true;
-    const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
+    const rate=getAdaptiveRate(repIdx||0);
+    const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text,rate);
     ttsPlaying.current=false;
     if(!alive.current)return;
     sr.go();setMic(true);
   }
   const imgLoaded=useRef(false);
-  useEffect(()=>{alive.current=true;imgLoaded.current=false;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
+  useEffect(()=>{alive.current=true;imgLoaded.current=false;sSf(null);sAtt(0);setMic(false);setBurstStars(0);setBurstFade(false);setBurstRepsDone(0);stopVoice();sr.stop();
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
     const imgStart=Date.now();
-    function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img||Date.now()-imgStart>5000){stopVoice();doPlay()}else{setTimeout(tryPlay,200)}}
-    const t=setTimeout(tryPlay,600);
+    function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img||Date.now()-imgStart>5000){stopVoice();doPlay(0)}else{setTimeout(tryPlay,200)}}
+    const t=setTimeout(tryPlay,burstMode?300:600);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
-    const na=att+1;sAtt(na);if(na>=2){sSf('pass');setTimeout(()=>sayFB('¡Ánimo! Seguimos'),300);setTimeout(()=>{if(alive.current)onOk()},1800)}
-    else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
+    const na=att+1;sAtt(na);
+    // M1: Count timeout as 0-star attempt
+    if(uid&&ex.id)updateRepCount(uid,ex.id,0);
+    // M5: Update adaptive speed on timeout
+    if(uid)updatePhraseSpeed(uid,phraseKey,false);
+    if(burstMode){onOk(0,1);return}
+    if(na>=3){sSf('pass');setTimeout(()=>sayFB('¡Buen esfuerzo! Seguimos'),300);setTimeout(()=>{if(alive.current)onOk(1,na)},1800)}
+    else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay(0)}},2500)}}
   return <div style={{textAlign:'center'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
       {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} onError={()=>{imgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
@@ -97,14 +141,15 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
       <QSTimeBar dur={dur} on={mic} onEnd={onTimeUp}/>
     </div>
     {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4,margin:'0 auto'}}><img src={ex.picto} alt={'Pictograma: '+ex.text} style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
+    {burstMode&&burstStars>0&&<div style={{transition:'opacity .3s',opacity:burstFade?0:1,textAlign:'center',margin:'4px 0'}}><Stars n={burstStars} sz={28}/>{repsTarget>1&&<p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
     <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
-      <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}}>🔊 Otra vez</button>
+      <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);setBurstRepsDone(0);doPlay(0)}}>🔊 Otra vez</button>
       <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>}
 
 // ===== QUIÉN SOY — Presentación (Toki lee modelo, niño repite al público, sin feedback entre slides) =====
-export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
+export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burstMode,burstSpeed,burstReps}){
   const slides=useMemo(()=>{
     if(!presentation)return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
     if(presentation.slides&&presentation.slides.length>0)
@@ -138,7 +183,8 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
     function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current||Date.now()-imgStart>5000){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
     function doSpeak(){
       // Toki reads phrase aloud as model — this is the ONLY TTS call per slide
-      say(cur.text).then(()=>{if(!alive.current)return;
+      const rate=burstMode&&typeof burstSpeed==='number'?burstSpeed:(uid?getPhraseSpeed(uid,textKey(cur.text)):undefined);
+      say(cur.text,rate).then(()=>{if(!alive.current)return;
         // Start silent mic listening + countdown bar
         setBarOn(true);sr.go();
         const t2=setTimeout(()=>{if(!alive.current)return;sr.stop();advanceOrFinish()},waitSec*1000);

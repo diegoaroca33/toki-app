@@ -402,7 +402,7 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
             </div>
           </div>}
           {/* BLOQUE 4 — Informe mensual */}
-          <MonthlyReport user={user}/>
+          <MonthlyReport user={user} activeMods={activeMods} exigencia={exigencia}/>
         </div>})()}
       {ptab==='metodo'&&<div style={{display:'flex',flexDirection:'column',gap:14,padding:'4px 0'}}>
         <p style={{fontSize:20,fontWeight:700,color:GOLD,margin:0}}>Sobre el m\u00e9todo de Toki</p>

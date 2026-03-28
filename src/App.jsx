@@ -164,6 +164,13 @@ export default function App(){
   const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);
+  // M4: Burst mode state
+  const[burstMode,setBurstMode]=useState(()=>loadData('burst_mode',false));
+  const[burstSpeed,setBurstSpeed]=useState(()=>loadData('burst_speed',1.0));
+  const[burstReps,setBurstReps]=useState(()=>loadData('burst_reps',1));
+  function toggleBurst(){const nv=!burstMode;setBurstMode(nv);saveData('burst_mode',nv)}
+  function setBurstSpeedVal(v){setBurstSpeed(v);saveData('burst_speed',v)}
+  function setBurstRepsVal(v){setBurstReps(v);saveData('burst_reps',v)}
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=120000; // 2 min idle before pausing timer
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
@@ -306,7 +313,7 @@ export default function App(){
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
+  function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
     // Streak & milestone tracking
     const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+1);
     const totalOk=nextSt.ok;const MS=[{n:5,emoji:'🌟',text:'¡Vas genial!',sub:'5 respuestas correctas'},{n:10,emoji:'🔥',text:'¡Imparable!',sub:'10 respuestas correctas'},{n:20,emoji:'🏆',text:'¡Superestrella!',sub:'20 respuestas correctas'}];
@@ -694,12 +701,37 @@ export default function App(){
     {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span></div></div>
       {correctStreak>=2&&<div style={{position:'absolute',top:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,(elapsed/60)/sm*100)+'%'}}/></div>
+      {/* M4: Burst mode toggle — visible for DILO and QUIÉN SOY */}
+      {(sec==='decir'||sec==='quiensoy')&&<div style={{marginBottom:8}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
+          <button onClick={toggleBurst} style={{
+            padding:'6px 16px',borderRadius:20,border:'2px solid',fontSize:14,fontWeight:700,cursor:'pointer',
+            fontFamily:"'Fredoka'",transition:'all .2s',minHeight:36,
+            background:burstMode?'#FF5722':'rgba(255,255,255,.08)',
+            borderColor:burstMode?'#E64A19':'rgba(255,255,255,.15)',
+            color:burstMode?'#fff':DIM,
+            boxShadow:burstMode?'0 2px 8px rgba(255,87,34,.4)':'none'
+          }}>{'🔥 Ráfaga'+(burstMode?' ON':'')}</button>
+        </div>
+        {burstMode&&<div style={{display:'flex',flexWrap:'wrap',gap:12,justifyContent:'center',marginTop:8,padding:'8px 12px',background:'rgba(255,87,34,.1)',borderRadius:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:12,color:DIM,fontWeight:600}}>Reps</span>
+            <input type="range" min="1" max="5" value={burstReps} onChange={e=>setBurstRepsVal(parseInt(e.target.value))} style={{width:80,accentColor:'#FF5722'}}/>
+            <span style={{fontSize:14,color:'#FF5722',fontWeight:700,minWidth:16,textAlign:'center'}}>{burstReps}</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:16}}>🐢</span>
+            <input type="range" min="0.7" max="1.2" step="0.1" value={burstSpeed} onChange={e=>setBurstSpeedVal(parseFloat(e.target.value))} style={{width:80,accentColor:'#FF5722'}}/>
+            <span style={{fontSize:16}}>⚡</span>
+          </div>
+        </div>}
+      </div>}
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
         {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
+        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed}/>}
         {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='math'&&<ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='multi'&&<ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
@@ -711,6 +743,6 @@ export default function App(){
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={true}/>}
+        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={true} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>}
       </div></div>}
   </div>}

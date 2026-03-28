@@ -14,8 +14,22 @@ export function saveData(key,val){try{const seen=new WeakSet();localStorage.setI
 export function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
 export function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
 export function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);return text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole')}
-export function srsUp(id,ok,u){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();d.srs[id].lv=ok?Math.min(d.srs[id].lv+1,5):Math.max(d.srs[id].lv-1,0);return d}
-export function needsRev(id,u){const s=u.srs&&u.srs[id];if(!s)return true;const g=[0,30000,120000,600000,3600000,86400000];return(Date.now()-s.t)>=g[Math.min(s.lv,5)]}
+export function srsUp(id,ok,u,stars,attempts){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();
+  if(!ok){d.srs[id].lv=Math.max(d.srs[id].lv-1,0)}
+  else if(stars!==undefined&&attempts!==undefined){
+    // M3: Smart SRS intervals based on quality
+    // 4 stars first attempt → lv 5 (7 days)
+    // 3 stars first attempt → lv 4 (3 days)
+    // 2-3 stars with retries → lv 3 (1 day)
+    // Auto-pass (3 attempts) → lv 0 (next session)
+    if(attempts>=3){d.srs[id].lv=0}
+    else if(attempts>1){d.srs[id].lv=3}
+    else if(stars>=4){d.srs[id].lv=5}
+    else if(stars>=3){d.srs[id].lv=4}
+    else{d.srs[id].lv=3}
+  }else{d.srs[id].lv=Math.min(d.srs[id].lv+1,5)}
+  return d}
+export function needsRev(id,u){const s=u.srs&&u.srs[id];if(!s)return true;const g=[0,30000,120000,86400000,259200000,604800000];return(Date.now()-s.t)>=g[Math.min(s.lv,5)]}
 export const avStr=v=>typeof v==='string'?v:'🧑‍🚀';
 export const tdy=()=>new Date().toLocaleDateString('es-ES');
 export const rnd=a=>a[Math.floor(Math.random()*a.length)];
@@ -90,6 +104,44 @@ export function splitSyllables(text){
   return result}
 
 export function getMascotTier(s){if(s>=1000)return 5;if(s>=500)return 4;if(s>=300)return 3;if(s>=150)return 2;if(s>=50)return 1;return 0}
+
+// M1: Phrase repetition counter
+export function getRepCount(userId, phraseKey) {
+  return loadData(`rep_${userId}_${phraseKey}`, {count:0, avgStars:0, firstDate:null, lastDate:null});
+}
+export function updateRepCount(userId, phraseKey, stars) {
+  const d = getRepCount(userId, phraseKey);
+  const now = new Date().toISOString().slice(0,10);
+  const newCount = d.count + 1;
+  const newAvg = d.count === 0 ? stars : ((d.avgStars * d.count) + stars) / newCount;
+  saveData(`rep_${userId}_${phraseKey}`, {
+    count: newCount,
+    avgStars: Math.round(newAvg * 10) / 10,
+    firstDate: d.firstDate || now,
+    lastDate: now
+  });
+}
+
+// M5: Adaptive TTS speed per phrase
+export function getPhraseSpeed(userId, phraseKey) {
+  return loadData(`toki_speed_${userId}_${phraseKey}`, 0.85);
+}
+export function updatePhraseSpeed(userId, phraseKey, succeeded) {
+  const speeds = [0.7, 0.85, 1.0, 1.1];
+  const current = getPhraseSpeed(userId, phraseKey);
+  const consecutiveKey = `toki_speedstreak_${userId}_${phraseKey}`;
+  let streak = loadData(consecutiveKey, {ok:0, fail:0});
+  if (succeeded) { streak.ok++; streak.fail=0; }
+  else { streak.fail++; streak.ok=0; }
+  saveData(consecutiveKey, streak);
+  let idx = speeds.indexOf(current);
+  if (idx === -1) idx = 1;
+  if (streak.ok >= 3) { idx = Math.min(idx + 1, speeds.length - 1); streak.ok = 0; saveData(consecutiveKey, streak); }
+  if (streak.fail >= 2) { idx = Math.max(idx - 1, 0); streak.fail = 0; saveData(consecutiveKey, streak); }
+  const newSpeed = speeds[idx];
+  saveData(`toki_speed_${userId}_${phraseKey}`, newSpeed);
+  return newSpeed;
+}
 
 // Build GROUPS with dynamic Aprende modules from user.presentations
 export function getGroupsForUser(user,GROUPS){

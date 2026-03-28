@@ -1,18 +1,26 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, TXT, BUILD_OK, GOOD_MSG } from '../constants.js'
 import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay } from '../voice.js'
-import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep } from '../utils.js'
+import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
 import { CelebrationOverlay, Stars } from './CelebrationOverlay.jsx'
 
-export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
+export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed}){
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
+  const[burstFade,setBurstFade]=useState(false);
   const alive=useRef(true);const gen=useRef(0);const ttsPlaying=useRef(false);const{idleMsg,poke}=useIdle(name,!sf&&!mic);
   const dur=useMemo(()=>Math.max(6,Math.ceil(text.split(/\s+/).length*0.9)+4),[text]);
   const syllables=useMemo(()=>splitSyllables(text),[text]);
   const flatSyls=useMemo(()=>syllables.flat(),[syllables]);
   const key=text+'|'+exId;
+  // M5: Get adaptive speed for this phrase
+  const phraseKey=useMemo(()=>textKey(text),[text]);
+  function getAdaptiveRate(){
+    if(burstMode&&typeof burstSpeed==='number')return burstSpeed;
+    if(uid)return getPhraseSpeed(uid,phraseKey);
+    return undefined; // use default
+  }
   async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
     for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
       await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,1500)});
@@ -27,33 +35,65 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
   function handleSR(said){if(!alive.current)return;if(ttsPlaying.current){sr.go();return}poke();setMic(false);sr.stop();stopVoice();
     const rawB=Math.max(...said.split('|').map(a=>score(a,text)));const b=adjScore(rawB);
     setStars(b);starBeep(b);
-    if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk()})}
-    else if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk()})}
-    else if(b>=2){const na=att+1;sAtt(na);const rm=pickMsg(false,null,'decir');sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},800)}
-      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
-    else{const na=att+1;sAtt(na);const rm=pickMsg(false,null,'decir');sMsg(rm);sSf('try');sayFB(rm);
-      if(na>=3){setTimeout(()=>{if(alive.current){sMsg('Vamos juntos, despacio...');sSf('syl');doSlowPlay()}},800)}
-      else if(na>=2){setTimeout(()=>{if(alive.current){sMsg('Vamos por sílabas...');sSf('syl');doSyllablePlay()}},800)}
-      else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}}
+    // M1: Update repetition counter
+    if(uid&&exId)updateRepCount(uid,exId,b);
+    // M5: Update adaptive speed
+    if(uid)updatePhraseSpeed(uid,phraseKey,b>=3);
+
+    // === BURST MODE: instant visual feedback, no audio, immediate next ===
+    if(burstMode){
+      setBurstFade(true);
+      setTimeout(()=>{if(alive.current){setBurstFade(false);onOk(b,1)}},300);
+      return;
+    }
+
+    // M3: Smart repetition — 60% of exigencia threshold, max 3 attempts
+    const exPct=getExigencia()/100;// e.g. 0.65
+    const passThreshold=exPct*0.6*4;// 60% of exigencia applied to 4-star scale
+    const na=att+1;sAtt(na);
+    if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk(b,na)})}
+    else if(b>=passThreshold){
+      // Pass with earned stars
+      if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk(b,na)})}
+      else{const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');sayFB(gm);setTimeout(()=>{if(alive.current)onOk(b,na)},800)}
+    }
+    else if(na>=3){
+      // M3: Auto-pass after 3 attempts with 1 star and encouraging message
+      const autoMsg=rnd(['¡Buen esfuerzo!','¡Seguimos practicando!','¡Lo harás mejor!']);sMsg(autoMsg);sSf('pass');setStars(1);sayFB(autoMsg);
+      setTimeout(()=>{if(alive.current)onOk(1,na)},800)
+    }
+    else{
+      // Retry with encouragement
+      const retryMsg=rnd(['¡Otra vez!','¡Tú puedes!','¡Inténtalo de nuevo!']);sMsg(retryMsg);sSf('try');sayFB(retryMsg);
+      setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)
+    }}
   const sr=useSR(handleSR);
-  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);
+  async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setBurstFade(false);
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     // Play TTS first, mark as playing so SR ignores Toki's voice
     ttsPlaying.current=true;
-    const played=await playRec(uid,vids,textKey(text));if(!played)await say(text);
+    const rate=getAdaptiveRate();
+    const played=await playRec(uid,vids,textKey(text));if(!played)await say(text,rate);
     ttsPlaying.current=false;
     if(!alive.current)return;
     sr.go();setMic(true);
   }
-  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);stopVoice();sr.stop();
+  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);setBurstFade(false);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
-    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
+    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:900);return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);
-    if(na>=3){const pm='Despacio...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSlowPlay()},800)}
-    else if(na>=2){const pm='Por sílabas...';sMsg(pm);sSf('syl');sayFB(pm);setTimeout(()=>{if(alive.current)doSyllablePlay()},800)}
+    // M1: Count timeout as 0-star attempt
+    if(uid&&exId)updateRepCount(uid,exId,0);
+    // M5: Update adaptive speed on timeout
+    if(uid)updatePhraseSpeed(uid,phraseKey,false);
+    if(burstMode){onOk(0,1);return}
+    if(na>=3){
+      // M3: Auto-pass after 3 attempts
+      const autoMsg=rnd(['¡Buen esfuerzo!','¡Seguimos!']);sMsg(autoMsg);sSf('pass');setStars(1);sayFB(autoMsg);
+      setTimeout(()=>{if(alive.current)onOk(1,na)},800)
+    }
     else{const pm=pickMsg(false,null,'decir');sMsg(pm);sSf('wait');sayFB(pm);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
   function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
@@ -70,11 +110,11 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
         return items})}</div>}
     </div>
     {/* Stars */}
-    {stars>=4&&<CelebrationOverlay show={true} duration={1500}/>}
-    <div style={{minHeight:70,marginBottom:12}}>
-    {stars>0&&<div className="ab"><Stars n={stars} sz={40}/></div>}
-    {msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
-    {idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    {stars>=4&&!burstMode&&<CelebrationOverlay show={true} duration={1500}/>}
+    <div style={{minHeight:burstMode?40:70,marginBottom:burstMode?4:12}}>
+    {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?28:40}/></div>}
+    {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
+    {!burstMode&&idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     </div>
     {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
     <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
@@ -104,9 +144,9 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids}){
     <div style={{height:100}}/>
   </div>}
 
-export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids}){return <div style={{textAlign:'center',padding:12}}>
+export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed}){return <div style={{textAlign:'center',padding:12}}>
   <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
-  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/></div>}
+  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);
