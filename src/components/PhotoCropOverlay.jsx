@@ -7,8 +7,10 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
   const[imgSize,setImgSize]=useState({w:0,h:0});
   const dragging=useRef(false);const lastTouch=useRef(null);const lastDist=useRef(0);
   const imgRef=useRef(null);
-  const CIRCLE_R=140;
-  const RECT_W=280;const RECT_H=Math.round(RECT_W*9/16); // 16:9
+  const CIRCLE_R=Math.min(140,Math.floor(Math.min(window.innerWidth,window.innerHeight)*0.28));
+  // Rect crop: 70% of screen width (max 600px) maintaining 16:9
+  const RECT_W=Math.min(600,Math.floor(window.innerWidth*0.7));
+  const RECT_H=Math.round(RECT_W*9/16);
   useEffect(()=>{const img=new Image();img.onload=()=>{setImgSize({w:img.width,h:img.height});imgRef.current=img};img.src=imageSrc},[imageSrc]);
   function onTouchStart(e){e.preventDefault();
     if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);lastDist.current=d}
