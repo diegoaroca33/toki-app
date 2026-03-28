@@ -287,13 +287,14 @@ export default function App(){
     if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
     // Quiensoy: ALWAYS force both modes [1,2] for inline switch (ignore localStorage)
     const isQS=sec==='quiensoy'||(mod&&mod.lvKey&&mod.lvKey.startsWith('pres_'));
+    let gameSec=sec;
     if(isQS){
-      if(!overrideLv)freshLv=[1,2]; // Always both modes - switch is inline
-      sec='quiensoy'; // Ensure buildQ gets the right section
+      if(!overrideLv)freshLv=[1,2];
+      gameSec='quiensoy';
       setSec('quiensoy');
     }
     setSecLv(freshLv);setQsChoice(null);
-    setQ(buildQ(user,sec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
+    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
