@@ -6,7 +6,7 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
   const[scale,setScale]=useState(1);const[translate,setTranslate]=useState({x:0,y:0});
   const[imgSize,setImgSize]=useState({w:0,h:0});
   const dragging=useRef(false);const lastTouch=useRef(null);const lastDist=useRef(0);
-  const imgRef=useRef(null);
+  const imgRef=useRef(null);const displayImgRef=useRef(null);
   const CIRCLE_R=Math.min(140,Math.floor(Math.min(window.innerWidth,window.innerHeight)*0.28));
   // Rect crop: 70% of screen width (max 600px) maintaining 16:9
   const RECT_W=Math.min(600,Math.floor(window.innerWidth*0.7));
@@ -24,36 +24,29 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
   function onMouseUp(){dragging.current=false;lastTouch.current=null}
   function onWheel(e){e.preventDefault();setScale(s=>Math.max(0.3,Math.min(5,s-(e.deltaY>0?0.1:-0.1))))}
   function doSave(){
-    if(!imgRef.current){onCancel();return}
+    if(!imgRef.current||!displayImgRef.current){onCancel();return}
     const img=imgRef.current;const cont=containerRef.current;if(!cont){onCancel();return}
-    const rect=cont.getBoundingClientRect();
-    const cx=rect.width/2;const cy=rect.height/2;
-    // Match exactly what CSS does: maxWidth:90%, maxHeight:90% (never upscale), then transform:scale
-    const maxW=rect.width*0.9;const maxH=rect.height*0.9;
-    const fitRatio=Math.min(1,maxW/img.width,maxH/img.height);
-    const dispW=img.width*fitRatio*scale;
-    const dispH=img.height*fitRatio*scale;
-    const imgLeft=cx-dispW/2+translate.x;const imgTop=cy-dispH/2+translate.y;
+    const contRect=cont.getBoundingClientRect();
+    // Use the ACTUAL rendered position of the displayed img element
+    const imgRect=displayImgRef.current.getBoundingClientRect();
+    const dispW=imgRect.width;const dispH=imgRect.height;
+    const imgLeft=imgRect.left-contRect.left;const imgTop=imgRect.top-contRect.top;
+    const cx=contRect.width/2;const cy=contRect.height/2;
     if(shape==='rect'){
-      // 16:9 rectangular crop
       const c=document.createElement('canvas');const dpr=Math.max(window.devicePixelRatio||2,3);c.width=Math.round(RECT_W*dpr);c.height=Math.round(RECT_H*dpr);const ctx=c.getContext('2d');
       const cropLeft=cx-RECT_W/2;const cropTop=cy-RECT_H/2;
       const srcX=(cropLeft-imgLeft)/dispW*img.width;
       const srcY=(cropTop-imgTop)/dispH*img.height;
-      const srcW=RECT_W/dispW*img.width;
-      const srcH=RECT_H/dispH*img.height;
+      const srcW=RECT_W/dispW*img.width;const srcH=RECT_H/dispH*img.height;
       ctx.drawImage(img,srcX,srcY,srcW,srcH,0,0,c.width,c.height);
       onSave(c.toDataURL('image/jpeg',0.88));
     } else {
-      // Circle crop
-      // High-res circle crop: fixed 480px canvas for crisp avatars even on 3x DPI
       const c=document.createElement('canvas');const sz=480;c.width=sz;c.height=sz;const ctx=c.getContext('2d');
       ctx.beginPath();ctx.arc(sz/2,sz/2,sz/2,0,Math.PI*2);ctx.clip();
       const circLeft=cx-CIRCLE_R;const circTop=cy-CIRCLE_R;
       const srcX=(circLeft-imgLeft)/dispW*img.width;
       const srcY=(circTop-imgTop)/dispH*img.height;
-      const srcW=(CIRCLE_R*2)/dispW*img.width;
-      const srcH=(CIRCLE_R*2)/dispH*img.height;
+      const srcW=(CIRCLE_R*2)/dispW*img.width;const srcH=(CIRCLE_R*2)/dispH*img.height;
       ctx.drawImage(img,srcX,srcY,srcW,srcH,0,0,sz,sz);
       onSave(c.toDataURL('image/jpeg',0.88));
     }
@@ -62,7 +55,7 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
     onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
     onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
     onWheel={onWheel} ref={containerRef}>
-    {imgRef.current&&<img src={imageSrc} alt="" style={{position:'absolute',maxWidth:'90%',maxHeight:'90%',transform:`translate(${translate.x}px,${translate.y}px) scale(${scale})`,userSelect:'none',pointerEvents:'none',WebkitUserDrag:'none'}} draggable={false}/>}
+    {imgRef.current&&<img ref={displayImgRef} src={imageSrc} alt="" style={{position:'absolute',maxWidth:'90%',maxHeight:'90%',transform:`translate(${translate.x}px,${translate.y}px) scale(${scale})`,userSelect:'none',pointerEvents:'none',WebkitUserDrag:'none'}} draggable={false}/>}
     {/* Dark overlay with cutout */}
     <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}}>
       <defs><mask id="cropMask"><rect width="100%" height="100%" fill="white"/>
