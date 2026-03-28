@@ -9,7 +9,10 @@ export function DoneScreen({st,elapsed,user,supPin,onExit}){
   const[xConf,sXConf]=useState(false);
   const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
   const uname=user?.name||'crack';
-  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB('¡Lo has hecho genial, '+uname+'! ¿Quieres seguir?');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
+  // Graduated praise based on performance
+  const praise=pct>=80?'¡Lo has hecho genial!':pct>=40?'¡Buen trabajo!':'¡Has practicado mucho!';
+  const praiseVoice=pct>=80?'¡Lo has hecho genial, '+uname+'!':pct>=40?'¡Buen trabajo, '+uname+'!':'¡Has practicado mucho, '+uname+'!';
+  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB(praiseVoice+' ¿Quieres seguir?');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'radial-gradient(ellipse at center,'+BG2+' 0%,'+BG+' 100%)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20,overflow:'hidden'}}>
     <Confetti show={xConf}/>
     <div style={{maxWidth:420,width:'100%',textAlign:'center'}}>
@@ -27,7 +30,7 @@ export function DoneScreen({st,elapsed,user,supPin,onExit}){
             </div>)}
         </div>
         <div style={{background:GREEN+'15',border:'2px solid '+GREEN+'33',borderRadius:16,padding:18,marginBottom:20,animation:'fadeIn .5s 1.1s both'}}>
-          <p style={{fontSize:22,fontWeight:700,margin:0,color:GREEN}}>¡Lo has hecho genial!</p>
+          <p style={{fontSize:22,fontWeight:700,margin:0,color:pct>=80?GREEN:pct>=40?BLUE:GOLD}}>{praise}</p>
         </div>
         <div style={{display:'flex',justifyContent:'center',gap:24,animation:'fadeIn .5s 1.1s both'}}>
           <button onClick={()=>onExit('repeat')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #27ae60',background:GREEN,color:'#fff',fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1e8449',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🔄</span><span>¡Otra ronda!</span></button>
