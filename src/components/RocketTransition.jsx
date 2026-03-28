@@ -60,7 +60,7 @@ export function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
 
     {/* Phase 2: PICKUP — rocket moves to get Guillermo, face appears */}
     {phase==='pickup'&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
-      <div style={{fontSize:56,animation:'bounceIn .6s ease-out'}}>{avatar||'🧑‍🚀'}</div>
+      {avatar&&avatar.startsWith('data:')?<img src={avatar} alt="" style={{width:56,height:56,borderRadius:'50%',objectFit:'cover',border:'3px solid '+GOLD,animation:'bounceIn .6s ease-out'}}/>:<div style={{fontSize:56,animation:'bounceIn .6s ease-out'}}>{avatar||'🧑‍🚀'}</div>}
       <div style={{animation:'bounceIn .6s ease-out .3s both'}}>
         <RocketSVG size={130} showFire={true} showFace={true}/>
       </div>
