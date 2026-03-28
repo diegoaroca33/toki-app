@@ -89,6 +89,8 @@ export function splitSyllables(text){
     result.push(syls)});
   return result}
 
+export function getMascotTier(s){if(s>=1000)return 5;if(s>=500)return 4;if(s>=300)return 3;if(s>=150)return 2;if(s>=50)return 1;return 0}
+
 // Build GROUPS with dynamic Aprende modules from user.presentations
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;

@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, CSS, AVS, CLS, SMINS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser } from './utils.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar } from './components/UIKit.jsx'
@@ -163,10 +163,15 @@ export default function App(){
   const[escribeTypes,setEscribeTypes]=useState(()=>loadData('escribe_types',['letras']));
   const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
-  const[freeChoice,setFreeChoice]=useState(true);const[qsChoice,setQsChoice]=useState(null);
+  const[freeChoice,setFreeChoice]=useState(true);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=120000; // 2 min idle before pausing timer
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
+  const[correctStreak,setCorrectStreak]=useState(0);
+  const[maxStreak,setMaxStreak]=useState(0);
+  const[sessionStars,setSessionStars]=useState(0);
+  const[milestone,setMilestone]=useState(null);
+  const milestoneShown=useRef(new Set());
   const wakeLockRef=useRef(null);
   useEffect(()=>{async function acquireWakeLock(){try{if('wakeLock' in navigator&&scr==='game'){wakeLockRef.current=await navigator.wakeLock.request('screen')}else if(wakeLockRef.current){wakeLockRef.current.release();wakeLockRef.current=null}}catch(e){}}acquireWakeLock();return()=>{if(wakeLockRef.current){try{wakeLockRef.current.release()}catch(e){}}wakeLockRef.current=null}},[scr]);
   function pokeActive(){lastAct.current=Date.now()}
@@ -293,16 +298,21 @@ export default function App(){
       gameSec='quiensoy';
       setSec('quiensoy');
     }
-    setSecLv(freshLv);setQsChoice(null);
-    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
+    setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)},200)}
-  function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)}}
+  function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
+    // Streak & milestone tracking
+    const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+1);
+    const totalOk=nextSt.ok;const MS=[{n:5,emoji:'🌟',text:'¡Vas genial!',sub:'5 respuestas correctas'},{n:10,emoji:'🔥',text:'¡Imparable!',sub:'10 respuestas correctas'},{n:20,emoji:'🏆',text:'¡Superestrella!',sub:'20 respuestas correctas'}];
+    const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
+    if(hit){milestoneShown.current.add(hit.n);setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub});setTimeout(()=>setMilestone(null),2500)},300)}
+    setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)},200)}
+  function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);setCorrectStreak(0);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}
   function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
   function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
@@ -313,7 +323,6 @@ export default function App(){
     {showRec&&user&&<VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
-    {/* qsChoice modal eliminated - switch is now inline in ExQuienSoyUnified */}
     {ov==='admin'&&fbUser&&fbUser.email===ADMIN_EMAIL&&<div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:'80vh',overflowY:'auto'}}>
       <div style={{fontSize:48,marginBottom:8}}>⚙️</div>
       <h2 style={{fontSize:22,color:PURPLE,margin:'0 0 16px'}}>Panel de Administración</h2>
@@ -329,7 +338,8 @@ export default function App(){
       <button className="btn btn-ghost" onClick={()=>setOv(null)} style={{marginTop:12}}>Cerrar</button>
     </div></div>}
     {ov==='pin'&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🔒</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>PIN del supervisor</p><NumPad value={pi} onChange={setPi} onSubmit={()=>{if(pi===supPin){setOv(null);setScr('goals')}else{setPe(true);setPi('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>setOv(null)}>Volver</button></div></div>}
-    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
+    {milestone&&<div className="ov" style={{zIndex:150}} onClick={()=>setMilestone(null)}><div className="ovp ab" style={{maxWidth:340}}><div style={{fontSize:80,marginBottom:8}}>{milestone.emoji}</div><h2 style={{fontSize:26,color:GOLD}}>{milestone.text}</h2><p style={{fontSize:18,color:GREEN}}>{milestone.sub}</p></div></div>}
+    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalStars3plus={user?.totalStars3plus||0} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
     {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups}/>}
 
@@ -510,7 +520,7 @@ export default function App(){
       <div style={{textAlign:'center',padding:'4px 0 2px'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:2}}>
           <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={44} helmet={showHelmet}/>
-          <SpaceMascot mood={mascotMood} size={36}/>
+          <SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/>
           <div><h2 style={{fontSize:18,margin:0,color:'#FFF',textShadow:'0 1px 6px rgba(0,0,0,.6)',textAlign:'left'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:'rgba(255,255,255,.8)',textShadow:'0 1px 4px rgba(0,0,0,.5)',margin:0,textAlign:'left'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
         </div>
         <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:4}}>
@@ -680,7 +690,8 @@ export default function App(){
       </div>}
     </div>}
 
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span></div></div>
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span></div></div>
+      {correctStreak>=2&&<div style={{position:'absolute',top:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,(elapsed/60)/sm*100)+'%'}}/></div>
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
@@ -700,19 +711,5 @@ export default function App(){
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={true}/>}
-        {cur.ty==='quiensoy'&&cur.id==='qs_pres_select'&&<div className="af" style={{textAlign:'center',padding:'24px 18px'}}>
-          <div style={{fontSize:72,marginBottom:12}}>🎤</div>
-          <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>¿Qué presentación?</h2>
-          <div style={{display:'flex',flexDirection:'column',gap:12,maxWidth:400,margin:'0 auto'}}>
-            {(user.presentations||[]).map((pr,pi)=><button key={pi} className="btn btn-b" onClick={()=>{
-              // Replace current queue item with the selected presentation
-              setQ(q=>{const nq=[...q];nq[idx]={ty:'quiensoy',id:'qs_pres',text:'Presentación',img:QUIEN_SOY[0].img,presentation:pr};return nq});
-              setSelectedPresIdx(pi);
-            }} style={{fontSize:20,padding:'18px 20px',textAlign:'left'}}>
-              <span style={{fontWeight:700}}>{pr.name}</span>
-              <span style={{fontSize:14,color:'rgba(255,255,255,.6)',marginLeft:8}}>{(pr.lines||[]).length} frases</span>
-            </button>)}
-          </div>
-        </div>}
       </div></div>}
   </div>}

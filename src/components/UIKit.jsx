@@ -1,19 +1,67 @@
 // ============================================================
 // TOKI · Reusable UI Components
 // ============================================================
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { BG3, GOLD, GREEN, RED, BLUE, TXT, BORDER, CLS } from '../constants.js'
 import { beep } from '../utils.js'
 import { say, stopVoice } from '../voice.js'
 import { NUMS_1_100 } from '../constants.js'
 
-// Mascot SVG component
-export function SpaceMascot({mood='idle',size=48}){const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
-  return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="Mascota" style={{animation:anim,display:'block'}}>
-    <defs><filter id="starGlow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-    <path d="M24,3 C25.5,12 27,14 28,16 C33,15.5 39,15 42,16 C37,19 33,21 31,23 C33,28 35,34 34,38 C30,34 27,31 24,29 C21,31 18,34 14,38 C13,34 15,28 17,23 C15,21 11,19 6,16 C9,15 15,15.5 20,16 C21,14 22.5,12 24,3Z" fill={GOLD} stroke="#d4ac0d" strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" filter="url(#starGlow)"/>
+// Mascot SVG component with evolution tiers (0-5)
+const TIER_NAMES=['Estrellita','Bronce','Plata','Oro','Héroe','Leyenda'];
+export function SpaceMascot({mood='idle',size=48,tier=0}){
+  const t=Math.max(0,Math.min(5,tier));
+  const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
+  // Tier-based fill: 0=gold, 1=gold, 2=silver tint, 3+=gold, 5=rainbow gradient
+  const starFill=t===5?'url(#rainbowGrad)':t===2?'#D4E0EC':GOLD;
+  const starStroke=t===5?'#d4ac0d':t===2?'#A8B8C8':'#d4ac0d';
+  // Unique filter ID per instance to avoid SVG conflicts
+  const filtId=useMemo(()=>'sg'+Math.random().toString(36).slice(2,6),[]);
+  return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label={'Mascota - '+TIER_NAMES[t]} style={{animation:anim,display:'block',overflow:'visible'}}>
+    <title>{TIER_NAMES[t]}</title>
+    <defs>
+      <filter id={filtId}><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      {/* Tier 1: bronze ring glow */}
+      {t===1&&<filter id={filtId+'b'}><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>}
+      {/* Tier 2: sparkle animation via CSS */}
+      {/* Tier 5: rainbow gradient */}
+      {t===5&&<linearGradient id="rainbowGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor="#FF6B6B"><animate attributeName="stopColor" values="#FF6B6B;#FECA57;#48DBFB;#FF9FF3;#FF6B6B" dur="3s" repeatCount="indefinite"/></stop>
+        <stop offset="33%" stopColor="#FECA57"><animate attributeName="stopColor" values="#FECA57;#48DBFB;#FF9FF3;#FF6B6B;#FECA57" dur="3s" repeatCount="indefinite"/></stop>
+        <stop offset="66%" stopColor="#48DBFB"><animate attributeName="stopColor" values="#48DBFB;#FF9FF3;#FF6B6B;#FECA57;#48DBFB" dur="3s" repeatCount="indefinite"/></stop>
+        <stop offset="100%" stopColor="#FF9FF3"><animate attributeName="stopColor" values="#FF9FF3;#FF6B6B;#FECA57;#48DBFB;#FF9FF3" dur="3s" repeatCount="indefinite"/></stop>
+      </linearGradient>}
+    </defs>
+    {/* Tier 1: Bronze ring glow behind star */}
+    {t===1&&<circle cx={24} cy={22} r={18} fill="none" stroke="#CD7F32" strokeWidth={2} opacity={0.7} filter={`url(#${filtId}b)`}>
+      <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/>
+    </circle>}
+    {/* Tier 4 & 5: Cape behind the star body */}
+    {(t===4||t===5)&&<path d="M18,22 C16,30 14,38 12,44 L24,36 L36,44 C34,38 32,30 30,22Z" fill={t===5?'#9B59B6':'#E74C3C'} opacity={0.85} stroke={t===5?'#7D3C98':'#C0392B'} strokeWidth={0.8}>
+      <animate attributeName="d" values="M18,22 C16,30 14,38 12,44 L24,36 L36,44 C34,38 32,30 30,22Z;M18,22 C15,30 13,39 11,45 L24,37 L37,45 C35,39 33,30 30,22Z;M18,22 C16,30 14,38 12,44 L24,36 L36,44 C34,38 32,30 30,22Z" dur="2.5s" repeatCount="indefinite"/>
+    </path>}
+    {/* Tier 5: Halo ellipse above */}
+    {t===5&&<ellipse cx={24} cy={1} rx={10} ry={3} fill="none" stroke="#FECA57" strokeWidth={1.5} opacity={0.85}>
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="1.5s" repeatCount="indefinite"/>
+    </ellipse>}
+    {/* Tier 3: Crown above the star (3 triangles) */}
+    {t>=3&&t<=4&&<g transform="translate(24,0)">
+      <polygon points="-8,5 -5,-1 -2,5" fill="#FECA57" stroke="#d4ac0d" strokeWidth={0.5}/>
+      <polygon points="-3,4 0,-3 3,4" fill="#FECA57" stroke="#d4ac0d" strokeWidth={0.5}/>
+      <polygon points="2,5 5,-1 8,5" fill="#FECA57" stroke="#d4ac0d" strokeWidth={0.5}/>
+    </g>}
+    {/* Star body */}
+    <path d="M24,3 C25.5,12 27,14 28,16 C33,15.5 39,15 42,16 C37,19 33,21 31,23 C33,28 35,34 34,38 C30,34 27,31 24,29 C21,31 18,34 14,38 C13,34 15,28 17,23 C15,21 11,19 6,16 C9,15 15,15.5 20,16 C21,14 22.5,12 24,3Z" fill={starFill} stroke={starStroke} strokeWidth={1} strokeLinejoin="round" strokeLinecap="round" filter={`url(#${filtId})`}/>
+    {/* Tier 2: sparkle particles */}
+    {t===2&&<>
+      <circle cx={8} cy={10} r={1.2} fill="#fff" opacity={0.8}><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/><animate attributeName="r" values="0.5;1.5;0.5" dur="1.8s" repeatCount="indefinite"/></circle>
+      <circle cx={40} cy={12} r={1} fill="#fff" opacity={0.6}><animate attributeName="opacity" values="0;0.9;0" dur="2.2s" begin="0.6s" repeatCount="indefinite"/><animate attributeName="r" values="0.4;1.3;0.4" dur="2.2s" begin="0.6s" repeatCount="indefinite"/></circle>
+      <circle cx={24} cy={42} r={0.9} fill="#fff" opacity={0.5}><animate attributeName="opacity" values="0;0.8;0" dur="2s" begin="1.2s" repeatCount="indefinite"/><animate attributeName="r" values="0.3;1.2;0.3" dur="2s" begin="1.2s" repeatCount="indefinite"/></circle>
+    </>}
+    {/* Eyes */}
     <circle cx={19} cy={19} r={2.8} fill="#1a1a2e"/><circle cx={29} cy={19} r={2.8} fill="#1a1a2e"/>
     <circle cx={20} cy={18} r={1} fill="#fff"/><circle cx={30} cy={18} r={1} fill="#fff"/>
+    {/* Mouth — mood-based (unchanged) */}
     {mood==='happy'&&<path d="M19,24 Q24,30 29,24" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
     {mood==='sad'&&<path d="M19,26 Q24,23 29,26" fill="none" stroke="#1a1a2e" strokeWidth={2} strokeLinecap="round"/>}
     {mood==='idle'&&<path d="M20,24 Q24,27 28,24" fill="none" stroke="#1a1a2e" strokeWidth={1.8} strokeLinecap="round"/>}

@@ -7,13 +7,23 @@ import { score, beep, mkPerfect } from '../utils.js'
 import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
 
 export const NUM_BLOCK_COLORS=['#E74C3C','#3498DB','#F1C40F','#2ECC71','#9B59B6','#E67E22','#1ABC9C','#E91E63','#00BCD4','#FF5722'];
+const SPEED_PRESETS=[
+  {key:'slow',label:'🐢 Lento',ms:1200},
+  {key:'normal',label:'🚶 Normal',ms:800},
+  {key:'fast',label:'🐇 Rápido',ms:400},
+];
+function loadSpeed(){try{return localStorage.getItem('toki_count_speed')||'normal'}catch(e){return'normal'}}
+function saveSpeed(k){try{localStorage.setItem('toki_count_speed',k)}catch(e){}}
+
 export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
   const nums=ex.nums||[ex.num];
   const[ci,setCi]=useState(-1);
   const[phase,setPhase]=useState('ready');
   const[revealed,setRevealed]=useState(new Set());
+  const[speedKey,setSpeedKey]=useState(loadSpeed);
   const alive=useRef(true);
   const ttsPlaying=useRef(false);
+  const speedRef=useRef(SPEED_PRESETS.find(s=>s.key===loadSpeed())||SPEED_PRESETS[1]);
   const batchSet=useMemo(()=>new Set(nums),[nums]);
   // Build grid rows: show decades containing batch nums + context
   const gridRows=useMemo(()=>{
@@ -24,6 +34,11 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     for(let d=hi;d>=lo;d--){const r=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n<=100)r.push(n)}rows.push({nums:r,decade:d,isCurrent:d>=minD&&d<=maxD,isFuture:d>maxD,isPast:d<minD})}
     return rows;
   },[nums]);
+  function handleSpeed(k){
+    setSpeedKey(k);saveSpeed(k);
+    const p=SPEED_PRESETS.find(s=>s.key===k)||SPEED_PRESETS[1];
+    speedRef.current=p;
+  }
   useEffect(()=>{
     alive.current=true;setCi(-1);setPhase('ready');setRevealed(new Set());stopVoice();
     const t=setTimeout(()=>{if(alive.current)runSequence()},500);
@@ -40,8 +55,10 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       await sayFast(text);
       ttsPlaying.current=false;
       if(!alive.current)return;
-      // Small delay so mic doesn't pick up Toki's voice echo
-      await new Promise(r=>setTimeout(r,200));
+      // Delay = base speed + word-length buffer so longer words (dieciocho) get more time
+      const baseDelay=speedRef.current.ms;
+      const wordBuffer=text.length*30;
+      await new Promise(r=>setTimeout(r,Math.max(200,baseDelay+wordBuffer-600)));
       if(!alive.current)return;
       setPhase('child');
       const heard=await listenQuick(2200);
@@ -76,10 +93,10 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
             boxShadow:cur?'0 0 16px '+bc+'aa':'none',
             animation:cur&&phase==='child'?'pulse .5s infinite':(rev&&inBatch?'countNum .35s ease-out':'none'),overflow:'hidden',
           }}>
-            <span style={{fontSize:cur?22:17,fontWeight:800,color:rev?'#fff':(inBatch?'#aaa':'#666'),lineHeight:1,zIndex:1}}>{n}</span>
-            {rev&&inBatch&&<div style={{display:'flex',gap:1,marginTop:1,flexWrap:'wrap',justifyContent:'center',maxWidth:28,minHeight:5,alignItems:'center'}}>
-              {Array.from({length:Math.floor(n/10)},(_,ti)=><div key={'t'+ti} style={{width:10,height:3,borderRadius:1.5,background:'rgba(255,255,255,.8)',flexShrink:0}}/>)}
-              {Array.from({length:n%10},(_,di)=><div key={'d'+di} style={{width:3,height:3,borderRadius:'50%',background:'rgba(255,255,255,.85)',flexShrink:0}}/>)}
+            <span style={{fontSize:cur?26:20,fontWeight:800,color:rev?'#fff':(inBatch?'#aaa':'#666'),lineHeight:1,zIndex:1}}>{n}</span>
+            {rev&&inBatch&&<div style={{display:'flex',gap:2,marginTop:2,flexWrap:'wrap',justifyContent:'center',maxWidth:32,minHeight:7,alignItems:'center'}}>
+              {Array.from({length:Math.floor(n/10)},(_,ti)=><div key={'t'+ti} style={{width:12,height:5,borderRadius:2.5,background:'rgba(255,255,255,.85)',flexShrink:0}}/>)}
+              {Array.from({length:n%10},(_,di)=><div key={'d'+di} style={{width:5,height:5,borderRadius:'50%',background:'rgba(255,255,255,.9)',flexShrink:0}}/>)}
             </div>}
             {rev&&<div style={{position:'absolute',bottom:0,left:0,right:0,height:'30%',background:'linear-gradient(transparent,rgba(0,0,0,.15))',borderRadius:'0 0 7px 7px'}}/>}
           </div>})}
@@ -90,5 +107,11 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       <span style={{fontSize:28,animation:'pulse .8s infinite'}}>🎤</span>
       <span style={{fontSize:15,color:DIM,fontWeight:600}}>¡Dilo tú!</span>
     </div>}
-    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();alive.current=false;onSkip()}} style={{marginTop:8}}>⏭️ Saltar</button>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginTop:10,marginBottom:4}}>
+      {SPEED_PRESETS.map(sp=><button key={sp.key} onClick={()=>handleSpeed(sp.key)}
+        style={{fontSize:13,padding:'5px 10px',borderRadius:20,border:speedKey===sp.key?'2px solid '+GOLD:'1.5px solid '+BORDER,
+          background:speedKey===sp.key?GOLD+'22':CARD,color:speedKey===sp.key?GOLD:DIM,fontWeight:speedKey===sp.key?700:500,
+          cursor:'pointer',minHeight:36,transition:'all .2s'}}>{sp.label}</button>)}
+    </div>
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();alive.current=false;onSkip()}} style={{marginTop:4}}>⏭️ Saltar</button>
   </div>}
