@@ -106,20 +106,24 @@ export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStre
           </div>
         </div>}
 
-        {/* Mascot evolution progress */}
+        {/* Mascot evolution - visual tier display */}
         <div style={{...cardSt}}>
-          <div style={{fontSize:14,fontWeight:600,color:DIM,marginBottom:6}}>Nivel de mascota</div>
-          <div style={{fontSize:16,fontWeight:600,color:GOLD,marginBottom:8}}>
-            {tierIcon} {tierName}{tier<5&&<span style={{color:DIM}}> → {nextIcon} {nextName}</span>}
+          <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+            {TIER_NAMES.map((name,i)=>{
+              const unlocked=i<=tier;
+              const isCurrent=i===tier;
+              return <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,transition:'transform .3s',transform:isCurrent?'scale(1.2)':'scale(1)'}}>
+                <div style={{position:'relative',width:44,height:44,filter:unlocked?'none':'brightness(0.15)',opacity:unlocked?1:0.5,transition:'filter .5s, opacity .5s'}}>
+                  <SpaceMascot mood={isCurrent?"dance":"idle"} size={44} tier={i}/>
+                  {isCurrent&&<div style={{position:'absolute',bottom:-6,left:'50%',transform:'translateX(-50%)',width:8,height:8,borderRadius:'50%',background:GOLD,boxShadow:'0 0 8px '+GOLD}}/>}
+                </div>
+                {isCurrent&&<div style={{fontSize:10,color:GOLD,fontWeight:700,marginTop:2}}>{name}</div>}
+              </div>})}
           </div>
-          {tier<5?<>
-            <div style={{background:BG+'88',borderRadius:8,height:14,overflow:'hidden',margin:'0 auto',maxWidth:280}}>
-              <div style={{height:'100%',borderRadius:8,background:'linear-gradient(90deg, '+GOLD+', #F7DC6F)',width:(tierProgress*100)+'%',transition:'width .6s'}}/>
-            </div>
-            <div style={{fontSize:12,color:DIM,marginTop:4}}>
-              {totalLifetimeStars}/{nextThreshold} estrellas
-            </div>
-          </>:<div style={{fontSize:14,color:GOLD,fontWeight:600}}>¡Nivel máximo!</div>}
+          {tier<5&&<div style={{background:BG+'88',borderRadius:8,height:10,overflow:'hidden',margin:'0 auto',maxWidth:260}}>
+            <div style={{height:'100%',borderRadius:8,background:'linear-gradient(90deg, '+GOLD+', #F7DC6F)',width:(tierProgress*100)+'%',transition:'width .6s'}}/>
+          </div>}
+          <div style={{fontSize:11,color:DIM,marginTop:4}}>{totalLifetimeStars} ⭐</div>
         </div>
 
         {/* Action buttons */}
