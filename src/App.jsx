@@ -197,6 +197,7 @@ export default function App(){
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
   const curPresLvKeyRef=useRef('pres_0');
+  const[selModKey,setSelModKey]=useState('pres_0');
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);const curPresLvKey=curPresLvKeyRef.current;
     // APRENDE: find the selected presentation and build exercises
     if(section==='quiensoy'){
@@ -575,7 +576,7 @@ export default function App(){
                   const rad=angle*Math.PI/180;
                   const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
                   const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey}}} style={{
+                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey){curPresLvKeyRef.current=firstMod.lvKey;setSelModKey(firstMod.lvKey)}}}} style={{
                     position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
                     padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
                     display:'flex',flexDirection:'column',alignItems:'center',gap:2,
@@ -607,7 +608,7 @@ export default function App(){
           <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16,flexWrap:'wrap'}}>
             {otherGroups.map(g=>{
               const pc=PLANET_COLORS[g.id]||[g.color+'88',g.color,g.color];
-              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey}}} style={{
+              return <button key={g.id} onClick={()=>{setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey){curPresLvKeyRef.current=firstMod.lvKey;setSelModKey(firstMod.lvKey)}}}} style={{
                 width:48,height:48,borderRadius:'50%',border:'none',cursor:'pointer',
                 background:`radial-gradient(circle at 30% 25%,${pc[0]},${pc[1]} 60%,${pc[2]})`,
                 boxShadow:`0 2px 8px ${pc[1]}44`,
@@ -647,9 +648,9 @@ export default function App(){
               }}>
                 {enabledMods.map((m,mi)=>{
                   const mLv=getModuleLvOrDef(m.lvKey,m.defLv);
-                  const isActive=sec===m.k&&String(secLv)===String(mLv);
+                  const isActive=m.lvKey?(selModKey===m.lvKey):(sec===m.k&&String(secLv)===String(mLv));
                   const subSize=modCount<=3?100:modCount<=5?88:76;
-                  return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv);if(m.lvKey)curPresLvKeyRef.current=m.lvKey}} style={{
+                  return <button key={mi} onClick={()=>{setSec(m.k);setSecLv(mLv);if(m.lvKey){curPresLvKeyRef.current=m.lvKey;setSelModKey(m.lvKey)}}} style={{
                     width:subSize,display:'flex',flexDirection:'column',alignItems:'center',gap:4,
                     padding:8,border:'none',background:'none',cursor:'pointer',fontFamily:"'Fredoka'",
                     transition:'all .25s',transform:isActive?'scale(1.08)':'scale(1)',
