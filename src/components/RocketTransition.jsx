@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { GOLD, RED, BLUE } from '../constants.js'
 import { isSober, countdownBeep } from '../utils.js'
 
-export function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
+export function RocketTransition({show,onDone,avatar,planetEmoji,planetColor,userPhoto}){
   const[phase,setPhase]=useState('idle');const[num,setNum]=useState(3);
   const pc=planetColor||'#42A5F5';
   useEffect(()=>{if(!show)return;if(isSober()){if(onDone)onDone();return}setPhase('ignite');setNum(3);
@@ -33,7 +33,9 @@ export function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
       <circle cx="50" cy="50" r="12" fill="#1A237E" stroke="#90CAF9" strokeWidth="2"/>
       <circle cx="50" cy="50" r="10" fill="#0D47A1"/>
       {/* Face in window */}
-      {showFace&&<text x="50" y="55" textAnchor="middle" fontSize="16" dominantBaseline="central">{avatar||'🧑‍🚀'}</text>}
+      {showFace&&(avatar&&avatar.startsWith('data:')
+        ?<><clipPath id="faceClip"><circle cx="50" cy="50" r="10"/></clipPath><image href={avatar} x="38" y="38" width="24" height="24" clipPath="url(#faceClip)" preserveAspectRatio="xMidYMid slice"/></>
+        :<text x="50" y="55" textAnchor="middle" fontSize="16" dominantBaseline="central">{avatar||'🧑‍🚀'}</text>)}
       {!showFace&&<><circle cx="46" cy="47" r="1.5" fill="#90CAF9" opacity=".5"/><circle cx="54" cy="47" r="1" fill="#90CAF9" opacity=".3"/></>}
       {/* Fire/propulsion */}
       {showFire&&<>
@@ -60,7 +62,7 @@ export function RocketTransition({show,onDone,avatar,planetEmoji,planetColor}){
 
     {/* Phase 2: PICKUP — rocket moves to get Guillermo, face appears */}
     {phase==='pickup'&&<div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16}}>
-      {avatar&&avatar.startsWith('data:')?<img src={avatar} alt="" style={{width:56,height:56,borderRadius:'50%',objectFit:'cover',border:'3px solid '+GOLD,animation:'bounceIn .6s ease-out'}}/>:<div style={{fontSize:56,animation:'bounceIn .6s ease-out'}}>{avatar||'🧑‍🚀'}</div>}
+      {avatar&&avatar.startsWith('data:')?<img src={avatar} alt="" style={{width:80,height:80,borderRadius:'50%',objectFit:'cover',border:'4px solid '+GOLD,boxShadow:'0 0 20px '+GOLD+'66',animation:'bounceIn .6s ease-out'}}/>:<div style={{fontSize:56,animation:'bounceIn .6s ease-out'}}>{avatar||'🧑‍🚀'}</div>}
       <div style={{animation:'bounceIn .6s ease-out .3s both'}}>
         <RocketSVG size={130} showFire={true} showFace={true}/>
       </div>
