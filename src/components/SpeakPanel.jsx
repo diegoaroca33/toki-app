@@ -5,7 +5,144 @@ import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep
 import { RecBtn, useIdle } from './UIKit.jsx'
 import { CelebrationOverlay, Stars } from './CelebrationOverlay.jsx'
 
-export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed}){
+// ============================================================
+// M9: FraccionadoMode — Backward chaining for long phrases
+// ============================================================
+function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids}){
+  const words=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean),[text]);
+  const totalSteps=words.length;
+  const[step,setStep]=useState(0); // 0-based, step 0 = last word only
+  const[mic,setMic]=useState(false);
+  const[done,setDone]=useState(false);
+  const alive=useRef(true);
+  const ttsPlaying=useRef(false);
+  const dur=useMemo(()=>Math.max(4,Math.ceil(words.length*0.7)+3),[words]);
+
+  // Build partial phrase for current step (backward chaining)
+  const partial=useMemo(()=>{
+    const startIdx=totalSteps-1-step;
+    return words.slice(startIdx).join(' ');
+  },[words,step,totalSteps]);
+
+  const isFinalStep=step===totalSteps-1;
+
+  // For intermediate steps: just listen and advance
+  function handleSRIntermediate(said){
+    if(!alive.current)return;
+    if(ttsPlaying.current){sr.go();return}
+    setMic(false);sr.stop();stopVoice();
+    // No scoring — just advance to next step
+    setTimeout(()=>{if(alive.current)setStep(s=>s+1)},300);
+  }
+
+  const sr=useSR(handleSRIntermediate);
+
+  async function doPlayStep(){
+    if(!alive.current)return;
+    stopVoice();sr.stop();setMic(false);
+    ttsPlaying.current=true;
+    await say(partial,0.55);
+    ttsPlaying.current=false;
+    if(!alive.current)return;
+    await new Promise(r=>setTimeout(r,200));
+    if(!alive.current)return;
+    sr.go();setMic(true);
+  }
+
+  function onTimeUpIntermediate(){
+    if(!alive.current)return;
+    setMic(false);sr.stop();stopVoice();
+    // Just advance on timeout for intermediate steps
+    setTimeout(()=>{if(alive.current)setStep(s=>s+1)},300);
+  }
+
+  // Launch play for each intermediate step
+  useEffect(()=>{
+    if(done)return;
+    if(isFinalStep){setDone(true);return}
+    alive.current=true;
+    const t=setTimeout(()=>{if(alive.current)doPlayStep()},600);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}
+  },[step]);
+
+  // Cleanup on unmount
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice()}},[]);
+
+  // Highlight: new word(s) in gold, rest in white
+  const renderPartial=()=>{
+    const startIdx=totalSteps-1-step;
+    const parWords=words.slice(startIdx);
+    // The "new" word is always the first one in the partial (the newly added word)
+    return <p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.4}}>
+      {parWords.map((w,i)=><span key={i}>
+        {i>0?' ':''}
+        <span style={{color:i===0?GOLD:TXT,transition:'color .3s'}}>{w}</span>
+      </span>)}
+    </p>;
+  };
+
+  // Progress dots
+  const renderDots=()=><div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:14}}>
+    {Array.from({length:totalSteps}).map((_,i)=><div key={i} style={{
+      width:14,height:14,borderRadius:'50%',
+      background:i<step?GREEN:i===step?GOLD:'rgba(255,255,255,.15)',
+      border:i===step?`2px solid ${GOLD}`:'2px solid rgba(255,255,255,.1)',
+      transition:'all .3s',
+      boxShadow:i===step?`0 0 8px ${GOLD}66`:'none'
+    }}/>)}
+  </div>;
+
+  // If final step reached, render the normal SpeakPanel for full evaluation
+  if(done){
+    return <div>
+      {renderDots()}
+      <SpeakPanel text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} _skipFraccionado={true}/>
+    </div>;
+  }
+
+  return <div style={{textAlign:'center'}}>
+    {renderDots()}
+    {/* Partial phrase bubble */}
+    <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)'}}>
+      {renderPartial()}
+    </div>
+    {/* Step indicator */}
+    <p style={{fontSize:14,color:'rgba(255,255,255,.4)',margin:'0 0 12px'}}>Paso {step+1} de {totalSteps}</p>
+    {/* Mic + controls */}
+    <div style={{minHeight:70,marginBottom:12}}/>
+    <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
+      <button onClick={()=>{stopVoice();sr.stop();setMic(false);doPlayStep()}} style={{
+        width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
+        background:`radial-gradient(circle at 30% 25%,#90CAF9,${BLUE} 60%,#1565C0)`,
+        boxShadow:`0 3px 12px ${BLUE}44, inset 0 -3px 8px #1565C066`,
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
+      }} title="Escuchar otra vez">
+        <span style={{fontSize:30}}>🔊</span>
+      </button>
+      <div style={{width:80,height:80,flexShrink:0}}>
+        <RecBtn dur={dur} onEnd={onTimeUpIntermediate} on={mic}/>
+      </div>
+      <button className="skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}} style={{
+        width:56,height:56,borderRadius:'50%',border:'none',cursor:'pointer',
+        background:`radial-gradient(circle at 30% 25%,#999,#666 60%,#444)`,
+        boxShadow:'0 2px 8px rgba(0,0,0,.3)',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
+      }} title="Saltar">
+        <span style={{fontSize:24}}>⏭️</span>
+      </button>
+    </div>
+    <div style={{height:100}}/>
+  </div>;
+}
+
+export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,fraccionado,_skipFraccionado}){
+  // M9: If fraccionado active and phrase has 4+ words, use FraccionadoMode
+  const wordCount=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length,[text]);
+  if(fraccionado&&wordCount>=4&&!_skipFraccionado&&!burstMode){
+    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>;
+  }
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
   const[burstFade,setBurstFade]=useState(false);
@@ -147,9 +284,16 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     <div style={{height:100}}/>
   </div>}
 
-export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed}){return <div style={{textAlign:'center',padding:12}}>
+export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,fraccionado}){
+  // M9: Auto-activate fraccionado for phrases with 4+ words (unless explicitly set)
+  const autoFrac=useMemo(()=>{
+    if(typeof fraccionado==='boolean')return fraccionado;
+    const wc=(ex.ph||'').replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length;
+    return wc>=4;
+  },[ex.ph,fraccionado]);
+  return <div style={{textAlign:'center',padding:12}}>
   <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
-  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed}/></div>}
+  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} fraccionado={autoFrac}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);

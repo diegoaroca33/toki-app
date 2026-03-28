@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { GOLD, GREEN, DIM } from '../constants.js'
-import { say, stopVoice, starBeep, cheerOrSay } from '../voice.js'
+import { say, stopVoice, starBeep, cheerOrSay, useSR } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
 import { useIdle } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
@@ -30,6 +30,9 @@ export function genWriting(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0
 
 export function ExWriting({ex,onOk,onSkip,name}){
   const canvasRef=useRef(null);const modelRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);
+  const[speakPhase,setSpeakPhase]=useState(false);const speakDone=useRef(false);
+  const sr=useSR(()=>{});
+  const oralEnabled=()=>{try{const v=localStorage.getItem('toki_oral_all_planets');if(v===null)return true;return v==='true'}catch(e){return true}};
   const[ghostAnimating,setGhostAnimating]=useState(false);const ghostTimers=useRef([]);
   const isWide=ex.mode==='word'||ex.mode==='phrase';
   // Auto-size based on mode: letters=big pauta, words=medium, phrases=small
@@ -154,8 +157,31 @@ export function ExWriting({ex,onOk,onSkip,name}){
     }
     modelRef.current=dilated;return dilated;
   }
-  useEffect(()=>{setDone(false);setStars(0);setShowModel(false);strokePts.current=[];modelRef.current=null;const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
-    stopVoice();const msg=ex.mode==='letter'?'Escribe la letra '+ex.letter:ex.mode==='word'?'Escribe '+ex.letter:'Escribe: '+ex.letter;setTimeout(()=>say(msg),400);return()=>stopVoice()},[ex]);
+  useEffect(()=>{setDone(false);setStars(0);setShowModel(false);setSpeakPhase(false);speakDone.current=false;strokePts.current=[];modelRef.current=null;const c=canvasRef.current;if(!c)return;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH);
+    stopVoice();const msg=ex.mode==='letter'?'Escribe la letra '+ex.letter:ex.mode==='word'?'Escribe '+ex.letter:'Escribe: '+ex.letter;setTimeout(()=>say(msg),400);return()=>{stopVoice();sr.stop()}},[ex]);
+  // M10: Oral production phase after writing words/phrases
+  useEffect(()=>{
+    if(!speakPhase||speakDone.current)return;speakDone.current=true;
+    let cancelled=false;
+    (async()=>{
+      // 1. Show word large for 1s (already rendered via speakPhase state)
+      await new Promise(r=>setTimeout(r,1000));
+      if(cancelled)return;
+      // 2. Toki says the word
+      await say(ex.letter);
+      if(cancelled)return;
+      // 3. Beep + mic - start listening
+      beep(880,150);
+      sr.go();
+      // 4. Listen for 3.5 seconds then move on
+      await new Promise(r=>setTimeout(r,3500));
+      if(cancelled)return;
+      sr.stop();
+      setSpeakPhase(false);
+      setTimeout(onOk,300);
+    })();
+    return()=>{cancelled=true;sr.stop()}
+  },[speakPhase]);
   const lastDraw=useRef({x:0,y:0});const isStylus=useRef(false);
   function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
   function detectStylus(e){if(e.touches&&e.touches[0]){const t=e.touches[0];if(t.touchType==='stylus'||t.radiusX<5)return true}return false}
@@ -227,7 +253,10 @@ export function ExWriting({ex,onOk,onSkip,name}){
       ctx.restore();
       const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}}
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
-    cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>setTimeout(onOk,400))}
+    const isWordOrPhrase=ex.mode==='word'||ex.mode==='phrase';
+    cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>{
+      if(isWordOrPhrase&&oralEnabled()){speakDone.current=false;setSpeakPhase(true)}
+      else setTimeout(onOk,400)})}
   const needsLandscape=isWide;
   return <div style={{textAlign:'center',padding:isWide?10:18}} onClick={poke}>
     {needsLandscape&&<style>{`@media (orientation:portrait) and (max-width:700px){.wr-landscape-warn{display:flex!important}.wr-canvas-wrap{display:none!important}}@media (orientation:landscape),(min-width:701px){.wr-landscape-warn{display:none!important}.wr-canvas-wrap{display:block!important}}`}</style>}
@@ -249,6 +278,13 @@ export function ExWriting({ex,onOk,onSkip,name}){
       {done&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:10}}><Stars n={stars} sz={36}/>
         <p style={{fontSize:16,color:stars>=3?GREEN:GOLD,fontWeight:700,margin:'8px 0 0'}}>{stars>=4?'¡Perfecto!':stars===3?'¡Muy bien!':stars===2?'¡Intenta no salirte!':'¡Buen intento! Sigue el modelo'}</p></div>}
       {idleMsg&&!done&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+      {speakPhase&&<div style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.7)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
+        <p style={{fontSize:48,fontWeight:700,color:'#fff',textAlign:'center',margin:'0 0 32px',fontFamily:"'Fredoka',sans-serif"}}>{ex.letter}</p>
+        <div style={{width:64,height:64,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <span style={{fontSize:32,color:'#fff',lineHeight:1}}>🎤</span>
+        </div>
+        <p style={{fontSize:18,color:'#fff',marginTop:16,opacity:0.8}}>Di la palabra...</p>
+      </div>}
     </div>
   </div>}
 

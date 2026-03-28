@@ -277,6 +277,166 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
           </div>)}
           {personas.length<10&&<button className="btn btn-ghost" onClick={()=>savePersonas([...personas,{name:'',relation:'',avatar:AVS[Math.floor(Math.random()*AVS.length)]}])} style={{fontSize:18,marginTop:8,padding:'14px 20px',minHeight:52}}>➕ Añadir persona</button>}
         </div>
+        {/* ===== GRABACIONES DE REFERENCIA M6 ===== */}
+        {typeof MediaRecorder!=='undefined'&&(()=>{
+          const[refMode,setRefMode]=React.useState(null); // null|'choose'|'recording'|'preview'
+          const[refPhrase,setRefPhrase]=React.useState('');
+          const[refCustom,setRefCustom]=React.useState('');
+          const[refRecorder,setRefRecorder]=React.useState(null);
+          const[refAudio,setRefAudio]=React.useState(null);
+          const[refRecs,setRefRecs]=React.useState(()=>{
+            const recs=[];
+            for(let i=0;i<localStorage.length;i++){
+              const k=localStorage.key(i);
+              if(k&&k.startsWith('toki_ref_'+user.id+'_')){
+                try{const d=JSON.parse(localStorage.getItem(k));recs.push({key:k,...d})}catch(e){}
+              }
+            }
+            recs.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+            return recs;
+          });
+          const[refDelKey,setRefDelKey]=React.useState(null);
+          const[refPlaying,setRefPlaying]=React.useState(null);
+
+          const allPhrases=[];
+          (user.presentations||[]).forEach(pr=>(pr.lines||[]).forEach(l=>{if(l.trim()&&!allPhrases.includes(l.trim()))allPhrases.push(l.trim())}));
+
+          const startRef=async(phrase)=>{
+            setRefPhrase(phrase);
+            // TTS: "Di: [phrase]"
+            if('speechSynthesis' in window){
+              const utt=new SpeechSynthesisUtterance('Di: '+phrase);
+              utt.lang='es-ES';utt.rate=0.9;
+              utt.onend=async()=>{
+                try{
+                  const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+                  const recorder=new MediaRecorder(stream,{mimeType:MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4'});
+                  const chunks=[];
+                  recorder.ondataavailable=e=>chunks.push(e.data);
+                  recorder.onstop=()=>{
+                    const blob=new Blob(chunks,{type:recorder.mimeType});
+                    const reader=new FileReader();
+                    reader.onloadend=()=>{setRefAudio(reader.result);setRefMode('preview')};
+                    reader.readAsDataURL(blob);
+                    stream.getTracks().forEach(t=>t.stop());
+                  };
+                  recorder.start();
+                  setRefRecorder(recorder);
+                  setRefMode('recording');
+                }catch(e){alert('No se pudo acceder al micrófono: '+e.message);setRefMode(null)}
+              };
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(utt);
+            }else{
+              // No TTS, start recording directly
+              try{
+                const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+                const recorder=new MediaRecorder(stream,{mimeType:MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/mp4'});
+                const chunks=[];
+                recorder.ondataavailable=e=>chunks.push(e.data);
+                recorder.onstop=()=>{
+                  const blob=new Blob(chunks,{type:recorder.mimeType});
+                  const reader=new FileReader();
+                  reader.onloadend=()=>{setRefAudio(reader.result);setRefMode('preview')};
+                  reader.readAsDataURL(blob);
+                  stream.getTracks().forEach(t=>t.stop());
+                };
+                recorder.start();
+                setRefRecorder(recorder);
+                setRefMode('recording');
+              }catch(e){alert('No se pudo acceder al micrófono: '+e.message);setRefMode(null)}
+            }
+          };
+
+          const stopRef=()=>{if(refRecorder&&refRecorder.state==='recording')refRecorder.stop()};
+
+          const saveRef=()=>{
+            if(!refAudio||!refPhrase)return;
+            const dateStr=new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
+            const phraseKey=refPhrase.replace(/[^a-zA-Z0-9áéíóúñü]/gi,'_').slice(0,30);
+            const key='toki_ref_'+user.id+'_'+phraseKey+'_'+dateStr;
+            const entry={phrase:refPhrase,date:new Date().toISOString().slice(0,10),time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),audio:refAudio};
+            localStorage.setItem(key,JSON.stringify(entry));
+            setRefRecs(prev=>[{key,...entry},...prev]);
+            setRefMode(null);setRefPhrase('');setRefAudio(null);setRefRecorder(null);
+          };
+
+          const deleteRef=(key)=>{
+            localStorage.removeItem(key);
+            setRefRecs(prev=>prev.filter(r=>r.key!==key));
+            setRefDelKey(null);
+          };
+
+          const playRef=(dataUrl,key)=>{
+            const a=new Audio(dataUrl);
+            setRefPlaying(key);
+            a.onended=()=>setRefPlaying(null);
+            a.onerror=()=>setRefPlaying(null);
+            a.play().catch(()=>setRefPlaying(null));
+          };
+
+          // Group recordings by phrase
+          const grouped={};
+          refRecs.forEach(r=>{if(!grouped[r.phrase])grouped[r.phrase]=[];grouped[r.phrase].push(r)});
+
+          return <div className="card" style={{marginTop:16,borderColor:RED+'44',padding:20}}>
+            <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:RED}}>🎙️ Grabaciones de referencia</p>
+            <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Graba la voz del niño repitiendo frases para seguir su progreso</p>
+
+            {!refMode&&<button className="btn btn-ghost" onClick={()=>setRefMode('choose')} style={{fontSize:16,padding:'12px 16px',borderColor:RED+'44',color:RED}}>🎙️ Grabar referencia</button>}
+
+            {refMode==='choose'&&<div className="af" style={{background:CARD,borderRadius:12,padding:16,marginTop:8}}>
+              <p style={{fontSize:16,fontWeight:600,color:GOLD,margin:'0 0 10px'}}>Elige una frase:</p>
+              {allPhrases.length>0&&<div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
+                {allPhrases.slice(0,8).map((ph,i)=><button key={i} onClick={()=>startRef(ph)} style={{padding:'10px 14px',borderRadius:10,border:'2px solid '+BORDER,background:BG3,color:TXT,fontFamily:"'Fredoka'",fontSize:15,cursor:'pointer',textAlign:'left',minHeight:44}}>"{ph}"</button>)}
+              </div>}
+              <div style={{display:'flex',gap:8}}>
+                <input className="inp" value={refCustom} onChange={e=>setRefCustom(e.target.value)} placeholder="Frase personalizada..." style={{fontSize:15,padding:10,flex:1}}/>
+                <button className="btn btn-b" disabled={!refCustom.trim()} onClick={()=>{startRef(refCustom.trim());setRefCustom('')}} style={{width:'auto',padding:'10px 16px',fontSize:15,minHeight:44}}>Grabar</button>
+              </div>
+              <button className="btn btn-ghost" onClick={()=>{setRefMode(null);setRefCustom('')}} style={{marginTop:8,fontSize:14}}>Cancelar</button>
+            </div>}
+
+            {refMode==='recording'&&<div className="af" style={{background:CARD,borderRadius:12,padding:20,marginTop:8,textAlign:'center'}}>
+              <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Frase:</p>
+              <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 16px'}}>"{refPhrase}"</p>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:16}}>
+                <div className="rec-pulse" style={{width:16,height:16,borderRadius:'50%',background:RED}}/>
+                <span style={{fontSize:16,color:RED,fontWeight:700}}>Grabando...</span>
+              </div>
+              <style>{`.rec-pulse{animation:recPulse 1s ease-in-out infinite}@keyframes recPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}`}</style>
+              <button className="btn btn-g" onClick={stopRef} style={{fontSize:18,padding:'14px 30px',background:RED,borderColor:'#c0392b',boxShadow:'4px 4px 0 #922b21'}}>⏹ Parar</button>
+            </div>}
+
+            {refMode==='preview'&&<div className="af" style={{background:CARD,borderRadius:12,padding:20,marginTop:8,textAlign:'center'}}>
+              <p style={{fontSize:16,color:DIM,margin:'0 0 6px'}}>Frase:</p>
+              <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 16px'}}>"{refPhrase}"</p>
+              <div style={{display:'flex',gap:10,justifyContent:'center',marginBottom:16}}>
+                <button className="btn btn-b" onClick={()=>{const a=new Audio(refAudio);a.play()}} style={{width:'auto',padding:'12px 20px',fontSize:16}}>▶️ Escuchar</button>
+              </div>
+              <div style={{display:'flex',gap:10}}>
+                <button className="btn btn-ghost" onClick={()=>{setRefMode('choose');setRefAudio(null)}} style={{flex:1,fontSize:15}}>Repetir</button>
+                <button className="btn btn-g" onClick={saveRef} style={{flex:2,fontSize:16}}>💾 Guardar</button>
+              </div>
+            </div>}
+
+            {/* Saved recordings list */}
+            {Object.keys(grouped).length>0&&<div style={{marginTop:16}}>
+              <p style={{fontSize:16,fontWeight:700,color:TXT,margin:'0 0 10px'}}>Grabaciones guardadas</p>
+              {Object.entries(grouped).map(([phrase,recs])=><div key={phrase} style={{marginBottom:12}}>
+                <p style={{fontSize:14,fontWeight:600,color:GOLD,margin:'0 0 6px'}}>"{phrase}"</p>
+                {recs.map(r=><div key={r.key} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderBottom:'1px solid '+BORDER}}>
+                  <span style={{fontSize:13,color:DIM,flex:1}}>{r.date} {r.time||''}</span>
+                  <button onClick={()=>playRef(r.audio,r.key)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:refPlaying===r.key?GOLD+'44':GREEN+'22',color:refPlaying===r.key?GOLD:GREEN,fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>▶️</button>
+                  {refDelKey===r.key?<div style={{display:'flex',gap:4}}>
+                    <button onClick={()=>deleteRef(r.key)} style={{background:RED,border:'1px solid '+RED,borderRadius:8,padding:'4px 10px',color:'#fff',fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>Sí</button>
+                    <button onClick={()=>setRefDelKey(null)} style={{background:BG3,border:'1px solid '+BORDER,borderRadius:8,padding:'4px 10px',color:DIM,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'",minHeight:36}}>No</button>
+                  </div>
+                  :<button onClick={()=>setRefDelKey(r.key)} style={{width:36,height:36,borderRadius:'50%',border:'1px solid '+RED+'44',background:RED+'22',color:RED,fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>}
+                </div>)}
+              </div>)}
+            </div>}
+          </div>})()}
         {/* ===== PRESENTACIONES SECTION ===== */}
         <div className="card" style={{marginTop:16,borderColor:'#E91E63'+'44',padding:20}}>
           <p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:'#E91E63'}}>🎤 Presentaciones</p>
