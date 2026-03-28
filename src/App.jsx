@@ -29,7 +29,7 @@ import { genDistribute, BagSVG, ExDistribute, CardSVG, dominoDots, DominoSVG } f
 import { genWriting, ExWriting, LETTER_STROKE_PATHS } from './modules/ExWriting.jsx'
 import { genPatterns, genRazona, SceneSVG, SpatialDrag, ExRazona } from './modules/ExRazona.jsx'
 import { genLee, ExLee } from './modules/ExLee.jsx'
-import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres } from './modules/ExQuienSoy.jsx'
+import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres, ExQuienSoyUnified } from './modules/ExQuienSoy.jsx'
 import { MiCielo } from './components/MiCielo.jsx'
 import { Settings } from './components/Settings.jsx'
 // Personas helpers
@@ -207,11 +207,11 @@ export default function App(){
       const items=[];
       if(thisPres){
         const slides=thisPres.slides||(thisPres.lines||[]).map(t=>({text:t,img:null,picto:null}));
-        if(hasEstudio&&slides.length>0){
-          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||null,picto:s.picto||null})));
-        }
-        if(hasPres){
-          items.push({ty:'quiensoy',id:'qs_pres',text:thisPres.name||'Presentación',img:slides[0]?.img||null,presentation:{...thisPres,slides}});
+        // Always generate estudio-style items (one per slide) with presentation attached for switch
+        const presData={...thisPres,slides};
+        const canToggle=hasEstudio&&hasPres;
+        if(slides.length>0){
+          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||u.photo||null,picto:s.picto||null,presentation:presData,canToggle})));
         }
       }
       // Ultimate fallback: if nothing found, create from user data
@@ -285,16 +285,11 @@ export default function App(){
     // Ensure freshLv is never empty for quiensoy
     if(sec==='quiensoy'&&Array.isArray(freshLv)&&freshLv.length===0)freshLv=[1,2];
     if(sec==='quiensoy'&&!freshLv)freshLv=[1,2];
-    // If quiensoy: ALWAYS show choice if both Estudio and Presentación are available
-    if(!overrideLv&&sec==='quiensoy'){
-      // Read fresh from storage to be sure
+    // Quiensoy: no popup, switch is inline in the component
+    if(sec==='quiensoy'&&!overrideLv){
       const modKey=mod?.lvKey||curPresLvKeyRef.current||'pres_0';
-      const storedLv=getModuleLvOrDef(modKey,[1,2]);
-      const lvArr=Array.isArray(storedLv)?storedLv.map(Number):[parseInt(storedLv)||1];
-      const hasE=lvArr.includes(1),hasP=lvArr.includes(2);
-      if(hasE&&hasP){setQsChoice('pick');return}
-      // If only one mode, use it directly
-      freshLv=hasE?[1]:hasP?[2]:[1];
+      freshLv=getModuleLvOrDef(modKey,[1,2]);
+      if(Array.isArray(freshLv)&&freshLv.length===0)freshLv=[1,2];
     }
     setSecLv(freshLv);setQsChoice(null);
     setQ(buildQ(user,sec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setShowRocket(true)}
@@ -316,16 +311,7 @@ export default function App(){
     {showRec&&user&&<VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
-    {qsChoice==='pick'&&<div className="ov"><div className="ovp ab" style={{maxWidth:380}}>
-      <div style={{fontSize:72,marginBottom:12}}>📚</div>
-      <h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¿Cómo quieres practicar?</h2>
-      <p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>{(()=>{const mod=dynGroups.flatMap(g=>g.modules).find(m=>m.lvKey===curPresLvKeyRef.current)||dynGroups.flatMap(g=>g.modules).find(m=>m.k===sec);return mod?.l||'Presentación'})()}</p>
-      <div style={{display:'flex',flexDirection:'column',gap:14}}>
-        <button className="btn btn-b" onClick={()=>{setQsChoice(null);startGame([1])}} style={{fontSize:22,padding:'22px 20px'}}>📖 Estudio</button>
-        <button className="btn btn-p" onClick={()=>{setQsChoice(null);startGame([2])}} style={{fontSize:22,padding:'22px 20px',background:'#E91E63',borderColor:'#C2185B',boxShadow:'4px 4px 0 #880E4F'}}>🎤 Presentación</button>
-      </div>
-      <button className="btn btn-ghost" onClick={()=>setQsChoice(null)} style={{marginTop:16,fontSize:16}}>Cancelar</button>
-    </div></div>}
+    {/* qsChoice modal eliminated - switch is now inline in ExQuienSoyUnified */}
     {ov==='admin'&&fbUser&&fbUser.email===ADMIN_EMAIL&&<div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:'80vh',overflowY:'auto'}}>
       <div style={{fontSize:48,marginBottom:8}}>⚙️</div>
       <h2 style={{fontSize:22,color:PURPLE,margin:'0 0 16px'}}>Panel de Administración</h2>
@@ -711,8 +697,7 @@ export default function App(){
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&cur.id!=='qs_pres'&&cur.id!=='qs_pres_select'&&<ExQuienSoyEstudio ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&cur.id==='qs_pres'&&<ExQuienSoyPres onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null}/>}
+        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle||false}/>}
         {cur.ty==='quiensoy'&&cur.id==='qs_pres_select'&&<div className="af" style={{textAlign:'center',padding:'24px 18px'}}>
           <div style={{fontSize:72,marginBottom:12}}>🎤</div>
           <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>¿Qué presentación?</h2>

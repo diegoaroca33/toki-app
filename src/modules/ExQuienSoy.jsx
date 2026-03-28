@@ -4,7 +4,7 @@ import { say, sayFB, stopVoice, starBeep, cheerOrSay, playRec, useSR } from '../
 import { score, adjScore, rnd, beep, mkPerfect, textKey } from '../utils.js'
 import { victoryBeeps } from '../components/DoneScreen.jsx'
 
-// ===== QUIÉN SOY — Barra lateral de tiempo (reemplaza el círculo del micrófono) =====
+// ===== QUIÉN SOY — Barra lateral de tiempo =====
 export function QSTimeBar({dur,on,onEnd}){
   const[pct,sP]=useState(100);const t=useRef(null);const s=useRef(0);
   useEffect(()=>{if(!on){sP(100);return}s.current=Date.now();const ms=dur*1000;
@@ -18,7 +18,44 @@ export function QSTimeBar({dur,on,onEnd}){
     <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%) rotate(-90deg)',fontSize:10,color:'#fff',fontWeight:700,whiteSpace:'nowrap'}}>🎤</div>
   </div>}
 
-// ===== QUIÉN SOY — Estudio (mode 1, foto grande + barra lateral roja + solo ánimo hablado) =====
+// ===== MODE SWITCH: Estudio ↔ Presentación =====
+function ModeSwitch({mode,onToggle,canToggle}){
+  if(!canToggle)return null;
+  return <div style={{display:'flex',justifyContent:'center',marginBottom:10}}>
+    <div style={{display:'inline-flex',background:'rgba(255,255,255,.08)',borderRadius:24,padding:3,gap:2}}>
+      <button onClick={()=>onToggle('estudio')} style={{
+        padding:'8px 18px',borderRadius:20,border:'none',fontSize:15,fontWeight:700,cursor:'pointer',
+        fontFamily:"'Fredoka'",transition:'all .2s',minHeight:40,
+        background:mode==='estudio'?'#2196F3':'transparent',
+        color:mode==='estudio'?'#fff':DIM,
+        boxShadow:mode==='estudio'?'0 2px 8px rgba(33,150,243,.4)':'none'
+      }}>📖 Estudio</button>
+      <button onClick={()=>onToggle('presentacion')} style={{
+        padding:'8px 18px',borderRadius:20,border:'none',fontSize:15,fontWeight:700,cursor:'pointer',
+        fontFamily:"'Fredoka'",transition:'all .2s',minHeight:40,
+        background:mode==='presentacion'?'#E91E63':'transparent',
+        color:mode==='presentacion'?'#fff':DIM,
+        boxShadow:mode==='presentacion'?'0 2px 8px rgba(233,30,99,.4)':'none'
+      }}>🎤 Presentación</button>
+    </div>
+  </div>}
+
+// ===== QUIÉN SOY UNIFICADO — con switch Estudio/Presentación =====
+export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation,canToggle}){
+  const[mode,setMode]=useState('estudio');
+  // When mode changes mid-exercise, reset
+  const modeRef=useRef(mode);
+  useEffect(()=>{modeRef.current=mode},[mode]);
+
+  return <div>
+    <ModeSwitch mode={mode} onToggle={setMode} canToggle={canToggle}/>
+    {mode==='estudio'
+      ?<ExQuienSoyEstudio ex={ex} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>
+      :<ExQuienSoyPres onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} presentation={presentation}/>
+    }
+  </div>}
+
+// ===== QUIÉN SOY — Estudio (repetición + ánimos) =====
 export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   const[sf,sSf]=useState(null);const[att,sAtt]=useState(0);const[mic,setMic]=useState(false);
   const alive=useRef(true);const ttsPlaying=useRef(false);
@@ -33,9 +70,7 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
       else{setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2000)}}}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();setMic(false);
-    // Reactivate mic permissions proactively
     try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
-    // Play TTS first, mark as playing so SR ignores Toki's voice
     ttsPlaying.current=true;
     const played=await playRec(uid,vids,textKey(ex.text));if(!played)await say(ex.text);
     ttsPlaying.current=false;
@@ -44,9 +79,7 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
   }
   const imgLoaded=useRef(false);
   useEffect(()=>{alive.current=true;imgLoaded.current=false;sSf(null);sAtt(0);setMic(false);stopVoice();sr.stop();
-    // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
-    // Wait for image to load before playing voice
     const imgStart=Date.now();
     function tryPlay(){if(!alive.current)return;if(imgLoaded.current||!ex.img||Date.now()-imgStart>5000){stopVoice();doPlay()}else{setTimeout(tryPlay,200)}}
     const t=setTimeout(tryPlay,600);
@@ -56,8 +89,8 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},2500)}}
   return <div style={{textAlign:'center'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} onError={()=>{imgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
-      :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1a237e,#4a148c)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>📚</span></div>}
+      {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} onError={()=>{imgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
+      :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1a237e,#4a148c)',display:'flex',alignItems:'center',justifyContent:'center',maxHeight:'50dvh'}}><span style={{fontSize:80}}>📚</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'36px 16px 14px'}}>
         <p style={{fontSize:24,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
       </div>
@@ -70,11 +103,10 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids}){
     </div>
   </div>}
 
-// ===== QUIÉN SOY — Presentación (mode 2, teleprompter limpio con barra lateral) =====
+// ===== QUIÉN SOY — Presentación (solo ayuda auditiva, sin valoración) =====
 export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   const slides=useMemo(()=>{
     if(!presentation)return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
-    // Use slides with photos if available, otherwise lines as text-only
     if(presentation.slides&&presentation.slides.length>0)
       return presentation.slides.map((s,i)=>({text:s.text,id:'pres_'+i,img:s.img||null,picto:s.picto||null}));
     if(presentation.lines&&presentation.lines.length>0)
@@ -84,11 +116,10 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
   const[qi,setQi]=useState(0);const[finished,setFinished]=useState(false);const[barOn,setBarOn]=useState(false);
   const alive=useRef(true);const timers=useRef([]);
   const cur=slides[qi];
-  const waitSec=useMemo(()=>Math.max(Math.ceil(cur.text.length*0.12),2)+3,[cur]);
+  const waitSec=useMemo(()=>Math.max(Math.ceil(cur.text.split(/\s+/).length*0.9),2)+3,[cur]);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice();timers.current.forEach(clearTimeout)}},[]);
   const presImgLoaded=useRef(false);
   useEffect(()=>{if(finished)return;stopVoice();setBarOn(false);presImgLoaded.current=false;timers.current.forEach(clearTimeout);timers.current=[];
-    // Wait for image before speaking
     const imgStart=Date.now();
     function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current||Date.now()-imgStart>5000){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
     function doSpeak(){
@@ -108,13 +139,13 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation}){
     <p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>Has dicho las {slides.length} frases</p>
     <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>🎉 ¡Terminado!</button>
   </div>;
-  return <div style={{textAlign:'center',position:'relative',maxHeight:'100dvh',overflow:'hidden'}}>
+  return <div style={{textAlign:'center',position:'relative',overflow:'hidden'}}>
     <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} onError={()=>{presImgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block'}}/>
-        :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
+      {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} onError={()=>{presImgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
+        :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center',maxHeight:'50dvh'}}><span style={{fontSize:80}}>🎤</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
-        <p style={{fontSize:11,color:'rgba(255,255,255,.35)',margin:'4px 0 0',fontWeight:600}}>{qi+1}/{slides.length}</p>
+        <p style={{fontSize:13,color:'rgba(255,255,255,.4)',margin:'4px 0 0',fontWeight:600}}>{qi+1}/{slides.length}</p>
       </div>
       {cur.picto&&<div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.9)',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt={'Pictograma: '+cur.text} style={{height:60,objectFit:'contain',display:'block'}}/></div>}
       {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:0,overflow:'hidden',zIndex:5}}>

@@ -31,17 +31,17 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
     const imgLeft=cx-dispW/2+translate.x;const imgTop=cy-dispH/2+translate.y;
     if(shape==='rect'){
       // 16:9 rectangular crop
-      const c=document.createElement('canvas');c.width=RECT_W*2;c.height=RECT_H*2;const ctx=c.getContext('2d');
+      const c=document.createElement('canvas');const dpr=Math.max(window.devicePixelRatio||2,3);c.width=Math.round(RECT_W*dpr);c.height=Math.round(RECT_H*dpr);const ctx=c.getContext('2d');
       const cropLeft=cx-RECT_W/2;const cropTop=cy-RECT_H/2;
       const srcX=(cropLeft-imgLeft)/dispW*img.width;
       const srcY=(cropTop-imgTop)/dispH*img.height;
       const srcW=RECT_W/dispW*img.width;
       const srcH=RECT_H/dispH*img.height;
       ctx.drawImage(img,srcX,srcY,srcW,srcH,0,0,c.width,c.height);
-      onSave(c.toDataURL('image/jpeg',0.8));
+      onSave(c.toDataURL('image/jpeg',0.88));
     } else {
       // Circle crop
-      const c=document.createElement('canvas');const sz=CIRCLE_R*2;c.width=sz;c.height=sz;const ctx=c.getContext('2d');
+      const c=document.createElement('canvas');const cdpr=Math.max(window.devicePixelRatio||2,3);const sz=Math.round(CIRCLE_R*cdpr);c.width=sz;c.height=sz;const ctx=c.getContext('2d');
       ctx.beginPath();ctx.arc(sz/2,sz/2,sz/2,0,Math.PI*2);ctx.clip();
       const circLeft=cx-CIRCLE_R;const circTop=cy-CIRCLE_R;
       const srcX=(circLeft-imgLeft)/dispW*img.width;
