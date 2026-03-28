@@ -74,9 +74,12 @@ export function generateAutoPresentation(u,personas){
   if(u.direccion)add('Vivo en '+u.direccion,null);
   if(u.colegio)add('Voy al cole en '+u.colegio,null);
   if(u.telefono){
-    // Convert phone to digit-by-digit speech: "626848448" → "6, 2, 6, 8, 4, 8, 4, 4, 8"
-    const digits=u.telefono.replace(/[^0-9]/g,'').split('').join(', ');
-    add('Mi teléfono de emergencia es '+digits,null);
+    // Respect user's dot separators: "6.2.6.8.4.8" → "6, 2, 6, 8, 4, 8"
+    // "626.84.84.48" → "626, 84, 84, 48" (reads each group as a number)
+    // No dots = read as-is (full number)
+    const tel=u.telefono.trim();
+    const spoken=tel.includes('.')?tel.split('.').filter(Boolean).join(', '):tel;
+    add('Mi teléfono de emergencia es '+spoken,null);
   }
   return{lines,slides};
 }
