@@ -182,6 +182,18 @@ export default function App(){
   // M7a: Dynamic DILO level-up celebration
   const[dynamicLvUp,setDynamicLvUp]=useState(null);
   const diloExCount=useRef(0);
+  // M7b: Random/mixed session mode
+  const[randomMods,setRandomMods]=useState([]); // selected module lvKeys
+  const[randomTime,setRandomTime]=useState(30); // minutes
+  const[randomPerRound,setRandomPerRound]=useState(4); // exercises per module round
+  const[randomActive,setRandomActive]=useState(false); // is a random session running?
+  const[randomStats,setRandomStats]=useState({}); // {lvKey:{ok,total,name,emoji}}
+  const[randomModIdx,setRandomModIdx]=useState(0); // current module index in rotation
+  const[randomExInRound,setRandomExInRound]=useState(0); // exercises done in current round
+  const[randomTransition,setRandomTransition]=useState(null); // {emoji,name} for transition overlay
+  const[randomTimer,setRandomTimer]=useState(0); // countdown seconds
+  const randomTimerRef=useRef(null);
+  const randomModOrder=useRef([]); // ordered list of module info for rotation
   const wakeLockRef=useRef(null);
   useEffect(()=>{async function acquireWakeLock(){try{if('wakeLock' in navigator&&scr==='game'){wakeLockRef.current=await navigator.wakeLock.request('screen')}else if(wakeLockRef.current){wakeLockRef.current.release();wakeLockRef.current=null}}catch(e){}}acquireWakeLock();return()=>{if(wakeLockRef.current){try{wakeLockRef.current.release()}catch(e){}}wakeLockRef.current=null}},[scr]);
   function pokeActive(){lastAct.current=Date.now()}
@@ -314,7 +326,41 @@ export default function App(){
     // M7a: Reset DILO exercise counter for session tracking
     diloExCount.current=0;
     setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();setShowRocket(true)}
-  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!')}
+  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
+    // M7b: Start random timer if random session
+    if(randomActive){
+      if(randomTimerRef.current)clearInterval(randomTimerRef.current);
+      randomTimerRef.current=setInterval(()=>{
+        setRandomTimer(t=>{if(t<=1){clearInterval(randomTimerRef.current);return 0}return t-1});
+      },1000);
+    }
+  }
+  // M7b: Advance to next exercise in random session, handling module transitions
+  function randomAdvance(nextIdx,nextSt){
+    if(randomActive&&randomTimer<=0){fin(nextSt);return}
+    // Check if next exercise is from a different module
+    const nextEx=queue[nextIdx];
+    const curEx=queue[idx];
+    if(nextEx&&curEx&&nextEx._randomModule!==curEx._randomModule){
+      // Show transition overlay
+      setRandomTransition({emoji:nextEx._randomPlanet,name:nextEx._randomName,groupEmoji:nextEx._randomGroupEmoji});
+      // Update sec for correct component rendering
+      const allMods=dynGroups.flatMap(g=>g.modules);
+      const nextMod=allMods.find(m=>m.lvKey===nextEx._randomModule);
+      if(nextMod){setSec(nextMod.k);if(nextMod.lvKey)curPresLvKeyRef.current=nextMod.lvKey}
+      setTimeout(()=>{setRandomTransition(null);setIdx(nextIdx)},1200);
+    } else {
+      setIdx(nextIdx);
+    }
+  }
+  // M7b: Auto-finish random session when timer hits 0
+  const randomTimeUpRef=useRef(false);
+  useEffect(()=>{if(!randomActive||scr!=='game'||!ss)return;
+    if(randomTimer<=0&&!randomTimeUpRef.current){randomTimeUpRef.current=true;
+      setTimeout(()=>{fin(st)},500);
+    }
+  },[randomTimer,randomActive,scr,ss]);
+  useEffect(()=>{if(randomActive&&scr==='game'){randomTimeUpRef.current=false}},[randomActive,scr]);
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
@@ -335,7 +381,9 @@ export default function App(){
       const res=checkDynamicDiloLevel(user.id);
       if(res.change==='up'){starBeep(4);setDynamicLvUp(res.newLv);setTimeout(()=>setDynamicLvUp(null),2500)}
     }
-    setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)},200)}
+    // M7b: Track random stats
+    if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],ok:s[k].ok+1,total:s[k].total+1}}return s})}
+    setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}},200)}
   function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);setCorrectStreak(0);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);
     // M7a: Dynamic DILO tracking on fail (silent level-down)
     if(sec==='decir'&&user&&getDynamicDilo(user.id)){
@@ -344,9 +392,11 @@ export default function App(){
       if(diloExCount.current===3){setDynamicDiloSessions(user.id,getDynamicDiloSessions(user.id)+1)}
       checkDynamicDiloLevel(user.id); // silent — no visual on level-down
     }
-    if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)}}
-  function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}
-  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);setOv('done')}
+    // M7b: Track random stats on skip
+    if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
+    if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
+  function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
+  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setOv('done')}
   function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
@@ -373,7 +423,112 @@ export default function App(){
     {milestone&&<div className="ov" style={{zIndex:150}} onClick={()=>setMilestone(null)}><div className="ovp ab" style={{maxWidth:340}}><div style={{fontSize:80,marginBottom:8}}>{milestone.emoji}</div><h2 style={{fontSize:26,color:GOLD}}>{milestone.text}</h2><p style={{fontSize:18,color:GREEN}}>{milestone.sub}</p></div></div>}
     {/* M7a: Dynamic DILO level-up celebration */}
     {dynamicLvUp&&<div className="ov" style={{zIndex:155,pointerEvents:'none'}}><div className="ovp ab" style={{maxWidth:280,background:'transparent',boxShadow:'none'}}><h2 style={{fontSize:36,color:GOLD,fontWeight:800,textShadow:'0 2px 12px rgba(255,215,0,.6)',animation:'bounceIn .4s'}}>🎯 ¡Nivel {dynamicLvUp}!</h2></div></div>}
-    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){startGame()}else{setScr('goals')}}}/>}
+    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} randomStats={randomActive?randomStats:null} onExit={(action)=>{setOv(null);setMascotMood('idle');if(action==='repeat'){if(randomActive){setOv('random')}else{startGame()}}else{setRandomActive(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setScr('goals')}}}/>}
+    {/* M7b: Random session config overlay */}
+    {ov==='random'&&user&&(()=>{
+      const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false);
+      const selCount=randomMods.length;
+      return <div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:440,maxHeight:'85vh',overflowY:'auto'}}>
+        <div style={{fontSize:48,marginBottom:8}}>🔀</div>
+        <h2 style={{fontSize:22,color:GOLD,margin:'0 0 4px'}}>Sesión variada</h2>
+        <p style={{fontSize:14,color:DIM,margin:'0 0 16px'}}>Mezcla ejercicios de varios módulos</p>
+        {/* Module checkboxes */}
+        <div style={{marginBottom:16}}>
+          <p style={{fontSize:15,fontWeight:700,color:TXT,margin:'0 0 8px'}}>Selecciona módulos (mín. 2)</p>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {allMods.map(m=>{
+              const checked=randomMods.includes(m.lvKey);
+              return <button key={m.lvKey} onClick={()=>{
+                if(checked)setRandomMods(randomMods.filter(k=>k!==m.lvKey));
+                else setRandomMods([...randomMods,m.lvKey]);
+              }} style={{
+                display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:12,
+                border:'2px solid '+(checked?GOLD:BORDER),background:checked?GOLD+'15':CARD,
+                cursor:'pointer',fontFamily:"'Fredoka'",textAlign:'left',transition:'all .15s',
+              }}>
+                <span style={{fontSize:22,minWidth:28}}>{m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐'}</span>
+                <div style={{flex:1}}>
+                  <span style={{fontSize:15,fontWeight:600,color:checked?GOLD:TXT}}>{m.l}</span>
+                  <span style={{fontSize:12,color:DIM,marginLeft:6}}>{m.groupEmoji} {m.groupName}</span>
+                </div>
+                <span style={{fontSize:20,color:checked?GOLD:BORDER}}>{checked?'✓':'○'}</span>
+              </button>})}
+          </div>
+        </div>
+        {/* Time slider */}
+        <div style={{marginBottom:14}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+            <span style={{fontSize:15,fontWeight:700,color:TXT}}>⏱️ Tiempo</span>
+            <span style={{fontSize:16,fontWeight:700,color:GOLD}}>{randomTime} min</span>
+          </div>
+          <input type="range" min={10} max={60} step={5} value={randomTime} onChange={e=>setRandomTime(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD}}/>
+        </div>
+        {/* Exercises per round slider */}
+        <div style={{marginBottom:20}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+            <span style={{fontSize:15,fontWeight:700,color:TXT}}>🔄 Ejercicios por ronda</span>
+            <span style={{fontSize:16,fontWeight:700,color:GOLD}}>{randomPerRound}</span>
+          </div>
+          <input type="range" min={3} max={5} value={randomPerRound} onChange={e=>setRandomPerRound(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD}}/>
+        </div>
+        {/* Start button */}
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Cancelar</button>
+          <button className="btn btn-gold" style={{flex:2,fontSize:20,opacity:selCount<2?.4:1}} disabled={selCount<2} onClick={()=>{
+            // Build super-queue from selected modules
+            const selMods=allMods.filter(m=>randomMods.includes(m.lvKey));
+            const perMod=randomPerRound;
+            // Build exercises per module
+            const modQueues=selMods.map(m=>{
+              const lv=getModuleLvOrDef(m.lvKey,m.defLv);
+              if(m.lvKey)curPresLvKeyRef.current=m.lvKey;
+              const exs=buildQ(user,m.k,lv).map(e=>({
+                ...e,
+                _randomModule:m.lvKey,
+                _randomPlanet:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',
+                _randomName:m.l,
+                _randomGroupEmoji:m.groupEmoji,
+              }));
+              return{mod:m,exs,cursor:0};
+            });
+            // Build round-robin super-queue
+            const superQ=[];
+            const modOrder=selMods.map(m=>({lvKey:m.lvKey,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',name:m.l,groupEmoji:m.groupEmoji}));
+            // Generate enough rounds to fill the time (generous: ~2 exercises/min)
+            const totalNeeded=Math.ceil(randomTime*2);
+            let round=0;
+            while(superQ.length<totalNeeded){
+              for(let mi=0;mi<modQueues.length;mi++){
+                const mq=modQueues[mi];
+                for(let j=0;j<perMod&&superQ.length<totalNeeded*2;j++){
+                  if(mq.cursor>=mq.exs.length)mq.cursor=0; // wrap around
+                  superQ.push(mq.exs[mq.cursor]);
+                  mq.cursor++;
+                }
+              }
+              round++;
+              if(round>50)break; // safety
+            }
+            // Init stats
+            const initStats={};
+            selMods.forEach(m=>{initStats[m.lvKey]={ok:0,total:0,name:m.l,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',groupEmoji:m.groupEmoji}});
+            randomModOrder.current=modOrder;
+            setRandomStats(initStats);
+            setRandomActive(true);
+            setRandomModIdx(0);
+            setRandomExInRound(0);
+            setRandomTimer(randomTime*60);
+            // Set game state
+            setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();
+            // Set sec to the first module's section for correct rendering
+            const firstMod=selMods[0];
+            setSec(firstMod.k);
+            if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey;
+            setOv(null);
+            setShowRocket(true);
+          }}>▶️ Empezar</button>
+        </div>
+      </div></div>})()}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
     {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups}/>}
 
@@ -590,6 +745,12 @@ export default function App(){
               display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
               <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
+              <button onClick={()=>setOv('random')} style={{
+                marginTop:4,padding:'6px 14px',borderRadius:16,border:'2px solid rgba(255,255,255,.25)',
+                background:'rgba(255,255,255,.1)',cursor:'pointer',fontFamily:"'Fredoka'",
+                fontSize:13,fontWeight:700,color:'#FFF',whiteSpace:'nowrap',
+                backdropFilter:'blur(4px)',transition:'all .2s',
+              }}>🔀 Sesión variada</button>
             </div>
             {/* Orbiting ring (visual — elliptical tilted via SVG) */}
             <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
@@ -724,9 +885,29 @@ export default function App(){
       </div>}
     </div>}
 
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span></div></div>
-      {correctStreak>=2&&<div style={{position:'absolute',top:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
-      <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,(elapsed/60)/sm*100)+'%'}}/></div>
+    {/* M7b: Module transition overlay */}
+    {randomTransition&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,animation:'fadeIn .2s'}}><div style={{textAlign:'center',animation:'bounceIn .4s'}}>
+      <div style={{fontSize:80,marginBottom:8}}>{randomTransition.emoji}</div>
+      <h2 style={{fontSize:28,color:GOLD,fontWeight:800,margin:0}}>{randomTransition.name}</h2>
+    </div></div>}
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/></div>{randomActive
+        ?<span style={{fontSize:14,color:randomTimer<=60?'#FF5722':DIM,fontWeight:700}}>⏱️ {Math.floor(randomTimer/60)}:{String(randomTimer%60).padStart(2,'0')}</span>
+        :<span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span>
+      }</div></div>
+      {/* M7b: Module icon bar for random sessions */}
+      {randomActive&&randomModOrder.current.length>0&&<div style={{display:'flex',justifyContent:'center',gap:6,marginBottom:8}}>
+        {randomModOrder.current.map((m,i)=>{
+          const isCur=cur._randomModule===m.lvKey;
+          return <div key={m.lvKey} style={{
+            width:32,height:32,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',
+            background:isCur?GOLD+'33':'rgba(255,255,255,.08)',
+            border:isCur?'2px solid '+GOLD:'2px solid transparent',
+            transition:'all .2s',fontSize:16,
+            opacity:isCur?1:0.5,
+          }} title={m.name}>{m.emoji}</div>})}
+      </div>}
+      {correctStreak>=2&&<div style={{position:'absolute',top:randomActive?86:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
+      <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:randomActive?Math.min(100,(1-randomTimer/(randomTime*60))*100)+'%':sm===0?'0%':Math.min(100,(elapsed/60)/sm*100)+'%'}}/></div>
       {/* M4: Burst mode toggle — visible for DILO and QUIÉN SOY */}
       {(sec==='decir'||sec==='quiensoy')&&<div style={{marginBottom:8}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,flexWrap:'wrap'}}>

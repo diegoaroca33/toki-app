@@ -10,7 +10,7 @@ const TIER_NAMES=["Estrellita","Bronce","Plata","Oro","Superestrella","Legendari
 const TIER_ICONS=["⭐","🥉","🥈","🥇","💫","👑"];
 const TIER_THRESHOLDS=[0,50,150,300,500,1000];
 
-export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStreak=0,totalLifetimeStars=0}){
+export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStreak=0,totalLifetimeStars=0,randomStats=null}){
   const[xConf,sXConf]=useState(false);
   const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
   const uname=user?.name||'crack';
@@ -125,6 +125,23 @@ export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStre
           </div>}
           <div style={{fontSize:11,color:DIM,marginTop:4}}>{totalLifetimeStars} ⭐</div>
         </div>
+
+        {/* M7b: Per-module breakdown for random sessions */}
+        {randomStats&&Object.keys(randomStats).length>0&&<div style={{...cardSt}}>
+          <div style={{fontSize:14,fontWeight:600,color:DIM,marginBottom:8}}>🔀 Desglose por módulo</div>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            {Object.values(randomStats).filter(s=>s.total>0).map((s,i)=>{
+              const mpct=s.total>0?Math.round(s.ok/s.total*100):0;
+              return <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:10,background:mpct>=80?GREEN+'15':mpct>=50?BLUE+'15':GOLD+'15',border:'1px solid '+(mpct>=80?GREEN:mpct>=50?BLUE:GOLD)+'33'}}>
+                <span style={{fontSize:22}}>{s.emoji}</span>
+                <div style={{flex:1,textAlign:'left'}}>
+                  <div style={{fontSize:14,fontWeight:600,color:'#fff'}}>{s.name}</div>
+                  <div style={{fontSize:11,color:DIM}}>{s.ok}/{s.total} correctas</div>
+                </div>
+                <div style={{fontSize:16,fontWeight:700,color:mpct>=80?GREEN:mpct>=50?BLUE:GOLD}}>{mpct}%</div>
+              </div>})}
+          </div>
+        </div>}
 
         {/* Action buttons */}
         <div style={{display:'flex',justifyContent:'center',gap:24,animation:'fadeIn .5s 1.3s both'}}>
