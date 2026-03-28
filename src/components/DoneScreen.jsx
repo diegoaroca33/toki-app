@@ -57,7 +57,7 @@ export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStre
         {/* Stats row: Stars, Accuracy, Minutes */}
         <div style={{display:'flex',justifyContent:'center',gap:12,marginBottom:16,animation:'fadeIn .5s .9s both',flexWrap:'wrap'}}>
           {[
-            {l:'Estrellas',v:sessionStars||st.ok,c:GOLD,icon:'⭐'},
+            {l:'Estrellas',v:sessionStars??st.ok,c:GOLD,icon:'⭐'},
             {l:'Acierto',v:pct+'%',c:BLUE,icon:''},
             {l:'Minutos',v:elapsed,c:GREEN,icon:''}
           ].map((s,i)=>

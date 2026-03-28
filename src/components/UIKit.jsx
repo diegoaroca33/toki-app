@@ -157,12 +157,19 @@ export function OralPrompt({phrase,onDone}){
 
 export function useOralPhase(onOk){
   const[oralPhrase,setOralPhrase]=useState(null);
-  const oralEnabled=useCallback(()=>{try{const v=localStorage.getItem('toki_oral_all_planets');if(v===null)return true;return v==='true'}catch(e){return true}},[]);
-  const triggerOral=useCallback((phrase)=>{
-    if(oralEnabled()){setOralPhrase(phrase)}
-    else{onOk()}
+  const pendingScore=useRef({stars:undefined,attempts:undefined});
+  const oralEnabled=()=>localStorage.getItem('toki_oral_all_planets')!=='false';
+  const oralDone=useCallback(()=>{
+    setOralPhrase(null);
+    const{stars,attempts}=pendingScore.current;
+    onOk(stars,attempts);
+    pendingScore.current={stars:undefined,attempts:undefined};
   },[onOk]);
-  const oralDone=useCallback(()=>{setOralPhrase(null);onOk()},[onOk]);
+  const triggerOral=useCallback((phrase,stars,attempts)=>{
+    if(!oralEnabled()||!phrase){onOk(stars,attempts);return}
+    pendingScore.current={stars,attempts};
+    setOralPhrase(phrase);
+  },[onOk]);
   const resetOral=useCallback(()=>setOralPhrase(null),[]);
   return{oralPhrase,triggerOral,oralDone,resetOral}
 }

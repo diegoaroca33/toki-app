@@ -3,7 +3,7 @@ import { GOLD, BLUE, GREEN, RED, PURPLE, BG3, BORDER, DIM, TXT } from '../consta
 import { say, sayFB, stopVoice, starBeep } from '../voice.js'
 import { beep } from '../utils.js'
 import { NumPad, useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 export function PieChart({num,den,size=120,color=GOLD,highlight=-1}){const slices=[];for(let i=0;i<den;i++){const a1=(i/den)*360-90,a2=((i+1)/den)*360-90;const r=size/2-4;const cx=size/2,cy=size/2;const x1=cx+r*Math.cos(a1*Math.PI/180),y1=cy+r*Math.sin(a1*Math.PI/180);const x2=cx+r*Math.cos(a2*Math.PI/180),y2=cy+r*Math.sin(a2*Math.PI/180);const large=360/den>180?1:0;const filled=i<num;const hl=i===highlight;slices.push(<path key={i} d={`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`} fill={filled?color:BG3} stroke={hl?'#fff':BORDER} strokeWidth={hl?3:1.5} opacity={filled?1:0.4} style={{transition:'all .3s'}}/>)}
   return <svg width={size} height={size}>{slices}<circle cx={size/2} cy={size/2} r={size/2-4} fill="none" stroke={BORDER} strokeWidth={2}/></svg>}
@@ -40,10 +40,10 @@ export function ExFraction({ex,onOk,onSkip,name}){
     else say('Resta las fracciones')},[ex]);
   function addSlice(){poke();if(placed>=ex.den)return;const np=placed+1;setPlaced(np);beep(400+np*80,80)}
   function removeSlice(){poke();if(placed>0)setPlaced(placed-1)}
-  function validate(){poke();if(placed===ex.num){setFb('ok');starBeep(4);sayFB('¡'+ex.num+' de '+ex.den+'!');setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den)),800)}
+  function validate(){poke();if(placed===ex.num){setFb('ok');starBeep(4);sayFB('¡'+ex.num+' de '+ex.den+'!');setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den),4,1),800)}
     else{setFb('no');beep(200,200);sayFB('¡Casi! Necesitas '+ex.num+' porciones');setTimeout(()=>{setPlaced(0);setFb(null)},2000)}}
   function checkMathAns(){poke();const n=parseInt(ans);const target=mode==='add'?ex.ans_n:ex.ans_n;
-    if(n===target){setFb('ok');starBeep(4);sayFB('¡Perfecto!');setTimeout(()=>triggerOral(fracSpoken(target,ex.ans_d||ex.den)),400)}
+    if(n===target){setFb('ok');starBeep(4);sayFB('¡Perfecto!');setTimeout(()=>triggerOral(fracSpoken(target,ex.ans_d||ex.den),4,1),400)}
     else{setFb('no');beep(200,200);sayFB('La respuesta es '+target);setTimeout(()=>{setFb(null);setAns('')},2500)}}
   const isRect=ex.shape==='rect';
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
@@ -76,7 +76,7 @@ export function ExFraction({ex,onOk,onSkip,name}){
         </div>
         <p style={{fontSize:22,color:TXT,margin:0}}>{ex.num} {ex.num===1?'trozo':'trozos'} de {ex.den} = <span style={{color:GOLD,fontWeight:700}}>{ex.num}/{ex.den}</span></p>
       </div>
-      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den)),400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den),4,1),400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
     </div>}
     {mode==='equivalence'&&<div>
       <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
@@ -94,7 +94,7 @@ export function ExFraction({ex,onOk,onSkip,name}){
         </div>
         <p style={{fontSize:18,color:TXT,margin:'12px 0 0'}}>La mitad es lo mismo, ¡mira!</p>
       </div>
-      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den)+' es igual a '+fracSpoken(ex.num2,ex.den2)),400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
+      <button className="btn btn-g" onClick={()=>{setFb('ok');starBeep(3);setTimeout(()=>triggerOral(fracSpoken(ex.num,ex.den)+' es igual a '+fracSpoken(ex.num2,ex.den2),4,1),400)}} style={{fontSize:22,maxWidth:220,margin:'0 auto'}}>✅ ¡Entendido!</button>
     </div>}
     {(mode==='add'||mode==='subtract')&&<div>
       <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}>
@@ -115,7 +115,7 @@ export function ExFraction({ex,onOk,onSkip,name}){
       </div>
       <NumPad value={ans} onChange={setAns} onSubmit={checkMathAns} maxLen={2}/>
     </div>}
-    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Perfecto!</p></div></>}
+    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginBottom:14}}><Stars n={4} sz={36}/><p style={{fontSize:20,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Perfecto!</p></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{fontSize:16,marginTop:8}}>⏭️ Saltar</button>

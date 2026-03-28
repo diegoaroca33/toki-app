@@ -3,7 +3,7 @@ import { GOLD, GREEN, RED, BLUE, PURPLE, DIM, CARD, BORDER } from '../constants.
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { loadData, rnd, beep, mkPerfect } from '../utils.js'
 import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== CARD and DOMINO SVGs for Distribute =====
 export function CardSVG({size=48,rank='A',suit='♥'}){const suitColors={'♥':'#C0392B','♦':'#C0392B','♠':'#1a1a2e','♣':'#1a1a2e'};const col=suitColors[suit]||'#C0392B';return <svg width={size} height={size*1.4} viewBox="0 0 48 67">
@@ -77,7 +77,7 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     return()=>{clearTimers();stopVoice()}},[ex]);
   function addCandy(){poke();if(count>=20)return;const nc=count+1;setCount(nc);beep(300+nc*40,60)}
   function removeCandy(){poke();if(count>0)setCount(count-1)}
-  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.count+' '+objName;setT(()=>triggerOral(phrase),300)})}
+  function validatePut(){poke();if(count===ex.count){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.count+' '+objName;setT(()=>triggerOral(phrase,4,1),300)})}
     else{const na=att+1;setAtt(na);
       if(na>=2){/* 2nd fail: Toki counts WITH the child */
         setFb('counting');setShowCount(true);beep(200,200);
@@ -89,10 +89,10 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         setT(countNext,500)}
       else{setFb('wrong');beep(200,200);sayFB(rnd(['¡Casi!','¡Inténtalo otra vez!','¡Cuenta bien!']));
         setT(()=>{setFb(null);setCount(0)},2000)}}}
-  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.each+' para cada uno';setT(()=>triggerOral(phrase),300)})}
+  function checkEqual(){poke();const n=parseInt(ans);if(n===ex.each){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.each+' para cada uno';setT(()=>triggerOral(phrase,4,1),300)})}
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setT(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
-    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const winner=correct==='a'?ex.nameA:correct==='b'?ex.nameB:'igual';const phrase=winner+' tiene más';setT(()=>triggerOral(phrase),300)})}
+    if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const winner=correct==='a'?ex.nameA:correct==='b'?ex.nameB:'igual';const phrase=winner+' tiene más';setT(()=>triggerOral(phrase,4,1),300)})}
     else{setFb('no');beep(200,200);setT(()=>setFb(null),1200)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
@@ -152,7 +152,7 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
         {ex.a===ex.b&&<button className="btn btn-p" onClick={()=>checkCompare('equal')} style={{flex:1,maxWidth:140}}>Igual</button>}
         <button className="btn btn-b" onClick={()=>checkCompare('b')} style={{flex:1,maxWidth:140}}>{ex.nameB}</button></div>
     </div>}
-    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}

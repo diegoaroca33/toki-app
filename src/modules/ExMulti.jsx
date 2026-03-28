@@ -3,7 +3,7 @@ import { GOLD, GREEN, PURPLE, CARD, BORDER, TXT, DIM } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { mkPerfect } from '../utils.js'
 import { NumPad, useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== MULTIPLICACIONES =====
 export function genMulti(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
@@ -17,7 +17,7 @@ export function ExMulti({ex,onOk,onSkip,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const groups=Array.from({length:ex.b},(_,i)=>i);const emojis=['🍎','🌟','🔵','🟢','🟡','🟣','🔴','🍊','🍋','💎'];const em=emojis[ex.a%emojis.length];
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);resetOral();stopVoice();setTimeout(()=>say(ex.a+' por '+ex.b),400);return()=>stopVoice()},[ex]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();say(ex.a+' por '+ex.b+' es igual a '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const phrase=ex.a+' por '+ex.b+' son '+ex.ans;setTimeout(()=>triggerOral(phrase),250)})}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();say(ex.a+' por '+ex.b+' es igual a '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const phrase=ex.a+' por '+ex.b+' son '+ex.ans;setTimeout(()=>triggerOral(phrase,4,1),250)})}
   else{setFb('no');setShowHelp(true);stopVoice();const sumText=Array(ex.b).fill(ex.a).join(' más ')+' es igual a '+ex.ans;sayFB('Mira: '+ex.a+' por '+ex.b+' es '+sumText)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.a} x {ex.b} = ?</p></div>
@@ -26,7 +26,7 @@ export function ExMulti({ex,onOk,onSkip,name,uid,vids}){
       <NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>
       <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
-    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
+    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
       <Stars n={4} sz={32}/><p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{ex.a} x {ex.b} = {ex.ans}</p>
     </div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}

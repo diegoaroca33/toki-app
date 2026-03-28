@@ -3,7 +3,7 @@ import { GOLD, GREEN, RED, BLUE, PURPLE, DIM, CARD, BORDER, BG3, TXT } from '../
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
 import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== RAZONA MODULE =====
 // Shared scene positions for SceneSVG and SpatialDrag
@@ -354,19 +354,19 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
     const celebTime=ex.mode==='spatial'?1800:300;
-    if(ans===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=getOralPhrase(ans);setTimeout(()=>triggerOral(phrase),celebTime)})}
-    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(onOk,250)},2500)}
+    if(ans===correct){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=getOralPhrase(ans);setTimeout(()=>triggerOral(phrase,a===1?4:a===2?2:1,a),celebTime)})}
+    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
       else{setTimeout(()=>setFb(null),1200)}}}
   function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
-      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado'),300))}
+      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado',4,1),300))}
       else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
       {/* Left side — celebration zone (symmetry with buttons) */}
       <div style={{flex:'0 0 140px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:220,position:'relative'}}>
-        {fb==='ok'&&<CelebrationOverlay show={true} duration={1800}/>}
+        {fb==='ok'&&<div className="ab"><Stars n={4} sz={36}/></div>}
       </div>
       {/* Center — scene */}
       <div style={{flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',gap:6,minWidth:0}}>
@@ -378,7 +378,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:19,padding:14,minHeight:52,fontWeight:600,letterSpacing:0.5,opacity:fb==='ok'&&o!==ex.data.ans?0.35:1,transition:'opacity 0.3s'}}>{o}</button>)}
       </div>
     </div>}
-    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.data.pos;setTimeout(()=>triggerOral(phrase),1800)})}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
+    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.data.pos;setTimeout(()=>triggerOral(phrase,4,1),1800)})}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
     {ex.mode==='intruso'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>

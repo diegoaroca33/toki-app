@@ -3,7 +3,7 @@ import { GOLD, BLUE, GREEN, RED, PURPLE, BG3, BORDER, DIM, NUMS_1_100 } from '..
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
 import { NumPad, useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 export function genMath(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(lv===1){for(let i=0;i<30;i++){const a=rng(1,10),b=rng(1,2);ops.push({q:`${a} + ${b}`,ans:a+b})}}
@@ -46,7 +46,7 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);resetOral();const t=setTimeout(()=>{stopVoice();const opW=ex.q.replace('+',' más ').replace('-',' menos ')+' es igual a...';say(opW)},500);return()=>{clearTimeout(t);stopVoice()}},[ex]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();const opW=a+(op==='+'?' más ':' menos ')+b+' es igual a '+ex.ans;say(opW).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();const phrase=nw(a)+(op==='+'?' más ':' menos ')+nw(b)+' son '+nw(ex.ans);setTimeout(()=>triggerOral(phrase),250)})}else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();const opW=a+(op==='+'?' más ':' menos ')+b+' es igual a '+ex.ans;say(opW).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();const phrase=nw(a)+(op==='+'?' más ':' menos ')+nw(b)+' son '+nw(ex.ans);setTimeout(()=>triggerOral(phrase,4,1),250)})}else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.q} = ?</p></div>
     {!showHelp&&!fb&&<div>
@@ -58,7 +58,7 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
       <NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>
       <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
-    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
+    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>
       <Stars n={4} sz={32}/>
       <AnimCount from={a} to={ex.ans} color={GREEN}/>
       <p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'4px 0 0'}}>{a} {op} {b} = {ex.ans}</p>

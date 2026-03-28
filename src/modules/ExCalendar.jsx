@@ -3,7 +3,7 @@ import { GOLD, GREEN, RED, BLUE, DIM, CARD, BORDER } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
 import { useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== CALENDARIO / TEMPORALIDAD =====
 const DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -31,16 +31,16 @@ export function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
     else{const hoy=DIAS[new Date().getDay()===0?6:new Date().getDay()-1];setTimeout(()=>say('Hoy es '+hoy+'. Ayer es el día de antes. Mañana es el día de después.'),400)}
     return()=>stopVoice()},[ex]);
   function place(item){poke();const np=[...placed];const slot=np.indexOf(null);if(slot!==-1)np[slot]=item;else np.push(item);setPlaced(np);setAvail(a=>a.filter(x=>x!==item));const target=ex.mode==='order_days'?DIAS:MESES;
-    if(np.length===target.length&&np.every(d=>d!==null)){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='order_days'?'los días de la semana':'los meses del año';setTimeout(()=>triggerOral(phrase),300)})}
+    if(np.length===target.length&&np.every(d=>d!==null)){if(np.every((d,i)=>d===target[i])){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='order_days'?'los días de la semana':'los meses del año';setTimeout(()=>triggerOral(phrase,4,1),300)})}
     else{setFb('no');beep(200,200);const wrongNames=np.filter((d,i)=>d!==target[i]);sayFB(wrongNames.length===1?wrongNames[0]+' no va ahí':'Algunos no están en su sitio');setTimeout(()=>{const kept=np.map((d,i)=>d===target[i]?d:null);const wrong=np.filter((d,i)=>d!==target[i]);setPlaced(kept);setAvail([...wrong].sort(()=>Math.random()-.5));setFb(null)},2500)}}}
   function pickBA(slot,val){poke();const newAns={...baAns,[slot]:val};setBaAns(newAns);
     if(newAns.before&&newAns.after){const target=ex.mode==='before_after_day'?DIAS:MESES;const idx=ex.mode==='before_after_day'?ex.dayIdx:ex.monthIdx;const max=target.length;
       const correctBefore=target[(idx-1+max)%max];const correctAfter=target[(idx+1)%max];
-      if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const ref=ex.mode==='before_after_day'?ex.day:ex.month;const phrase='antes '+correctBefore+', después '+correctAfter;setTimeout(()=>triggerOral(phrase),300)})}
+      if(newAns.before===correctBefore&&newAns.after===correctAfter){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const ref=ex.mode==='before_after_day'?ex.day:ex.month;const phrase='antes '+correctBefore+', después '+correctAfter;setTimeout(()=>triggerOral(phrase,4,1),300)})}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);stopVoice();sayFB('Antes: '+correctBefore+'. Después: '+correctAfter);if(na>=2){setShowAns({before:correctBefore,after:correctAfter});setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},4000)}else{setTimeout(()=>{setFb(null);setBaAns({before:null,after:null})},3000)}}}}
   function pickYT(slot,val){poke();const newAns={...ytAns,[slot]:val};setYtAns(newAns);
     if(newAns.ayer&&newAns.manana){const di=new Date().getDay()===0?6:new Date().getDay()-1;const correctAyer=DIAS[(di-1+7)%7];const correctMan=DIAS[(di+1)%7];
-      if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='ayer '+correctAyer+', mañana '+correctMan;setTimeout(()=>triggerOral(phrase),300)})}
+      if(newAns.ayer===correctAyer&&newAns.manana===correctMan){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='ayer '+correctAyer+', mañana '+correctMan;setTimeout(()=>triggerOral(phrase,4,1),300)})}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);stopVoice();sayFB('Ayer fue '+correctAyer+' y mañana será '+correctMan);if(na>=2){setShowAns({ayer:correctAyer,manana:correctMan});setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},4000)}else{setTimeout(()=>{setFb(null);setYtAns({ayer:null,manana:null})},3000)}}}}
   return <div style={{textAlign:'center',padding:'10px 14px'}} onClick={poke}>
     {(ex.mode==='order_days'||ex.mode==='order_months')&&<div>
@@ -98,7 +98,7 @@ export function ExCalendar({ex,onOk,onSkip,name,uid,vids}){
         </div>)}</div>}
       {!fb&&(ytAns.ayer||ytAns.manana)&&<button className="btn btn-o" onClick={()=>setYtAns({ayer:null,manana:null})} style={{fontSize:14,maxWidth:150,margin:'0 auto 8px'}}>↩️ Borrar</button>}
     </div>}
-    {fb==='ok'&&!oralPhrase&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p>{showAns&&<p style={{fontSize:16,color:'#fff',fontWeight:600,margin:'8px 0 0'}}>{showAns.ayer?'Ayer = '+showAns.ayer+', Mañana = '+showAns.manana:showAns.before?'Antes = '+showAns.before+', Después = '+showAns.after:''}</p>}</div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}

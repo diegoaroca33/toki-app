@@ -4,7 +4,8 @@ import { NUMS_1_100 } from '../constants.js'
 import { say, sayFast, stopVoice } from '../voice.js'
 import { listenQuick, starBeep, cheerOrSay } from '../voice.js'
 import { score, beep, mkPerfect } from '../utils.js'
-import { CelebrationOverlay, Stars } from '../components/CelebrationOverlay.jsx'
+import { OralPrompt, useOralPhase } from '../components/UIKit.jsx'
+import { Stars } from '../components/CelebrationOverlay.jsx'
 
 export const NUM_BLOCK_COLORS=['#E74C3C','#3498DB','#F1C40F','#2ECC71','#9B59B6','#E67E22','#1ABC9C','#E91E63','#00BCD4','#FF5722'];
 const SPEED_PRESETS=[
@@ -16,6 +17,7 @@ function loadSpeed(){try{return localStorage.getItem('toki_count_speed')||'norma
 function saveSpeed(k){try{localStorage.setItem('toki_count_speed',k)}catch(e){}}
 
 export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const nums=ex.nums||[ex.num];
   const[ci,setCi]=useState(-1);
   const[phase,setPhase]=useState('ready');
@@ -40,7 +42,7 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     speedRef.current=p;
   }
   useEffect(()=>{
-    alive.current=true;setCi(-1);setPhase('ready');setRevealed(new Set());stopVoice();
+    alive.current=true;setCi(-1);setPhase('ready');setRevealed(new Set());resetOral();stopVoice();
     const t=setTimeout(()=>{if(alive.current)runSequence()},500);
     const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice()};
     window.addEventListener('toki-sos',sosKill);
@@ -70,7 +72,7 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     }
     if(!alive.current)return;setPhase('done');setCi(-1);
     starBeep(4);await cheerOrSay(mkPerfect(name),uid,vids,'perfect');
-    if(alive.current)setTimeout(onOk,300);
+    if(alive.current){const last=nums[nums.length-1];const phrase=NUMS_1_100[last-1]||String(last);setTimeout(()=>triggerOral(phrase,4,1),300)}
   }
   const curNum=ci>=0?nums[ci]:null;
   return <div style={{textAlign:'center',padding:'10px 4px'}}>
@@ -104,7 +106,8 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
           </div>})}
       </div>)}
     </div>
-    {phase==='done'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{marginTop:8}}><Stars n={4} sz={36}/></div></>}
+    {phase==='done'&&!oralPhrase&&<><div className="ab" style={{marginTop:8}}><Stars n={4} sz={36}/></div></>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {phase==='child'&&curNum&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:4}}>
       <span style={{fontSize:28,animation:'pulse .8s infinite'}}>🎤</span>
       <span style={{fontSize:15,color:DIM,fontWeight:600}}>¡Dilo tú!</span>

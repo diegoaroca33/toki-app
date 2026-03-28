@@ -3,7 +3,7 @@ import { GOLD, GREEN, RED, BLUE, PURPLE, TXT, BUILD_OK, GOOD_MSG } from '../cons
 import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay } from '../voice.js'
 import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
-import { CelebrationOverlay, Stars } from './CelebrationOverlay.jsx'
+import { Stars } from './CelebrationOverlay.jsx'
 
 // ============================================================
 // M9: FraccionadoMode — Backward chaining for long phrases
@@ -250,7 +250,6 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
         return items})}</div>}
     </div>
     {/* Stars */}
-    {stars>=4&&!burstMode&&<CelebrationOverlay show={true} duration={1500}/>}
     <div style={{minHeight:burstMode?40:70,marginBottom:burstMode?4:12}}>
     {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?28:40}/></div>}
     {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
@@ -305,7 +304,7 @@ export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:16,minHeight:56}}>{pl.map((p,i)=><div key={i} className={'ws '+(p?'ws-f':'ws-e')}>{p?p.w:'___'}</div>)}</div>
       <div style={{minHeight:60,marginBottom:14}}>
-      {bf==='ok'&&<><CelebrationOverlay show={true} duration={1500}/><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div></>}
+      {bf==='ok'&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:18,fontWeight:600,color:GREEN,margin:'8px 0 0'}}>¡Frase perfecta!</p></div></>}
       {bf==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!bf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       </div>
