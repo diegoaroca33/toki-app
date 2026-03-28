@@ -28,9 +28,9 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
     const img=imgRef.current;const cont=containerRef.current;if(!cont){onCancel();return}
     const rect=cont.getBoundingClientRect();
     const cx=rect.width/2;const cy=rect.height/2;
-    // Match exactly what CSS does: maxWidth:90%, maxHeight:90%, then transform:scale
+    // Match exactly what CSS does: maxWidth:90%, maxHeight:90% (never upscale), then transform:scale
     const maxW=rect.width*0.9;const maxH=rect.height*0.9;
-    const fitRatio=Math.min(maxW/img.width,maxH/img.height);
+    const fitRatio=Math.min(1,maxW/img.width,maxH/img.height);
     const dispW=img.width*fitRatio*scale;
     const dispH=img.height*fitRatio*scale;
     const imgLeft=cx-dispW/2+translate.x;const imgTop=cy-dispH/2+translate.y;

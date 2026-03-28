@@ -73,6 +73,10 @@ export function generateAutoPresentation(u,personas){
   else if(amigos.length>1)add('Tengo '+amigos.length+' amigos',amigos[0]?.photo||null);
   if(u.direccion)add('Vivo en '+u.direccion,null);
   if(u.colegio)add('Voy al cole en '+u.colegio,null);
-  if(u.telefono)add('El teléfono de emergencia es '+u.telefono,null);
+  if(u.telefono){
+    // Convert phone to digit-by-digit speech: "626848448" → "6, 2, 6, 8, 4, 8, 4, 4, 8"
+    const digits=u.telefono.replace(/[^0-9]/g,'').split('').join(', ');
+    add('Mi teléfono de emergencia es '+digits,null);
+  }
   return{lines,slides};
 }

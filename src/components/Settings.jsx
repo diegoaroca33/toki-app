@@ -171,7 +171,11 @@ export function Settings({ user, setUser, saveP, supPin, setSupPin, pp, setPp, s
                       </div>
                     </div>
                   </div>})()
-                :g.modules.map((m,mi)=>{const opts=LV_OPTS[m.lvKey]||(m.lvKey.startsWith('pres_')?LV_OPTS.quiensoy:[]);const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
+                :g.modules.map((m,mi)=>{
+                  // Aprende presentations: no Estudio/Presentación levels, just active toggle (switch is inline in exercise)
+                  const isPres=m.lvKey.startsWith('pres_');
+                  const opts=isPres?[]:LV_OPTS[m.lvKey]||[];
+                  const curLvs=getModuleLvOrDef(m.lvKey,m.defLv);
                   return <div key={mi} style={{marginBottom:8}}>
                   <p style={{fontSize:16,color:DIM,margin:'0 0 4px',fontWeight:600}}>{m.l}</p>
                   {opts.length>1?<div style={{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}}>{opts.map(lv=>{
