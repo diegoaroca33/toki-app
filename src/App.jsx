@@ -699,7 +699,7 @@ export default function App(){
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle||false}/>}
+        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={true}/>}
         {cur.ty==='quiensoy'&&cur.id==='qs_pres_select'&&<div className="af" style={{textAlign:'center',padding:'24px 18px'}}>
           <div style={{fontSize:72,marginBottom:12}}>🎤</div>
           <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>¿Qué presentación?</h2>

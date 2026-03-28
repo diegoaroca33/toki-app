@@ -50,8 +50,8 @@ export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation
   return <div>
     <ModeSwitch mode={mode} onToggle={setMode} canToggle={canToggle}/>
     {mode==='estudio'
-      ?<ExQuienSoyEstudio ex={ex} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>
-      :<ExQuienSoyPres onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} presentation={presentation}/>
+      ?<ExQuienSoyEstudio key={'est_'+ex.id+'_'+mode} ex={ex} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>
+      :<ExQuienSoyPres key={'pres_'+mode} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} presentation={presentation}/>
     }
   </div>}
 
