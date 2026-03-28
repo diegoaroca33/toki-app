@@ -194,6 +194,7 @@ export default function App(){
   const[randomTimer,setRandomTimer]=useState(0); // countdown seconds
   const randomTimerRef=useRef(null);
   const randomModOrder=useRef([]); // ordered list of module info for rotation
+  const sessionUsedPhrases=useRef(new Set()); // session no-repeat: track used phrases across modules
   const wakeLockRef=useRef(null);
   useEffect(()=>{async function acquireWakeLock(){try{if('wakeLock' in navigator&&scr==='game'){wakeLockRef.current=await navigator.wakeLock.request('screen')}else if(wakeLockRef.current){wakeLockRef.current.release();wakeLockRef.current=null}}catch(e){}}acquireWakeLock();return()=>{if(wakeLockRef.current){try{wakeLockRef.current.release()}catch(e){}}wakeLockRef.current=null}},[scr]);
   function pokeActive(){lastAct.current=Date.now()}
@@ -221,6 +222,8 @@ export default function App(){
   const curPresLvKeyRef=useRef('pres_0');
   const[selModKey,setSelModKey]=useState('pres_0');
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);const curPresLvKey=curPresLvKeyRef.current;
+    // Session no-repeat filter: removes exercises whose text was already used in another module this session
+    function _noRepeat(exercises){return exercises.filter(ex=>{const key=(ex.ph||ex.text||ex.word||ex.letter||'').toString().toLowerCase().trim();if(!key||key.length<=1)return true;if(sessionUsedPhrases.current.has(key))return false;sessionUsedPhrases.current.add(key);return true})}
     // APRENDE: find the selected presentation and build exercises
     if(section==='quiensoy'){
       const lvArr=Array.isArray(slv)?slv:[slv||1];
@@ -247,9 +250,9 @@ export default function App(){
         const fallback='Hola, me llamo '+(u.name||'');
         items.push({ty:'quiensoy',id:'pres_fb_0',text:fallback,img:u.photo||null,picto:null});
       }
-      return items}
+      return _noRepeat(items)}
     // Multi-level support: if slv is an array, merge exercises from all levels
-    if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return sh(merged)}
+    if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return _noRepeat(sh(merged))}
     if(Array.isArray(slv))slv=parseInt(slv[0])||1;
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
       // M7a: Use dynamic level if enabled
@@ -257,12 +260,12 @@ export default function App(){
       const lv=dynDiloOn?getDynamicDiloLevel(u.id):(parseInt(Array.isArray(slv)?slv[0]:slv)||1);
       const wRange=lv===1?[1,2]:lv===2?[2,3]:lv===3?[3,4]:lv===4?[4,5]:[5,99];
       const pool=EX.filter(e=>e.ty==='flu'&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
-      const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<40){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return sel.slice(0,40).sort(()=>Math.random()-.5).map(e=>{const p={...e};if(p.ph)p.ph=personalize(p.ph,u);if(p.fu)p.fu=personalize(p.fu,u);if(p.su)p.su=personalize(p.su,u);if(p.q)p.q=personalize(p.q,u);if(p.si)p.si=personalize(p.si,u);if(p.op)p.op=p.op.map(o=>personalize(o,u));return p})}
+      const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<40){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return _noRepeat(sel.slice(0,40).sort(()=>Math.random()-.5).map(e=>{const p={...e};if(p.ph)p.ph=personalize(p.ph,u);if(p.fu)p.fu=personalize(p.fu,u);if(p.su)p.su=personalize(p.su,u);if(p.q)p.q=personalize(p.q,u);if(p.si)p.si=personalize(p.si,u);if(p.op)p.op=p.op.map(o=>personalize(o,u));return p}))}
     if(section==='frase'){const flv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;const wc=flv===1?3:flv===2?4:flv===3?5:[6,7];
       const pool=EX.filter(e=>e.ty==='flu'&&e.ph).filter(e=>{const w=e.ph.replace(/[¿?¡!,\.]/g,'').split(/\s+/).length;return Array.isArray(wc)?w>=wc[0]&&w<=wc[1]:w===wc});
-      let sel=sh(pool).slice(0,40);return sel.map(e=>{const ph=personalize(e.ph,u);const q=ph.split(/\s+/).length<=3?'¿Cómo dices esto?':'¿Cómo se dice?';
+      let sel=sh(pool).slice(0,40);return _noRepeat(sel.map(e=>{const ph=personalize(e.ph,u);const q=ph.split(/\s+/).length<=3?'¿Cómo dices esto?':'¿Cómo se dice?';
         if(slv===4&&Math.random()>0.5){const words=ph.split(/\s+/);const bi=1+Math.floor(Math.random()*(words.length-2));const blank=words[bi];words[bi]='___';return{...e,ty:'frases_blank',q:'Completa la frase',fu:ph,blank,words,ph:personalize(e.ph,u)}}
-        return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}})}
+        return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}}))}
     if(section==='contar'){const clv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;let start=1,end=20;if(clv===2){start=20;end=50}else if(clv===3){start=50;end=100}else if(clv>=4){start=1;end=100}
       const firstD=Math.floor((start-1)/10),lastD=Math.floor((end-1)/10);const batches=[];
       for(let d=firstD;d<=lastD;d++){const b=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n>=start&&n<=end&&n<=100)b.push(n)}if(b.length>0)batches.push(b)}
@@ -297,12 +300,12 @@ export default function App(){
         }
       });
       if(lvs.length===0)lvs.push(1);
-      if(lvs.length===1)return genWriting(lvs[0]);
+      if(lvs.length===1)return _noRepeat(genWriting(lvs[0]));
       const merged=[];lvs.forEach(lv=>{merged.push(...genWriting(lv))});
-      return merged.sort(()=>Math.random()-.5)
+      return _noRepeat(merged.sort(()=>Math.random()-.5))
     }
     if(section==='razona'){return genRazona(slv)}
-    if(section==='lee'){return genLee(slv)}
+    if(section==='lee'){return _noRepeat(genLee(slv))}
     return[]}
   function startGame(overrideLv){
     // Always re-read level from storage to pick up Settings changes
@@ -325,6 +328,7 @@ export default function App(){
     }
     // M7a: Reset DILO exercise counter for session tracking
     diloExCount.current=0;
+    sessionUsedPhrases.current=new Set();
     setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();setShowRocket(true)}
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
     // M7b: Start random timer if random session
