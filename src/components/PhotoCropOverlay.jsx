@@ -7,7 +7,7 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
   const[imgSize,setImgSize]=useState({w:0,h:0});
   const dragging=useRef(false);const lastTouch=useRef(null);const lastDist=useRef(0);
   const imgRef=useRef(null);
-  const CIRCLE_R=120;
+  const CIRCLE_R=140;
   const RECT_W=280;const RECT_H=Math.round(RECT_W*9/16); // 16:9
   useEffect(()=>{const img=new Image();img.onload=()=>{setImgSize({w:img.width,h:img.height});imgRef.current=img};img.src=imageSrc},[imageSrc]);
   function onTouchStart(e){e.preventDefault();
@@ -41,7 +41,8 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
       onSave(c.toDataURL('image/jpeg',0.88));
     } else {
       // Circle crop
-      const c=document.createElement('canvas');const cdpr=Math.max(window.devicePixelRatio||2,3);const sz=Math.round(CIRCLE_R*cdpr);c.width=sz;c.height=sz;const ctx=c.getContext('2d');
+      // High-res circle crop: fixed 480px canvas for crisp avatars even on 3x DPI
+      const c=document.createElement('canvas');const sz=480;c.width=sz;c.height=sz;const ctx=c.getContext('2d');
       ctx.beginPath();ctx.arc(sz/2,sz/2,sz/2,0,Math.PI*2);ctx.clip();
       const circLeft=cx-CIRCLE_R;const circTop=cy-CIRCLE_R;
       const srcX=(circLeft-imgLeft)/dispW*img.width;
@@ -49,7 +50,7 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
       const srcW=(CIRCLE_R*2)/dispW*img.width;
       const srcH=(CIRCLE_R*2)/dispH*img.height;
       ctx.drawImage(img,srcX,srcY,srcW,srcH,0,0,sz,sz);
-      onSave(c.toDataURL('image/jpeg',0.7));
+      onSave(c.toDataURL('image/jpeg',0.88));
     }
   }
   return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:300,background:'rgba(0,0,0,.95)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',touchAction:'none'}}
