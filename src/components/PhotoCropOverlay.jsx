@@ -26,8 +26,11 @@ export function PhotoCropOverlay({imageSrc,onSave,onCancel,shape='circle'}){
     const img=imgRef.current;const cont=containerRef.current;if(!cont){onCancel();return}
     const rect=cont.getBoundingClientRect();
     const cx=rect.width/2;const cy=rect.height/2;
-    const dispW=img.width*scale*(Math.min(rect.width,rect.height)/Math.max(img.width,img.height));
-    const dispH=img.height*scale*(Math.min(rect.width,rect.height)/Math.max(img.width,img.height));
+    // Match exactly what CSS does: maxWidth:90%, maxHeight:90%, then transform:scale
+    const maxW=rect.width*0.9;const maxH=rect.height*0.9;
+    const fitRatio=Math.min(maxW/img.width,maxH/img.height);
+    const dispW=img.width*fitRatio*scale;
+    const dispH=img.height*fitRatio*scale;
     const imgLeft=cx-dispW/2+translate.x;const imgTop=cy-dispH/2+translate.y;
     if(shape==='rect'){
       // 16:9 rectangular crop
