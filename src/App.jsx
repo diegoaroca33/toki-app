@@ -165,14 +165,14 @@ export default function App(){
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);const[qsChoice,setQsChoice]=useState(null);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
-  const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=10000;
+  const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=120000; // 2 min idle before pausing timer
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
   const wakeLockRef=useRef(null);
   useEffect(()=>{async function acquireWakeLock(){try{if('wakeLock' in navigator&&scr==='game'){wakeLockRef.current=await navigator.wakeLock.request('screen')}else if(wakeLockRef.current){wakeLockRef.current.release();wakeLockRef.current=null}}catch(e){}}acquireWakeLock();return()=>{if(wakeLockRef.current){try{wakeLockRef.current.release()}catch(e){}}wakeLockRef.current=null}},[scr]);
   function pokeActive(){lastAct.current=Date.now()}
   useEffect(()=>{if(!ss){if(actTimer.current)clearInterval(actTimer.current);return}
     activeMs.current=0;lastAct.current=Date.now();setElapsedSt(0);
-    actTimer.current=setInterval(()=>{const now=Date.now();if(now-lastAct.current<IDLE_THRESH)activeMs.current+=1000;setElapsedSt(Math.floor(activeMs.current/60000))},1000);
+    actTimer.current=setInterval(()=>{const now=Date.now();if(now-lastAct.current<IDLE_THRESH)activeMs.current+=1000;setElapsedSt(Math.floor(activeMs.current/1000))},1000);
     return()=>clearInterval(actTimer.current)},[ss]);
   function tU(){pokeActive();if(audioOk)return;setAudioOk(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}
     // Request mic permission on any touch
@@ -299,7 +299,7 @@ export default function App(){
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
-  useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=8&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
+  useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
   function onOk(){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user);up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}setTimeout(()=>{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)},200)}
   function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else setIdx(idx+1)}}
@@ -680,8 +680,8 @@ export default function App(){
       </div>}
     </div>}
 
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {elapsed}' / {sm===0?'∞':sm+"'"}</span></div></div>
-      <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,elapsed/sm*100)+'%'}}/></div>
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={tryExit}>✕ Salir</button><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36}/></div><span style={{fontSize:14,color:DIM,fontWeight:600}}>⏱️ {Math.floor(elapsed/60)}:{String(elapsed%60).padStart(2,'0')} / {sm===0?'∞':sm+"'"}</span></div></div>
+      <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sm===0?'0%':Math.min(100,(elapsed/60)/sm*100)+'%'}}/></div>
       <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
       <div style={{marginTop:10}}>
         {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
