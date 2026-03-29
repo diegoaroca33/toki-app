@@ -186,6 +186,44 @@ export function checkDynamicDiloLevel(userId){
   return{change:null,newLv:lv};
 }
 
+// Dog feeding/growth system
+export function getDogGrowth(userId) {
+  return loadData(`dog_growth_${userId}`, 0);
+}
+export function setDogGrowth(userId, v) {
+  saveData(`dog_growth_${userId}`, v);
+}
+export function getDogLastFed(userId) {
+  return loadData(`dog_lastfed_${userId}`, null);
+}
+export function setDogLastFed(userId, date) {
+  saveData(`dog_lastfed_${userId}`, date);
+}
+export function getDogPhase(growth) {
+  if (growth >= 61) return 2; // héroe
+  if (growth >= 21) return 1; // joven
+  return 0; // cachorro
+}
+export function canFeedDog(userId) {
+  const last = getDogLastFed(userId);
+  if (!last) return true;
+  const today = new Date().toISOString().slice(0, 10);
+  return last !== today;
+}
+export function feedDog(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  setDogLastFed(userId, today);
+  const g = getDogGrowth(userId) + 1;
+  setDogGrowth(userId, g);
+  return g;
+}
+export function getDogEvolAnnounce(userId) {
+  return loadData(`dog_evolannounce_${userId}`, null);
+}
+export function setDogEvolAnnounce(userId, data) {
+  saveData(`dog_evolannounce_${userId}`, data);
+}
+
 // Build GROUPS with dynamic Aprende modules from user.presentations
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;

@@ -3,7 +3,7 @@
 // ============================================================
 
 export const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#A0AEC0',CARD='#152D55',BORDER='#1E3A6A';
-export const VER='v24.0';
+export const VER='v25.12';
 export const ADMIN_EMAIL='diego@toki-app.es';
 
 export const CSS=`

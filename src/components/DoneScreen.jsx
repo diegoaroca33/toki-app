@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { BG, BG2, GOLD, GREEN, BLUE, DIM, CARD } from '../constants.js'
 import { sayFB } from '../voice.js'
 import { getMascotTier } from '../utils.js'
-import { SpaceMascot, Confetti } from './UIKit.jsx'
+import { SpaceMascot, DogMascot, Confetti } from './UIKit.jsx'
+import { getDogGrowth, getDogPhase } from '../utils.js'
 
 export function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[392,494,587,784,659,784,988,1175,988,1175];const durations=[0.25,0.2,0.2,0.3,0.2,0.2,0.25,0.3,0.2,0.6];let t=0;notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;const vol=i>=7?0.09:0.07;g.gain.value=vol;g.gain.setValueAtTime(vol,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+durations[i]);o.start(c.currentTime+t);o.stop(c.currentTime+t+durations[i]);t+=durations[i]*0.65});setTimeout(()=>c.close(),4000)}catch(e){}}
 
@@ -10,8 +11,9 @@ const TIER_NAMES=["Estrellita","Bronce","Plata","Oro","Superestrella","Legendari
 const TIER_ICONS=["⭐","🥉","🥈","🥇","💫","👑"];
 const TIER_THRESHOLDS=[0,50,150,300,500,1000];
 
-export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStreak=0,totalLifetimeStars=0,randomStats=null}){
+export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStreak=0,totalLifetimeStars=0,randomStats=null,showFeedDog=false,onFeedDog=null}){
   const[xConf,sXConf]=useState(false);
+  const[fedThisDone,setFedThisDone]=useState(false);
   const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
   const uname=user?.name||'crack';
   // Graduated praise based on performance
@@ -141,6 +143,23 @@ export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStre
                 <div style={{fontSize:16,fontWeight:700,color:mpct>=80?GREEN:mpct>=50?BLUE:GOLD}}>{mpct}%</div>
               </div>})}
           </div>
+        </div>}
+
+        {/* Dog feeding section */}
+        {(showFeedDog||fedThisDone)&&<div style={{...cardSt,border:'2px solid #8B451355',background:fedThisDone?'#2ecc7111':'#8B451311'}}>
+          {fedThisDone?<>
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,marginBottom:4}}>
+              <DogMascot mood="eating" size={56} phase={getDogPhase(getDogGrowth(user?.id))}/>
+            </div>
+            <p style={{fontSize:16,fontWeight:700,color:'#2ecc71',margin:'4px 0 0'}}>¡Toki ha comido! 🦴</p>
+            <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>Vuelve mañana para alimentarle otra vez</p>
+          </>:<>
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,marginBottom:4}}>
+              <DogMascot mood="hungry" size={56} phase={getDogPhase(getDogGrowth(user?.id))}/>
+            </div>
+            <p style={{fontSize:16,fontWeight:700,color:'#e67e22',margin:'4px 0 0'}}>¡Toki tiene hambre!</p>
+            <button onClick={()=>{if(onFeedDog){onFeedDog();setFedThisDone(true)}}} style={{marginTop:8,padding:'10px 28px',borderRadius:14,border:'3px solid #8B4513',background:'linear-gradient(135deg,#D2691E,#8B4513)',color:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:"'Fredoka'",boxShadow:'2px 2px 0 #5C3310',transition:'transform .1s'}}>🦴 Dar de comer</button>
+          </>}
         </div>}
 
         {/* Action buttons */}
