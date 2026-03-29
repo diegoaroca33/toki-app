@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 
-export default function TokiWelcome({ onDone, duration = 3000 }) {
+export default function TokiWelcome({ onDone }) {
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => handleDone(), duration);
+    const t = setTimeout(() => handleClose(), 3000);
     return () => clearTimeout(t);
-  }, [duration]);
+  }, []);
 
-  const handleDone = () => {
+  const handleClose = () => {
     setLeaving(true);
     setTimeout(() => {
       if (onDone) onDone();
@@ -17,7 +17,7 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
 
   return (
     <div
-      onClick={handleDone}
+      onClick={handleClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -45,21 +45,19 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
         }
         .tw-dog{
           animation: twBob 2.2s ease-in-out infinite;
-          transform-origin: 160px 180px;
-          filter: drop-shadow(0 12px 28px rgba(0,0,0,.28));
+          transform-origin: 160px 190px;
+          filter: drop-shadow(0 14px 28px rgba(0,0,0,.28));
         }
         .tw-tail{
-          transform-origin: 86px 194px;
-          animation: twTail .34s ease-in-out infinite;
+          transform-origin: 228px 208px;
+          animation: twTail .35s ease-in-out infinite;
         }
-        .tw-paw{
-          transform-origin: 232px 188px;
-          animation: twWave .9s ease-in-out infinite;
+        .tw-sound1,.tw-sound2,.tw-sound3{
+          transform-origin: 252px 142px;
+          animation: twSound 1.1s ease-out infinite;
         }
-        .tw-mouth{
-          animation: twSmile 1.8s ease-in-out infinite;
-          transform-origin: 160px 165px;
-        }
+        .tw-sound2{ animation-delay:.18s; }
+        .tw-sound3{ animation-delay:.36s; }
         .tw-title{
           margin-top:18px;
           font-family:'Fredoka',sans-serif;
@@ -68,8 +66,8 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
           line-height:1;
           color:#F0C850;
           letter-spacing:1px;
-          text-shadow: 0 4px 0 rgba(0,0,0,.16);
-          animation: twFadeUp .7s ease-out .2s both;
+          text-shadow:0 4px 0 rgba(0,0,0,.16);
+          animation: twFadeUp .7s ease-out .18s both;
         }
         .tw-sub{
           margin-top:8px;
@@ -77,30 +75,25 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
           font-weight:600;
           font-size:22px;
           color:#ECF0F1;
-          opacity:.98;
-          animation: twFadeUp .7s ease-out .32s both;
+          animation: twFadeUp .7s ease-out .3s both;
         }
-        .tw-skip{
+        .tw-btn{
           position:absolute;
           bottom:18px;
-          right:18px;
+          left:50%;
+          transform:translateX(-50%);
           font-family:'Fredoka',sans-serif;
           font-size:14px;
           font-weight:700;
-          color:rgba(255,255,255,.72);
+          color:rgba(255,255,255,.82);
           background:rgba(255,255,255,.08);
           border:1px solid rgba(255,255,255,.12);
           border-radius:999px;
-          padding:10px 14px;
+          padding:10px 16px;
           backdrop-filter: blur(4px);
-          animation: twFadeUp .7s ease-out .5s both;
+          animation: twFadeUp .7s ease-out .45s both;
+          white-space:nowrap;
         }
-        .tw-glow1,.tw-glow2,.tw-glow3{
-          animation: twSpark 1.8s ease-in-out infinite;
-          transform-origin:center;
-        }
-        .tw-glow2{ animation-delay:.35s; }
-        .tw-glow3{ animation-delay:.7s; }
 
         @keyframes twIntro{
           0%{ transform: translateY(120px) scale(.92); opacity:0; }
@@ -112,24 +105,17 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
           50%{ transform: translateY(-4px); }
         }
         @keyframes twTail{
-          0%,100%{ transform: rotate(-20deg); }
-          50%{ transform: rotate(24deg); }
+          0%,100%{ transform: rotate(-18deg); }
+          50%{ transform: rotate(18deg); }
         }
-        @keyframes twWave{
-          0%,100%{ transform: rotate(-14deg); }
-          50%{ transform: rotate(14deg); }
-        }
-        @keyframes twSmile{
-          0%,100%{ transform: scale(1); }
-          50%{ transform: scale(1.04,1.08); }
+        @keyframes twSound{
+          0%{ opacity:0; transform:scale(.7); }
+          20%{ opacity:1; }
+          100%{ opacity:0; transform:scale(1.18); }
         }
         @keyframes twFadeUp{
-          0%{ opacity:0; transform: translateY(10px); }
-          100%{ opacity:1; transform: translateY(0); }
-        }
-        @keyframes twSpark{
-          0%,100%{ opacity:.25; transform: scale(.7); }
-          50%{ opacity:.95; transform: scale(1.15); }
+          0%{ opacity:0; transform:translateY(10px); }
+          100%{ opacity:1; transform:translateY(0); }
         }
 
         @media (max-width: 480px){
@@ -141,104 +127,130 @@ export default function TokiWelcome({ onDone, duration = 3000 }) {
       <div className="tw-wrap">
         <svg
           className="tw-dog"
-          width="320"
-          height="320"
+          width="280"
+          height="280"
           viewBox="0 0 320 320"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="Bienvenida TOKI"
+          aria-label="Toki beagle kawaii"
         >
-          {/* floor glow */}
-          <ellipse cx="160" cy="275" rx="88" ry="18" fill="rgba(255,255,255,.08)" />
-          <ellipse cx="160" cy="275" rx="58" ry="10" fill="rgba(240,200,80,.12)" />
-
-          {/* stars/glow */}
-          <circle className="tw-glow1" cx="76" cy="76" r="7" fill="rgba(240,200,80,.75)" />
-          <circle className="tw-glow2" cx="248" cy="72" r="5.5" fill="rgba(255,255,255,.75)" />
-          <circle className="tw-glow3" cx="264" cy="126" r="6" fill="rgba(46,204,113,.75)" />
+          {/* shadow */}
+          <ellipse cx="160" cy="278" rx="82" ry="18" fill="rgba(255,255,255,.08)" />
+          <ellipse cx="160" cy="278" rx="52" ry="10" fill="rgba(240,200,80,.12)" />
 
           {/* tail */}
           <g className="tw-tail">
             <path
-              d="M86 194 C56 177, 52 147, 75 136 C89 130, 101 140, 99 150 C97 158, 90 164, 90 172 C90 181, 100 188, 110 192"
+              d="M229 208 C248 199,258 181,252 162"
               fill="none"
-              stroke="#8B5A3C"
-              strokeWidth="13"
+              stroke="#2B211E"
+              strokeWidth="10"
+              strokeLinecap="round"
+            />
+            <path
+              d="M229 208 C248 199,258 181,252 162"
+              fill="none"
+              stroke="#3B312E"
+              strokeWidth="7.2"
               strokeLinecap="round"
             />
           </g>
 
           {/* body */}
-          <ellipse cx="160" cy="188" rx="80" ry="58" fill="#C98A57" />
-          <ellipse cx="160" cy="198" rx="44" ry="32" fill="#FFF5EA" />
-          <ellipse cx="206" cy="176" rx="25" ry="18" fill="#A86A43" opacity=".9" />
+          <ellipse cx="160" cy="212" rx="74" ry="56" fill="#FFF6EF" stroke="#2B211E" strokeWidth="4" />
+          <path
+            d="M111 183 C116 159,135 146,160 146 C194 146,220 167,222 200 C208 188,188 180,160 180 C138 180,123 182,111 183 Z"
+            fill="#E9B886"
+            stroke="#2B211E"
+            strokeWidth="4"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M160 146 C188 146,210 162,220 183 C215 183,208 183,201 183 C197 168,181 158,160 158 C139 158,123 168,119 183 C112 183,105 183,100 184 C110 162,132 146,160 146 Z"
+            fill="#8B5A3C"
+          />
+          <ellipse cx="160" cy="214" rx="38" ry="28" fill="#FFFDFB" opacity=".72" />
 
-          {/* legs */}
-          <rect x="108" y="214" width="22" height="42" rx="10" fill="#C98A57" />
-          <rect x="172" y="214" width="22" height="42" rx="10" fill="#C98A57" />
-          <ellipse cx="119" cy="258" rx="18" ry="10" fill="#8B5A3C" />
-          <ellipse cx="183" cy="258" rx="18" ry="10" fill="#8B5A3C" />
-          <ellipse cx="119" cy="254" rx="11" ry="6" fill="#E6B58A" />
-          <ellipse cx="183" cy="254" rx="11" ry="6" fill="#E6B58A" />
+          {/* paws */}
+          <ellipse cx="126" cy="256" rx="20" ry="12" fill="#FFF6EF" stroke="#2B211E" strokeWidth="4" />
+          <ellipse cx="194" cy="256" rx="20" ry="12" fill="#FFF6EF" stroke="#2B211E" strokeWidth="4" />
+          <ellipse cx="126" cy="259" rx="9" ry="4.5" fill="#E9B886" opacity=".7" />
+          <ellipse cx="194" cy="259" rx="9" ry="4.5" fill="#E9B886" opacity=".7" />
 
-          {/* waving paw */}
-          <g className="tw-paw">
-            <rect x="214" y="176" width="18" height="40" rx="9" fill="#C98A57" />
-            <ellipse cx="223" cy="175" rx="15" ry="9" fill="#8B5A3C" />
-            <ellipse cx="223" cy="171" rx="9" ry="5" fill="#E6B58A" />
-          </g>
+          {/* collar */}
+          <path
+            d="M118 187 C132 180,150 176,160 176 C170 176,188 180,202 187 L198 197 C184 192,170 189,160 189 C150 189,136 192,122 197 Z"
+            fill="#2F5DA8"
+            stroke="#223F71"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <circle cx="160" cy="198" r="11" fill="#F0C850" stroke="#B7950B" strokeWidth="3" />
+          <circle cx="160" cy="198" r="3.2" fill="#B7950B" opacity=".7" />
 
           {/* head */}
-          <ellipse cx="160" cy="122" rx="74" ry="62" fill="#E9B886" />
+          <circle cx="160" cy="118" r="64" fill="#FFF6EF" stroke="#2B211E" strokeWidth="4" />
 
           {/* ears */}
-          <ellipse cx="92" cy="132" rx="20" ry="47" fill="#8B5A3C" transform="rotate(2 92 132)" />
-          <ellipse cx="228" cy="132" rx="20" ry="47" fill="#8B5A3C" transform="rotate(-2 228 132)" />
-          <ellipse cx="97" cy="145" rx="10" ry="26" fill="#A66B45" opacity=".45" />
-          <ellipse cx="223" cy="145" rx="10" ry="26" fill="#A66B45" opacity=".45" />
+          <ellipse cx="108" cy="118" rx="18" ry="40" fill="#E9B886" stroke="#2B211E" strokeWidth="4" transform="rotate(6 108 118)" />
+          <ellipse cx="212" cy="118" rx="18" ry="40" fill="#E9B886" stroke="#2B211E" strokeWidth="4" transform="rotate(-6 212 118)" />
+          <ellipse cx="108" cy="124" rx="10" ry="24" fill="#8B5A3C" opacity=".9" transform="rotate(6 108 124)" />
+          <ellipse cx="212" cy="124" rx="10" ry="24" fill="#8B5A3C" opacity=".9" transform="rotate(-6 212 124)" />
 
-          {/* forehead patch */}
+          {/* face patches */}
           <path
-            d="M138 63 C147 79,147 96,138 112 C151 121,169 121,182 112 C173 96,173 79,182 63 C172 55,148 55,138 63 Z"
-            fill="#FFFFFF"
-            opacity=".95"
+            d="M122 92 C132 80,145 74,160 74 C150 89,148 106,148 120 C138 118,130 111,122 92 Z"
+            fill="#E9B886"
+          />
+          <path
+            d="M198 92 C188 80,175 74,160 74 C170 89,172 106,172 120 C182 118,190 111,198 92 Z"
+            fill="#E9B886"
+          />
+          <path
+            d="M144 70 C149 80,149 97,145 111 C150 114,155 115,160 115 C165 115,170 114,175 111 C171 97,171 80,176 70 C170 66,150 66,144 70 Z"
+            fill="#FFFDFB"
           />
 
-          {/* muzzle */}
-          <ellipse cx="160" cy="160" rx="34" ry="24" fill="#FFF6EF" />
-          <ellipse cx="160" cy="173" rx="20" ry="11" fill="#FFF6EF" />
-
           {/* eyes */}
-          <ellipse cx="132" cy="126" rx="12" ry="16" fill="#171717" />
-          <ellipse cx="188" cy="126" rx="12" ry="16" fill="#171717" />
-          <circle cx="128" cy="121" r="4.2" fill="#fff" />
-          <circle cx="184" cy="121" r="4.2" fill="#fff" />
-          <circle cx="135.5" cy="129.5" r="1.9" fill="#fff" />
-          <circle cx="191.5" cy="129.5" r="1.9" fill="#fff" />
+          <ellipse cx="136" cy="116" rx="11" ry="14" fill="#171717" />
+          <ellipse cx="184" cy="116" rx="11" ry="14" fill="#171717" />
+          <circle cx="132.5" cy="111.2" r="3.6" fill="#fff" />
+          <circle cx="180.5" cy="111.2" r="3.6" fill="#fff" />
+          <circle cx="139.4" cy="119.6" r="1.4" fill="#fff" />
+          <circle cx="187.4" cy="119.6" r="1.4" fill="#fff" />
 
           {/* brows */}
-          <path d="M112 104 Q130 96 146 103" fill="none" stroke="#74482F" strokeWidth="3" strokeLinecap="round" />
-          <path d="M174 103 Q190 96 208 104" fill="none" stroke="#74482F" strokeWidth="3" strokeLinecap="round" />
+          <path d="M122 97 Q135 91 147 97" fill="none" stroke="#74482F" strokeWidth="3" strokeLinecap="round" />
+          <path d="M173 97 Q185 91 198 97" fill="none" stroke="#74482F" strokeWidth="3" strokeLinecap="round" />
+
+          {/* muzzle */}
+          <ellipse cx="160" cy="146" rx="28" ry="20" fill="#FFF6EF" />
+          <ellipse cx="160" cy="159" rx="16" ry="9" fill="#FFF6EF" />
 
           {/* nose */}
-          <ellipse cx="160" cy="151" rx="10" ry="7" fill="#171413" />
+          <ellipse cx="160" cy="140" rx="8" ry="6" fill="#171413" />
 
-          {/* mouth smile */}
-          <g className="tw-mouth">
-            <path d="M141 170 Q160 188 179 170" fill="none" stroke="#7A3E34" strokeWidth="4.8" strokeLinecap="round" />
-            <path d="M150 174 Q160 184 170 174" fill="none" stroke="#F28EA7" strokeWidth="3.2" strokeLinecap="round" opacity=".92" />
+          {/* mouth */}
+          <path d="M147 154 Q160 166 173 154" fill="none" stroke="#7A3E34" strokeWidth="4.4" strokeLinecap="round" />
+          <path d="M153 157 Q160 168 167 157" fill="none" stroke="#F28EA7" strokeWidth="3" strokeLinecap="round" opacity=".92" />
+
+          {/* cheeks */}
+          <ellipse cx="127" cy="151" rx="8" ry="4.5" fill="#F3B2AE" opacity=".58" />
+          <ellipse cx="193" cy="151" rx="8" ry="4.5" fill="#F3B2AE" opacity=".58" />
+
+          {/* sound waves */}
+          <g fill="none" stroke="#E67E22" strokeLinecap="round">
+            <path className="tw-sound1" d="M232 132 Q238 138 232 144" strokeWidth="4" />
+            <path className="tw-sound2" d="M242 126 Q252 138 242 150" strokeWidth="4" />
+            <path className="tw-sound3" d="M254 120 Q268 138 254 156" strokeWidth="4" />
           </g>
-
-          {/* blush */}
-          <ellipse cx="114" cy="164" rx="9" ry="5.5" fill="#F3B2AE" opacity=".62" />
-          <ellipse cx="206" cy="164" rx="9" ry="5.5" fill="#F3B2AE" opacity=".62" />
         </svg>
 
         <div className="tw-title">TOKI</div>
         <div className="tw-sub">Aprende a decirlo</div>
       </div>
 
-      <div className="tw-skip">Toca para continuar</div>
+      <div className="tw-btn">Toca para continuar</div>
     </div>
   );
 }

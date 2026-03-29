@@ -110,8 +110,8 @@ export function AstronautAvatar({photo,emoji,size=80,helmet=true,onClick,style={
       {photo?<img src={photo} alt="Foto de perfil" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
         :<span style={{fontSize:size*0.5,lineHeight:1}}>{emoji||'🧑‍🚀'}</span>}
     </div>
-    {/* Helmet overlay */}
-    {helmet&&<svg width={size} height={size} viewBox="0 0 100 100" style={{position:'absolute',top:0,left:0,pointerEvents:'none'}}>
+    {/* Helmet overlay — only on photos, not emojis */}
+    {helmet&&photo&&<svg width={size} height={size} viewBox="0 0 100 100" style={{position:'absolute',top:0,left:0,pointerEvents:'none'}}>
       {/* Helmet dome — arc over the top */}
       <ellipse cx={50} cy={48} rx={48} ry={46} fill="none" stroke="#B0BEC5" strokeWidth={4} strokeDasharray="180 200" strokeDashoffset={-10} opacity={0.85}/>
       {/* Helmet rim — thicker at top */}

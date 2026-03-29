@@ -551,7 +551,7 @@ export default function App(){
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
     {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups} sessionType={sessionType} setSessionType={setSessionType} sessionTime={sessionTime} setSessionTime={setSessionTime} sessionGoal={sessionGoal} setSessionGoal={setSessionGoal} burstMode={burstMode} setBurstMode={setBurstMode} burstReps={burstReps} setBurstReps={setBurstRepsVal}/>}
 
-    {scr==='setup'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:8,animation:'glow 3s infinite'}}><TokiLogoPro size={80}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
+    {scr==='setup'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:-6}}><TokiLogoPro size={130}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       <div className="card" style={{padding:24,textAlign:'left',marginBottom:16}}>
         <p style={{fontSize:20,color:GOLD,fontWeight:700,textAlign:'center',margin:'0 0 16px'}}>Configuración inicial</p>
         <p style={{fontSize:15,color:DIM,margin:'0 0 14px'}}>Este PIN lo usará el supervisor (padre, madre o tutor) para gestionar la app. El niño no podrá salir sin él.</p>
@@ -574,11 +574,11 @@ export default function App(){
         </div>
         {supInp.length<4&&pinStep==='enter'&&<p style={{fontSize:13,color:DIM,textAlign:'center',margin:'10px 0 0'}}>Escribe 4 dígitos para el PIN</p>}
       </div>
-      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
 
     {/* Firebase Auth Gate — shown when hasConfig && not yet authenticated */}
-    {scr==='login'&&hasConfig&&fbMode==='auth'&&!fbUser&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:8,animation:'glow 3s infinite'}}><TokiLogoPro size={80}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
+    {scr==='login'&&hasConfig&&fbMode==='auth'&&!fbUser&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:-6}}><TokiLogoPro size={130}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       {authScreen==='choice'&&<div style={{display:'flex',flexDirection:'column',gap:14,maxWidth:340,margin:'0 auto'}}>
         <button className="btn btn-gold" onClick={enterGuest} style={{fontSize:22,padding:'18px 24px'}}>👤 Invitado</button>
         <p style={{fontSize:14,color:DIM,margin:0}}>Sin cuenta — datos solo en este dispositivo</p>
@@ -612,7 +612,7 @@ export default function App(){
         </div>
         <p style={{fontSize:13,color:DIM,margin:'12px 0 0'}}>No necesitas aprobación. Tu cuenta se activa al instante.</p>
       </div>}
-      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
     {/* Revoked user screen */}
     {scr==='login'&&hasConfig&&revoked&&fbUser&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:16}}>🚫</div>
@@ -623,7 +623,7 @@ export default function App(){
     {/* Firebase loading state */}
     {scr==='login'&&hasConfig&&fbLoading&&<div className="af" style={{textAlign:'center',padding:'40px 0'}}><div style={{animation:'pulse 1.5s infinite'}}><TokiLogoPro size={48}/></div><p style={{color:DIM,fontSize:16,margin:'16px 0 0'}}>Cargando...</p></div>}
     {/* Normal login screen — shown when guest mode, no Firebase, or already authenticated */}
-    {scr==='login'&&(!hasConfig||fbMode==='guest'||fbMode==='cloud')&&!revoked&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:8,animation:'glow 3s infinite'}}><TokiLogoPro size={80}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
+    {scr==='login'&&(!hasConfig||fbMode==='guest'||fbMode==='cloud')&&!revoked&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:-6}}><TokiLogoPro size={130}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       {/* Cloud status badge */}
       {fbUser&&fbMode==='cloud'&&<div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:16}}>
         <div style={{background:GREEN+'22',border:'2px solid '+GREEN+'44',borderRadius:20,padding:'6px 16px',display:'flex',alignItems:'center',gap:8}}>
@@ -633,7 +633,7 @@ export default function App(){
         {fbUser.email===ADMIN_EMAIL&&<button onClick={async()=>{setCloudUsers(await cloudListUsers());setAuthScreen('admin');setOv('admin')}} style={{background:PURPLE+'22',border:'2px solid '+PURPLE+'44',borderRadius:20,padding:'6px 12px',color:PURPLE,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Fredoka'"}} title="Panel admin">⚙️ Admin</button>}
       </div>}
       {!fbUser&&hasConfig&&<button onClick={()=>{setFbMode('auth');setAuthScreen('choice')}} style={{background:'none',border:'none',color:BLUE,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline',marginBottom:16,display:'block',margin:'0 auto 16px'}}>🔑 Iniciar sesión / Crear cuenta</button>}
-      <p style={{color:DIM+'99',fontSize:13,position:'fixed',bottom:10,left:0,right:0,textAlign:'center'}}><b>Toki &middot; Aprende a decirlo</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
       {profs.length>0&&!creating&&(()=>{
         const selProf=hoveredProf;
         const isCompact=profs.length>=5;
