@@ -396,6 +396,9 @@ export default function SettingsConfigTab(props) {
             <Dot key={r.value} color={r.color} label={r.label} active={rocketColor === r.value} onClick={() => setRocketColor && setRocketColor(r.value)} />
           ))}
         </div>
+        {theme !== 'sober' && <div style={{ marginTop: 14 }}>
+          <ToggleRow label="🪖 Casco de astronauta" help="Muestra casco sobre las fotos de perfil" value={!!helmetMode} onChange={v => setHelmetMode && setHelmetMode(v)} />
+        </div>}
       </Card>
 
       <Card>
