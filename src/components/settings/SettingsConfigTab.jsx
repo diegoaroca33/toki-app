@@ -93,18 +93,24 @@ function SmallSegmented({ value, onChange, options }) {
   )
 }
 
-const PAUTA_SIZES = [
-  { n: 0, label: 'Principiante', px: 32 },
-  { n: 1, label: 'Medio', px: 26 },
-  { n: 2, label: 'Avanzado', px: 20 },
-  { n: 3, label: 'Experto', px: 16 },
-]
+const PAUTA_MIN = 14, PAUTA_MAX = 40, PAUTA_DEFAULT = 26
+function pautaLabel(v) {
+  if (v >= 34) return 'Principiante'
+  if (v >= 26) return 'Medio'
+  if (v >= 20) return 'Avanzado'
+  return 'Experto'
+}
 
 function EscribeConfig({ escribeCase, setEscribeCase, escribeTypes, setEscribeTypes, escribeGuide, setEscribeGuide, escribePauta, setEscribePauta }) {
   const types = escribeTypes || ['letras']
   const guide = escribeGuide || {}
-  const pauta = escribePauta ?? 1
-  const pautaPx = PAUTA_SIZES[pauta]?.px || 26
+  // escribePauta: legacy 0-3 index OR new direct px value (14-40)
+  const pautaPx = (() => {
+    const v = escribePauta
+    if (v == null) return PAUTA_DEFAULT
+    if (v <= 3) return [40, 26, 20, 16][v] // legacy index → px
+    return Math.max(PAUTA_MIN, Math.min(PAUTA_MAX, v))
+  })()
 
   const toggleType = (t) => {
     const on = types.includes(t)
@@ -174,36 +180,38 @@ function EscribeConfig({ escribeCase, setEscribeCase, escribeTypes, setEscribeTy
 
       {/* Pauta size slider */}
       <div>
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>Tamano de pauta</div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {PAUTA_SIZES.map((p) => (
-            <Button key={p.n} variant={pauta === p.n ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => setEscribePauta(p.n)}>
-              {p.label}
-            </Button>
-          ))}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+          <span style={{ fontWeight: 700 }}>Tamano de pauta</span>
+          <span style={{ fontSize: 13, color: GOLD, fontWeight: 600 }}>{pautaLabel(pautaPx)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 11, color: DIM }}>A</span>
+          <input type="range" min={PAUTA_MIN} max={PAUTA_MAX} step={1} value={pautaPx}
+            onChange={e => setEscribePauta(Number(e.target.value))}
+            style={{ flex: 1, accentColor: GOLD, cursor: 'pointer' }} />
+          <span style={{ fontSize: 20, color: DIM, fontWeight: 700 }}>A</span>
         </div>
       </div>
 
-      {/* Preview */}
+      {/* Preview — larger, realistic */}
       <div>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Vista previa</div>
         <div style={{
-          background: '#fff', borderRadius: 10, padding: 16,
-          position: 'relative', minHeight: pautaPx * 2 + 20,
+          background: '#fff', borderRadius: 12, padding: '20px 16px',
+          position: 'relative', minHeight: pautaPx * 3 + 30,
         }}>
-          {/* Pauta lines */}
           <div style={{ position: 'relative' }}>
-            {[0, 1].map(i => (
+            {[0, 1, 2].map(i => (
               <div key={i} style={{
                 height: pautaPx,
-                borderBottom: '2px solid #ccc',
-                borderTop: i === 0 ? '1px dashed #ddd' : 'none',
+                borderBottom: '2px solid #bbb',
+                borderTop: i === 0 ? '1px dashed #ccc' : 'none',
                 display: 'flex', alignItems: 'flex-end',
-                paddingLeft: 4,
+                paddingLeft: 6,
               }}>
                 {i === 0 && (
                   <span style={{
-                    fontFamily: "'Fredoka'", fontSize: pautaPx * 0.7,
+                    fontFamily: "'Fredoka'", fontSize: pautaPx * 0.82,
                     color: '#333', lineHeight: 1,
                   }}>
                     {sampleText}
@@ -362,25 +370,6 @@ export default function SettingsConfigTab(props) {
       </Card>
 
       <Card>
-        <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Modo rafaga</div>
-        <ToggleRow label="Activar rafaga" help="Repite cada ejercicio varias veces seguidas" value={!!burstMode} onChange={(v) => { setBurstMode && setBurstMode(v); saveData('burst_mode', v) }} />
-        {burstMode && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Repeticiones: <span style={{ color: GOLD }}>{burstReps}</span></div>
-            <input type="range" min={2} max={10} step={1} value={burstReps}
-              onChange={e => { const v = parseInt(e.target.value); setBurstReps && setBurstReps(v) }}
-              style={{ width: '100%', accentColor: GOLD, height: 6, cursor: 'pointer' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginTop: 2 }}>
-              <span>2</span><span>5</span><span>10</span>
-            </div>
-          </div>
-        )}
-        <div style={{ color: DIM, fontSize: 13, marginTop: 8 }}>
-          Se activa automaticamente en sesiones largas (1h+ o 200+ ejercicios)
-        </div>
-      </Card>
-
-      <Card>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Tema visual</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <Button variant={theme === 'space' ? 'gold' : 'ghost'} fullWidth={false} onClick={() => setTheme && setTheme('space')}>
@@ -404,8 +393,25 @@ export default function SettingsConfigTab(props) {
       <Card>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Metodo pedagogico</div>
         <div style={{ display: 'grid', gap: 12 }}>
-          <ToggleRow label="Produccion oral en todos los planetas" help="Practica oral extra tras los aciertos" value={!!oralAll} onChange={setOralAll} />
           <ToggleRow label="DILO dinamico" help="Ajusta nivel automaticamente segun aciertos" value={!!dynDilo} onChange={handleDynDilo} />
+          <ToggleRow label="Modo rafaga" help="Repite cada ejercicio varias veces seguidas" value={!!burstMode} onChange={(v) => { setBurstMode && setBurstMode(v); saveData('burst_mode', v) }} />
+          {burstMode && (
+            <div style={{ marginLeft: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>Repeticiones:</span>
+                <span style={{ color: GOLD, fontWeight: 800, fontSize: 18, minWidth: 24, textAlign: 'center' }}>{burstReps}</span>
+              </div>
+              <input type="range" min={2} max={10} step={1} value={burstReps}
+                onChange={e => { const v = parseInt(e.target.value); setBurstReps && setBurstReps(v) }}
+                style={{ width: '100%', accentColor: GOLD, height: 6, cursor: 'pointer', marginTop: 4 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginTop: 2 }}>
+                <span>2</span><span>5</span><span>10</span>
+              </div>
+            </div>
+          )}
+          <div style={{ color: DIM, fontSize: 12, marginTop: -4 }}>
+            Rafaga se activa automaticamente en sesiones intensas (1h+ o 200+ ejercicios)
+          </div>
         </div>
       </Card>
 

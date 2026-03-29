@@ -1,6 +1,6 @@
 import React from 'react'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, AVS, PERSONA_RELATIONS } from '../../constants.js'
-import { generateAutoPresentation } from '../../cloud.js'
+import { generateAutoPresentation, processImage } from '../../cloud.js'
 import { fbCreateShareCode } from '../../firebase.js'
 import { AstronautAvatar } from '../UIKit.jsx'
 import { Button, Card, Badge } from '../ui/index.js'
@@ -174,7 +174,8 @@ export default function SettingsFamilyTab(props) {
     presDelIdx, setPresDelIdx,
     shareCode, setShareCode, shareMsg, setShareMsg,
     fbUser, hasConfig, helmetMode, showHelmet, setShowRec,
-    delConf, setDelConf, delPersonaIdx, setDelPersonaIdx
+    delConf, setDelConf, delPersonaIdx, setDelPersonaIdx,
+    supPin
   } = props
 
   const safeUser = user || {}
@@ -202,6 +203,20 @@ export default function SettingsFamilyTab(props) {
   const deletePersona = (idx) => {
     savePersonas && savePersonas(safePersonas.filter((_, i) => i !== idx))
     setDelPersonaIdx && setDelPersonaIdx(null)
+  }
+
+  // Open file picker → processImage → crop overlay
+  const pickPhoto = (onSave) => {
+    const inp = document.createElement('input')
+    inp.type = 'file'
+    inp.accept = 'image/*'
+    inp.onchange = async (e) => {
+      const f = e.target.files[0]
+      if (!f) return
+      const b64 = await processImage(f)
+      if (b64) setPhotoCrop({ src: b64, onSave, onCancel: () => setPhotoCrop(null) })
+    }
+    inp.click()
   }
 
   // ── Presentations ─────────────────────────────────────────────
@@ -236,13 +251,21 @@ export default function SettingsFamilyTab(props) {
     setPresNewMode(null)
   }
 
-  // ── Delete profile ────────────────────────────────────────────
+  // ── Delete profile (requires PIN) ────────────────────────────
+  const [delPin, setDelPin] = React.useState('')
+  const [delPinErr, setDelPinErr] = React.useState(false)
   const deleteProfile = () => {
-    if (!delConf) { setDelConf && setDelConf(true); return }
-    try { localStorage.removeItem('toki_user'); localStorage.removeItem('toki_personas') } catch (e) {}
-    setUser && setUser(null)
-    savePersonas && savePersonas([])
-    setDelConf && setDelConf(false)
+    if (!supPin || delPin === supPin) {
+      try { localStorage.removeItem('toki_user'); localStorage.removeItem('toki_personas') } catch (e) {}
+      setUser && setUser(null)
+      savePersonas && savePersonas([])
+      setDelConf && setDelConf(false)
+      setDelPin('')
+    } else {
+      setDelPinErr(true)
+      setDelPin('')
+      setTimeout(() => setDelPinErr(false), 1500)
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────
@@ -255,11 +278,19 @@ export default function SettingsFamilyTab(props) {
         <div style={{ display: 'grid', gap: 10 }}>
           <input className="inp" placeholder="Nombre" value={safeUser.name || ''} onChange={(e) => patchUser({ name: e.target.value })} />
           <input className="inp" placeholder="Apellidos" value={safeUser.apellidos || ''} onChange={(e) => patchUser({ apellidos: e.target.value })} />
+          <div>
+            <label style={{ fontSize: 13, color: DIM, marginBottom: 4, display: 'block' }}>Fecha de nacimiento</label>
+            <input className="inp" type="date" value={safeUser.birthdate || ''} onChange={(e) => {
+              const bd = e.target.value
+              const age = bd ? Math.max(1, Math.floor((Date.now() - new Date(bd).getTime()) / 31557600000)) : safeUser.age
+              patchUser({ birthdate: bd, age })
+            }} />
+          </div>
           <input className="inp" placeholder="Colegio" value={safeUser.colegio || ''} onChange={(e) => patchUser({ colegio: e.target.value })} />
           <input className="inp" placeholder="Teléfono" value={safeUser.telefono || ''} onChange={(e) => patchUser({ telefono: e.target.value })} />
           <input className="inp" placeholder="Dirección" value={safeUser.direccion || ''} onChange={(e) => patchUser({ direccion: e.target.value })} />
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Button variant="ghost" fullWidth={false} onClick={() => setPhotoCrop && setPhotoCrop({ type: 'user' })}>📷 Foto perfil</Button>
+            <Button variant="ghost" fullWidth={false} onClick={() => pickPhoto((cropped) => { patchUser({ photo: cropped }); setPhotoCrop(null) })}>📷 Foto perfil</Button>
             <Badge tone="ghost">{safeUser.photo ? 'Con foto' : 'Sin foto'}</Badge>
           </div>
         </div>
@@ -285,7 +316,7 @@ export default function SettingsFamilyTab(props) {
                   onRequestDelete={() => deletePersona(idx)}
                   delPersonaIdx={delPersonaIdx}
                   setDelPersonaIdx={setDelPersonaIdx}
-                  onPhoto={() => setPhotoCrop && setPhotoCrop({ type: 'persona', idx })}
+                  onPhoto={() => pickPhoto((cropped) => { patchPersona(idx, { photo: cropped }); setPhotoCrop(null) })}
                 />
               ))}
         </div>
@@ -437,15 +468,37 @@ export default function SettingsFamilyTab(props) {
             <div style={{ color: RED, fontWeight: 800, fontSize: 16 }}>Eliminar perfil</div>
             <div style={{ color: DIM, fontSize: 13 }}>Borra todos los datos del dispositivo</div>
           </div>
-          {delConf ? (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button variant="danger" fullWidth={false} size="sm" onClick={deleteProfile}>Confirmar</Button>
-              <Button variant="ghost" fullWidth={false} size="sm" onClick={() => setDelConf && setDelConf(false)}>Cancelar</Button>
-            </div>
-          ) : (
-            <Button variant="danger" fullWidth={false} size="sm" onClick={() => setDelConf && setDelConf(true)}>🗑️ Eliminar</Button>
+          {!delConf && (
+            <Button variant="danger" fullWidth={false} size="sm" onClick={() => { setDelConf && setDelConf(true); setDelPin(''); setDelPinErr(false) }}>🗑️ Eliminar</Button>
           )}
         </div>
+        {delConf && (
+          <div style={{ marginTop: 14, textAlign: 'center' }}>
+            <div style={{ color: RED, fontWeight: 700, fontSize: 15, marginBottom: 10 }}>⚠️ Introduce el PIN para confirmar</div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 10 }}>
+              {[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map((n,i) => (
+                <button key={i} onClick={() => {
+                  if (n === '⌫') setDelPin(delPin.slice(0,-1))
+                  else if (n !== '' && delPin.length < 4) setDelPin(delPin + n)
+                }} style={{
+                  width: 44, height: 44, borderRadius: 10, border: 'none', fontSize: 20, fontWeight: 700,
+                  background: n === '' ? 'transparent' : `${CARD}`, color: TXT, cursor: n === '' ? 'default' : 'pointer',
+                  fontFamily: "'Fredoka'", visibility: n === '' ? 'hidden' : 'visible'
+                }}>{n}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 10 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${delPin.length > i ? RED : BORDER}`, background: delPin.length > i ? RED : 'transparent' }} />
+              ))}
+            </div>
+            {delPinErr && <div style={{ color: RED, fontWeight: 600, fontSize: 14, marginBottom: 8 }}>PIN incorrecto</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <Button variant="danger" fullWidth={false} size="sm" onClick={deleteProfile} disabled={delPin.length < 4}>Confirmar eliminación</Button>
+              <Button variant="ghost" fullWidth={false} size="sm" onClick={() => { setDelConf && setDelConf(false); setDelPin('') }}>Cancelar</Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   )

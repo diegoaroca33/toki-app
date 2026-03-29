@@ -3,7 +3,7 @@
 // © 2026 Diego Aroca. Todos los derechos reservados.
 // ============================================================
 import { initializeApp } from 'firebase/app'
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where, orderBy } from 'firebase/firestore'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage'
 
@@ -38,8 +38,20 @@ export async function fbSignOut() {
 
 const googleProvider = new GoogleAuthProvider()
 export async function fbSignInWithGoogle() {
-  return signInWithPopup(auth, googleProvider)
+  try {
+    // Try popup first (works on desktop)
+    return await signInWithPopup(auth, googleProvider)
+  } catch (e) {
+    // If popup blocked/failed, fall back to redirect (mobile, PWA, embedded browsers)
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      return signInWithRedirect(auth, googleProvider)
+    }
+    throw e
+  }
 }
+
+// Handle redirect result on page load (needed for signInWithRedirect flow)
+getRedirectResult(auth).catch(() => {})
 
 export function fbOnAuth(cb) {
   return onAuthStateChanged(auth, cb)

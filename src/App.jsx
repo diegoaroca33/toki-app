@@ -72,6 +72,9 @@ export default function App(){
   const[authPass,setAuthPass]=useState('');
   const[authErr,setAuthErr]=useState('');
   const[authBusy,setAuthBusy]=useState(false);
+  const[authNick,setAuthNick]=useState('');
+  const[cloudNick,setCloudNick]=useState(()=>{try{return localStorage.getItem('toki_cloud_nick')||''}catch(e){return''}});
+  const[logoutAsk,setLogoutAsk]=useState(false);
   const[cloudUsers,setCloudUsers]=useState([]);
   const[cloudSyncing,setCloudSyncing]=useState(false);
   const[revoked,setRevoked]=useState(false);
@@ -81,14 +84,25 @@ export default function App(){
   // Auto-generate presentations and migrate Síndrome de Down (persisted, runs once)
   useEffect(()=>{if(!profs.length)return;let changed=false;const updated=profs.map(p=>{
     const pp={...p};
-    if(!pp.presentations||!pp.presentations.length){const gen=generateAutoPresentation(pp,personas);
-      if(gen.lines.length>0){pp.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}];changed=true}}
+    // Generate or refresh auto "Quién Soy" presentation when profile data changes
+    const gen=generateAutoPresentation(pp,personas);
+    if(gen.lines.length>0){
+      if(!pp.presentations||!pp.presentations.length){
+        pp.presentations=[{name:'Quién Soy',date:new Date().toISOString().slice(0,10),lines:gen.lines,slides:gen.slides,auto:true}];changed=true
+      } else {
+        // Refresh existing auto presentation with current profile data
+        const autoIdx=(pp.presentations||[]).findIndex(pr=>pr.auto);
+        if(autoIdx>=0){const old=pp.presentations[autoIdx];const newLines=gen.lines.join('|');const oldLines=(old.lines||[]).join('|');
+          if(newLines!==oldLines){pp.presentations[autoIdx]={...old,lines:gen.lines,slides:gen.slides,date:new Date().toISOString().slice(0,10)};changed=true}}
+      }
+    }
+    // Inject Down syndrome presentation for Guillermo
     if(pp.presentations&&!pp.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'&&pp.name&&pp.name.toLowerCase().includes('guillermo')){
       const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
       pp.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
       pp.presentations.unshift(sdownPres);changed=true}
     return pp});
-    if(changed){setProfs(updated);saveData('profiles',updated)}},[profs.length,fbUser?.email]);
+    if(changed){setProfs(updated);saveData('profiles',updated)}},[profs.length,fbUser?.email,personas]);
   // Dynamic GROUPS: Aprende modules generated from user.presentations
   const dynGroups=useMemo(()=>getGroupsForUser(user,GROUPS),[user,user?.presentations])
   useEffect(()=>{if(hasConfig)setFbLoading(false)},[]);
@@ -101,6 +115,9 @@ export default function App(){
         const data=await cloudLoadProfile(u.uid);
         if(data&&data.revoked){setRevoked(true);return}
         setRevoked(false);
+        // Load nick
+        const nick=data?.nick||u.displayName||u.email?.split('@')[0]||'';
+        setCloudNick(nick);try{localStorage.setItem('toki_cloud_nick',nick)}catch(e){}
         // Load cloud data and merge with local
         if(data&&data.profiles){
           const localProfs=loadData('profiles',[]);
@@ -123,15 +140,19 @@ export default function App(){
     }finally{setAuthBusy(false)}}
   async function handleRegister(){
     if(!auth)return;setAuthBusy(true);setAuthErr('');
+    if(!authNick.trim()){setAuthErr('Escribe un nick');setAuthBusy(false);return}
     if(authPass.length<6){setAuthErr('La contraseña debe tener al menos 6 caracteres');setAuthBusy(false);return}
-    try{await fbSignUp(authEmail.trim(),authPass);
-      setAuthScreen('choice');setAuthEmail('');setAuthPass('');
+    try{const cred=await fbSignUp(authEmail.trim(),authPass);
+      // Save nick to Firestore
+      if(cred?.user)await fbSaveProfile(cred.user.uid,{nick:authNick.trim()});
+      setCloudNick(authNick.trim());try{localStorage.setItem('toki_cloud_nick',authNick.trim())}catch(e){}
+      setAuthScreen('choice');setAuthEmail('');setAuthPass('');setAuthNick('');
     }catch(e){
       const msgs={'auth/email-already-in-use':'Ya existe una cuenta con ese email','auth/invalid-email':'Email no válido','auth/weak-password':'Contraseña demasiado débil'};
       setAuthErr(msgs[e.code]||'Error: '+e.message);
     }finally{setAuthBusy(false)}}
   async function handleLogout(){
-    if(!auth)return;try{await fbSignOut()}catch(e){}setFbMode('guest');setFbUser(null)}
+    if(!auth)return;try{await fbSignOut()}catch(e){}setFbMode('guest');setFbUser(null);setCloudNick('');setLogoutAsk(false);try{localStorage.removeItem('toki_cloud_nick')}catch(e){}}
   function enterGuest(){setFbMode('guest');setFbLoading(false);if(!supPin)setScr('setup')}
   useEffect(()=>{window.__tokiSupervisor=supervisorMode;document.body.classList.toggle('sup-mode',supervisorMode)},[supervisorMode]);
   // Theme: Espacial (default) or Sobrio
@@ -583,7 +604,7 @@ export default function App(){
         <button className="btn btn-gold" onClick={enterGuest} style={{fontSize:22,padding:'18px 24px'}}>👤 Invitado</button>
         <p style={{fontSize:14,color:DIM,margin:0}}>Sin cuenta — datos solo en este dispositivo</p>
         <div style={{borderTop:'1px solid '+BORDER,margin:'8px 0'}}/>
-        <button onClick={async()=>{setAuthBusy(true);setAuthErr('');try{await fbSignInWithGoogle();setAuthScreen('choice')}catch(e){setAuthErr(e.message)}finally{setAuthBusy(false)}}} style={{fontSize:20,padding:'16px 24px',background:'#fff',color:'#333',border:'2px solid #ddd',borderRadius:16,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:10}} disabled={authBusy}>
+        <button onClick={async()=>{setAuthBusy(true);setAuthErr('');try{const cred=await fbSignInWithGoogle();if(cred?.user){const d=await cloudLoadProfile(cred.user.uid);if(!d?.nick){const autoNick=cred.user.displayName||(cred.user.email||'').split('@')[0].slice(0,4);await fbSaveProfile(cred.user.uid,{nick:autoNick});setCloudNick(autoNick);try{localStorage.setItem('toki_cloud_nick',autoNick)}catch(e){}}}setAuthScreen('choice')}catch(e){setAuthErr(e.message)}finally{setAuthBusy(false)}}} style={{fontSize:20,padding:'16px 24px',background:'#fff',color:'#333',border:'2px solid #ddd',borderRadius:16,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:10}} disabled={authBusy}>
           <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.8 33.4 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.2-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.5 18.8 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.7-3.6-11.3-8.5l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C36.8 39.3 44 34 44 24c0-1.3-.2-2.7-.4-3.9z"/></svg>
           Acceder con Google
         </button>
@@ -603,12 +624,13 @@ export default function App(){
       </div>}
       {authScreen==='register'&&<div style={{maxWidth:360,margin:'0 auto'}} className="af">
         <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>Crear cuenta</h2>
+        <input className="inp" value={authNick} onChange={e=>setAuthNick(e.target.value)} placeholder="Nick (nombre público)" style={{marginBottom:12,fontSize:18,padding:14}}/>
         <input className="inp" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} type="email" placeholder="Email" style={{marginBottom:12,fontSize:18,padding:14}}/>
         <input className="inp" value={authPass} onChange={e=>setAuthPass(e.target.value)} type="password" placeholder="Contraseña (mín. 6 caracteres)" style={{marginBottom:12,fontSize:18,padding:14}} onKeyDown={e=>{if(e.key==='Enter')handleRegister()}}/>
         {authErr&&<p style={{color:RED,fontSize:15,fontWeight:600,margin:'0 0 10px'}}>{authErr}</p>}
         <div style={{display:'flex',gap:10}}>
           <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAuthScreen('choice');setAuthErr('')}}>← Volver</button>
-          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass} onClick={handleRegister}>{authBusy?'...':'Crear'}</button>
+          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass||!authNick.trim()} onClick={handleRegister}>{authBusy?'...':'Crear'}</button>
         </div>
         <p style={{fontSize:13,color:DIM,margin:'12px 0 0'}}>No necesitas aprobación. Tu cuenta se activa al instante.</p>
       </div>}
@@ -625,11 +647,20 @@ export default function App(){
     {/* Normal login screen — shown when guest mode, no Firebase, or already authenticated */}
     {scr==='login'&&(!hasConfig||fbMode==='guest'||fbMode==='cloud')&&!revoked&&!fbLoading&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:-6}}><TokiLogoPro size={130}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       {/* Cloud status badge */}
-      {fbUser&&fbMode==='cloud'&&<div style={{display:'flex',justifyContent:'center',gap:8,marginBottom:16}}>
-        <div style={{background:GREEN+'22',border:'2px solid '+GREEN+'44',borderRadius:20,padding:'6px 16px',display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontSize:13,color:GREEN,fontWeight:600}}>☁️ {fbUser.email}</span>
-          <button onClick={handleLogout} style={{background:'none',border:'none',color:DIM,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline'}}>Salir</button>
-        </div>
+      {fbUser&&fbMode==='cloud'&&<div style={{position:'fixed',bottom:18,left:0,right:0,textAlign:'center',zIndex:10}}>
+        {logoutAsk==='edit'?<div style={{display:'inline-flex',gap:6,alignItems:'center'}}>
+          <input className="inp" value={authNick} onChange={e=>setAuthNick(e.target.value)} placeholder="Nick" style={{fontSize:13,padding:'4px 10px',width:120,textAlign:'center'}} autoFocus onKeyDown={e=>{if(e.key==='Enter'&&authNick.trim()){const n=authNick.trim();setCloudNick(n);try{localStorage.setItem('toki_cloud_nick',n)}catch(e){}if(fbUser)fbSaveProfile(fbUser.uid,{nick:n});setLogoutAsk(false);setAuthNick('')}}}/>
+          <button onClick={()=>{const n=authNick.trim();if(n){setCloudNick(n);try{localStorage.setItem('toki_cloud_nick',n)}catch(e){}if(fbUser)fbSaveProfile(fbUser.uid,{nick:n})}setLogoutAsk(false);setAuthNick('')}} style={{background:'none',border:'none',color:GREEN,fontSize:13,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:700}}>✓</button>
+        </div>:logoutAsk==='confirm'?<div style={{display:'inline-flex',gap:8,alignItems:'center'}}>
+          <button onClick={handleLogout} style={{background:'none',border:'none',color:RED,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:700}}>Sí, salir</button>
+          <button onClick={()=>setLogoutAsk(false)} style={{background:'none',border:'none',color:DIM,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'"}}>Cancelar</button>
+        </div>:logoutAsk==='menu'?<div style={{display:'inline-flex',gap:10,alignItems:'center'}}>
+          <button onClick={()=>{setAuthNick(cloudNick);setLogoutAsk('edit')}} style={{background:'none',border:'none',color:BLUE,fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'"}}>✏️ Cambiar nick</button>
+          <button onClick={()=>setLogoutAsk('confirm')} style={{background:'none',border:'none',color:RED+'cc',fontSize:12,cursor:'pointer',fontFamily:"'Fredoka'"}}>Cerrar sesión</button>
+          <button onClick={()=>setLogoutAsk(false)} style={{background:'none',border:'none',color:DIM,fontSize:11,cursor:'pointer',fontFamily:"'Fredoka'"}}>✕</button>
+        </div>:<button onClick={()=>setLogoutAsk('menu')} style={{background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",padding:'4px 12px'}}>
+          <span style={{fontSize:12,color:DIM+'88'}}>☁️ {cloudNick||'Conectado'}</span>
+        </button>}
         {fbUser.email===ADMIN_EMAIL&&<button onClick={async()=>{setCloudUsers(await cloudListUsers());setAuthScreen('admin');setOv('admin')}} style={{background:PURPLE+'22',border:'2px solid '+PURPLE+'44',borderRadius:20,padding:'6px 12px',color:PURPLE,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Fredoka'"}} title="Panel admin">⚙️ Admin</button>}
       </div>}
       {!fbUser&&hasConfig&&<button onClick={()=>{setFbMode('auth');setAuthScreen('choice')}} style={{background:'none',border:'none',color:BLUE,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline',marginBottom:16,display:'block',margin:'0 auto 16px'}}>🔑 Iniciar sesión / Crear cuenta</button>}
@@ -725,17 +756,25 @@ export default function App(){
 
     {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️</button></div></div>
-      <div style={{textAlign:'center',padding:'4px 0 2px'}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:2,padding:'0 4px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={44}/>})()}
-            <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={52} helmet={showHelmet}/>
-            <SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/>
+      <div style={{padding:'4px 4px 2px'}}>
+        {/* Single row: Dog | Avatar | Greeting | Tier stars | Stats */}
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
+          <div style={{flexShrink:0}}>
+            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={38}/>})()}
           </div>
-          <div style={{flex:1,minWidth:0}}><h2 style={{fontSize:18,margin:0,color:'#FFF',textShadow:'0 1px 6px rgba(0,0,0,.6)',textAlign:'center'}}>{getGreeting(user.name)}</h2><p style={{fontSize:12,color:'rgba(255,255,255,.8)',textShadow:'0 1px 4px rgba(0,0,0,.5)',margin:0,textAlign:'center'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p></div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
-            <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:12,padding:'6px 12px',minHeight:40,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:4}}><span style={{fontSize:14}}>🌌</span><span style={{fontSize:13,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
-            {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'4px 10px',display:'flex',alignItems:'center',gap:4}}><span style={{fontSize:14}}>🔥</span><span style={{fontSize:12,color:'#E67E22',fontWeight:700}}>{streak} días</span></div>}
+          <div style={{flexShrink:0}}>
+            <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={42} helmet={showHelmet}/>
+          </div>
+          <div style={{flex:1,minWidth:0,textAlign:'center'}}>
+            <h2 style={{fontSize:20,margin:0,color:'#FFF',textShadow:'0 1px 6px rgba(0,0,0,.6)',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{getGreeting(user.name)}</h2>
+            <p style={{fontSize:11,color:'rgba(255,255,255,.6)',margin:'1px 0 0'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p>
+          </div>
+          <div style={{display:'flex',gap:2,flexShrink:0,alignItems:'center'}}>
+            {[0,1,2,3,4,5].map(i=>{const current=getMascotTier(user?.totalStars3plus||0);const active=i<=current;return <span key={i} style={{fontSize:14,opacity:active?1:0.18,filter:active?'none':'grayscale(1)',transition:'all .3s'}}>{i===0?'⭐':i===1?'🌟':i===2?'💫':i===3?'✨':i===4?'🏅':'🏆'}</span>})}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0}}>
+            <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'4px 10px',minHeight:36,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:13,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
+            {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:8,padding:'3px 8px',display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:11,color:'#E67E22',fontWeight:700}}>🔥 {streak}d</span></div>}
           </div>
         </div>
       </div>
@@ -773,12 +812,6 @@ export default function App(){
               }} style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
                 <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
               </button>
-              {sessionMode!=='free'&&<div style={{
-                marginTop:4,padding:'4px 12px',borderRadius:12,
-                background:sessionMode==='random'?'rgba(240,200,80,.15)':'rgba(46,204,113,.15)',
-                border:'2px solid '+(sessionMode==='random'?'rgba(240,200,80,.3)':'rgba(46,204,113,.3)'),
-                fontSize:12,fontWeight:700,color:sessionMode==='random'?GOLD:GREEN,whiteSpace:'nowrap',
-              }}>{sessionMode==='random'?'🔀 Random':'🧑‍🏫 Guiada'}</div>}
               {rocketHint&&<div style={{position:'absolute',bottom:-50,left:'50%',transform:'translateX(-50%)',background:'rgba(26,26,46,.9)',border:'2px solid #F0C850',borderRadius:14,padding:'10px 18px',whiteSpace:'nowrap',fontSize:15,color:'#F0C850',fontWeight:600,fontFamily:"'Fredoka'",boxShadow:'0 4px 16px rgba(0,0,0,.4)',zIndex:10,animation:'fadeIn .3s'}}>🪐 ¡Elige un planeta!</div>}
             </div>
             {/* Orbiting ring (visual — elliptical tilted via SVG) */}
