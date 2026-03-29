@@ -240,6 +240,7 @@ export default function App(){
       }catch(e){}})})
   }catch(e){}},[profs]);
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
+  useEffect(()=>{saveData('session_mode',sessionMode)},[sessionMode]);
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){return ss&&sm>0&&activeMs.current>=(sm*60000)}
@@ -713,18 +714,24 @@ export default function App(){
           const cW=orbitR*2*scX+planetSize+50;const cH=orbitR*2*scY+planetSize+70;
           const orbitDuration=60;
           return <div style={{position:'relative',width:cW,height:cH,margin:'0 auto'}}>
-            {/* Center: rocket (decorative — must open a planet first) */}
+            {/* Center: rocket — functional in random/guiada, decorative in libre */}
             <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:2,
               padding:0,
               display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
-              <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
-              <button onClick={()=>{setSessionMode('random');setFreeChoice(false);startRandomFromActiveModules()}} style={{
-                marginTop:4,padding:'6px 14px',borderRadius:16,border:'2px solid rgba(255,255,255,.25)',
-                background:'rgba(255,255,255,.1)',cursor:'pointer',fontFamily:"'Fredoka'",
-                fontSize:13,fontWeight:700,color:'#FFF',whiteSpace:'nowrap',
-                backdropFilter:'blur(4px)',transition:'all .2s',
-              }}>🔀 Sesión variada</button>
+              <button onClick={()=>{
+                if(sessionMode==='random'){startRandomFromActiveModules()}
+                else if(sessionMode==='guided'){startRandomFromActiveModules()}
+                else{/* libre: show hint */setMilestone({emoji:'🪐',text:'¡Selecciona un planeta!',sub:'Elige el módulo que quieras practicar'});setTimeout(()=>setMilestone(null),2500)}
+              }} style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
+                <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
+              </button>
+              {sessionMode!=='free'&&<div style={{
+                marginTop:4,padding:'4px 12px',borderRadius:12,
+                background:sessionMode==='random'?'rgba(240,200,80,.15)':'rgba(46,204,113,.15)',
+                border:'2px solid '+(sessionMode==='random'?'rgba(240,200,80,.3)':'rgba(46,204,113,.3)'),
+                fontSize:12,fontWeight:700,color:sessionMode==='random'?GOLD:GREEN,whiteSpace:'nowrap',
+              }}>{sessionMode==='random'?'🔀 Random':'🧑‍🏫 Guiada'}</div>}
             </div>
             {/* Orbiting ring (visual — elliptical tilted via SVG) */}
             <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',overflow:'visible'}}>
@@ -744,9 +751,10 @@ export default function App(){
                   const rad=angle*Math.PI/180;
                   const cx=orbitR+orbitR*Math.cos(rad)-planetSize/2;
                   const cy=orbitR+orbitR*Math.sin(rad)-planetSize/2;
-                  return <button key={g.id} disabled={!hasActive} onClick={()=>{if(!hasActive)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey){curPresLvKeyRef.current=firstMod.lvKey;setSelModKey(firstMod.lvKey)}}}} style={{
+                  const canTapPlanet=sessionMode==='free'&&hasActive;
+                  return <button key={g.id} disabled={!canTapPlanet} onClick={()=>{if(!canTapPlanet)return;setOpenGroup(g.id);const firstMod=g.modules.find(m=>activeMods[m.lvKey]!==false);if(firstMod){setSec(firstMod.k);setSecLv(getModuleLvOrDef(firstMod.lvKey,firstMod.defLv));if(firstMod.lvKey){curPresLvKeyRef.current=firstMod.lvKey;setSelModKey(firstMod.lvKey)}}}} style={{
                     position:'absolute',left:cx,top:cy,width:planetSize,height:planetSize+22,
-                    padding:0,border:'none',background:'none',cursor:hasActive?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
+                    padding:0,border:'none',background:'none',cursor:canTapPlanet?'pointer':'default',fontFamily:"'Fredoka'",color:TXT,
                     display:'flex',flexDirection:'column',alignItems:'center',gap:2,
                     animation:`counterSpin ${orbitDuration}s linear infinite`,
                     opacity:hasActive?1:0.35,filter:hasActive?'none':'grayscale(1) brightness(0.6)',
