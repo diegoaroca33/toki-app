@@ -354,6 +354,52 @@ export default function App(){
     diloExCount.current=0;
     sessionUsedPhrases.current=new Set();
     setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();setShowRocket(true)}
+  // Start random session directly from active modules (DILO sandwich: 8 DILO, 8 others, repeat)
+  function startRandomFromActiveModules(){
+    if(!user)return;
+    const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false);
+    if(allMods.length<2)return startGame();
+    const perMod=8;
+    const modQueues=allMods.map(m=>{
+      const lv=getModuleLvOrDef(m.lvKey,m.defLv);
+      if(m.lvKey)curPresLvKeyRef.current=m.lvKey;
+      const exs=buildQ(user,m.k,lv).map(e=>({...e,_randomModule:m.lvKey,_randomPlanet:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',_randomName:m.l,_randomGroupEmoji:m.groupEmoji}));
+      return{mod:m,exs,cursor:0};
+    });
+    const superQ=[];
+    const modOrder=allMods.map(m=>({lvKey:m.lvKey,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',name:m.l,groupEmoji:m.groupEmoji}));
+    const totalNeeded=Math.ceil((sm||15)*2);
+    const diloQueues=modQueues.filter(mq=>mq.mod.groupId==='dilo');
+    const otherQueues=modQueues.filter(mq=>mq.mod.groupId!=='dilo');
+    if(diloQueues.length>0&&otherQueues.length>0){
+      const diloPool=[];diloQueues.forEach(mq=>{diloPool.push(...mq.exs)});
+      let diloIdx=0;
+      const grabDilo=(n)=>{const chunk=[];for(let i=0;i<n;i++){if(diloIdx>=diloPool.length)diloIdx=0;chunk.push(diloPool[diloIdx]);diloIdx++}return chunk};
+      let round=0;
+      while(superQ.length<totalNeeded){
+        for(let oi=0;oi<otherQueues.length&&superQ.length<totalNeeded*2;oi++){
+          superQ.push(...grabDilo(perMod));
+          const mq=otherQueues[oi];
+          for(let j=0;j<perMod&&superQ.length<totalNeeded*2;j++){if(mq.cursor>=mq.exs.length)mq.cursor=0;superQ.push(mq.exs[mq.cursor]);mq.cursor++}
+        }
+        superQ.push(...grabDilo(perMod));
+        round++;if(round>50)break;
+      }
+    }else{
+      let round=0;
+      while(superQ.length<totalNeeded){
+        for(let mi=0;mi<modQueues.length;mi++){const mq=modQueues[mi];for(let j=0;j<perMod&&superQ.length<totalNeeded*2;j++){if(mq.cursor>=mq.exs.length)mq.cursor=0;superQ.push(mq.exs[mq.cursor]);mq.cursor++}}
+        round++;if(round>50)break;
+      }
+    }
+    const initStats={};
+    allMods.forEach(m=>{initStats[m.lvKey]={ok:0,total:0,name:m.l,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',groupEmoji:m.groupEmoji}});
+    randomModOrder.current=modOrder;setRandomStats(initStats);setRandomActive(true);setRandomModIdx(0);setRandomExInRound(0);setRandomTimer((sm||15)*60);setRandomTime(sm||15);setRandomPerRound(perMod);
+    diloExCount.current=0;sessionUsedPhrases.current=new Set();
+    setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();
+    const firstMod=allMods[0];setSec(firstMod.k);if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey;
+    setOv(null);setShowRocket(true);
+  }
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
     // M7b: Start random timer if random session
     if(randomActive){
@@ -455,131 +501,7 @@ export default function App(){
     {dynamicLvUp&&<div className="ov" style={{zIndex:155,pointerEvents:'none'}}><div className="ovp ab" style={{maxWidth:280,background:'transparent',boxShadow:'none'}}><h2 style={{fontSize:36,color:GOLD,fontWeight:800,textShadow:'0 2px 12px rgba(255,215,0,.6)',animation:'bounceIn .4s'}}>🎯 ¡Nivel {dynamicLvUp}!</h2></div></div>}
     {/* Dog evolution announcement */}
     {dogEvolMsg&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setDogEvolMsg(null)}><div style={{textAlign:'center',padding:30}}><div style={{fontSize:24,color:GOLD,fontWeight:700,fontFamily:"'Fredoka'"}}>{dogEvolMsg}</div></div></div>}
-    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} randomStats={randomActive?randomStats:null} showFeedDog={showFeedDog} onFeedDog={()=>{if(user){feedDog(user.id);setDogFedToday(true);setShowFeedDog(false)}}} onExit={(action)=>{setOv(null);setMascotMood('idle');setShowFeedDog(false);if(action==='repeat'){if(randomActive){setOv('random')}else{startGame()}}else{setRandomActive(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setScr('goals')}}}/>}
-    {/* M7b: Random session config overlay */}
-    {ov==='random'&&user&&(()=>{
-      const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false);
-      const selCount=randomMods.length;
-      return <div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:440,maxHeight:'85vh',overflowY:'auto'}}>
-        <div style={{fontSize:48,marginBottom:8}}>🔀</div>
-        <h2 style={{fontSize:22,color:GOLD,margin:'0 0 4px'}}>Sesión variada</h2>
-        <p style={{fontSize:14,color:DIM,margin:'0 0 16px'}}>Mezcla ejercicios de varios módulos</p>
-        {/* Module checkboxes */}
-        <div style={{marginBottom:16}}>
-          <p style={{fontSize:15,fontWeight:700,color:TXT,margin:'0 0 8px'}}>Selecciona módulos (mín. 2)</p>
-          <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            {allMods.map(m=>{
-              const checked=randomMods.includes(m.lvKey);
-              return <button key={m.lvKey} onClick={()=>{
-                if(checked)setRandomMods(randomMods.filter(k=>k!==m.lvKey));
-                else setRandomMods([...randomMods,m.lvKey]);
-              }} style={{
-                display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:12,
-                border:'2px solid '+(checked?GOLD:BORDER),background:checked?GOLD+'15':CARD,
-                cursor:'pointer',fontFamily:"'Fredoka'",textAlign:'left',transition:'all .15s',
-              }}>
-                <span style={{fontSize:22,minWidth:28}}>{m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐'}</span>
-                <div style={{flex:1}}>
-                  <span style={{fontSize:15,fontWeight:600,color:checked?GOLD:TXT}}>{m.l}</span>
-                  <span style={{fontSize:12,color:DIM,marginLeft:6}}>{m.groupEmoji} {m.groupName}</span>
-                </div>
-                <span style={{fontSize:20,color:checked?GOLD:BORDER}}>{checked?'✓':'○'}</span>
-              </button>})}
-          </div>
-        </div>
-        {/* Time slider */}
-        <div style={{marginBottom:14}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-            <span style={{fontSize:15,fontWeight:700,color:TXT}}>⏱️ Tiempo</span>
-            <span style={{fontSize:16,fontWeight:700,color:GOLD}}>{randomTime} min</span>
-          </div>
-          <input type="range" min={10} max={60} step={5} value={randomTime} onChange={e=>setRandomTime(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD}}/>
-        </div>
-        {/* Exercises per round slider */}
-        <div style={{marginBottom:20}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-            <span style={{fontSize:15,fontWeight:700,color:TXT}}>🔄 Ejercicios por ronda</span>
-            <span style={{fontSize:16,fontWeight:700,color:GOLD}}>{randomPerRound}</span>
-          </div>
-          <input type="range" min={3} max={5} value={randomPerRound} onChange={e=>setRandomPerRound(parseInt(e.target.value))} style={{width:'100%',accentColor:GOLD}}/>
-        </div>
-        {/* Start button */}
-        <div style={{display:'flex',gap:10}}>
-          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>setOv(null)}>Cancelar</button>
-          <button className="btn btn-gold" style={{flex:2,fontSize:20,opacity:selCount<2?.4:1}} disabled={selCount<2} onClick={()=>{
-            // Build super-queue from selected modules
-            const selMods=allMods.filter(m=>randomMods.includes(m.lvKey));
-            const perMod=randomPerRound;
-            // Build exercises per module
-            const modQueues=selMods.map(m=>{
-              const lv=getModuleLvOrDef(m.lvKey,m.defLv);
-              if(m.lvKey)curPresLvKeyRef.current=m.lvKey;
-              const exs=buildQ(user,m.k,lv).map(e=>({
-                ...e,
-                _randomModule:m.lvKey,
-                _randomPlanet:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',
-                _randomName:m.l,
-                _randomGroupEmoji:m.groupEmoji,
-              }));
-              return{mod:m,exs,cursor:0};
-            });
-            // Build super-queue: DILO sandwich or normal round-robin
-            const superQ=[];
-            const modOrder=selMods.map(m=>({lvKey:m.lvKey,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',name:m.l,groupEmoji:m.groupEmoji}));
-            const totalNeeded=Math.ceil(randomTime*2);
-            const diloQueues=modQueues.filter(mq=>mq.mod.groupId==='dilo');
-            const otherQueues=modQueues.filter(mq=>mq.mod.groupId!=='dilo');
-            if(diloQueues.length>0&&otherQueues.length>0){
-              // DILO sandwich: DILO(perMod) -> Other1(perMod) -> DILO(perMod) -> Other2(perMod) -> ...
-              const diloPool=[];diloQueues.forEach(mq=>{diloPool.push(...mq.exs)});
-              let diloIdx=0;
-              const grabDilo=(n)=>{const chunk=[];for(let i=0;i<n;i++){if(diloIdx>=diloPool.length)diloIdx=0;chunk.push(diloPool[diloIdx]);diloIdx++}return chunk};
-              let round=0;
-              while(superQ.length<totalNeeded){
-                for(let oi=0;oi<otherQueues.length&&superQ.length<totalNeeded*2;oi++){
-                  superQ.push(...grabDilo(perMod));
-                  const mq=otherQueues[oi];
-                  for(let j=0;j<perMod&&superQ.length<totalNeeded*2;j++){
-                    if(mq.cursor>=mq.exs.length)mq.cursor=0;
-                    superQ.push(mq.exs[mq.cursor]);mq.cursor++;
-                  }
-                }
-                superQ.push(...grabDilo(perMod));
-                round++;if(round>50)break;
-              }
-            }else{
-              let round=0;
-              while(superQ.length<totalNeeded){
-                for(let mi=0;mi<modQueues.length;mi++){
-                  const mq=modQueues[mi];
-                  for(let j=0;j<perMod&&superQ.length<totalNeeded*2;j++){
-                    if(mq.cursor>=mq.exs.length)mq.cursor=0;
-                    superQ.push(mq.exs[mq.cursor]);mq.cursor++;
-                  }
-                }
-                round++;if(round>50)break;
-              }
-            }
-            // Init stats
-            const initStats={};
-            selMods.forEach(m=>{initStats[m.lvKey]={ok:0,total:0,name:m.l,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',groupEmoji:m.groupEmoji}});
-            randomModOrder.current=modOrder;
-            setRandomStats(initStats);
-            setRandomActive(true);
-            setRandomModIdx(0);
-            setRandomExInRound(0);
-            setRandomTimer(randomTime*60);
-            // Set game state
-            setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();
-            // Set sec to the first module's section for correct rendering
-            const firstMod=selMods[0];
-            setSec(firstMod.k);
-            if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey;
-            setOv(null);
-            setShowRocket(true);
-          }}>▶️ Empezar</button>
-        </div>
-      </div></div>})()}
+    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} randomStats={randomActive?randomStats:null} showFeedDog={showFeedDog} onFeedDog={()=>{if(user){feedDog(user.id);setDogFedToday(true);setShowFeedDog(false)}}} onExit={(action)=>{setOv(null);setMascotMood('idle');setShowFeedDog(false);if(action==='repeat'){if(randomActive||sessionMode==='random'){startRandomFromActiveModules()}else{startGame()}}else{setRandomActive(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setScr('goals')}}}/>}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
     {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups}/>}
 
@@ -797,7 +719,7 @@ export default function App(){
               display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
               <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
-              <button onClick={()=>setOv('random')} style={{
+              <button onClick={()=>{setSessionMode('random');setFreeChoice(false);startRandomFromActiveModules()}} style={{
                 marginTop:4,padding:'6px 14px',borderRadius:16,border:'2px solid rgba(255,255,255,.25)',
                 background:'rgba(255,255,255,.1)',cursor:'pointer',fontFamily:"'Fredoka'",
                 fontSize:13,fontWeight:700,color:'#FFF',whiteSpace:'nowrap',
