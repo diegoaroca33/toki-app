@@ -108,15 +108,11 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     </div>
     {phase==='done'&&!oralPhrase&&<><div className="ab" style={{marginTop:8}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
-    {phase==='child'&&curNum&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:4}}>
-      <span style={{fontSize:28,animation:'pulse .8s infinite'}}>🎤</span>
-      <span style={{fontSize:15,color:DIM,fontWeight:600}}>¡Dilo tú!</span>
+    {phase==='child'&&curNum&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',marginTop:8}}>
+      <div style={{width:70,height:70,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px #E74C3C55',animation:'pulse .8s infinite'}}>
+        <span style={{fontSize:34,color:'#fff'}}>🎤</span>
+      </div>
     </div>}
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:4,marginTop:10,marginBottom:4}}>
-      {SPEED_PRESETS.map(sp=><button key={sp.key} onClick={()=>handleSpeed(sp.key)}
-        style={{fontSize:13,padding:'5px 10px',borderRadius:20,border:speedKey===sp.key?'2px solid '+GOLD:'1.5px solid '+BORDER,
-          background:speedKey===sp.key?GOLD+'22':CARD,color:speedKey===sp.key?GOLD:DIM,fontWeight:speedKey===sp.key?700:500,
-          cursor:'pointer',minHeight:36,transition:'all .2s'}}>{sp.label}</button>)}
-    </div>
+    {/* Speed controls removed — will become slider in future */}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();alive.current=false;onSkip()}} style={{marginTop:4}}>⏭️ Saltar</button>
   </div>}

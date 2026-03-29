@@ -124,7 +124,7 @@ export function DoneScreen({
 
           <div style={{ textAlign: 'center', marginBottom: 18 }}>
             <div style={{ fontSize: 34, fontWeight: 800, color: GOLD, lineHeight: 1.05, marginBottom: 6 }}>
-              {praise}
+              {randomStats ? 'Sesión variada completada' : 'Sesión completada'}
             </div>
             <div style={{ color: DIM, fontSize: 16 }}>
               {user?.name ? `${user.name}, ` : ''}has terminado tu sesión
@@ -174,7 +174,7 @@ export function DoneScreen({
             <StatBox icon="✅" value={ok} label="Aciertos" />
             <StatBox icon="⭐" value={sessionStars} label="Estrellas" />
             <StatBox icon="🔥" value={maxStreak} label="Racha máx." />
-            <StatBox icon="⏱️" value={elapsed} label="Minutos" />
+            <StatBox icon="⏱️" value={Math.round(elapsed / 60)} label="Minutos" />
           </div>
 
           <Card variant="highlight" style={{ marginBottom: 18 }}>

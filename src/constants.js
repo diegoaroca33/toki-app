@@ -105,7 +105,13 @@ input:focus-visible{outline:3px solid #FFD700;outline-offset:2px}
 
 export const AVS=['🧑‍🚀','👨‍🚀','👩‍🚀','🦸','🦸‍♂️','🦸‍♀️','🧙','🧙‍♂️','🧙‍♀️','🧑‍🎤','👨‍🎤','👩‍🎤','🧑‍🎨','🧑‍🏫','👨‍🍳','👩‍🔬','🧑‍✈️','👮','🥷','🧛','🧜‍♀️','🧜‍♂️','🧚','🧞','🦊','🐸','🐉','🦁','🐼','🐨','🦄','🐯','🐺','🦖','🐙','🦈','🦅','🦋','🤖','👾','🎮','⚡','🌟','🔥','💎','🎯','🏆','🎸','🛹','🏄','⚽','🎪','🚀','🌈'];
 export const CLS=[GREEN,BLUE,GOLD,PURPLE,RED,'#E67E22',GREEN];
-export const SMINS=[15,25,44,0];
+// SMINS removed - replaced by SESSION_TIMES/SESSION_GOALS dual system
+export const SESSION_TIMES = [30, 60, 90]
+export const SESSION_TIME_LABELS = ['30 min', '1 hora', '1h 30 min']
+export const SESSION_GOALS = [100, 200, 300]
+export const GOAL_LABELS = ['Sesión ligera', 'Sesión completa', 'Sesión intensiva']
+export const GOAL_ESTIMATES = ['~25 min', '~50 min', '~75 min']
+export const GOAL_EMOJIS = ['🏃', '🏋️', '🚀']
 export const PERSONA_RELATIONS=['Padre','Madre','Hermano','Hermana','Abuelo','Abuela','Tío','Tía','Primo','Prima','Amigo','Amiga','Compañero/a','Profe'];
 
 export const BUILD_OK=['¡Sí señor!','¡Eso es!','¡Bien hecho!','¡Perfecto!','¡Así se hace!','¡Genial!','¡Correcto!','¡Exacto!'];

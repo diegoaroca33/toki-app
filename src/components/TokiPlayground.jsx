@@ -1,0 +1,353 @@
+import React, { useEffect, useRef, useState } from "react";
+
+export default function TokiPlayground({
+  size = 320,
+  feedMode = false,
+  countdown = null,
+  onContinue,
+}) {
+  const [state, setState] = useState("idle");
+  const [isLying, setIsLying] = useState(false);
+  const [mouthOpen, setMouthOpen] = useState(false);
+  const [eyesClosed, setEyesClosed] = useState(false);
+  const [tailFast, setTailFast] = useState(false);
+  const [showTongue, setShowTongue] = useState(false);
+  const [showWoof, setShowWoof] = useState(false);
+  const [purrSpark, setPurrSpark] = useState(false);
+  const [draggingBack, setDraggingBack] = useState(false);
+  const [showContinue, setShowContinue] = useState(false);
+
+  const [bowlPos, setBowlPos] = useState({ x: 150, y: 270 });
+  const [draggingBowl, setDraggingBowl] = useState(false);
+  const [bowlFed, setBowlFed] = useState(false);
+
+  const [progress, setProgress] = useState(0);
+
+  const idleTimer = useRef(null);
+  const barkTimer = useRef(null);
+  const actionTimer = useRef(null);
+  const continueTimer = useRef(null);
+  const countdownInterval = useRef(null);
+
+  const svgRef = useRef(null);
+  const bowlPointerId = useRef(null);
+
+  const tokiTarget = { x: 150, y: 206 };
+
+  const resetIdleTimer = () => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (state === "eating") return;
+    idleTimer.current = setTimeout(() => {
+      setState("yawn");
+      setIsLying(false);
+      setEyesClosed(true);
+      setShowTongue(false);
+      setTailFast(false);
+      setMouthOpen(false);
+      actionTimer.current = setTimeout(() => {
+        setState("idle");
+        setEyesClosed(false);
+      }, 1500);
+    }, 3000);
+  };
+
+  useEffect(() => {
+    resetIdleTimer();
+    continueTimer.current = setTimeout(() => setShowContinue(true), 5000);
+
+    if (typeof countdown === "number" && countdown > 0) {
+      setProgress(0);
+      const startedAt = Date.now();
+      countdownInterval.current = setInterval(() => {
+        const elapsed = (Date.now() - startedAt) / 1000;
+        const pct = Math.max(0, Math.min(100, (elapsed / countdown) * 100));
+        setProgress(pct);
+        if (pct >= 100) clearInterval(countdownInterval.current);
+      }, 100);
+    }
+
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (barkTimer.current) clearTimeout(barkTimer.current);
+      if (actionTimer.current) clearTimeout(actionTimer.current);
+      if (continueTimer.current) clearTimeout(continueTimer.current);
+      if (countdownInterval.current) clearInterval(countdownInterval.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!feedMode) {
+      setBowlPos({ x: 150, y: 270 });
+      setDraggingBowl(false);
+      setBowlFed(false);
+    }
+  }, [feedMode]);
+
+  const svgPoint = (clientX, clientY) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 150, y: 270 };
+    const rect = svg.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * 300,
+      y: ((clientY - rect.top) / rect.height) * 300,
+    };
+  };
+
+  const setEatingState = () => {
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    setState("eating");
+    setIsLying(false);
+    setEyesClosed(true);
+    setTailFast(true);
+    setShowTongue(false);
+    setMouthOpen(false);
+    setShowWoof(false);
+    setPurrSpark(false);
+    setDraggingBack(false);
+    setBowlFed(true);
+    setBowlPos({ x: 178, y: 228 });
+
+    actionTimer.current = setTimeout(() => {
+      setState("idle");
+      setEyesClosed(false);
+      setTailFast(false);
+    }, 2200);
+  };
+
+  const pokeHead = () => {
+    resetIdleTimer();
+    if (state === "eating") return;
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    setState("happy");
+    setIsLying(false);
+    setEyesClosed(true);
+    setTailFast(true);
+    setShowTongue(false);
+    setMouthOpen(false);
+    actionTimer.current = setTimeout(() => {
+      setState("idle");
+      setEyesClosed(false);
+      setTailFast(false);
+    }, 1400);
+  };
+
+  const pokeBelly = () => {
+    resetIdleTimer();
+    if (state === "eating") return;
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    setState("belly");
+    setIsLying(true);
+    setShowTongue(true);
+    setEyesClosed(false);
+    setTailFast(false);
+    setMouthOpen(false);
+    actionTimer.current = setTimeout(() => {
+      setState("idle");
+      setIsLying(false);
+      setShowTongue(false);
+    }, 1800);
+  };
+
+  const bark = () => {
+    resetIdleTimer();
+    if (state === "eating") return;
+    if (barkTimer.current) clearTimeout(barkTimer.current);
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    setState("bark");
+    setIsLying(false);
+    setMouthOpen(true);
+    setShowWoof(true);
+    setTailFast(true);
+    setEyesClosed(false);
+    barkTimer.current = setTimeout(() => {
+      setState("idle");
+      setMouthOpen(false);
+      setShowWoof(false);
+      setTailFast(false);
+    }, 900);
+  };
+
+  const startBackDrag = () => {
+    resetIdleTimer();
+    if (state === "eating") return;
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    setDraggingBack(true);
+    setState("purr");
+    setPurrSpark(true);
+    setTailFast(true);
+    setEyesClosed(true);
+  };
+
+  const endBackDrag = () => {
+    if (state === "eating") return;
+    setDraggingBack(false);
+    setState("idle");
+    setPurrSpark(false);
+    setTailFast(false);
+    setEyesClosed(false);
+    resetIdleTimer();
+  };
+
+  const startBowlDrag = (e) => {
+    if (!feedMode || bowlFed) return;
+    resetIdleTimer();
+    bowlPointerId.current = e.pointerId;
+    setDraggingBowl(true);
+    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const moveBowlDrag = (e) => {
+    if (!draggingBowl || !feedMode || bowlFed) return;
+    const p = svgPoint(e.clientX, e.clientY);
+    setBowlPos({
+      x: Math.max(48, Math.min(252, p.x)),
+      y: Math.max(60, Math.min(278, p.y)),
+    });
+  };
+
+  const endBowlDrag = () => {
+    if (!draggingBowl) return;
+    setDraggingBowl(false);
+
+    const dx = bowlPos.x - tokiTarget.x;
+    const dy = bowlPos.y - tokiTarget.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 52 && !bowlFed) {
+      setEatingState();
+    } else if (!bowlFed) {
+      setBowlPos({ x: 150, y: 270 });
+    }
+  };
+
+  const renderEyes = () => {
+    if (eyesClosed || state === "happy" || state === "yawn" || state === "eating") {
+      return (
+        <>
+          <path d="M110 132 Q124 144 138 132" fill="none" stroke="#221B18" strokeWidth="5" strokeLinecap="round" />
+          <path d="M162 132 Q176 144 190 132" fill="none" stroke="#221B18" strokeWidth="5" strokeLinecap="round" />
+        </>
+      );
+    }
+    if (state === "purr") {
+      return (
+        <>
+          <path d="M108 131 Q124 145 140 131" fill="none" stroke="#221B18" strokeWidth="5" strokeLinecap="round" />
+          <path d="M160 131 Q176 145 192 131" fill="none" stroke="#221B18" strokeWidth="5" strokeLinecap="round" />
+        </>
+      );
+    }
+    return (
+      <>
+        <ellipse cx="124" cy="132" rx="13" ry="17" fill="#171717" />
+        <ellipse cx="176" cy="132" rx="13" ry="17" fill="#171717" />
+        <circle cx="119" cy="126" r="4.2" fill="#fff" />
+        <circle cx="171" cy="126" r="4.2" fill="#fff" />
+        <circle cx="127.5" cy="134.5" r="2" fill="#fff" />
+        <circle cx="179.5" cy="134.5" r="2" fill="#fff" />
+      </>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        background: "linear-gradient(180deg,#0B1D3A 0%, #122548 45%, #1A3060 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        touchAction: "none",
+        userSelect: "none",
+        position: "relative",
+      }}
+      onPointerUp={() => { endBackDrag(); endBowlDrag(); }}
+      onPointerCancel={() => { endBackDrag(); endBowlDrag(); }}
+      onPointerLeave={() => { if (draggingBack) endBackDrag(); if (draggingBowl) endBowlDrag(); }}
+      onPointerMove={(e) => { if (draggingBack) resetIdleTimer(); if (draggingBowl) moveBowlDrag(e); }}
+    >
+      <svg
+        ref={svgRef}
+        width={size}
+        height={size}
+        viewBox="0 0 300 300"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Toki playground"
+      >
+        <style>{`
+          .tp-bob{animation:tpBob 2.2s ease-in-out infinite;transform-origin:150px 180px}
+          .tp-lying{animation:tpLie 1.8s ease-in-out infinite;transform-origin:150px 190px}
+          .tp-tail{transform-origin:77px 192px;animation:tpTailSlow 1.6s ease-in-out infinite}
+          .tp-tail-fast{animation:tpTailFast .28s ease-in-out infinite}
+          .tp-mouth-bark{animation:tpBark .22s ease-in-out 3;transform-origin:150px 175px}
+          .tp-tongue{animation:tpTongue .8s ease-in-out infinite;transform-origin:150px 178px}
+          .tp-yawn-mouth{animation:tpYawn 1.2s ease-in-out infinite;transform-origin:150px 175px}
+          .tp-eating-mouth{animation:tpChew .28s ease-in-out infinite;transform-origin:150px 177px}
+          .tp-purr{animation:tpPurr .18s linear infinite}
+          .tp-woof{animation:tpWoof .9s ease-out forwards}
+          .tp-spark1{animation:tpSpark 1s ease-out infinite}
+          .tp-spark2{animation:tpSpark 1s ease-out .25s infinite}
+          .tp-spark3{animation:tpSpark 1s ease-out .5s infinite}
+          .tp-cheek{animation:tpCheek .9s ease-in-out infinite}
+          .tp-breathe{animation:tpBreathe 2.4s ease-in-out infinite;transform-origin:150px 180px}
+          .tp-bowl{transition:transform .12s ease}
+          .tp-bowl-fed{animation:tpBowlSettle .35s ease-out}
+          @keyframes tpBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+          @keyframes tpLie{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(1px) rotate(-1deg)}}
+          @keyframes tpTailSlow{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(14deg)}}
+          @keyframes tpTailFast{0%,100%{transform:rotate(-24deg)}50%{transform:rotate(26deg)}}
+          @keyframes tpBark{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.28)}}
+          @keyframes tpTongue{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(2px) scaleY(1.08)}}
+          @keyframes tpYawn{0%,100%{transform:scale(1)}50%{transform:scale(1.28,1.5)}}
+          @keyframes tpChew{0%,100%{transform:scaleX(1) scaleY(1)}50%{transform:scaleX(1.06) scaleY(1.2)}}
+          @keyframes tpPurr{0%,100%{transform:translateX(0)}25%{transform:translateX(-1.2px)}75%{transform:translateX(1.2px)}}
+          @keyframes tpWoof{0%{opacity:0;transform:translateY(0) scale(.7)}15%{opacity:1}100%{opacity:0;transform:translateY(-30px) scale(1.2)}}
+          @keyframes tpSpark{0%{opacity:0;transform:translateY(0) scale(.6)}30%{opacity:.9}100%{opacity:0;transform:translateY(-22px) scale(1.2)}}
+          @keyframes tpCheek{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+          @keyframes tpBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,.992)}}
+          @keyframes tpBowlSettle{0%{transform:scale(.92)}100%{transform:scale(1)}}
+        `}</style>
+        <ellipse cx="150" cy="258" rx="88" ry="20" fill="rgba(255,255,255,.08)"/>
+        <ellipse cx="150" cy="258" rx="58" ry="12" fill="rgba(240,200,80,.12)"/>
+        {showWoof&&(<g className="tp-woof"><rect x="188" y="64" rx="16" ry="16" width="70" height="34" fill="#F0C850" stroke="#d4ac0d" strokeWidth="3"/><path d="M203 95 L194 106 L194 94 Z" fill="#F0C850" stroke="#d4ac0d" strokeWidth="3" strokeLinejoin="round"/><text x="223" y="87" textAnchor="middle" fontSize="20" fontWeight="700" fill="#1a1a2e" style={{fontFamily:"'Fredoka'"}}>woof!</text></g>)}
+        {purrSpark&&(<g><circle className="tp-spark1" cx="220" cy="130" r="7" fill="rgba(240,200,80,.8)"/><circle className="tp-spark2" cx="232" cy="160" r="5" fill="rgba(255,255,255,.7)"/><circle className="tp-spark3" cx="210" cy="178" r="6" fill="rgba(46,204,113,.7)"/></g>)}
+        <g className={isLying?"tp-lying":draggingBack?"tp-bob tp-purr":"tp-bob"}>
+          <g className="tp-breathe">
+            <g className={`tp-tail ${tailFast?"tp-tail-fast":""}`}><path d="M78 194 C52 178,48 148,70 138 C84 132,96 141,94 151 C92 159,86 164,86 172 C86 181,95 188,104 192" fill="none" stroke="#8B5A3C" strokeWidth="12" strokeLinecap="round"/></g>
+            <ellipse cx="150" cy={isLying?192:186} rx={isLying?86:78} ry={isLying?48:56} fill="#C98A57"/>
+            <ellipse cx="150" cy={isLying?200:196} rx={isLying?48:42} ry={isLying?28:31} fill="#FFF5EA"/>
+            <ellipse cx="196" cy="174" rx="24" ry="18" fill="#A86A43" opacity="0.9"/>
+            {!isLying?(<><ellipse cx="112" cy="242" rx="20" ry="12" fill="#8B5A3C"/><ellipse cx="188" cy="242" rx="20" ry="12" fill="#8B5A3C"/><ellipse cx="112" cy="238" rx="13" ry="7" fill="#E6B58A"/><ellipse cx="188" cy="238" rx="13" ry="7" fill="#E6B58A"/></>):(<><ellipse cx="92" cy="220" rx="19" ry="11" fill="#8B5A3C"/><ellipse cx="212" cy="216" rx="18" ry="10" fill="#8B5A3C"/><ellipse cx="90" cy="216" rx="12" ry="6" fill="#E6B58A"/><ellipse cx="212" cy="212" rx="11" ry="6" fill="#E6B58A"/></>)}
+            <ellipse cx="150" cy="128" rx="72" ry="60" fill="#E9B886"/>
+            <ellipse cx="85" cy="135" rx="20" ry="46" fill="#8B5A3C" transform={state==="happy"?"rotate(6 85 135)":"rotate(1 85 135)"}/>
+            <ellipse cx="215" cy="135" rx="20" ry="46" fill="#8B5A3C" transform={state==="happy"?"rotate(-6 215 135)":"rotate(-1 215 135)"}/>
+            <ellipse cx="90" cy="147" rx="11" ry="26" fill="#A66B45" opacity="0.45"/>
+            <ellipse cx="210" cy="147" rx="11" ry="26" fill="#A66B45" opacity="0.45"/>
+            <path d="M130 74 C139 90,139 106,130 122 C143 130,157 130,170 122 C161 106,161 90,170 74 C160 66,140 66,130 74 Z" fill="#FFFFFF" opacity="0.95"/>
+            <ellipse cx="150" cy="165" rx="34" ry="24" fill="#FFF6EF"/>
+            <ellipse cx="150" cy="178" rx="20" ry="11" fill="#FFF6EF"/>
+            {renderEyes()}
+            {state==="happy"&&(<><path d="M104 112 Q124 104 142 112" fill="none" stroke="#7A4B30" strokeWidth="3" strokeLinecap="round"/><path d="M158 112 Q176 104 196 112" fill="none" stroke="#7A4B30" strokeWidth="3" strokeLinecap="round"/></>)}
+            {(state==="happy"||state==="belly"||state==="purr"||state==="eating")&&(<><ellipse className="tp-cheek" cx="108" cy="168" rx="8" ry="5" fill="#F3B2AE" opacity="0.68"/><ellipse className="tp-cheek" cx="192" cy="168" rx="8" ry="5" fill="#F3B2AE" opacity="0.68"/></>)}
+            <ellipse cx="150" cy="155" rx="10" ry="7" fill="#1B1716"/>
+            {state==="bark"?(<g className="tp-mouth-bark"><ellipse cx="150" cy="176" rx="14" ry="11" fill="#8F433C"/><path d="M141 173 Q150 184 159 173" fill="#F6A1B6"/></g>):state==="yawn"?(<g className="tp-yawn-mouth"><ellipse cx="150" cy="178" rx="13" ry="14" fill="#8F433C"/><ellipse cx="150" cy="181" rx="7" ry="6" fill="#F3A2B5"/></g>):state==="eating"?(<g className="tp-eating-mouth"><path d="M134 174 Q150 186 166 174" fill="none" stroke="#7A3E34" strokeWidth="4.6" strokeLinecap="round"/><ellipse cx="140" cy="176.5" rx="4.5" ry="3.2" fill="#F3C2B5" opacity="0.9"/><ellipse cx="160" cy="176.5" rx="4.5" ry="3.2" fill="#F3C2B5" opacity="0.9"/></g>):(<path d="M133 174 Q150 190 167 174" fill="none" stroke="#7A3E34" strokeWidth="4" strokeLinecap="round"/>)}
+            {showTongue&&(<path className="tp-tongue" d="M142 177 Q150 198 158 177 Z" fill="#F58CA8"/>)}
+            {state==="yawn"&&(<g fill="#7E74D8" fontFamily="Arial" fontWeight="700"><text x="214" y="86" fontSize="16">z</text><text x="226" y="74" fontSize="20">z</text></g>)}
+          </g>
+        </g>
+        <circle fill="transparent" cx="150" cy="108" r="52" onPointerDown={pokeHead} style={{cursor:'pointer'}}/>
+        <ellipse fill="transparent" cx="150" cy="196" rx="56" ry="42" onPointerDown={pokeBelly} style={{cursor:'pointer'}}/>
+        <ellipse fill="transparent" cx="170" cy="168" rx="80" ry="42" onPointerDown={startBackDrag} style={{cursor:'grab'}}/>
+        <rect x="76" y="76" width="148" height="150" fill="transparent" onClick={bark}/>
+        {feedMode&&(<g className={`tp-bowl ${bowlFed?"tp-bowl-fed":""}`} transform={`translate(${bowlPos.x-26} ${bowlPos.y-16})`} onPointerDown={startBowlDrag}><ellipse cx="26" cy="25" rx="28" ry="10" fill="rgba(0,0,0,.18)"/><path d="M4 10 Q26 0 48 10 L42 26 Q26 34 10 26 Z" fill="#D58B43" stroke="#A45E20" strokeWidth="3"/><ellipse cx="26" cy="10" rx="22" ry="6.5" fill="#A45E20"/><ellipse cx="26" cy="8.5" rx="18" ry="5" fill="#8FD16A"/><circle cx="19" cy="7.8" r="2.2" fill="#6B4A2D"/><circle cx="25" cy="9.2" r="2.2" fill="#6B4A2D"/><circle cx="31" cy="7.8" r="2.2" fill="#6B4A2D"/><circle cx="36" cy="9" r="2.2" fill="#6B4A2D"/><ellipse fill="transparent" cx="26" cy="14" rx="30" ry="22" style={{cursor:'grab'}}/></g>)}
+        {feedMode&&!bowlFed&&(<g opacity="0.22"><circle cx={tokiTarget.x} cy={tokiTarget.y} r="36" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 8"/></g>)}
+        <g opacity="0.18"><circle cx="150" cy="108" r="50" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 8"/><ellipse cx="150" cy="196" rx="54" ry="40" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 8"/></g>
+      </svg>
+      {typeof countdown==="number"&&countdown>0&&(<div style={{position:"absolute",left:20,right:20,bottom:14,height:8,borderRadius:999,background:"rgba(255,255,255,.12)",overflow:"hidden"}}><div style={{height:"100%",width:`${progress}%`,background:"linear-gradient(90deg,#2ECC71,#3498DB)",borderRadius:999,transition:"width .08s linear"}}/></div>)}
+      {showContinue&&(<button onClick={onContinue} style={{position:"absolute",right:18,bottom:typeof countdown==="number"&&countdown>0?34:18,border:"none",borderRadius:999,padding:"10px 14px",background:"rgba(255,255,255,.12)",color:"#ECF0F1",backdropFilter:"blur(4px)",fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:"pointer"}}>¡Seguimos!</button>)}
+    </div>
+  );
+}

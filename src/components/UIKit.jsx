@@ -146,11 +146,10 @@ export function OralPrompt({phrase,onDone}){
     });
     return()=>{doneRef.current=true;sr.stop();stopVoice();if(timerRef.current)clearTimeout(timerRef.current)}
   },[phrase]);
-  return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:20}}>
-    <p style={{fontSize:18,fontWeight:600,color:'#E8E8F0',margin:0}}>Repite:</p>
-    <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0,textAlign:'center'}}>{phrase}</p>
-    <div style={{width:64,height:64,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px #E74C3C55',animation:'pulse 1.2s infinite'}}>
-      <span style={{fontSize:32,color:'#fff'}}>🎤</span>
+  return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,padding:20}}>
+    <p style={{fontSize:26,fontWeight:700,color:GOLD,margin:0,textAlign:'center'}}>{phrase}</p>
+    <div style={{width:80,height:80,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 24px #E74C3C55',animation:'pulse 1.2s infinite'}}>
+      <span style={{fontSize:38,color:'#fff'}}>🎤</span>
     </div>
   </div>
 }
