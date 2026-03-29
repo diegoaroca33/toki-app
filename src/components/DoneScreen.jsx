@@ -1,172 +1,349 @@
-import { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { BG, BG2, GOLD, GREEN, BLUE, DIM, CARD } from '../constants.js'
-import { sayFB } from '../voice.js'
-import { getMascotTier } from '../utils.js'
+import { getMascotTier, getDogGrowth, getDogPhase } from '../utils.js'
+import { sayFB, starBeep } from '../voice.js'
 import { SpaceMascot, DogMascot, Confetti } from './UIKit.jsx'
-import { getDogGrowth, getDogPhase } from '../utils.js'
+import { Button, Card, Badge, ProgressBar, StatBox } from './ui/index.js'
 
-export function victoryBeeps(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const notes=[392,494,587,784,659,784,988,1175,988,1175];const durations=[0.25,0.2,0.2,0.3,0.2,0.2,0.25,0.3,0.2,0.6];let t=0;notes.forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;const vol=i>=7?0.09:0.07;g.gain.value=vol;g.gain.setValueAtTime(vol,c.currentTime+t);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+durations[i]);o.start(c.currentTime+t);o.stop(c.currentTime+t+durations[i]);t+=durations[i]*0.65});setTimeout(()=>c.close(),4000)}catch(e){}}
+export function victoryBeeps() {
+  try {
+    starBeep(4)
+    setTimeout(() => starBeep(3), 420)
+  } catch (e) {}
+}
 
-const TIER_NAMES=["Estrellita","Bronce","Plata","Oro","Superestrella","Legendaria"];
-const TIER_ICONS=["⭐","🥉","🥈","🥇","💫","👑"];
-const TIER_THRESHOLDS=[0,50,150,300,500,1000];
+function getPraise(ok = 0, sk = 0) {
+  const total = Math.max(1, ok + sk)
+  const pct = (ok / total) * 100
+  if (pct >= 80) return '¡Genial!'
+  if (pct >= 40) return '¡Buen trabajo!'
+  return 'Has practicado mucho'
+}
 
-export function DoneScreen({st,elapsed,user,supPin,onExit,sessionStars=0,maxStreak=0,totalLifetimeStars=0,randomStats=null,showFeedDog=false,onFeedDog=null}){
-  const[xConf,sXConf]=useState(false);
-  const[fedThisDone,setFedThisDone]=useState(false);
-  const tot=st.ok+st.sk,pct=tot>0?Math.round(st.ok/tot*100):0;
-  const uname=user?.name||'crack';
-  // Graduated praise based on performance
-  const praise=pct>=80?'¡Lo has hecho genial!':pct>=40?'¡Buen trabajo!':'¡Has practicado mucho!';
-  const praiseVoice=pct>=80?'¡Lo has hecho genial, '+uname+'!':pct>=40?'¡Buen trabajo, '+uname+'!':'¡Has practicado mucho, '+uname+'!';
+function getTierMeta(totalStars = 0) {
+  const tier = getMascotTier(totalStars)
+  const thresholds = [0, 50, 150, 300, 500, 1000]
+  const labels = ['Estrellita', 'Bronce', 'Plata', 'Oro', 'Superestrella', 'Legendaria']
+  const curMin = thresholds[tier]
+  const next = tier < 5 ? thresholds[tier + 1] : thresholds[5]
+  const progress = tier >= 5 ? 100 : ((totalStars - curMin) / Math.max(1, next - curMin)) * 100
+  return {
+    tier,
+    label: labels[tier],
+    nextLabel: labels[Math.min(tier + 1, 5)],
+    progress: Math.max(0, Math.min(100, progress)),
+    remaining: Math.max(0, next - totalStars),
+  }
+}
 
-  // Mascot tier progress
-  const tier=getMascotTier(totalLifetimeStars);
-  const tierName=TIER_NAMES[tier];
-  const tierIcon=TIER_ICONS[tier];
-  const nextTier=tier<5?tier+1:5;
-  const nextName=TIER_NAMES[nextTier];
-  const nextIcon=TIER_ICONS[nextTier];
-  const curThreshold=TIER_THRESHOLDS[tier];
-  const nextThreshold=TIER_THRESHOLDS[nextTier];
-  const tierProgress=tier>=5?1:Math.min(1,(totalLifetimeStars-curThreshold)/Math.max(1,nextThreshold-curThreshold));
+function getPodium(hist = [], todayOk = 0) {
+  const all = [...(hist || []).map((h) => Number(h?.ok || 0)), Number(todayOk || 0)]
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => b - a)
+    .slice(0, 3)
+  const medals = ['🥇', '🥈', '🥉']
+  return all.map((score, idx) => ({ score, medal: medals[idx] }))
+}
 
-  // Personal podium: compare today vs best 2 historical
-  const hist=(user?.hist||[]).slice();
-  const bestHist=hist.sort((a,b)=>(b.ok||0)-(a.ok||0)).slice(0,2);
-  const podiumEntries=[];
-  // Combine today + best 2 historical, sort descending, assign medals
-  const allScores=[{ok:st.ok,label:'Hoy',isToday:true}];
-  bestHist.forEach((h,i)=>allScores.push({ok:h.ok||0,label:h.dt||`Sesión ${i+1}`,isToday:false}));
-  allScores.sort((a,b)=>b.ok-a.ok);
-  const medals=['🥇','🥈','🥉'];
+function getRandomRows(randomStats) {
+  if (!randomStats) return []
+  return Object.entries(randomStats)
+    .map(([k, v]) => {
+      const ok = Number(v?.ok || 0)
+      const total = Number(v?.total || 0)
+      return {
+        key: k,
+        ok,
+        total,
+        pct: total ? Math.round((ok / total) * 100) : 0,
+      }
+    })
+    .sort((a, b) => b.ok - a.ok)
+}
 
-  useEffect(()=>{victoryBeeps();sXConf(true);const t1=setTimeout(()=>sXConf(false),3000);const t2=setTimeout(()=>{sXConf(true);setTimeout(()=>sXConf(false),3000)},4000);sayFB(praiseVoice+' ¿Quieres seguir?');return()=>{clearTimeout(t1);clearTimeout(t2)}},[]);
+export function DoneScreen({
+  st,
+  elapsed,
+  user,
+  supPin,
+  sessionStars = 0,
+  maxStreak = 0,
+  totalLifetimeStars = 0,
+  randomStats = null,
+  showFeedDog = false,
+  onFeedDog,
+  onExit,
+}) {
+  const [fedThisDone, setFedThisDone] = useState(false)
 
-  const cardSt={background:CARD,border:'2px solid '+GOLD+'33',borderRadius:16,padding:'12px 14px',marginBottom:14,animation:'fadeIn .5s 1.2s both'};
+  const ok = Number(st?.ok || 0)
+  const sk = Number(st?.sk || 0)
+  const praise = useMemo(() => getPraise(ok, sk), [ok, sk])
+  const tierMeta = useMemo(
+    () => getTierMeta(totalLifetimeStars || user?.totalStars3plus || 0),
+    [totalLifetimeStars, user]
+  )
+  const podium = useMemo(() => getPodium(user?.hist || [], ok), [user, ok])
+  const randomRows = useMemo(() => getRandomRows(randomStats), [randomStats])
+  const dogGrowth = user?.id ? getDogGrowth(user.id) : 0
+  const dogPhase = getDogPhase(dogGrowth)
+  const accuracy = ok + sk ? Math.round((ok / (ok + sk)) * 100) : 0
 
-  return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'radial-gradient(ellipse at center,'+BG2+' 0%,'+BG+' 100%)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100,padding:20,overflow:'auto'}}>
-    <Confetti show={xConf}/>
-    <div style={{maxWidth:420,width:'100%',textAlign:'center'}}>
-      <div className="ab">
-        {/* Trophy + mascot */}
-        <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',gap:12,marginBottom:4}}>
-          <div style={{fontSize:80,animation:'pulse 1s infinite'}}>🏆</div>
-          <div style={{marginBottom:12}}><SpaceMascot mood="dance" size={48} tier={getMascotTier(totalLifetimeStars)}/></div>
-        </div>
-        <h1 style={{fontSize:26,color:GOLD,margin:'0 0 8px',animation:'fadeIn .5s .3s both'}}>¡FELICIDADES {uname.toUpperCase()}!</h1>
+  useEffect(() => {
+    victoryBeeps()
+    try {
+      sayFB(`${praise} ${user?.name || ''}`.trim())
+    } catch (e) {}
+  }, [])
 
-        {/* Stats row: Stars, Accuracy, Minutes */}
-        <div style={{display:'flex',justifyContent:'center',gap:12,marginBottom:16,animation:'fadeIn .5s .9s both',flexWrap:'wrap'}}>
-          {[
-            {l:'Estrellas',v:sessionStars??st.ok,c:GOLD,icon:'⭐'},
-            {l:'Acierto',v:pct+'%',c:BLUE,icon:''},
-            {l:'Minutos',v:elapsed,c:GREEN,icon:''}
-          ].map((s,i)=>
-            <div key={i} style={{background:CARD,border:'2px solid '+s.c+'44',borderRadius:14,padding:'10px 14px',minWidth:70}}>
-              <div style={{fontSize:24,color:s.c,fontWeight:700}}>{s.icon?s.icon+' ':''}{s.v}</div>
-              <div style={{fontSize:11,color:DIM}}>{s.l}</div>
-            </div>)}
-        </div>
-
-        {/* Streak */}
-        {maxStreak>1&&<div style={{...cardSt,background:CARD,border:'2px solid #E67E2244'}}>
-          <div style={{fontSize:18,fontWeight:600,color:'#E67E22'}}>
-            🔥 ¡Racha de {maxStreak} seguidas!
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: BG,
+        zIndex: 120,
+        overflowY: 'auto',
+        padding: 16,
+      }}
+    >
+      <Confetti show />
+      <div style={{ maxWidth: 780, margin: '0 auto', paddingBottom: 24 }}>
+        <div
+          style={{
+            background: `linear-gradient(180deg, ${BG2} 0%, ${CARD} 100%)`,
+            border: `2px solid ${GOLD}55`,
+            borderRadius: 24,
+            padding: 20,
+            boxShadow: '0 12px 30px rgba(0,0,0,.26)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <Badge tone="gold" size="lg">🎉 Fin de sesión</Badge>
           </div>
-        </div>}
 
-        {/* Graduated praise */}
-        <div style={{background:GREEN+'15',border:'2px solid '+GREEN+'33',borderRadius:16,padding:14,marginBottom:14,animation:'fadeIn .5s 1.1s both'}}>
-          <p style={{fontSize:20,fontWeight:700,margin:0,color:pct>=80?GREEN:pct>=40?BLUE:GOLD}}>{praise}</p>
-        </div>
+          <div style={{ textAlign: 'center', marginBottom: 18 }}>
+            <div style={{ fontSize: 34, fontWeight: 800, color: GOLD, lineHeight: 1.05, marginBottom: 6 }}>
+              {praise}
+            </div>
+            <div style={{ color: DIM, fontSize: 16 }}>
+              {user?.name ? `${user.name}, ` : ''}has terminado tu sesión
+            </div>
+          </div>
 
-        {/* Podium: today vs best 2 */}
-        {bestHist.length>0&&<div style={{...cardSt}}>
-          <div style={{fontSize:14,fontWeight:600,color:DIM,marginBottom:8}}>Tu podio personal</div>
-          <div style={{display:'flex',justifyContent:'center',gap:8,alignItems:'flex-end'}}>
-            {allScores.slice(0,3).map((entry,i)=>{
-              const heights=[72,56,44];
-              const isMe=entry.isToday;
-              return <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                <div style={{fontSize:20}}>{medals[i]||''}</div>
-                <div style={{
-                  width:60,height:heights[i]||40,
-                  borderRadius:'10px 10px 4px 4px',
-                  background:isMe?GREEN+'33':BLUE+'22',
-                  border:isMe?'2px solid '+GREEN:'2px solid '+BLUE+'44',
-                  display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-                  gap:2
-                }}>
-                  <div style={{fontSize:18,fontWeight:700,color:isMe?GREEN:BLUE}}>{entry.ok}</div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 26,
+              flexWrap: 'wrap',
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <SpaceMascot tier={tierMeta.tier} mood={accuracy >= 70 ? 'dance' : 'happy'} size={110} />
+              <div style={{ marginTop: 8 }}>
+                <Badge tone="gold">⭐ {tierMeta.label}</Badge>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <DogMascot
+                phase={dogPhase}
+                mood={showFeedDog && !fedThisDone ? 'hungry' : fedThisDone ? 'eating' : 'dance'}
+                size={112}
+                interactive
+              />
+              <div style={{ marginTop: 8 }}>
+                <Badge tone="blue">
+                  🐶 {dogPhase === 0 ? 'Cachorro' : dogPhase === 1 ? 'Joven' : 'Héroe'}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))',
+              gap: 12,
+              marginBottom: 18,
+            }}
+          >
+            <StatBox icon="✅" value={ok} label="Aciertos" />
+            <StatBox icon="⭐" value={sessionStars} label="Estrellas" />
+            <StatBox icon="🔥" value={maxStreak} label="Racha máx." />
+            <StatBox icon="⏱️" value={elapsed} label="Minutos" />
+          </div>
+
+          <Card variant="highlight" style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 4 }}>
+                  Mascota evolutiva
                 </div>
-                <div style={{fontSize:10,color:isMe?GREEN:DIM,fontWeight:isMe?700:400,maxWidth:64,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                  {entry.label}
+                <div style={{ color: DIM, fontSize: 14 }}>
+                  Nivel actual: <b style={{ color: '#fff' }}>{tierMeta.label}</b>
+                  {tierMeta.tier < 5 ? ` · faltan ${tierMeta.remaining} para ${tierMeta.nextLabel}` : ' · nivel máximo'}
                 </div>
               </div>
-            })}
-          </div>
-        </div>}
-
-        {/* Mascot evolution - visual tier display */}
-        <div style={{...cardSt}}>
-          <div style={{display:'flex',justifyContent:'center',alignItems:'flex-end',gap:6,marginBottom:8,flexWrap:'wrap'}}>
-            {TIER_NAMES.map((name,i)=>{
-              const unlocked=i<=tier;
-              const isCurrent=i===tier;
-              return <div key={i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2,transition:'transform .3s',transform:isCurrent?'scale(1.2)':'scale(1)'}}>
-                <div style={{position:'relative',width:44,height:44,filter:unlocked?'none':'brightness(0.15)',opacity:unlocked?1:0.5,transition:'filter .5s, opacity .5s'}}>
-                  <SpaceMascot mood={isCurrent?"dance":"idle"} size={44} tier={i}/>
-                  {isCurrent&&<div style={{position:'absolute',bottom:-6,left:'50%',transform:'translateX(-50%)',width:8,height:8,borderRadius:'50%',background:GOLD,boxShadow:'0 0 8px '+GOLD}}/>}
-                </div>
-                {isCurrent&&<div style={{fontSize:10,color:GOLD,fontWeight:700,marginTop:2}}>{name}</div>}
-              </div>})}
-          </div>
-          {tier<5&&<div style={{background:BG+'88',borderRadius:8,height:10,overflow:'hidden',margin:'0 auto',maxWidth:260}}>
-            <div style={{height:'100%',borderRadius:8,background:'linear-gradient(90deg, '+GOLD+', #F7DC6F)',width:(tierProgress*100)+'%',transition:'width .6s'}}/>
-          </div>}
-          <div style={{fontSize:11,color:DIM,marginTop:4}}>{totalLifetimeStars} ⭐</div>
-        </div>
-
-        {/* M7b: Per-module breakdown for random sessions */}
-        {randomStats&&Object.keys(randomStats).length>0&&<div style={{...cardSt}}>
-          <div style={{fontSize:14,fontWeight:600,color:DIM,marginBottom:8}}>🔀 Desglose por módulo</div>
-          <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            {Object.values(randomStats).filter(s=>s.total>0).map((s,i)=>{
-              const mpct=s.total>0?Math.round(s.ok/s.total*100):0;
-              return <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:10,background:mpct>=80?GREEN+'15':mpct>=50?BLUE+'15':GOLD+'15',border:'1px solid '+(mpct>=80?GREEN:mpct>=50?BLUE:GOLD)+'33'}}>
-                <span style={{fontSize:22}}>{s.emoji}</span>
-                <div style={{flex:1,textAlign:'left'}}>
-                  <div style={{fontSize:14,fontWeight:600,color:'#fff'}}>{s.name}</div>
-                  <div style={{fontSize:11,color:DIM}}>{s.ok}/{s.total} correctas</div>
-                </div>
-                <div style={{fontSize:16,fontWeight:700,color:mpct>=80?GREEN:mpct>=50?BLUE:GOLD}}>{mpct}%</div>
-              </div>})}
-          </div>
-        </div>}
-
-        {/* Dog feeding section */}
-        {(showFeedDog||fedThisDone)&&<div style={{...cardSt,border:'2px solid #8B451355',background:fedThisDone?'#2ecc7111':'#8B451311'}}>
-          {fedThisDone?<>
-            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,marginBottom:4}}>
-              <DogMascot mood="eating" size={56} phase={getDogPhase(getDogGrowth(user?.id))}/>
+              <Badge tone="purple">Tier {tierMeta.tier + 1}/6</Badge>
             </div>
-            <p style={{fontSize:16,fontWeight:700,color:'#2ecc71',margin:'4px 0 0'}}>¡Toki ha comido! 🦴</p>
-            <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>Vuelve mañana para alimentarle otra vez</p>
-          </>:<>
-            <div style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,marginBottom:4}}>
-              <DogMascot mood="hungry" size={56} phase={getDogPhase(getDogGrowth(user?.id))}/>
+            <div style={{ marginTop: 12 }}>
+              <ProgressBar value={tierMeta.progress} max={100} />
             </div>
-            <p style={{fontSize:16,fontWeight:700,color:'#e67e22',margin:'4px 0 0'}}>¡Toki tiene hambre!</p>
-            <button onClick={()=>{if(onFeedDog){onFeedDog();setFedThisDone(true)}}} style={{marginTop:8,padding:'10px 28px',borderRadius:14,border:'3px solid #8B4513',background:'linear-gradient(135deg,#D2691E,#8B4513)',color:'#fff',fontSize:16,fontWeight:700,cursor:'pointer',fontFamily:"'Fredoka'",boxShadow:'2px 2px 0 #5C3310',transition:'transform .1s'}}>🦴 Dar de comer</button>
-          </>}
-        </div>}
+          </Card>
 
-        {/* Action buttons */}
-        <div style={{display:'flex',justifyContent:'center',gap:24,animation:'fadeIn .5s 1.3s both'}}>
-          <button onClick={()=>onExit('repeat')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #27ae60',background:GREEN,color:'#fff',fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1e8449',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🔄</span><span>¡Otra ronda!</span></button>
-          <button onClick={()=>onExit('menu')} style={{width:110,height:110,borderRadius:'50%',border:'3px solid #2980b9',background:BLUE,color:'#fff',fontFamily:"'Fredoka'",fontWeight:600,fontSize:16,cursor:'pointer',boxShadow:'4px 4px 0 #1a5276',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,transition:'transform .1s'}}><span style={{fontSize:28}}>🪐</span><span>Menú</span></button>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1.15fr 1fr',
+              gap: 14,
+              marginBottom: 18,
+            }}
+          >
+            <Card>
+              <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>🏆 Podio personal</div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {podium.map((p, i) => (
+                  <Card
+                    key={i}
+                    variant="stat"
+                    style={{
+                      flex: 1,
+                      minWidth: 90,
+                      background: i === 0 ? `${GOLD}18` : CARD,
+                      borderColor: i === 0 ? `${GOLD}88` : `${BLUE}55`,
+                    }}
+                  >
+                    <div style={{ fontSize: 28, marginBottom: 4 }}>{p.medal}</div>
+                    <div style={{ fontSize: 24, fontWeight: 800 }}>{p.score}</div>
+                    <div style={{ fontSize: 12, color: DIM }}>{i === 0 ? 'Mejor marca' : `Puesto ${i + 1}`}</div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>📊 Resumen</div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: DIM }}>
+                  <span>Total ejercicios</span>
+                  <b style={{ color: '#fff' }}>{ok + sk}</b>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: DIM }}>
+                  <span>Precisión</span>
+                  <b style={{ color: '#fff' }}>{accuracy}%</b>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: DIM }}>
+                  <span>Estrellas vida</span>
+                  <b style={{ color: '#fff' }}>{totalLifetimeStars || user?.totalStars3plus || 0}</b>
+                </div>
+                {supPin ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: DIM }}>
+                    <span>Supervisor</span>
+                    <b style={{ color: GREEN }}>PIN activo</b>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          </div>
+
+          {randomRows.length > 0 && (
+            <Card style={{ marginBottom: 18 }}>
+              <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>
+                🔀 Desglose random
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {randomRows.map((r) => (
+                  <div
+                    key={r.key}
+                    style={{
+                      background: 'rgba(255,255,255,.04)',
+                      border: '1px solid rgba(255,255,255,.08)',
+                      borderRadius: 14,
+                      padding: 10,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>
+                        {r.key.replace(/_/g, ' ')}
+                      </div>
+                      <Badge tone={r.pct >= 70 ? 'green' : r.pct >= 40 ? 'gold' : 'red'}>
+                        {r.ok}/{r.total}
+                      </Badge>
+                    </div>
+                    <ProgressBar value={r.pct} max={100} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {showFeedDog && (
+            <Card
+              variant="highlight"
+              style={{
+                textAlign: 'center',
+                marginBottom: 18,
+                background: fedThisDone ? `${GREEN}18` : undefined,
+              }}
+            >
+              <div style={{ fontSize: 36, marginBottom: 6 }}>{fedThisDone ? '🥣✨' : '🥣💧'}</div>
+              <div style={{ color: GOLD, fontWeight: 800, fontSize: 20, marginBottom: 4 }}>
+                {fedThisDone ? '¡Toki ya ha comido!' : '¡Toki tiene hambre!'}
+              </div>
+              <div style={{ color: DIM, fontSize: 14, marginBottom: 14 }}>
+                {fedThisDone
+                  ? 'Hoy has cuidado genial de tu compañero.'
+                  : 'Después de una sesión larga, dale su comida y agua.'}
+              </div>
+              {!fedThisDone && (
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <Button
+                    variant="gold"
+                    fullWidth={false}
+                    onClick={() => {
+                      if (onFeedDog) onFeedDog()
+                      setFedThisDone(true)
+                    }}
+                  >
+                    🦴 Dar de comer
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center' }}>
+              <Button variant="circular" onClick={() => onExit && onExit('repeat')}>
+                🔄
+              </Button>
+              <div style={{ color: DIM, fontSize: 13, marginTop: 8 }}>¡Otra ronda!</div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <Button
+                variant="circular"
+                onClick={() => onExit && onExit('menu')}
+                style={{
+                  background: BLUE,
+                  borderColor: '#2980b9',
+                  color: '#fff',
+                  boxShadow: '4px 4px 0 #1a5276',
+                }}
+              >
+                🪐
+              </Button>
+              <div style={{ color: DIM, fontSize: 13, marginTop: 8 }}>Menú</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>}
+  )
+}
+
+export default DoneScreen
