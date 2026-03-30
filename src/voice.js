@@ -16,20 +16,59 @@ function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text|
 function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=1.1;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;window.speechSynthesis.speak(u);setTimeout(finish,Math.max(1200,text.length*120))})}
 function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel()}
 const _publicVoiceCache={};
-function playRec(userId,voiceIds,key){return new Promise(async(res)=>{
-  // 1. Check public voice cache/Firebase
+
+// ── Voice priority system ───────────────────────────────────
+// Priority: 'personal' (local first), 'public' (Firebase first), 'tts' (TTS only), 'forced' (specific voice)
+function getVoicePriority(){try{return localStorage.getItem('toki_voice_priority')||'personal'}catch(e){return'personal'}}
+function setVoicePriority(v){try{localStorage.setItem('toki_voice_priority',v)}catch(e){}}
+function getForcedVoice(){try{return localStorage.getItem('toki_forced_voice')||''}catch(e){return''}}
+function setForcedVoice(v){try{localStorage.setItem('toki_forced_voice',v||'')}catch(e){}}
+
+// Play a specific local voice by ID
+function playRecSingle(userId,voiceId,key){return new Promise(res=>{
+  try{const raw=localStorage.getItem('toki_voice_'+userId+'_'+voiceId);if(!raw){res(false);return}
+    const d=JSON.parse(raw);if(d&&d[key]){const a=new Audio(d[key]);a.onended=()=>res(true);a.onerror=()=>res(false);a.play().then(()=>{}).catch(()=>res(false));return}
+  }catch(e){}res(false)})}
+
+// Try public voice from Firebase
+function playRecPublic(key){return new Promise(async(res)=>{
   try{
-    const phraseKey=key;
-    if(_publicVoiceCache[phraseKey]===undefined){
-      try{const url=await fbGetBestVoice(phraseKey,voiceProfile.sex,voiceProfile.age);_publicVoiceCache[phraseKey]=url||null}catch(e){_publicVoiceCache[phraseKey]=null}
-    }
-    if(_publicVoiceCache[phraseKey]){
-      const a=new Audio(_publicVoiceCache[phraseKey]);a.onended=()=>res(true);a.onerror=()=>{console.warn('playRec public voice error',key);_publicVoiceCache[phraseKey]=null;playRecLocal(userId,voiceIds,key).then(res)};a.play().then(()=>{}).catch(()=>{playRecLocal(userId,voiceIds,key).then(res)});return
-    }
-  }catch(e){}
-  // 2. Fall through to localStorage
-  playRecLocal(userId,voiceIds,key).then(res)
+    if(_publicVoiceCache[key]===undefined){
+      try{const url=await fbGetBestVoice(key,voiceProfile.sex,voiceProfile.age);_publicVoiceCache[key]=url||null}catch(e){_publicVoiceCache[key]=null}}
+    if(_publicVoiceCache[key]){
+      const a=new Audio(_publicVoiceCache[key]);a.onended=()=>res(true);a.onerror=()=>{_publicVoiceCache[key]=null;res(false)};a.play().then(()=>{}).catch(()=>res(false));return}
+  }catch(e){}res(false)})}
+
+function playRec(userId,voiceIds,key){return new Promise(async(res)=>{
+  const prio=getVoicePriority();
+
+  // TTS only — skip all recordings
+  if(prio==='tts'){res(false);return}
+
+  // Forced voice — try only that specific voice
+  if(prio==='forced'){
+    const fv=getForcedVoice();
+    if(fv){const ok=await playRecSingle(userId,fv,key);if(ok){res(true);return}}
+    res(false);return}
+
+  // Personal first (default): local → public → fail
+  if(prio==='personal'){
+    const local=await playRecLocal(userId,voiceIds,key);
+    if(local){res(true);return}
+    const pub=await playRecPublic(key);
+    res(pub);return}
+
+  // Public first: public → local → fail
+  if(prio==='public'){
+    const pub=await playRecPublic(key);
+    if(pub){res(true);return}
+    const local=await playRecLocal(userId,voiceIds,key);
+    res(local);return}
+
+  // Fallback
+  res(false)
 })}
+
 function playRecLocal(userId,voiceIds,key){return new Promise(res=>{if(!voiceIds||!voiceIds.length){res(false);return}for(const vid of voiceIds){try{const raw=localStorage.getItem('toki_voice_'+userId+'_'+vid);if(!raw){continue}const d=JSON.parse(raw);if(d&&d[key]){const a=new Audio(d[key]);a.onended=()=>res(true);a.onerror=()=>{console.warn('playRec audio error for',key);res(false)};a.play().then(()=>{}).catch(e=>{console.warn('playRec play failed',key,e);res(false)});return}}catch(e){console.warn('playRec error',vid,e)}}res(false)})}
 const SR_AVAILABLE=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
 function useSR(onResult){const recRef=useRef(null);const cbRef=useRef(onResult);cbRef.current=onResult;
@@ -46,4 +85,4 @@ function starBeep(n){try{const c=new(window.AudioContext||window.webkitAudioCont
 async function cheerOrSay(text,uid,vids,_cat){const idx=cheerIdx(text);if(idx>=0){const played=await playRec(uid,vids,'cheer_'+idx);if(played)return}await sayFB(text)}
 function victoryJingle(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const t=c.currentTime;const melody=[{f:392,t:0,d:.12},{f:523,t:.12,d:.12},{f:659,t:.24,d:.12},{f:784,t:.36,d:.12},{f:1047,t:.50,d:.12},{f:1319,t:.64,d:.12},{f:1568,t:.80,d:.45}];const harmony=[{f:261,t:0,d:.24},{f:330,t:.24,d:.24},{f:523,t:.50,d:.24},{f:659,t:.80,d:.45}];melody.forEach(n=>{const o=c.createOscillator();const g=c.createGain();o.type='sine';o.frequency.value=n.f;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.001,t+n.t);g.gain.linearRampToValueAtTime(0.10,t+n.t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+n.t+n.d);o.start(t+n.t);o.stop(t+n.t+n.d+0.01)});harmony.forEach(n=>{const o=c.createOscillator();const g=c.createGain();o.type='triangle';o.frequency.value=n.f;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.001,t+n.t);g.gain.linearRampToValueAtTime(0.06,t+n.t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+n.t+n.d);o.start(t+n.t);o.stop(t+n.t+n.d+0.01)});const fin=c.createOscillator();const fg=c.createGain();fin.type='sine';fin.frequency.value=1568;fin.connect(fg);fg.connect(c.destination);fg.gain.setValueAtTime(0.001,t+1.3);fg.gain.linearRampToValueAtTime(0.12,t+1.35);fg.gain.exponentialRampToValueAtTime(0.001,t+2.2);fin.start(t+1.3);fin.stop(t+2.3);setTimeout(()=>c.close(),3000)}catch(e){}}
 
-export { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay }
+export { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay, getVoicePriority, setVoicePriority, getForcedVoice, setForcedVoice }

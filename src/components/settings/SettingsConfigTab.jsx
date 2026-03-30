@@ -6,8 +6,9 @@ import {
 import { Button, Card, Badge } from '../ui/index.js'
 import SessionModeControl from './SessionModeControl.jsx'
 import { NumPad } from '../UIKit.jsx'
-import { saveData, getModuleLvOrDef, setModuleLv, getDynamicDilo, setDynamicDilo } from '../../utils.js'
+import { saveData, getModuleLvOrDef, setModuleLv, getDynamicDilo, setDynamicDilo, loadData } from '../../utils.js'
 import { fbGetMyPublicVoiceCount, fbDeleteMyPublicVoices } from '../../firebase.js'
+import { getVoicePriority, setVoicePriority as setVPrio, getForcedVoice, setForcedVoice as setFV } from '../../voice.js'
 
 function PublicVoiceManager({ fbUser }) {
   const [count, setCount] = React.useState(null)
@@ -50,6 +51,92 @@ function PublicVoiceManager({ fbUser }) {
       )}
       {deleted && <p style={{ fontSize: 13, color: GREEN, margin: '8px 0 0', fontWeight: 600 }}>✅ Voces públicas eliminadas correctamente</p>}
     </div>
+  )
+}
+
+function VoicePriorityCard({ user }) {
+  const voices = user?.voices || []
+  const [prio, setPrio] = React.useState(() => getVoicePriority())
+  const [forced, setForced] = React.useState(() => getForcedVoice())
+
+  const options = [
+    { value: 'personal', emoji: '🏠', label: 'Personales primero', desc: 'Voces grabadas para ' + (user?.name || 'el alumno') + ', luego públicas, luego Toki' },
+    { value: 'public', emoji: '🌐', label: 'Públicas primero', desc: 'Voces reales de otros usuarios (por edad/género), luego personales' },
+    { value: 'tts', emoji: '🤖', label: 'Solo Toki (TTS)', desc: 'Voz sintética del dispositivo, sin grabaciones' },
+  ]
+  if (voices.length > 0) {
+    options.push({ value: 'forced', emoji: '🎯', label: 'Forzar una voz', desc: 'Usa siempre una voz específica de las grabadas' })
+  }
+
+  function handlePrio(v) {
+    setPrio(v)
+    setVPrio(v)
+    if (v !== 'forced') { setForced(''); setFV('') }
+  }
+  function handleForced(vid) {
+    setForced(vid)
+    setFV(vid)
+    setPrio('forced')
+    setVPrio('forced')
+  }
+
+  return (
+    <Card>
+      <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>🎙️ Prioridad de voces</div>
+      <div style={{ display: 'grid', gap: 8, marginBottom: voices.length > 0 && prio === 'forced' ? 12 : 0 }}>
+        {options.map(o => (
+          <button key={o.value} onClick={() => handlePrio(o.value)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+              borderRadius: 12, border: `2px solid ${prio === o.value ? GOLD : BORDER}`,
+              background: prio === o.value ? GOLD + '18' : 'transparent',
+              cursor: 'pointer', textAlign: 'left', fontFamily: "'Fredoka'", color: TXT,
+              transition: 'all .15s'
+            }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{o.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: prio === o.value ? GOLD : TXT }}>{o.label}</div>
+              <div style={{ fontSize: 11, color: DIM, lineHeight: 1.3 }}>{o.desc}</div>
+            </div>
+            {prio === o.value && <span style={{ color: GOLD, fontSize: 16, fontWeight: 800 }}>✓</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Force specific voice selector */}
+      {prio === 'forced' && voices.length > 0 && (
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: DIM, marginBottom: 8 }}>Selecciona la voz:</div>
+          <div style={{ display: 'grid', gap: 6 }}>
+            {voices.map(v => (
+              <button key={v.id} onClick={() => handleForced(v.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                  borderRadius: 10, border: `2px solid ${forced === v.id ? GREEN : BORDER}`,
+                  background: forced === v.id ? GREEN + '18' : 'transparent',
+                  cursor: 'pointer', fontFamily: "'Fredoka'", color: TXT
+                }}>
+                <span style={{ fontSize: 24 }}>{v.avatar}</span>
+                <div style={{ flex: 1, textAlign: 'left' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{v.name}</div>
+                  <div style={{ fontSize: 11, color: DIM }}>{v.saved} grabaciones · {v.sex === 'f' ? 'Chica' : 'Chico'}{v.age ? ' · ' + v.age + ' años' : ''}</div>
+                </div>
+                {forced === v.id && <span style={{ color: GREEN, fontWeight: 800 }}>✓</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Current priority explanation */}
+      <div style={{ marginTop: 10, padding: '8px 12px', background: BG2, borderRadius: 10, fontSize: 12, color: DIM, lineHeight: 1.5 }}>
+        {prio === 'personal' && '🏠 → 🌐 → 🤖  Busca primero en las voces grabadas para ' + (user?.name || 'el alumno') + '. Si no existe esa frase, busca voces públicas reales. Si tampoco hay, usa la voz sintética de Toki.'}
+        {prio === 'public' && '🌐 → 🏠 → 🤖  Busca primero voces reales de otros usuarios (por género y edad similar). Si no hay, usa las personales. Último recurso: Toki.'}
+        {prio === 'tts' && '🤖  Solo la voz sintética del dispositivo. No se reproducen grabaciones.'}
+        {prio === 'forced' && forced && '🎯  Siempre usa la voz "' + (voices.find(v => v.id === forced)?.name || '?') + '". Si esa voz no tiene la frase grabada, usa Toki.'}
+        {prio === 'forced' && !forced && '⚠️  Selecciona una voz de la lista de arriba.'}
+      </div>
+    </Card>
   )
 }
 
@@ -476,6 +563,8 @@ export default function SettingsConfigTab(props) {
           </div>
         </div>
       </Card>
+
+      <VoicePriorityCard user={props.user} />
 
       <Card>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Planetas y modulos activos</div>
