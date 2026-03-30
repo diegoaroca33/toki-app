@@ -74,6 +74,10 @@ export default function App(){
   const[authErr,setAuthErr]=useState('');
   const[authBusy,setAuthBusy]=useState(false);
   const[authNick,setAuthNick]=useState('');
+  const[acceptTerms,setAcceptTerms]=useState(false);
+  const[acceptMarketing,setAcceptMarketing]=useState(false);
+  const[showTerms,setShowTerms]=useState(false);
+  const[showPrivacy,setShowPrivacy]=useState(false);
   const[cloudNick,setCloudNick]=useState(()=>{try{return localStorage.getItem('toki_cloud_nick')||''}catch(e){return''}});
   const[logoutAsk,setLogoutAsk]=useState(false);
   const[cloudUsers,setCloudUsers]=useState([]);
@@ -146,11 +150,15 @@ export default function App(){
     if(!auth)return;setAuthBusy(true);setAuthErr('');
     if(!authNick.trim()){setAuthErr('Escribe un nick');setAuthBusy(false);return}
     if(authPass.length<6){setAuthErr('La contraseña debe tener al menos 6 caracteres');setAuthBusy(false);return}
+    if(!acceptTerms){setAuthErr('Debes aceptar los términos y la política de privacidad');setAuthBusy(false);return}
     try{const cred=await fbSignUp(authEmail.trim(),authPass);
-      // Save nick to Firestore
-      if(cred?.user)await fbSaveProfile(cred.user.uid,{nick:authNick.trim()});
+      // Save nick + consent to Firestore
+      if(cred?.user)await fbSaveProfile(cred.user.uid,{
+        nick:authNick.trim(),
+        consent:{termsAccepted:true,termsDate:new Date().toISOString(),marketingOptIn:acceptMarketing,marketingDate:acceptMarketing?new Date().toISOString():null}
+      });
       setCloudNick(authNick.trim());try{localStorage.setItem('toki_cloud_nick',authNick.trim())}catch(e){}
-      setAuthScreen('choice');setAuthEmail('');setAuthPass('');setAuthNick('');
+      setAuthScreen('choice');setAuthEmail('');setAuthPass('');setAuthNick('');setAcceptTerms(false);setAcceptMarketing(false);
     }catch(e){
       const msgs={'auth/email-already-in-use':'Ya existe una cuenta con ese email','auth/invalid-email':'Email no válido','auth/weak-password':'Contraseña demasiado débil'};
       setAuthErr(msgs[e.code]||'Error: '+e.message);
@@ -561,7 +569,7 @@ export default function App(){
       <p style={{fontSize:14,color:DIM,margin:'0 0 12px'}}>Usuarios registrados: {cloudUsers.length}</p>
       {cloudUsers.map(u=><div key={u.uid} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:12,border:'2px solid '+BORDER,marginBottom:8,background:u.revoked?RED+'11':CARD}}>
         <div style={{flex:1}}><p style={{fontSize:16,fontWeight:600,margin:0,color:u.revoked?RED:TXT}}>{u.email||'Sin email'}</p>
-          <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{u.profiles?.length||0} perfiles {u.revoked?' — REVOCADO':''}</p></div>
+          <p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{u.profiles?.length||0} perfiles{u.revoked?' — REVOCADO':''}{u.consent?.marketingOptIn?' · 📧 Marketing':''}</p></div>
         {u.email!==ADMIN_EMAIL&&(u.revoked
           ?<button onClick={async()=>{await cloudUnrevokeUser(u.uid);setCloudUsers(await cloudListUsers())}} style={{background:GREEN+'22',border:'2px solid '+GREEN+'44',borderRadius:10,padding:'8px 14px',color:GREEN,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600}}>Activar</button>
           :<button onClick={async()=>{await cloudRevokeUser(u.uid);setCloudUsers(await cloudListUsers())}} style={{background:RED+'22',border:'2px solid '+RED+'44',borderRadius:10,padding:'8px 14px',color:RED,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600}}>Revocar</button>
@@ -611,7 +619,7 @@ export default function App(){
         <button className="btn btn-gold" onClick={enterGuest} style={{fontSize:22,padding:'18px 24px'}}>👤 Invitado</button>
         <p style={{fontSize:14,color:DIM,margin:0}}>Sin cuenta — datos solo en este dispositivo</p>
         <div style={{borderTop:'1px solid '+BORDER,margin:'8px 0'}}/>
-        <button onClick={async()=>{setAuthBusy(true);setAuthErr('');try{const cred=await fbSignInWithGoogle();if(cred?.user){const d=await cloudLoadProfile(cred.user.uid);if(!d?.nick){const autoNick=cred.user.displayName||(cred.user.email||'').split('@')[0].slice(0,4);await fbSaveProfile(cred.user.uid,{nick:autoNick});setCloudNick(autoNick);try{localStorage.setItem('toki_cloud_nick',autoNick)}catch(e){}}}setAuthScreen('choice')}catch(e){setAuthErr(e.message)}finally{setAuthBusy(false)}}} style={{fontSize:20,padding:'16px 24px',background:'#fff',color:'#333',border:'2px solid #ddd',borderRadius:16,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:10}} disabled={authBusy}>
+        <button onClick={async()=>{setAuthBusy(true);setAuthErr('');try{const cred=await fbSignInWithGoogle();if(cred?.user){const d=await cloudLoadProfile(cred.user.uid);if(!d?.nick){/* New user via Google — need consent */setAuthScreen('google-consent');setAuthBusy(false);return}setCloudNick(d.nick||'');try{localStorage.setItem('toki_cloud_nick',d.nick||'')}catch(e){}}setAuthScreen('choice')}catch(e){setAuthErr(e.message)}finally{setAuthBusy(false)}}} style={{fontSize:20,padding:'16px 24px',background:'#fff',color:'#333',border:'2px solid #ddd',borderRadius:16,cursor:'pointer',fontFamily:"'Fredoka'",fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',gap:10}} disabled={authBusy}>
           <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.8 33.4 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.2-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.5 18.8 12 24 12c3.1 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.7-3.6-11.3-8.5l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C36.8 39.3 44 34 44 24c0-1.3-.2-2.7-.4-3.9z"/></svg>
           Acceder con Google
         </button>
@@ -629,17 +637,93 @@ export default function App(){
           <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass} onClick={handleLogin}>{authBusy?'...':'Entrar'}</button>
         </div>
       </div>}
-      {authScreen==='register'&&<div style={{maxWidth:360,margin:'0 auto'}} className="af">
+      {authScreen==='register'&&<div style={{maxWidth:400,margin:'0 auto'}} className="af">
         <h2 style={{fontSize:24,color:GOLD,margin:'0 0 16px'}}>Crear cuenta</h2>
         <input className="inp" value={authNick} onChange={e=>setAuthNick(e.target.value)} placeholder="Nick (nombre público)" style={{marginBottom:12,fontSize:18,padding:14}}/>
         <input className="inp" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} type="email" placeholder="Email" style={{marginBottom:12,fontSize:18,padding:14}}/>
         <input className="inp" value={authPass} onChange={e=>setAuthPass(e.target.value)} type="password" placeholder="Contraseña (mín. 6 caracteres)" style={{marginBottom:12,fontSize:18,padding:14}} onKeyDown={e=>{if(e.key==='Enter')handleRegister()}}/>
+        {/* Consent checkboxes */}
+        <div style={{margin:'8px 0 14px',display:'grid',gap:10}}>
+          <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',fontSize:13,color:DIM,lineHeight:1.4}}>
+            <input type="checkbox" checked={acceptTerms} onChange={e=>setAcceptTerms(e.target.checked)} style={{marginTop:2,accentColor:GOLD,width:18,height:18,flexShrink:0}}/>
+            <span>Acepto los <button onClick={(e)=>{e.preventDefault();setShowTerms(true)}} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',textDecoration:'underline',padding:0,font:'inherit',fontWeight:600}}>Términos de uso</button> y la <button onClick={(e)=>{e.preventDefault();setShowPrivacy(true)}} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',textDecoration:'underline',padding:0,font:'inherit',fontWeight:600}}>Política de privacidad</button> <span style={{color:RED}}>*</span></span>
+          </label>
+          <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',fontSize:13,color:DIM,lineHeight:1.4}}>
+            <input type="checkbox" checked={acceptMarketing} onChange={e=>setAcceptMarketing(e.target.checked)} style={{marginTop:2,accentColor:GOLD,width:18,height:18,flexShrink:0}}/>
+            <span>Deseo recibir información sobre novedades, actualizaciones y ofertas de Toki por email</span>
+          </label>
+        </div>
         {authErr&&<p style={{color:RED,fontSize:15,fontWeight:600,margin:'0 0 10px'}}>{authErr}</p>}
         <div style={{display:'flex',gap:10}}>
-          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAuthScreen('choice');setAuthErr('')}}>← Volver</button>
-          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass||!authNick.trim()} onClick={handleRegister}>{authBusy?'...':'Crear'}</button>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setAuthScreen('choice');setAuthErr('');setAcceptTerms(false);setAcceptMarketing(false)}}>← Volver</button>
+          <button className="btn btn-g" style={{flex:2}} disabled={authBusy||!authEmail.trim()||!authPass||!authNick.trim()||!acceptTerms} onClick={handleRegister}>{authBusy?'...':'Crear cuenta'}</button>
         </div>
-        <p style={{fontSize:13,color:DIM,margin:'12px 0 0'}}>No necesitas aprobación. Tu cuenta se activa al instante.</p>
+        <p style={{fontSize:11,color:DIM+'88',margin:'10px 0 0',textAlign:'center'}}>Toki es gratuito durante la fase beta. Tu cuenta se activa al instante.</p>
+      </div>}
+      {/* Google consent gate — new Google user needs to accept terms */}
+      {authScreen==='google-consent'&&fbUser&&<div style={{maxWidth:400,margin:'0 auto'}} className="af">
+        <h2 style={{fontSize:24,color:GOLD,margin:'0 0 6px'}}>Bienvenido a Toki</h2>
+        <p style={{color:DIM,fontSize:14,margin:'0 0 18px'}}>Para completar tu registro necesitamos tu consentimiento:</p>
+        <div style={{margin:'0 0 18px',display:'grid',gap:10}}>
+          <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',fontSize:13,color:DIM,lineHeight:1.4}}>
+            <input type="checkbox" checked={acceptTerms} onChange={e=>setAcceptTerms(e.target.checked)} style={{marginTop:2,accentColor:GOLD,width:18,height:18,flexShrink:0}}/>
+            <span>Acepto los <button onClick={(e)=>{e.preventDefault();setShowTerms(true)}} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',textDecoration:'underline',padding:0,font:'inherit',fontWeight:600}}>Términos de uso</button> y la <button onClick={(e)=>{e.preventDefault();setShowPrivacy(true)}} style={{background:'none',border:'none',color:GOLD,cursor:'pointer',textDecoration:'underline',padding:0,font:'inherit',fontWeight:600}}>Política de privacidad</button> <span style={{color:RED}}>*</span></span>
+          </label>
+          <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',fontSize:13,color:DIM,lineHeight:1.4}}>
+            <input type="checkbox" checked={acceptMarketing} onChange={e=>setAcceptMarketing(e.target.checked)} style={{marginTop:2,accentColor:GOLD,width:18,height:18,flexShrink:0}}/>
+            <span>Deseo recibir información sobre novedades, actualizaciones y ofertas de Toki por email</span>
+          </label>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-ghost" style={{flex:1}} onClick={async()=>{try{await handleLogout()}catch(e){};setAuthScreen('choice');setAcceptTerms(false);setAcceptMarketing(false)}}>Cancelar</button>
+          <button className="btn btn-g" style={{flex:2}} disabled={!acceptTerms} onClick={async()=>{
+            setAuthBusy(true);
+            const autoNick=fbUser.displayName||(fbUser.email||'').split('@')[0].slice(0,4);
+            await fbSaveProfile(fbUser.uid,{
+              nick:autoNick,
+              consent:{termsAccepted:true,termsDate:new Date().toISOString(),marketingOptIn:acceptMarketing,marketingDate:acceptMarketing?new Date().toISOString():null}
+            });
+            setCloudNick(autoNick);try{localStorage.setItem('toki_cloud_nick',autoNick)}catch(e){}
+            setAuthScreen('choice');setAcceptTerms(false);setAcceptMarketing(false);setAuthBusy(false);
+          }}>Aceptar y continuar</button>
+        </div>
+      </div>}
+      {/* Terms of Service modal */}
+      {showTerms&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.85)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setShowTerms(false)}>
+        <div onClick={e=>e.stopPropagation()} style={{background:BG2,borderRadius:20,maxWidth:520,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:28,color:TXT}}>
+          <h2 style={{fontSize:22,color:GOLD,margin:'0 0 16px'}}>Términos de uso</h2>
+          <div style={{fontSize:13,lineHeight:1.7,color:DIM}}>
+            <p><b>1. Objeto.</b> Toki es una aplicación educativa diseñada para apoyar el aprendizaje del habla y la lectoescritura en personas con necesidades especiales, en particular con Síndrome de Down. El servicio es proporcionado por Diego Aroca ("el titular").</p>
+            <p><b>2. Acceso gratuito.</b> Actualmente Toki se ofrece de forma gratuita durante su fase beta. El titular se reserva el derecho de establecer planes de pago en el futuro, notificando previamente a los usuarios registrados.</p>
+            <p><b>3. Uso adecuado.</b> El usuario se compromete a utilizar la aplicación con fines educativos y a no emplearla de forma que pueda perjudicar su funcionamiento o el de otros usuarios.</p>
+            <p><b>4. Cuenta de usuario.</b> Al crear una cuenta, el usuario es responsable de la veracidad de los datos proporcionados y de mantener la confidencialidad de sus credenciales de acceso.</p>
+            <p><b>5. Contenido del usuario.</b> Los datos de perfiles, grabaciones de voz y registros de progreso son propiedad del usuario. El titular no accederá a estos datos salvo para el funcionamiento técnico del servicio o por requerimiento legal.</p>
+            <p><b>6. Propiedad intelectual.</b> Toki, su diseño, código, contenidos y marca son propiedad de Diego Aroca. Queda prohibida su reproducción, distribución o modificación sin autorización expresa.</p>
+            <p><b>7. Limitación de responsabilidad.</b> Toki es una herramienta de apoyo educativo y no sustituye la intervención de profesionales (logopedas, pedagogos, médicos). El titular no se hace responsable de los resultados educativos ni de interrupciones del servicio.</p>
+            <p><b>8. Modificaciones.</b> Estos términos pueden ser actualizados. Se notificará a los usuarios registrados cualquier cambio sustancial.</p>
+            <p style={{color:DIM+'88',fontSize:11}}>Última actualización: marzo 2026</p>
+          </div>
+          <button className="btn btn-gold" onClick={()=>setShowTerms(false)} style={{marginTop:12,width:'100%'}}>Cerrar</button>
+        </div>
+      </div>}
+      {/* Privacy Policy modal */}
+      {showPrivacy&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.85)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setShowPrivacy(false)}>
+        <div onClick={e=>e.stopPropagation()} style={{background:BG2,borderRadius:20,maxWidth:520,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:28,color:TXT}}>
+          <h2 style={{fontSize:22,color:GOLD,margin:'0 0 16px'}}>Política de privacidad</h2>
+          <div style={{fontSize:13,lineHeight:1.7,color:DIM}}>
+            <p><b>Responsable.</b> Diego Aroca. Contacto: diegoarocavillalba@hotmail.com</p>
+            <p><b>Datos recogidos.</b> Al registrarse se recogen: email, nick (nombre público) y preferencias de consentimiento. Durante el uso de la app se generan datos de perfiles de alumnos (nombre, datos familiares, dirección, colegio), grabaciones de voz, registros de ejercicios y progresión.</p>
+            <p><b>Finalidad.</b> Los datos se utilizan exclusivamente para: (1) el funcionamiento del servicio, (2) la sincronización entre dispositivos, (3) si el usuario lo consiente, el envío de comunicaciones sobre novedades y actualizaciones de Toki.</p>
+            <p><b>Base legal.</b> Consentimiento del usuario (art. 6.1.a RGPD). El usuario puede retirar su consentimiento en cualquier momento.</p>
+            <p><b>Almacenamiento.</b> Los datos se almacenan en Firebase (Google Cloud Platform) con servidores en la UE. Las grabaciones de voz y datos de perfiles se cifran en tránsito.</p>
+            <p><b>Menores.</b> Toki está diseñada para ser utilizada bajo la supervisión de un adulto (padre, madre o tutor). Los datos de los menores son responsabilidad del supervisor que crea la cuenta.</p>
+            <p><b>Conservación.</b> Los datos se conservan mientras la cuenta esté activa. El usuario puede solicitar la eliminación completa de sus datos contactando al responsable.</p>
+            <p><b>Derechos.</b> El usuario tiene derecho a acceder, rectificar, suprimir, limitar y portar sus datos, así como a oponerse a su tratamiento. Para ejercer estos derechos, contactar con: diegoarocavillalba@hotmail.com</p>
+            <p><b>Comunicaciones comerciales.</b> Solo se enviarán comunicaciones comerciales o informativas a los usuarios que hayan marcado expresamente la casilla de aceptación. El usuario puede darse de baja en cualquier momento.</p>
+            <p style={{color:DIM+'88',fontSize:11}}>Última actualización: marzo 2026</p>
+          </div>
+          <button className="btn btn-gold" onClick={()=>setShowPrivacy(false)} style={{marginTop:12,width:'100%'}}>Cerrar</button>
+        </div>
       </div>}
       <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
     </div>}
