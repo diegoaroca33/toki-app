@@ -16,13 +16,12 @@ const DESCENDERS='gjpqy'.split('');const ASCENDERS='bdfhklt'.split('');
 
 const WRITE_WORDS_LOWER=['casa','mesa','sol','pan','luz','ojo','uno','dos','mar','pie','oso','ave','rio','dia','rey','mis','tus','sus','hoy','agua','leche','mama','papa','cole','amigo','perro','gato','coche','pelota','parque','calle','tienda','movil','musica','silla','libro','zapato','cocina','baño','toalla','jabon','reloj','llave'];
 const WRITE_PHRASES_LOWER=['me llamo guillermo','hoy es lunes','quiero agua','tengo hambre','mi casa es','sol y luna','pan con queso','quiero agua por favor','voy al parque','es mi amigo','estoy contento','no me gusta','tengo mucho hambre','hoy hace mucho frio','mañana es sabado','me gusta la musica','juego con mis amigos','voy al cole en autobus','mi padre se llama {padre}','quiero ir a la piscina'];
-// Generate default custom phrases from user profile data
-function getDefaultCustomPhrases(user){
+// Auto-generate phrases from user profile (always fresh, updates with profile changes)
+export function getAutoPhrasesFromProfile(user){
   const frases=[];
   if(user?.name)frases.push('ME LLAMO '+user.name.toUpperCase());
   if(user?.direccion)frases.push('VIVO EN '+user.direccion.toUpperCase());
   if(user?.telefono)frases.push('LLAMA AL '+user.telefono);
-  // Find padre/madre from personas
   try{const ps=JSON.parse(localStorage.getItem('toki_personas')||'[]');
     const padre=ps.find(p=>p.relation==='Padre'&&p.name);
     const madre=ps.find(p=>p.relation==='Madre'&&p.name);
@@ -33,16 +32,33 @@ function getDefaultCustomPhrases(user){
   return frases;
 }
 
-export function getCustomPhrases(user){
-  try{const saved=JSON.parse(localStorage.getItem('toki_custom_phrases')||'null');
-    if(saved&&saved.length>0)return saved;
+// Extra phrases added manually by supervisor (stored separately)
+export function getExtraCustomPhrases(){
+  try{const saved=JSON.parse(localStorage.getItem('toki_custom_phrases_extra')||'null');
+    if(saved&&Array.isArray(saved))return saved;
   }catch(e){}
-  return getDefaultCustomPhrases(user);
+  return[];
 }
 
-export function saveCustomPhrases(phrases){
-  try{localStorage.setItem('toki_custom_phrases',JSON.stringify(phrases))}catch(e){}
+export function saveExtraCustomPhrases(phrases){
+  try{localStorage.setItem('toki_custom_phrases_extra',JSON.stringify(phrases))}catch(e){}
 }
+
+// Combined: auto from profile + extra manual — always up to date
+export function getCustomPhrases(user){
+  const auto=getAutoPhrasesFromProfile(user);
+  const extra=getExtraCustomPhrases();
+  // Deduplicate (auto first, then extras that aren't duplicates)
+  const set=new Set(auto.map(f=>f.toUpperCase()));
+  const merged=[...auto];
+  extra.forEach(f=>{const up=f.toUpperCase();if(!set.has(up)){merged.push(up);set.add(up)}});
+  return merged;
+}
+
+// Legacy migration: move old toki_custom_phrases to extra if they exist
+try{const old=JSON.parse(localStorage.getItem('toki_custom_phrases')||'null');
+  if(old&&Array.isArray(old)&&old.length>0){saveExtraCustomPhrases(old);localStorage.removeItem('toki_custom_phrases')}
+}catch(e){}
 
 const MAX_PHRASE_LEN=40; // max characters per custom phrase
 
