@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
   BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER,
-  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS
+  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS, SUPPORT_EMAIL
 } from '../../constants.js'
 import { Button, Card, Badge } from '../ui/index.js'
 import SessionModeControl from './SessionModeControl.jsx'
@@ -513,6 +513,13 @@ export default function SettingsConfigTab(props) {
           ))}
         </div>
       </Card>
+
+      {/* Support link */}
+      <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
+        <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: DIM, fontSize: 13, textDecoration: 'none' }}>
+          📩 Incidencias o soporte: <span style={{ color: GOLD, textDecoration: 'underline' }}>{SUPPORT_EMAIL}</span>
+        </a>
+      </div>
     </div>
   )
 }

@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from './firebase.js'
-import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
+import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
 import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
@@ -610,7 +610,7 @@ export default function App(){
         </div>
         {supInp.length<4&&pinStep==='enter'&&<p style={{fontSize:13,color:DIM,textAlign:'center',margin:'10px 0 0'}}>Escribe 4 dígitos para el PIN</p>}
       </div>
-      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER} &middot; <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD+'99',textDecoration:'none'}}>Soporte</a></p>
     </div>}
 
     {/* Firebase Auth Gate — shown when hasConfig && not yet authenticated */}
@@ -700,7 +700,8 @@ export default function App(){
             <p><b>5. Contenido del usuario.</b> Los datos de perfiles, grabaciones de voz y registros de progreso son propiedad del usuario. El titular no accederá a estos datos salvo para el funcionamiento técnico del servicio o por requerimiento legal.</p>
             <p><b>6. Propiedad intelectual.</b> Toki, su diseño, código, contenidos y marca son propiedad de Diego Aroca. Queda prohibida su reproducción, distribución o modificación sin autorización expresa.</p>
             <p><b>7. Limitación de responsabilidad.</b> Toki es una herramienta de apoyo educativo y no sustituye la intervención de profesionales (logopedas, pedagogos, médicos). El titular no se hace responsable de los resultados educativos ni de interrupciones del servicio.</p>
-            <p><b>8. Modificaciones.</b> Estos términos pueden ser actualizados. Se notificará a los usuarios registrados cualquier cambio sustancial.</p>
+            <p><b>8. Soporte e incidencias.</b> Para reportar errores, problemas técnicos o cualquier incidencia con el servicio, el usuario puede contactar en: <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD}}>{SUPPORT_EMAIL}</a></p>
+            <p><b>9. Modificaciones.</b> Estos términos pueden ser actualizados. Se notificará a los usuarios registrados cualquier cambio sustancial.</p>
             <p style={{color:DIM+'88',fontSize:11}}>Última actualización: marzo 2026</p>
           </div>
           <button className="btn btn-gold" onClick={()=>setShowTerms(false)} style={{marginTop:12,width:'100%'}}>Cerrar</button>
@@ -711,21 +712,21 @@ export default function App(){
         <div onClick={e=>e.stopPropagation()} style={{background:BG2,borderRadius:20,maxWidth:520,width:'100%',maxHeight:'80vh',overflowY:'auto',padding:28,color:TXT}}>
           <h2 style={{fontSize:22,color:GOLD,margin:'0 0 16px'}}>Política de privacidad</h2>
           <div style={{fontSize:13,lineHeight:1.7,color:DIM}}>
-            <p><b>Responsable.</b> Diego Aroca. Contacto: diegoarocavillalba@hotmail.com</p>
+            <p><b>Responsable.</b> Diego Aroca. Contacto: <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD}}>{SUPPORT_EMAIL}</a></p>
             <p><b>Datos recogidos.</b> Al registrarse se recogen: email, nick (nombre público) y preferencias de consentimiento. Durante el uso de la app se generan datos de perfiles de alumnos (nombre, datos familiares, dirección, colegio), grabaciones de voz, registros de ejercicios y progresión.</p>
             <p><b>Finalidad.</b> Los datos se utilizan exclusivamente para: (1) el funcionamiento del servicio, (2) la sincronización entre dispositivos, (3) si el usuario lo consiente, el envío de comunicaciones sobre novedades y actualizaciones de Toki.</p>
             <p><b>Base legal.</b> Consentimiento del usuario (art. 6.1.a RGPD). El usuario puede retirar su consentimiento en cualquier momento.</p>
             <p><b>Almacenamiento.</b> Los datos se almacenan en Firebase (Google Cloud Platform) con servidores en la UE. Las grabaciones de voz y datos de perfiles se cifran en tránsito.</p>
             <p><b>Menores.</b> Toki está diseñada para ser utilizada bajo la supervisión de un adulto (padre, madre o tutor). Los datos de los menores son responsabilidad del supervisor que crea la cuenta.</p>
             <p><b>Conservación.</b> Los datos se conservan mientras la cuenta esté activa. El usuario puede solicitar la eliminación completa de sus datos contactando al responsable.</p>
-            <p><b>Derechos.</b> El usuario tiene derecho a acceder, rectificar, suprimir, limitar y portar sus datos, así como a oponerse a su tratamiento. Para ejercer estos derechos, contactar con: diegoarocavillalba@hotmail.com</p>
+            <p><b>Derechos.</b> El usuario tiene derecho a acceder, rectificar, suprimir, limitar y portar sus datos, así como a oponerse a su tratamiento. Para ejercer estos derechos, contactar con: <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD}}>{SUPPORT_EMAIL}</a></p>
             <p><b>Comunicaciones comerciales.</b> Solo se enviarán comunicaciones comerciales o informativas a los usuarios que hayan marcado expresamente la casilla de aceptación. El usuario puede darse de baja en cualquier momento.</p>
             <p style={{color:DIM+'88',fontSize:11}}>Última actualización: marzo 2026</p>
           </div>
           <button className="btn btn-gold" onClick={()=>setShowPrivacy(false)} style={{marginTop:12,width:'100%'}}>Cerrar</button>
         </div>
       </div>}
-      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER} &middot; <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD+'99',textDecoration:'none'}}>Soporte</a></p>
     </div>}
     {/* Revoked user screen */}
     {scr==='login'&&hasConfig&&revoked&&fbUser&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{fontSize:80,marginBottom:16}}>🚫</div>
@@ -755,7 +756,7 @@ export default function App(){
         {fbUser.email===ADMIN_EMAIL&&<button onClick={async()=>{setCloudUsers(await cloudListUsers());setAuthScreen('admin');setOv('admin')}} style={{background:PURPLE+'22',border:'2px solid '+PURPLE+'44',borderRadius:20,padding:'6px 12px',color:PURPLE,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:"'Fredoka'"}} title="Panel admin">⚙️ Admin</button>}
       </div>}
       {!fbUser&&hasConfig&&<button onClick={()=>{setFbMode('auth');setAuthScreen('choice')}} style={{background:'none',border:'none',color:BLUE,fontSize:14,cursor:'pointer',fontFamily:"'Fredoka'",textDecoration:'underline',marginBottom:16,display:'block',margin:'0 auto 16px'}}>🔑 Iniciar sesión / Crear cuenta</button>}
-      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',pointerEvents:'none',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER}</p>
+      <p style={{color:DIM+'99',fontSize:11,position:'fixed',bottom:2,left:0,right:0,textAlign:'center',zIndex:0,margin:0}}><b>Toki</b> by Diego Aroca &copy; 2026 &mdash; {VER} &middot; <a href={'mailto:'+SUPPORT_EMAIL} style={{color:GOLD+'99',textDecoration:'none'}}>Soporte</a></p>
       {profs.length>0&&!creating&&(()=>{
         const selProf=hoveredProf;
         const isCompact=profs.length>=5;
