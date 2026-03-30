@@ -33,6 +33,7 @@ import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres, ExQuienSoyUnified } from 
 import { MiCielo } from './components/MiCielo.jsx'
 import { Settings } from './components/Settings.jsx'
 import TokiPlayground from './components/TokiPlayground.jsx'
+import { isCheckpointPending } from './components/ControlCheckpoint.jsx'
 import TokiWelcome from './components/TokiWelcome.jsx'
 import TokiLogoPro from './components/TokiLogoPro.jsx'
 // Personas helpers
@@ -542,7 +543,8 @@ export default function App(){
     if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
-  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setOv('done');
+  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);
+    setOv('done')
     // Check if dog can be fed (session >= 15 min)
     if(user&&amin>=15&&canFeedDog(user.id)){setShowFeedDog(true)}}
   function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
@@ -760,7 +762,7 @@ export default function App(){
     </div>}
 
     {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
-    {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️</button></div></div>
+    {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0,position:'relative'}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️{isCheckpointPending(user)&&<span style={{position:'absolute',top:4,right:4,width:10,height:10,borderRadius:'50%',background:RED,border:'2px solid '+BG}} title="Grabación control pendiente"/>}</button></div></div>
       <div style={{padding:'4px 4px 2px'}}>
         {/* Row 1: Dog | Avatar | Greeting | Stars counter + streak */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
