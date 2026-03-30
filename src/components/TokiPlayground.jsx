@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { sayFB } from '../voice.js';
 
 // Bark sound using Web Audio API
 function playBark(){
@@ -27,6 +28,62 @@ function playBark(){
   }catch(e){}
 }
 
+// Whine / happy sound
+function playWhine(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();const g=ctx.createGain();
+    osc.connect(g);g.connect(ctx.destination);osc.type='sine';
+    osc.frequency.setValueAtTime(600,ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(900,ctx.currentTime+0.3);
+    osc.frequency.linearRampToValueAtTime(700,ctx.currentTime+0.5);
+    g.gain.setValueAtTime(0.12,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.55);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.55);
+    setTimeout(()=>ctx.close(),700);
+  }catch(e){}
+}
+
+// Voice command definitions: {patterns, action, response}
+const VOICE_COMMANDS=[
+  // Movimiento
+  {id:'dance',patterns:['baila','dance','bailar','mueve'],response:'¡Mira cómo bailo!'},
+  {id:'jump',patterns:['salta','saltar','salto','jump','arriba'],response:'¡Yuhuuu!'},
+  {id:'spin',patterns:['gira','girar','vuelta','spin','la cola','persigue'],response:'¡Voy a pillarla!'},
+  {id:'roll',patterns:['rueda','rolar','roll','voltea','voltereta'],response:'¡Allá voy!'},
+  {id:'floss',patterns:['floss','fortnite','baile viral','moda'],response:'¡Floss!'},
+  // Trucos
+  {id:'sit',patterns:['sienta','sentado','sit','quieto','para'],response:'¡Sentado!'},
+  {id:'paw',patterns:['pata','dame la pata','choca','shake','mano'],response:'¡Choca esos cinco!'},
+  {id:'down',patterns:['tumba','suelo','echate','tumbado','down','abajo','al suelo'],response:'¡Estoy cómodo!'},
+  {id:'sleep',patterns:['duerme','dormir','nana','sleep','a dormir','descansa'],response:'Zzzzz...'},
+  // Sonidos
+  {id:'bark',patterns:['ladra','ladrar','guau','woof','habla','di algo'],response:null},
+  // Afecto
+  {id:'love',patterns:['te quiero','love','cariño','guapo','bonito','bueno','precioso','lindo'],response:'¡Y yo a ti!'},
+  {id:'hello',patterns:['hola','hello','hey','toki','buenos','saludar'],response:'¡Guau guau!'},
+  {id:'howru',patterns:['cómo estás','como estas','qué tal','que tal','estás bien'],response:'¡Estoy genial!'},
+  // Comida
+  {id:'hungry',patterns:['hambre','comer','come','comida','galleta','premio','treat'],response:'¡Ñam ñam!'},
+  // Diversión
+  {id:'brave',patterns:['valiente','fuerte','héroe','heroe','super','campeón','campeon'],response:'¡Soy Super Toki!'},
+  {id:'happy',patterns:['contento','feliz','alegre','happy','bien'],response:'¡Estoy feliz!'},
+  {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge'],response:'¡La tengo!'},
+  {id:'kiss',patterns:['beso','besito','kiss','muack','mua'],response:'¡Muuuack!'},
+];
+
+function matchCommand(text){
+  if(!text)return null;
+  const t=text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const cmd of VOICE_COMMANDS){
+    for(const p of cmd.patterns){
+      const pn=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(t.includes(pn))return cmd;
+    }
+  }
+  return null;
+}
+
 export default function TokiPlayground({
   size = 380,
   feedMode = false,
@@ -43,6 +100,12 @@ export default function TokiPlayground({
   const [purrSpark, setPurrSpark] = useState(false);
   const [draggingBack, setDraggingBack] = useState(false);
   const [showContinue, setShowContinue] = useState(false);
+  const [voiceHint, setVoiceHint] = useState('🎤 Háblale a Toki');
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [trickAnim, setTrickAnim] = useState(null); // 'jump','spin','floss','sit','paw','roll'
+  const [speechBubble, setSpeechBubble] = useState(null);
+  const srRef = useRef(null);
+  const voiceTimeout = useRef(null);
 
   const [bowlPos, setBowlPos] = useState({ x: 150, y: 270 });
   const [draggingBowl, setDraggingBowl] = useState(false);
@@ -253,6 +316,197 @@ export default function TokiPlayground({
     }
   };
 
+  // ── Voice command execution ───────────────────────────────
+  const execCommand = useCallback((cmd) => {
+    resetIdleTimer();
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+
+    // Show speech bubble
+    if (cmd.response) {
+      setSpeechBubble(cmd.response);
+      setTimeout(() => setSpeechBubble(null), 2200);
+    }
+
+    switch (cmd.id) {
+      case 'dance':
+      case 'floss':
+        setTrickAnim(cmd.id);
+        setState('happy'); setTailFast(true); setEyesClosed(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false); setEyesClosed(false);
+        }, 3000);
+        break;
+      case 'jump':
+        setTrickAnim('jump');
+        setState('happy'); setTailFast(true);
+        playBark();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false);
+        }, 2000);
+        break;
+      case 'spin':
+        setTrickAnim('spin');
+        setState('happy'); setTailFast(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false);
+        }, 2500);
+        break;
+      case 'bark':
+        bark();
+        break;
+      case 'love':
+        setState('happy'); setEyesClosed(true); setTailFast(true);
+        setPurrSpark(true); playWhine();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setEyesClosed(false); setTailFast(false); setPurrSpark(false);
+        }, 2500);
+        break;
+      case 'hello':
+        setState('happy'); setTailFast(true); setMouthOpen(true); setShowWoof(true);
+        playBark();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setMouthOpen(false); setShowWoof(false);
+        }, 1500);
+        break;
+      case 'howru':
+        setState('happy'); setTailFast(true); setShowTongue(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setShowTongue(false);
+        }, 2000);
+        break;
+      case 'sit':
+        setTrickAnim('sit');
+        setState('idle'); setEyesClosed(false); setTailFast(false);
+        actionTimer.current = setTimeout(() => { setTrickAnim(null); }, 3000);
+        break;
+      case 'paw':
+        setTrickAnim('paw');
+        setState('happy'); setEyesClosed(true); setTailFast(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setEyesClosed(false); setTailFast(false);
+        }, 2500);
+        break;
+      case 'roll':
+        setTrickAnim('roll');
+        setState('happy'); setTailFast(true);
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false);
+        }, 2500);
+        break;
+      case 'down':
+        setTrickAnim('sit'); // reuse sit animation for lying down
+        setState('belly'); setIsLying(true); setShowTongue(true); setTailFast(true);
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setIsLying(false); setShowTongue(false); setTailFast(false);
+        }, 3500);
+        break;
+      case 'sleep':
+        setState('yawn'); setEyesClosed(true); setShowTongue(false); setTailFast(false);
+        setTrickAnim(null);
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setEyesClosed(false);
+        }, 4000);
+        break;
+      case 'hungry':
+        setEatingState();
+        break;
+      case 'brave':
+        setTrickAnim('jump');
+        setState('happy'); setTailFast(true); setPurrSpark(true);
+        playBark(); setTimeout(()=>playBark(),400);
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false); setPurrSpark(false);
+        }, 2500);
+        break;
+      case 'happy':
+        setState('happy'); setTailFast(true); setEyesClosed(true); setShowTongue(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setEyesClosed(false); setShowTongue(false);
+        }, 2500);
+        break;
+      case 'fetch':
+        setTrickAnim('jump');
+        setState('happy'); setTailFast(true);
+        playBark();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim('spin');
+          setTimeout(() => {
+            setTrickAnim(null); setState('idle'); setTailFast(false);
+          }, 1500);
+        }, 1000);
+        break;
+      case 'kiss':
+        setState('happy'); setEyesClosed(true); setTailFast(true); setPurrSpark(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setEyesClosed(false); setTailFast(false); setPurrSpark(false);
+        }, 2500);
+        break;
+      default:
+        bark();
+    }
+  }, []);
+
+  // ── Continuous voice listening ─────────────────────────────
+  const startListening = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    try {
+      if (srRef.current) { try { srRef.current.abort(); } catch(e){} }
+      const r = new SR();
+      r.lang = 'es-ES'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 3;
+      r.onresult = (e) => {
+        const alts = [];
+        for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript.toLowerCase().trim());
+        const text = alts.join(' ');
+        const cmd = matchCommand(text);
+        if (cmd) {
+          setVoiceHint('🎤 ¡Entendido!');
+          execCommand(cmd);
+        } else {
+          setVoiceHint('🎤 ¿Qué dices? 🤔');
+          // Toki tilts head confused
+          setState('idle'); setTailFast(false);
+          playWhine();
+        }
+        // Restart listening after a pause
+        voiceTimeout.current = setTimeout(() => {
+          setVoiceHint('🎤 Háblale a Toki');
+          startListening();
+        }, 2500);
+      };
+      r.onerror = () => {
+        voiceTimeout.current = setTimeout(() => startListening(), 1500);
+      };
+      r.onend = () => {
+        // If no result, restart
+        if (!voiceTimeout.current) {
+          voiceTimeout.current = setTimeout(() => startListening(), 800);
+        }
+      };
+      srRef.current = r;
+      r.start();
+      setVoiceActive(true);
+    } catch(e) { console.warn('SR error', e); }
+  }, [execCommand]);
+
+  const stopListening = useCallback(() => {
+    if (srRef.current) { try { srRef.current.abort(); } catch(e){} srRef.current = null; }
+    if (voiceTimeout.current) { clearTimeout(voiceTimeout.current); voiceTimeout.current = null; }
+    setVoiceActive(false);
+  }, []);
+
+  // Start voice listening on mount
+  useEffect(() => {
+    const timer = setTimeout(() => startListening(), 1200);
+    return () => { clearTimeout(timer); stopListening(); };
+  }, []);
+
   const renderEyes = () => {
     if (eyesClosed || state === "happy" || state === "yawn" || state === "eating") {
       return (
@@ -342,12 +596,28 @@ export default function TokiPlayground({
           @keyframes tpCheek{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
           @keyframes tpBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,.992)}}
           @keyframes tpBowlSettle{0%{transform:scale(.92)}100%{transform:scale(1)}}
+          .tp-jump{animation:tpJump .5s ease-in-out 3;transform-origin:150px 240px}
+          .tp-spin{animation:tpSpin .7s ease-in-out 3;transform-origin:150px 180px}
+          .tp-floss{animation:tpFloss .35s ease-in-out 7;transform-origin:150px 200px}
+          .tp-sit{animation:tpSit .6s ease-out forwards;transform-origin:150px 240px}
+          .tp-paw{animation:tpPaw .8s ease-in-out 2;transform-origin:150px 200px}
+          .tp-roll{animation:tpRoll .6s ease-in-out 3;transform-origin:150px 180px}
+          .tp-bubble{animation:tpBubble 2s ease-out forwards}
+          .tp-mic-pulse{animation:tpMicPulse 1.5s ease-in-out infinite}
+          @keyframes tpJump{0%,100%{transform:translateY(0) scaleY(1)}15%{transform:translateY(4px) scaleY(.92)}50%{transform:translateY(-40px) scaleY(1.05)}85%{transform:translateY(2px) scaleY(.96)}}
+          @keyframes tpSpin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(.9)}100%{transform:rotate(360deg) scale(1)}}
+          @keyframes tpFloss{0%,100%{transform:translateX(0) skewX(0)}25%{transform:translateX(-8px) skewX(-6deg)}75%{transform:translateX(8px) skewX(6deg)}}
+          @keyframes tpSit{0%{transform:translateY(0) scaleY(1)}100%{transform:translateY(12px) scaleY(.85)}}
+          @keyframes tpPaw{0%,100%{transform:rotate(0)}30%{transform:rotate(-8deg) translateY(-3px)}60%{transform:rotate(4deg)}}
+          @keyframes tpRoll{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+          @keyframes tpBubble{0%{opacity:0;transform:translateY(6px) scale(.8)}10%{opacity:1;transform:translateY(0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+          @keyframes tpMicPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
         `}</style>
         <ellipse cx="150" cy="258" rx="88" ry="20" fill="rgba(255,255,255,.08)"/>
         <ellipse cx="150" cy="258" rx="58" ry="12" fill="rgba(240,200,80,.12)"/>
         {showWoof&&(<g className="tp-woof"><rect x="188" y="64" rx="16" ry="16" width="70" height="34" fill="#F0C850" stroke="#d4ac0d" strokeWidth="3"/><path d="M203 95 L194 106 L194 94 Z" fill="#F0C850" stroke="#d4ac0d" strokeWidth="3" strokeLinejoin="round"/><text x="223" y="87" textAnchor="middle" fontSize="20" fontWeight="700" fill="#1a1a2e" style={{fontFamily:"'Fredoka'"}}>woof!</text></g>)}
         {purrSpark&&(<g><circle className="tp-spark1" cx="220" cy="130" r="7" fill="rgba(240,200,80,.8)"/><circle className="tp-spark2" cx="232" cy="160" r="5" fill="rgba(255,255,255,.7)"/><circle className="tp-spark3" cx="210" cy="178" r="6" fill="rgba(46,204,113,.7)"/></g>)}
-        <g className={isLying?"tp-lying":draggingBack?"tp-bob tp-purr":"tp-bob"}>
+        <g className={trickAnim==='jump'?'tp-jump':trickAnim==='spin'?'tp-spin':trickAnim==='floss'?'tp-floss':trickAnim==='sit'?'tp-sit':trickAnim==='paw'?'tp-paw':trickAnim==='roll'?'tp-roll':isLying?"tp-lying":draggingBack?"tp-bob tp-purr":"tp-bob"}>
           <g className="tp-breathe">
             <g className={`tp-tail ${tailFast?"tp-tail-fast":""}`}><path d="M78 194 C52 178,48 148,70 138 C84 132,96 141,94 151 C92 159,86 164,86 172 C86 181,95 188,104 192" fill="none" stroke="#8B5A3C" strokeWidth="12" strokeLinecap="round"/></g>
             <ellipse cx="150" cy={isLying?192:186} rx={isLying?86:78} ry={isLying?48:56} fill="#C98A57"/>
@@ -380,7 +650,11 @@ export default function TokiPlayground({
         <g opacity="0.18"><circle cx="150" cy="108" r="50" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 8"/><ellipse cx="150" cy="196" rx="54" ry="40" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 8"/></g>
       </svg>
       {typeof countdown==="number"&&countdown>0&&(<div style={{position:"absolute",left:20,right:20,bottom:14,height:8,borderRadius:999,background:"rgba(255,255,255,.12)",overflow:"hidden"}}><div style={{height:"100%",width:`${progress}%`,background:"linear-gradient(90deg,#2ECC71,#3498DB)",borderRadius:999,transition:"width .08s linear"}}/></div>)}
-      {showContinue&&(<button onClick={onContinue} style={{position:"absolute",right:18,bottom:typeof countdown==="number"&&countdown>0?34:18,border:"none",borderRadius:999,padding:"10px 14px",background:"rgba(255,255,255,.12)",color:"#ECF0F1",backdropFilter:"blur(4px)",fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:"pointer"}}>¡Seguimos!</button>)}
+      {/* Speech bubble from Toki */}
+      {speechBubble&&(<div key={speechBubble} className="tp-bubble" style={{position:'absolute',top:'12%',left:'50%',transform:'translateX(-50%)',background:'#F0C850',color:'#1a1a2e',fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,padding:'10px 20px',borderRadius:20,boxShadow:'0 4px 12px rgba(0,0,0,.3)',whiteSpace:'nowrap',zIndex:5,pointerEvents:'none'}}>{speechBubble}</div>)}
+      {/* Voice hint */}
+      <div className={voiceActive?'tp-mic-pulse':''} style={{position:'absolute',bottom:typeof countdown==='number'&&countdown>0?44:24,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.1)',backdropFilter:'blur(6px)',color:'#ECF0F1',fontFamily:"'Fredoka'",fontWeight:600,fontSize:15,padding:'8px 18px',borderRadius:999,border:voiceActive?'2px solid rgba(46,204,113,.5)':'2px solid rgba(255,255,255,.15)',cursor:'pointer',userSelect:'none'}} onClick={()=>{if(!voiceActive)startListening();else{stopListening();setVoiceHint('🎤 Háblale a Toki')}}}>{voiceHint}</div>
+      {showContinue&&(<button onClick={()=>{stopListening();onContinue&&onContinue()}} style={{position:"absolute",right:18,bottom:typeof countdown==="number"&&countdown>0?34:18,border:"none",borderRadius:999,padding:"10px 14px",background:"rgba(255,255,255,.12)",color:"#ECF0F1",backdropFilter:"blur(4px)",fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:"pointer"}}>¡Seguimos!</button>)}
     </div>
   );
 }
