@@ -61,6 +61,7 @@ input::placeholder{color:${DIM}}
 @keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:0.9}100%{transform:translateY(120px) rotate(360deg);opacity:0}}
 @keyframes starBurstRing{0%{transform:scale(0.1);opacity:0.9}100%{transform:scale(1.8);opacity:0}}
 @keyframes starPass{0%{transform:translateY(-20px);opacity:0}20%{opacity:1}100%{transform:translateY(110vh);opacity:0}}
+@keyframes sparkleFlicker{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.65}}
 @keyframes countNum{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
 @keyframes mascotBounce{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-5deg)}75%{transform:translateY(-4px) rotate(5deg)}}
 @keyframes mascotShy{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
@@ -127,31 +128,31 @@ export const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUI
 export const NUMS_1_100=Array.from({length:100},(_,i)=>{const n=i+1;if(n===100)return'Cien';const u=['','Uno','Dos','Tres','Cuatro','Cinco','Seis','Siete','Ocho','Nueve','Diez','Once','Doce','Trece','Catorce','Quince','Dieciséis','Diecisiete','Dieciocho','Diecinueve','Veinte'];if(n<=20)return u[n];if(n<30)return'Veinti'+['uno','dós','trés','cuatro','cinco','séis','siete','ocho','nueve'][n-21];const d=['','','','Treinta','Cuarenta','Cincuenta','Sesenta','Setenta','Ochenta','Noventa'];const t=Math.floor(n/10),r=n%10;return r===0?d[t]:d[t]+' y '+u[r].toLowerCase()});
 
 export const QUIEN_SOY=[
-  {id:'qs01',text:'Hola, soy Guillermo',img:'/quiensoy/01.jpg',picto:'/quiensoy/pictos/01.png'},
-  {id:'qs02',text:'Este mes tiene un día importante',img:'/quiensoy/02.jpg',picto:'/quiensoy/pictos/02.png'},
-  {id:'qs03',text:'El veintiuno es el día del síndrome de Down',img:'/quiensoy/03.jpg',picto:'/quiensoy/pictos/03.png'},
-  {id:'qs04',text:'Igual que vosotros',img:'/quiensoy/04.jpg',picto:'/quiensoy/pictos/04.png'},
-  {id:'qs05',text:'Por la tarde hago muchas actividades',img:'/quiensoy/05.jpg',picto:'/quiensoy/pictos/05.png'},
-  {id:'qs06',text:'Toco el piano',img:'/quiensoy/06.jpg',picto:'/quiensoy/pictos/06.png'},
-  {id:'qs07',text:'Juego al bádminton',img:'/quiensoy/07.jpg',picto:'/quiensoy/pictos/07.png'},
-  {id:'qs08',text:'Voy a natación',img:'/quiensoy/08.jpg',picto:'/quiensoy/pictos/08.png'},
-  {id:'qs09',text:'Soy modelo de ropa',img:'/quiensoy/09.jpg',picto:'/quiensoy/pictos/09.png'},
-  {id:'qs10',text:'Voy a ASSIDO',img:'/quiensoy/10.jpg',picto:'/quiensoy/pictos/10.png'},
-  {id:'qs11',text:'Hacemos teatro y baile',img:'/quiensoy/11.jpg',picto:'/quiensoy/pictos/11.png'},
-  {id:'qs12',text:'Yo hago mis tareas',img:'/quiensoy/12.jpg',picto:'/quiensoy/pictos/12.png'},
-  {id:'qs13',text:'Igual que vosotros',img:'/quiensoy/13.jpg',picto:'/quiensoy/pictos/13.png'},
-  {id:'qs14',text:'Me gusta hacer muchas cosas',img:'/quiensoy/14.jpg',picto:'/quiensoy/pictos/14.png'},
-  {id:'qs15',text:'Me gusta cocinar',img:'/quiensoy/15.jpg',picto:'/quiensoy/pictos/15.png'},
-  {id:'qs16',text:'Me gusta pintar',img:'/quiensoy/16.jpg',picto:'/quiensoy/pictos/16.png'},
-  {id:'qs17',text:'Me gusta hacer muchos deportes',img:'/quiensoy/17.jpg',picto:'/quiensoy/pictos/17.png'},
-  {id:'qs18',text:'A veces molesto sin querer',img:'/quiensoy/18.jpg',picto:'/quiensoy/pictos/18.png'},
-  {id:'qs19',text:'Pero puede que esté nervioso',img:'/quiensoy/19.jpg',picto:'/quiensoy/pictos/19.png'},
-  {id:'qs20',text:'Estoy aprendiendo a hacerlo mejor',img:'/quiensoy/20.jpg',picto:'/quiensoy/pictos/20.png'},
-  {id:'qs21',text:'Yo solo quiero jugar',img:'/quiensoy/21.jpg',picto:'/quiensoy/pictos/21.png'},
-  {id:'qs22',text:'Porque todos somos iguales',img:'/quiensoy/22.jpg',picto:'/quiensoy/pictos/22.png'},
-  {id:'qs23',text:'Juntos es mejor',img:'/quiensoy/23.jpg',picto:'/quiensoy/pictos/23.png'},
-  {id:'qs24',text:'Muchas gracias por como me tratáis',img:'/quiensoy/24.jpg',picto:'/quiensoy/pictos/24.png'},
-  {id:'qs25',text:'Os amo',img:'/quiensoy/25.jpg',picto:'/quiensoy/pictos/25.png'},
+  {id:'qs01',text:'Hola, soy Guillermo',img:'/quiensoy/01.jpg'},
+  {id:'qs02',text:'Este mes tiene un día importante',img:'/quiensoy/02.jpg'},
+  {id:'qs03',text:'El veintiuno es el día del síndrome de Down',img:'/quiensoy/03.jpg'},
+  {id:'qs04',text:'Igual que vosotros',img:'/quiensoy/04.jpg'},
+  {id:'qs05',text:'Por la tarde hago muchas actividades',img:'/quiensoy/05.jpg'},
+  {id:'qs06',text:'Toco el piano',img:'/quiensoy/06.jpg'},
+  {id:'qs07',text:'Juego al bádminton',img:'/quiensoy/07.jpg'},
+  {id:'qs08',text:'Voy a natación',img:'/quiensoy/08.jpg'},
+  {id:'qs09',text:'Soy modelo de ropa',img:'/quiensoy/09.jpg'},
+  {id:'qs10',text:'Voy a ASSIDO',img:'/quiensoy/10.jpg'},
+  {id:'qs11',text:'Hacemos teatro y baile',img:'/quiensoy/11.jpg'},
+  {id:'qs12',text:'Yo hago mis tareas',img:'/quiensoy/12.jpg'},
+  {id:'qs13',text:'Igual que vosotros',img:'/quiensoy/13.jpg'},
+  {id:'qs14',text:'Me gusta hacer muchas cosas',img:'/quiensoy/14.jpg'},
+  {id:'qs15',text:'Me gusta cocinar',img:'/quiensoy/15.jpg'},
+  {id:'qs16',text:'Me gusta pintar',img:'/quiensoy/16.jpg'},
+  {id:'qs17',text:'Me gusta hacer muchos deportes',img:'/quiensoy/17.jpg'},
+  {id:'qs18',text:'A veces molesto sin querer',img:'/quiensoy/18.jpg'},
+  {id:'qs19',text:'Pero puede que esté nervioso',img:'/quiensoy/19.jpg'},
+  {id:'qs20',text:'Estoy aprendiendo a hacerlo mejor',img:'/quiensoy/20.jpg'},
+  {id:'qs21',text:'Yo solo quiero jugar',img:'/quiensoy/21.jpg'},
+  {id:'qs22',text:'Porque todos somos iguales',img:'/quiensoy/22.jpg'},
+  {id:'qs23',text:'Juntos es mejor',img:'/quiensoy/23.jpg'},
+  {id:'qs24',text:'Muchas gracias por como me tratáis',img:'/quiensoy/24.jpg'},
+  {id:'qs25',text:'Os amo',img:'/quiensoy/25.jpg'},
 ];
 
 export const LV_OPTS={

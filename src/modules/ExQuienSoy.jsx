@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, DIM, GOOD_MSG, QUIEN_SOY } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay, playRec, useSR } from '../voice.js'
 import { score, adjScore, rnd, beep, mkPerfect, textKey, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
-import { victoryBeeps } from '../components/DoneScreen.jsx'
+import { victoryJingle } from '../voice.js'
 import { Stars } from '../components/CelebrationOverlay.jsx'
 
 // ===== QUIÉN SOY — Barra lateral de tiempo =====
@@ -133,32 +133,31 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     if(burstMode){onOk(0,1);return}
     if(na>=3){sSf('pass');setTimeout(()=>sayFB('¡Buen esfuerzo! Seguimos'),300);setTimeout(()=>{if(alive.current)onOk(1,na)},1800)}
     else{sSf('wait');setTimeout(()=>sayFB('¿Lo intentamos?'),300);setTimeout(()=>{if(alive.current){sSf(null);doPlay(0)}},2500)}}
-  return <div style={{textAlign:'center'}}>
-    <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',marginBottom:6,boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} onError={()=>{imgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
-      :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1a237e,#4a148c)',display:'flex',alignItems:'center',justifyContent:'center',maxHeight:'50dvh'}}><span style={{fontSize:80}}>📚</span></div>}
+  return <div style={{textAlign:'center',display:'flex',flexDirection:'column',maxHeight:'calc(100dvh - 120px)',overflow:'hidden'}}>
+    <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)',flex:'1 1 auto',minHeight:0}}>
+      {ex.img?<img src={ex.img} alt={ex.text} onLoad={()=>{imgLoaded.current=true}} onError={()=>{imgLoaded.current=true}} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+      :<div style={{width:'100%',height:'100%',minHeight:180,background:'linear-gradient(135deg,#1a237e,#4a148c)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>📚</span></div>}
       <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'36px 16px 14px'}}>
-        <p style={{fontSize:24,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
+        <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{ex.text}</p>
       </div>
       <QSTimeBar dur={dur} on={mic} onEnd={onTimeUp}/>
     </div>
-    {ex.picto&&<div style={{margin:'4px auto 8px',maxWidth:'95%'}}><div style={{display:'inline-block',background:'#fff',border:'2px solid #333',borderRadius:8,padding:4,margin:'0 auto'}}><img src={ex.picto} alt={'Pictograma: '+ex.text} style={{height:70,objectFit:'contain',display:'block',maxWidth:'100%'}}/></div></div>}
-    {burstMode&&burstStars>0&&<div style={{transition:'opacity .3s',opacity:burstFade?0:1,textAlign:'center',margin:'4px 0'}}><Stars n={burstStars} sz={28}/>{repsTarget>1&&<p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
-    <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}>
-      <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);setBurstRepsDone(0);doPlay(0)}}>🔊 Otra vez</button>
-      <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
+    {burstMode&&burstStars>0&&<div style={{transition:'opacity .3s',opacity:burstFade?0:1,textAlign:'center',margin:'4px 0',flex:'0 0 auto'}}><Stars n={burstStars} sz={28}/>{repsTarget>1&&<p style={{fontSize:12,color:DIM,margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
+    <div style={{display:'flex',gap:8,justifyContent:'center',marginTop:6,flex:'0 0 auto'}}>
+      <button className="btn btn-b btn-half" style={{padding:'8px 14px',fontSize:14}} onClick={()=>{stopVoice();sr.stop();sSf(null);setMic(false);setBurstRepsDone(0);doPlay(0)}}>🔊 Otra vez</button>
+      <button className="btn btn-ghost btn-half skip-btn" style={{padding:'8px 14px',fontSize:14}} onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>}
 
 // ===== QUIÉN SOY — Presentación (Toki lee modelo, niño repite al público, sin feedback entre slides) =====
 export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burstMode,burstSpeed,burstReps}){
   const slides=useMemo(()=>{
-    if(!presentation)return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
+    if(!presentation)return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img}));
     if(presentation.slides&&presentation.slides.length>0)
-      return presentation.slides.map((s,i)=>({text:s.text,id:'pres_'+i,img:s.img||null,picto:s.picto||null}));
+      return presentation.slides.map((s,i)=>({text:s.text,id:'pres_'+i,img:s.img||null}));
     if(presentation.lines&&presentation.lines.length>0)
-      return presentation.lines.map((text,i)=>({text,id:'pres_'+i,img:null,picto:null}));
-    return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img,picto:q.picto}));
+      return presentation.lines.map((text,i)=>({text,id:'pres_'+i,img:null}));
+    return QUIEN_SOY.map(q=>({text:q.text,id:q.id,img:q.img}));
   },[presentation]);
   const[qi,setQi]=useState(0);const[finished,setFinished]=useState(false);const[barOn,setBarOn]=useState(false);
   const alive=useRef(true);const timers=useRef([]);
@@ -179,7 +178,7 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
 
   function advanceOrFinish(){
     if(!alive.current)return;setBarOn(false);sr.stop();
-    if(qi+1>=slides.length){setFinished(true);victoryBeeps()}
+    if(qi+1>=slides.length){setFinished(true);victoryJingle()}
     else setQi(qi+1);
   }
 
@@ -209,21 +208,20 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
       <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>Terminado</button>
     </div>}
 
-  return <div style={{textAlign:'center',position:'relative',overflow:'hidden'}}>
-    <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)'}}>
-      {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} onError={()=>{presImgLoaded.current=true}} style={{width:'100%',aspectRatio:'16/9',objectFit:'cover',display:'block',maxHeight:'50dvh'}}/>
-        :<div style={{width:'100%',aspectRatio:'16/9',background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center',maxHeight:'50dvh'}}><span style={{fontSize:80}}>🎤</span></div>}
-      <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 18px'}}>
+  return <div style={{textAlign:'center',position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',maxHeight:'calc(100dvh - 120px)'}}>
+    <div style={{position:'relative',width:'100%',borderRadius:18,overflow:'hidden',boxShadow:'0 4px 24px rgba(0,0,0,.5)',flex:'1 1 auto',minHeight:0}}>
+      {cur.img?<img src={cur.img} alt={cur.text} onLoad={()=>{presImgLoaded.current=true}} onError={()=>{presImgLoaded.current=true}} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+        :<div style={{width:'100%',height:'100%',minHeight:180,background:'linear-gradient(135deg,#1A237E 0%,#283593 50%,#3949AB 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:80}}>🎤</span></div>}
+      <div style={{position:'absolute',top:8,left:12,background:'rgba(0,0,0,.45)',borderRadius:12,padding:'2px 10px',fontSize:12,color:'rgba(255,255,255,.6)',fontWeight:600,zIndex:6}}>{qi+1}/{slides.length}</div>
+      <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,rgba(0,0,0,.85))',padding:'48px 16px 14px'}}>
         <p style={{fontSize:28,fontWeight:700,margin:0,color:'#fff',textShadow:'0 2px 8px rgba(0,0,0,.8)',lineHeight:1.3}}>{cur.text}</p>
-        <p style={{fontSize:13,color:'rgba(255,255,255,.4)',margin:'4px 0 0',fontWeight:600}}>{qi+1}/{slides.length}</p>
       </div>
-      {cur.picto&&<div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.9)',border:'2px solid #333',borderRadius:8,padding:4}}><img src={cur.picto} alt={'Pictograma: '+cur.text} style={{height:60,objectFit:'contain',display:'block'}}/></div>}
       {barOn&&<div style={{position:'absolute',top:0,right:0,width:10,height:'100%',background:'rgba(0,0,0,.3)',borderRadius:0,overflow:'hidden',zIndex:5}}>
         <div style={{position:'absolute',top:0,left:0,width:'100%',background:RED,animation:`qsbar ${waitSec}s linear forwards`}}/>
       </div>}
     </div>
-    <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:8}}>
-      <button className="btn btn-b btn-half" onClick={()=>{stopVoice();sr.stop();timers.current.forEach(clearTimeout);timers.current=[];advanceOrFinish()}}>⏭️ Siguiente</button>
-      <button className="btn btn-ghost btn-half skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
+    <div style={{display:'flex',gap:8,justifyContent:'center',marginTop:6,flex:'0 0 auto'}}>
+      <button className="btn btn-b btn-half" style={{padding:'8px 14px',fontSize:14}} onClick={()=>{stopVoice();sr.stop();timers.current.forEach(clearTimeout);timers.current=[];advanceOrFinish()}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost btn-half skip-btn" style={{padding:'8px 14px',fontSize:14}} onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}}>⏭️ Saltar</button>
     </div>
   </div>}

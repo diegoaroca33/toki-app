@@ -82,7 +82,7 @@ function PersonaRow({ p, idx, onPatch, onRequestDelete, delPersonaIdx, setDelPer
 }
 
 // ── Presentation edit (inline) ──────────────────────────────────
-function PresEditInline({ pres, onSave, onCancel, setPhotoCrop, editIdx }) {
+function PresEditInline({ pres, onSave, onCancel, setPhotoCrop, editIdx, pickPhoto }) {
   const [name, setName] = React.useState(pres.name || '')
   const [slides, setSlides] = React.useState(pres.slides || [])
 
@@ -114,9 +114,9 @@ function PresEditInline({ pres, onSave, onCancel, setPhotoCrop, editIdx }) {
       <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
         {slides.map((s, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', background: BG3, borderRadius: 10, padding: 8 }}>
-            {/* Photo thumbnail / upload */}
+            {/* Photo thumbnail / upload — uses pickPhoto like personas */}
             <div
-              onClick={() => setPhotoCrop && setPhotoCrop({ type: 'presSlide', presIdx: editIdx, slideIdx: i })}
+              onClick={() => pickPhoto && pickPhoto((cropped) => { patchSlide(i, { img: cropped }); setPhotoCrop(null) })}
               style={{
                 width: 48, height: 48, borderRadius: 8, background: BG,
                 border: `1px solid ${BORDER}`, cursor: 'pointer', overflow: 'hidden',
@@ -181,6 +181,7 @@ export default function SettingsFamilyTab(props) {
   const safeUser = user || {}
   const safePersonas = personas || []
   const safePresentations = safeUser.presentations || []
+  const activePresCount = safePresentations.filter(p => p.active !== false).length
 
   // ── Helpers ────────────────────────────────────────────────────
   const patchUser = (patch) => {
@@ -196,7 +197,7 @@ export default function SettingsFamilyTab(props) {
   }
 
   const addPersona = () => {
-    if (safePersonas.length >= 10) return
+    if (safePersonas.length >= 50) return
     savePersonas && savePersonas([...safePersonas, { name: '', relation: 'Padre', avatar: AVS[0], photo: '' }])
   }
 
@@ -228,7 +229,8 @@ export default function SettingsFamilyTab(props) {
   }
 
   const addNewPres = (data) => {
-    patchUser({ presentations: [...safePresentations, data] })
+    const willBeActive = activePresCount < 3
+    patchUser({ presentations: [...safePresentations, { ...data, active: willBeActive }] })
     setPresNewMode(null)
   }
 
@@ -238,17 +240,30 @@ export default function SettingsFamilyTab(props) {
   }
 
   const addAutoPresentation = () => {
-    if (safePresentations.length >= 5) return
+    if (safePresentations.length >= 15) return
+    const willBeActive = activePresCount < 3
     const auto = generateAutoPresentation(safeUser, safePersonas)
     patchUser({
       presentations: [...safePresentations, {
         name: `Presentación ${safePresentations.length + 1}`,
         slides: auto.slides || [],
         auto: true,
+        active: willBeActive,
         date: new Date().toISOString().slice(0, 10)
       }]
     })
     setPresNewMode(null)
+  }
+
+  const togglePresActive = (idx) => {
+    const p = safePresentations[idx]
+    if (!p) return
+    const isActive = p.active !== false
+    // If trying to activate and already at limit 3
+    if (!isActive && activePresCount >= 3) return
+    const next = [...safePresentations]
+    next[idx] = { ...next[idx], active: !isActive }
+    patchUser({ presentations: next })
   }
 
   // ── Delete profile (requires PIN) ────────────────────────────
@@ -300,11 +315,11 @@ export default function SettingsFamilyTab(props) {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
           <div style={{ color: GOLD, fontWeight: 800, fontSize: 18 }}>Mis personas</div>
-          {safePersonas.length < 10 && (
+          {safePersonas.length < 50 && (
             <Button variant="gold" fullWidth={false} size="sm" onClick={addPersona}>＋ Añadir</Button>
           )}
         </div>
-        <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 10, maxHeight: safePersonas.length > 8 ? 400 : undefined, overflowY: safePersonas.length > 8 ? 'auto' : undefined }}>
           {safePersonas.length === 0
             ? <div style={{ color: DIM, fontSize: 14 }}>No hay personas añadidas todavía.</div>
             : safePersonas.map((p, idx) => (
@@ -316,17 +331,18 @@ export default function SettingsFamilyTab(props) {
                   onRequestDelete={() => deletePersona(idx)}
                   delPersonaIdx={delPersonaIdx}
                   setDelPersonaIdx={setDelPersonaIdx}
-                  onPhoto={() => pickPhoto((cropped) => { patchPersona(idx, { photo: cropped }); setPhotoCrop(null) })}
+                  onPhoto={idx < 15 ? () => pickPhoto((cropped) => { patchPersona(idx, { photo: cropped }); setPhotoCrop(null) }) : undefined}
                 />
               ))}
         </div>
+        {safePersonas.length > 0 && <div style={{ fontSize: 12, color: DIM, marginTop: 6, textAlign: 'center' }}>{safePersonas.length}/50 personas{safePersonas.length > 15 ? ' · fotos disponibles para las 15 primeras' : ''}</div>}
       </Card>
 
       {/* ─── Presentations ───────────────────────────────────── */}
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
           <div style={{ color: GOLD, fontWeight: 800, fontSize: 18 }}>Presentaciones</div>
-          {presEdit == null && presNewMode == null && safePresentations.length < 5 && (
+          {presEdit == null && presNewMode == null && safePresentations.length < 15 && (
             <Button variant="gold" fullWidth={false} size="sm" onClick={() => setPresNewMode('choose')}>
               ＋ Nueva
             </Button>
@@ -346,6 +362,7 @@ export default function SettingsFamilyTab(props) {
                       pres={p}
                       editIdx={idx}
                       setPhotoCrop={setPhotoCrop}
+                      pickPhoto={pickPhoto}
                       onSave={(data) => savePres(idx, data)}
                       onCancel={() => setPresEdit(null)}
                     />
@@ -369,20 +386,40 @@ export default function SettingsFamilyTab(props) {
                 }
 
                 // Normal row
+                const isActive = p.active !== false
+                const canActivate = isActive || activePresCount < 3
                 return (
-                  <Card key={idx} style={{ padding: 12 }}>
+                  <Card key={idx} style={{ padding: 12, opacity: isActive ? 1 : 0.55 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 800 }}>
                           {p.name || `Presentación ${idx + 1}`}
                           {p.auto && <Badge tone="blue" style={{ marginLeft: 8, fontSize: 11 }}>auto</Badge>}
+                          {!isActive && <Badge tone="ghost" style={{ marginLeft: 8, fontSize: 11 }}>inactiva</Badge>}
                         </div>
                         <div style={{ color: DIM, fontSize: 13 }}>
                           {(p.slides || []).length} líneas
                           {p.date ? ` · ${p.date}` : ''}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <button
+                          onClick={() => togglePresActive(idx)}
+                          title={isActive ? 'Desactivar' : canActivate ? 'Activar' : 'Máximo 3 activas'}
+                          style={{
+                            width: 40, height: 26, borderRadius: 13, border: 'none',
+                            background: isActive ? GREEN : `${BORDER}`,
+                            position: 'relative', cursor: canActivate || isActive ? 'pointer' : 'not-allowed',
+                            transition: 'background .2s', padding: 0
+                          }}
+                        >
+                          <div style={{
+                            width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                            position: 'absolute', top: 3,
+                            left: isActive ? 17 : 3,
+                            transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.3)'
+                          }} />
+                        </button>
                         <Button variant="ghost" fullWidth={false} size="sm" onClick={() => setPresEdit(idx)}>✏️</Button>
                         <Button variant="danger" fullWidth={false} size="sm" onClick={() => setPresDelIdx(idx)}>🗑️</Button>
                       </div>
@@ -391,6 +428,12 @@ export default function SettingsFamilyTab(props) {
                 )
               })}
         </div>
+
+        {safePresentations.length > 0 && (
+          <div style={{ fontSize: 12, color: DIM, marginTop: 6, textAlign: 'center' }}>
+            {safePresentations.length}/15 presentaciones · {activePresCount}/3 activas
+          </div>
+        )}
 
         {/* New presentation — choice modal */}
         {presNewMode === 'choose' && (
@@ -419,6 +462,7 @@ export default function SettingsFamilyTab(props) {
               pres={{ name: '', slides: [{ text: '', img: null }] }}
               editIdx={null}
               setPhotoCrop={setPhotoCrop}
+              pickPhoto={pickPhoto}
               onSave={(data) => addNewPres({ ...data, date: new Date().toISOString().slice(0, 10) })}
               onCancel={() => setPresNewMode(null)}
             />

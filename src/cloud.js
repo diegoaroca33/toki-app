@@ -62,7 +62,7 @@ export function generateAutoPresentation(u,personas){
   const herms=myP.filter(pp=>pp.relation==='Hermano'||pp.relation==='Hermana');
   const amigos=myP.filter(pp=>pp.relation==='Amigo'||pp.relation==='Amiga');
   // Slide helper: text + optional photo from persona
-  function add(text,photo){lines.push(text);slides.push({text,img:photo||null,picto:null})}
+  function add(text,photo){lines.push(text);slides.push({text,img:photo||null})}
   add('Hola, me llamo '+(u.name||''),u.photo||null);
   if(u.apellidos)add('Me apellido '+u.apellidos,u.photo||null);
   if(padre)add('Mi padre se llama '+padre.name,padre.photo||null);

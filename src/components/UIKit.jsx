@@ -3,18 +3,19 @@
 // ============================================================
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { BG3, GOLD, GREEN, RED, BLUE, TXT, BORDER, CLS } from '../constants.js'
-import { beep } from '../utils.js'
+import { beep, CYCLE_COLORS } from '../utils.js'
 import { say, stopVoice, useSR } from '../voice.js'
 import { NUMS_1_100 } from '../constants.js'
 
 // Mascot SVG component with evolution tiers (0-5)
 const TIER_NAMES=['Estrellita','Bronce','Plata','Oro','Héroe','Leyenda'];
-export function SpaceMascot({mood='idle',size=48,tier=0}){
+export function SpaceMascot({mood='idle',size=48,tier=0,cycle=0}){
   const t=Math.max(0,Math.min(5,tier));
+  const cc=CYCLE_COLORS[cycle%CYCLE_COLORS.length]||GOLD;
   const anim=mood==='happy'?'mascotBounce .6s ease-in-out 3':mood==='sad'?'mascotShy .5s ease-in-out 2':mood==='dance'?'mascotDance .8s ease-in-out infinite':'mascotBounce 3s ease-in-out infinite';
-  // Tier-based fill: 0=gold, 1=gold, 2=silver tint, 3+=gold, 5=rainbow gradient
-  const starFill=t===5?'url(#rainbowGrad)':t===2?'#D4E0EC':GOLD;
-  const starStroke=t===5?'#d4ac0d':t===2?'#A8B8C8':'#d4ac0d';
+  // Tier-based fill: use cycle color, tier 2=lighter, tier 5=rainbow
+  const starFill=t===5?'url(#rainbowGrad)':t===2?(cycle>0?cc+'88':'#D4E0EC'):cc;
+  const starStroke=t===5?'#d4ac0d':t===2?(cycle>0?cc:'#A8B8C8'):(cc===GOLD?'#d4ac0d':cc);
   // Unique filter ID per instance to avoid SVG conflicts
   const filtId=useMemo(()=>'sg'+Math.random().toString(36).slice(2,6),[]);
   return <svg className="sober-hide" width={size} height={size} viewBox="0 0 48 48" role="img" aria-label={'Mascota - '+TIER_NAMES[t]} style={{animation:anim,display:'block',overflow:'visible'}}>
@@ -180,14 +181,22 @@ export const getDogPhase=(gp)=>gp>=61?2:gp>=21?1:0;
 // --- TokiCachorro: Beautiful puppy SVG for phase 0 ---
 function TokiCachorro({mood='idle',size=48}){
   const isHappy=mood==='happy',isSad=mood==='sad',isHungry=mood==='hungry',isEating=mood==='eating',isSleeping=mood==='sleeping',isDance=mood==='dance';
-  const earLeft=isSad?"rotate(18 24 42)":isHungry?"rotate(8 24 42)":"rotate(2 24 42)";
-  const earRight=isSad?"rotate(-18 76 42)":isHungry?"rotate(-8 76 42)":"rotate(-2 76 42)";
+  const earLeftR=isSad?20:isHungry?10:3;
+  const earRightR=isSad?-20:isHungry?-10:-3;
   const bodyY=isDance?-2:0;
-  return <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={`Toki cachorro ${mood}`} style={{display:'block',overflow:'visible'}}>
+  return <svg width={size} height={size} viewBox="0 0 100 110" role="img" aria-label={`Toki cachorro ${mood}`} style={{display:'block',overflow:'visible'}}>
+    <defs>
+      <radialGradient id="tkFur" cx="50%" cy="35%" r="55%"><stop offset="0%" stopColor="#F5D6A8"/><stop offset="70%" stopColor="#D4A05A"/><stop offset="100%" stopColor="#B8864A"/></radialGradient>
+      <radialGradient id="tkBelly" cx="50%" cy="40%" r="60%"><stop offset="0%" stopColor="#FFF8F0"/><stop offset="100%" stopColor="#F5E6D0"/></radialGradient>
+      <radialGradient id="tkHead" cx="48%" cy="38%" r="52%"><stop offset="0%" stopColor="#F7DDB8"/><stop offset="60%" stopColor="#E4B980"/><stop offset="100%" stopColor="#C99A58"/></radialGradient>
+      <radialGradient id="tkSnout" cx="50%" cy="45%" r="55%"><stop offset="0%" stopColor="#FFFAF5"/><stop offset="100%" stopColor="#F5E4D2"/></radialGradient>
+      <radialGradient id="tkEye" cx="38%" cy="35%" r="50%"><stop offset="0%" stopColor="#3D2B1F"/><stop offset="100%" stopColor="#1A0E08"/></radialGradient>
+      <filter id="tkShadow"><feGaussianBlur stdDeviation="1.2" result="b"/><feOffset dy="1.5" result="o"/><feMerge><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
     <style>{`
-      .tk-tail{transform-box:fill-box;transform-origin:18px 73px;animation:tkTailS 1.8s ease-in-out infinite}
-      .tk-tail-f{animation:tkTailF .35s ease-in-out infinite}
-      .tk-blink{animation:tkBlink 4.8s infinite;transform-origin:center}
+      .tk-tail{transform-box:fill-box;transform-origin:20px 78px;animation:tkTailS 1.6s ease-in-out infinite}
+      .tk-tail-f{animation:tkTailF .3s ease-in-out infinite}
+      .tk-blink{animation:tkBlink 4.8s infinite;transform-origin:center;transform-box:fill-box}
       .tk-bob{animation:tkBob 2.4s ease-in-out infinite}
       .tk-dance{animation:tkDnc .5s ease-in-out infinite}
       .tk-breath{animation:tkBreath 2.2s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
@@ -195,61 +204,114 @@ function TokiCachorro({mood='idle',size=48}){
       .tk-zzz2{animation:tkZzz2 1.8s ease-out .6s infinite}
       .tk-tongue{animation:tkTng .9s ease-in-out infinite;transform-origin:center top;transform-box:fill-box}
       .tk-cheek{animation:tkChew .45s ease-in-out infinite}
-      @keyframes tkBlink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.08)}}
-      @keyframes tkTailS{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(12deg)}}
-      @keyframes tkTailF{0%,100%{transform:rotate(-22deg)}50%{transform:rotate(22deg)}}
-      @keyframes tkBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.4px)}}
-      @keyframes tkDnc{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.01)}}
-      @keyframes tkBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.015,.99)}}
-      @keyframes tkZzz1{0%{opacity:0;transform:translate(0,0) scale(.7)}20%{opacity:.9}100%{opacity:0;transform:translate(6px,-10px) scale(1.05)}}
-      @keyframes tkZzz2{0%{opacity:0;transform:translate(0,0) scale(.7)}20%{opacity:.75}100%{opacity:0;transform:translate(10px,-16px) scale(1.15)}}
-      @keyframes tkTng{0%,100%{transform:scaleY(1) translateY(0)}50%{transform:scaleY(1.08) translateY(.6px)}}
-      @keyframes tkChew{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+      .tk-ear{transition:transform .4s ease}
+      .tk-sparkle{animation:tkSparkle 2.5s ease-in-out infinite}
+      @keyframes tkBlink{0%,44%,48%,100%{transform:scaleY(1)}46%{transform:scaleY(.06)}}
+      @keyframes tkTailS{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(15deg)}}
+      @keyframes tkTailF{0%,100%{transform:rotate(-25deg)}50%{transform:rotate(25deg)}}
+      @keyframes tkBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+      @keyframes tkDnc{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-4px) rotate(-2deg)}75%{transform:translateY(-4px) rotate(2deg)}}
+      @keyframes tkBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.012,.992)}}
+      @keyframes tkZzz1{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:.9}100%{opacity:0;transform:translate(8px,-14px) scale(1.1)}}
+      @keyframes tkZzz2{0%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:.7}100%{opacity:0;transform:translate(12px,-20px) scale(1.2)}}
+      @keyframes tkTng{0%,100%{transform:scaleY(1) translateY(0)}50%{transform:scaleY(1.1) translateY(.8px)}}
+      @keyframes tkChew{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+      @keyframes tkSparkle{0%,100%{opacity:.5;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
     `}</style>
     <g className={isDance?"tk-dance":"tk-bob"} transform={`translate(0 ${bodyY})`}>
       <g className="tk-breath">
-        <g className={`tk-tail ${isHappy||isHungry||isEating?"tk-tail-f":""}`}>
-          <path d="M18 73 C8 66, 7 56, 15 52 C20 50, 24 53, 23 57 C22 60, 20 61, 20 64 C20 67, 23 69, 25 70" fill="none" stroke="#8B5A3C" strokeWidth="5" strokeLinecap="round"/>
+        {/* Tail — fluffy curved */}
+        <g className={`tk-tail ${isHappy||isHungry||isEating||isDance?"tk-tail-f":""}`}>
+          <path d="M20 78 C10 72,6 60,12 52 C16 46,22 48,24 53 C25 56,23 60,22 64 C21 68,24 73,27 76" fill="none" stroke="#C49A60" strokeWidth="6" strokeLinecap="round"/>
+          <path d="M20 78 C10 72,6 60,12 52 C16 46,22 48,24 53 C25 56,23 60,22 64 C21 68,24 73,27 76" fill="none" stroke="#E4C088" strokeWidth="3" strokeLinecap="round"/>
         </g>
-        <ellipse cx="50" cy="73" rx="24" ry="18" fill="#C98A57"/>
-        <ellipse cx="50" cy="76" rx="15" ry="11" fill="#FFF5EA"/>
-        <ellipse cx="65" cy="68" rx="8" ry="6" fill="#A86A43" opacity="0.9"/>
-        <ellipse cx="38" cy="88" rx="7" ry="5.2" fill="#8B5A3C"/>
-        <ellipse cx="62" cy="88" rx="7" ry="5.2" fill="#8B5A3C"/>
-        <ellipse cx="36.8" cy="86.8" rx="4.8" ry="3.2" fill="#E6B58A"/>
-        <ellipse cx="63.2" cy="86.8" rx="4.8" ry="3.2" fill="#E6B58A"/>
-        <ellipse cx="50" cy="42" rx="29" ry="24" fill="#E9B886"/>
-        <g transform={earLeft}><ellipse cx="24" cy="44" rx="9" ry="18" fill="#8B5A3C"/><ellipse cx="25" cy="48" rx="5" ry="11" fill="#A66B45" opacity="0.45"/></g>
-        <g transform={earRight}><ellipse cx="76" cy="44" rx="9" ry="18" fill="#8B5A3C"/><ellipse cx="75" cy="48" rx="5" ry="11" fill="#A66B45" opacity="0.45"/></g>
-        <ellipse cx="50" cy="53" rx="12.5" ry="9" fill="#FFF6EF"/>
-        <ellipse cx="50" cy="58.5" rx="7.5" ry="4.5" fill="#FFF6EF"/>
-        <path d="M42 20 C46 26, 46 33, 42 40 C48 43, 52 43, 58 40 C54 33, 54 26, 58 20 C54 17, 46 17, 42 20 Z" fill="#FFFFFF" opacity="0.9"/>
+        {/* Body — rounder with gradient */}
+        <ellipse cx="50" cy="78" rx="26" ry="20" fill="url(#tkFur)"/>
+        <ellipse cx="50" cy="82" rx="16" ry="12" fill="url(#tkBelly)"/>
+        {/* Spot on side */}
+        <ellipse cx="66" cy="73" rx="7" ry="5.5" fill="#B8864A" opacity="0.5"/>
+        {/* Front paws — rounder, cuter */}
+        <ellipse cx="36" cy="96" rx="8.5" ry="6" fill="#C49A60"/>
+        <ellipse cx="64" cy="96" rx="8.5" ry="6" fill="#C49A60"/>
+        <ellipse cx="35" cy="94.5" rx="5.5" ry="3.5" fill="#F0D8B8"/>
+        <ellipse cx="63" cy="94.5" rx="5.5" ry="3.5" fill="#F0D8B8"/>
+        {/* Paw pads (tiny detail) */}
+        <circle cx="33" cy="95" r="1.2" fill="#D4A878"/><circle cx="37" cy="95" r="1.2" fill="#D4A878"/>
+        <circle cx="61" cy="95" r="1.2" fill="#D4A878"/><circle cx="65" cy="95" r="1.2" fill="#D4A878"/>
+        {/* Head — larger, rounder for kawaii puppy look */}
+        <ellipse cx="50" cy="44" rx="30" ry="26" fill="url(#tkHead)" filter="url(#tkShadow)"/>
+        {/* Fur tuft on top */}
+        <path d="M43 19 C46 24,46 30,44 36 C47 38,53 38,56 36 C54 30,54 24,57 19 C54 16,46 16,43 19Z" fill="#F5E0B8" opacity="0.85"/>
+        <path d="M47 17 C49 13,51 13,53 17" fill="none" stroke="#E4C888" strokeWidth="1.5" strokeLinecap="round"/>
+        {/* Ears — floppy, soft, with inner color */}
+        <g className="tk-ear" transform={`rotate(${earLeftR} 24 40)`}>
+          <ellipse cx="22" cy="42" rx="10" ry="20" fill="#9B6B3C"/>
+          <ellipse cx="23" cy="46" rx="6" ry="14" fill="#C09060" opacity="0.5"/>
+          <ellipse cx="23" cy="46" rx="3.5" ry="10" fill="#D4A878" opacity="0.3"/>
+        </g>
+        <g className="tk-ear" transform={`rotate(${earRightR} 76 40)`}>
+          <ellipse cx="78" cy="42" rx="10" ry="20" fill="#9B6B3C"/>
+          <ellipse cx="77" cy="46" rx="6" ry="14" fill="#C09060" opacity="0.5"/>
+          <ellipse cx="77" cy="46" rx="3.5" ry="10" fill="#D4A878" opacity="0.3"/>
+        </g>
+        {/* Snout area — cream colored, softer shape */}
+        <ellipse cx="50" cy="54" rx="14" ry="10" fill="url(#tkSnout)"/>
+        <ellipse cx="50" cy="60" rx="9" ry="5.5" fill="url(#tkSnout)"/>
+        {/* Eyes — big, expressive puppy eyes */}
         {!isHappy&&!isEating&&!isSleeping?<>
           <g className={mood==='idle'?"tk-blink":""}>
-            <ellipse cx="40" cy={isSad?"43.8":isHungry?"43.5":"42.5"} rx={isHungry?"5.4":"5"} ry={isHungry?"6.4":isSad?"5.6":"6"} fill="#161616"/>
-            <circle cx="38.4" cy="40.6" r="1.7" fill="#fff"/><circle cx="41.5" cy="43" r="0.8" fill="#fff"/>
+            <ellipse cx="39" cy={isSad?"44":isHungry?"43.5":"42.5"} rx={isHungry?"5.8":"5.5"} ry={isHungry?"6.8":isSad?"6":"6.5"} fill="url(#tkEye)"/>
+            <ellipse cx="39" cy={isSad?"44":isHungry?"43.5":"42.5"} rx="4" ry="4.8" fill="#2A1A10"/>
+            <circle cx="37" cy="40.5" r="2.2" fill="#fff" opacity="0.95"/>
+            <circle cx="41" cy="43.5" r="1" fill="#fff" opacity="0.7"/>
+            <ellipse cx="39" cy={isSad?"46.5":"45.5"} rx="2" ry=".8" fill="#4A3020" opacity="0.2"/>
           </g>
           <g className={mood==='idle'?"tk-blink":""}>
-            <ellipse cx="60" cy={isSad?"43.8":isHungry?"43.5":"42.5"} rx={isHungry?"5.4":"5"} ry={isHungry?"6.4":isSad?"5.6":"6"} fill="#161616"/>
-            <circle cx="58.4" cy="40.6" r="1.7" fill="#fff"/><circle cx="61.5" cy="43" r="0.8" fill="#fff"/>
+            <ellipse cx="61" cy={isSad?"44":isHungry?"43.5":"42.5"} rx={isHungry?"5.8":"5.5"} ry={isHungry?"6.8":isSad?"6":"6.5"} fill="url(#tkEye)"/>
+            <ellipse cx="61" cy={isSad?"44":isHungry?"43.5":"42.5"} rx="4" ry="4.8" fill="#2A1A10"/>
+            <circle cx="59" cy="40.5" r="2.2" fill="#fff" opacity="0.95"/>
+            <circle cx="63" cy="43.5" r="1" fill="#fff" opacity="0.7"/>
+            <ellipse cx="61" cy={isSad?"46.5":"45.5"} rx="2" ry=".8" fill="#4A3020" opacity="0.2"/>
           </g>
-          {isSad&&<><path d="M35 36 Q40 34 45 36" fill="none" stroke="#7A4B30" strokeWidth="1.7" strokeLinecap="round"/><path d="M55 36 Q60 34 65 36" fill="none" stroke="#7A4B30" strokeWidth="1.7" strokeLinecap="round"/></>}
-          {isHungry&&<><path d="M35 35 Q40 32 45 35" fill="none" stroke="#7A4B30" strokeWidth="1.6" strokeLinecap="round"/><path d="M55 35 Q60 32 65 35" fill="none" stroke="#7A4B30" strokeWidth="1.6" strokeLinecap="round"/></>}
+          {/* Eyebrows */}
+          {isSad&&<><path d="M33 36 Q39 33 45 36" fill="none" stroke="#8B6040" strokeWidth="1.8" strokeLinecap="round"/><path d="M55 36 Q61 33 67 36" fill="none" stroke="#8B6040" strokeWidth="1.8" strokeLinecap="round"/></>}
+          {isHungry&&<><path d="M33 35 Q39 31 45 34" fill="none" stroke="#8B6040" strokeWidth="1.5" strokeLinecap="round"/><path d="M55 34 Q61 31 67 35" fill="none" stroke="#8B6040" strokeWidth="1.5" strokeLinecap="round"/></>}
         </>:<>
-          <path d="M35 43 Q40 48 45 43" fill="none" stroke="#2B211E" strokeWidth="2.4" strokeLinecap="round"/>
-          <path d="M55 43 Q60 48 65 43" fill="none" stroke="#2B211E" strokeWidth="2.4" strokeLinecap="round"/>
+          {/* Happy/eating eyes — cute arcs */}
+          <path d="M33 43 Q39 49 45 43" fill="none" stroke="#2B1A10" strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M55 43 Q61 49 67 43" fill="none" stroke="#2B1A10" strokeWidth="2.5" strokeLinecap="round"/>
         </>}
-        <ellipse cx="50" cy="50.5" rx="3.6" ry="2.7" fill="#1B1716"/>
-        {isHappy&&<><path d="M44 56 Q50 61 56 56" fill="none" stroke="#7A3E34" strokeWidth="2.2" strokeLinecap="round"/><path className="tk-tongue" d="M47.3 57.4 Q50 63.5 52.7 57.4 Z" fill="#F58CA8"/></>}
-        {isSad&&<path d="M45 59 Q50 55.5 55 59" fill="none" stroke="#7A3E34" strokeWidth="1.9" strokeLinecap="round"/>}
-        {isHungry&&<><ellipse cx="50" cy="58.5" rx="4.5" ry="3.8" fill="#9D4A42"/><path d="M47.5 57.3 Q50 60.7 52.5 57.3" fill="#F6A1B6"/></>}
-        {isEating&&<><g className="tk-cheek"><ellipse cx="40.8" cy="55" rx="3.3" ry="2.6" fill="#F3C2B5"/><ellipse cx="59.2" cy="55" rx="3.3" ry="2.6" fill="#F3C2B5"/></g><path d="M45 57 Q50 60 55 57" fill="none" stroke="#7A3E34" strokeWidth="2" strokeLinecap="round"/></>}
-        {isSleeping&&<path d="M45 57 Q50 59.5 55 57" fill="none" stroke="#7A3E34" strokeWidth="1.8" strokeLinecap="round"/>}
-        {!isHappy&&!isSad&&!isHungry&&!isEating&&!isSleeping&&<path d="M46 57 Q50 60 54 57" fill="none" stroke="#7A3E34" strokeWidth="1.8" strokeLinecap="round"/>}
-        {(isHappy||isEating||isHungry)&&<><ellipse cx="35.5" cy="54.5" rx="2.8" ry="1.6" fill="#F3B2AE" opacity="0.65"/><ellipse cx="64.5" cy="54.5" rx="2.8" ry="1.6" fill="#F3B2AE" opacity="0.65"/></>}
-        <path d="M50 64 Q49 71 50 79" fill="none" stroke="#EBC9AF" strokeWidth="1.5" strokeLinecap="round"/>
-        <circle cx="33" cy="24" r="1.1" fill="#fff" opacity="0.75"/><circle cx="67" cy="24" r="0.9" fill="#fff" opacity="0.6"/>
-        {isSleeping&&<g fill="#7E74D8" fontFamily="Arial, sans-serif" fontWeight="700"><text x="69" y="20" fontSize="7" className="tk-zzz1">Z</text><text x="77" y="13" fontSize="9" className="tk-zzz2">Z</text></g>}
+        {/* Nose — shiny, heart-shaped */}
+        <ellipse cx="50" cy="51.5" rx="4" ry="3" fill="#1E1210"/>
+        <ellipse cx="50" cy="51" rx="3.5" ry="2.5" fill="#2A1A12"/>
+        <circle cx="48.8" cy="50.2" r="1.1" fill="#fff" opacity="0.5"/>
+        {/* Mouth and expressions */}
+        {isHappy&&<>
+          <path d="M43 57 Q50 63 57 57" fill="none" stroke="#8B5040" strokeWidth="2.2" strokeLinecap="round"/>
+          <path className="tk-tongue" d="M46.5 58.5 Q50 65 53.5 58.5 Z" fill="#F58CA8"/>
+          <path d="M46.5 58.5 Q50 65 53.5 58.5" fill="none" stroke="#E07090" strokeWidth=".8"/>
+        </>}
+        {isSad&&<path d="M44 60 Q50 56 56 60" fill="none" stroke="#8B5040" strokeWidth="2" strokeLinecap="round"/>}
+        {isHungry&&<><ellipse cx="50" cy="59.5" rx="5" ry="4" fill="#8B4040"/><path d="M47 58 Q50 62 53 58" fill="#F6A1B6"/><ellipse cx="50" cy="59.5" rx="3" ry="1.5" fill="#6B2020" opacity="0.3"/></>}
+        {isEating&&<><g className="tk-cheek"><ellipse cx="39" cy="56" rx="3.5" ry="2.8" fill="#F3C2B5"/><ellipse cx="61" cy="56" rx="3.5" ry="2.8" fill="#F3C2B5"/></g><path d="M44 58 Q50 62 56 58" fill="none" stroke="#8B5040" strokeWidth="2" strokeLinecap="round"/></>}
+        {isSleeping&&<><path d="M44 58 Q50 60.5 56 58" fill="none" stroke="#8B5040" strokeWidth="1.8" strokeLinecap="round"/><path d="M33 43 Q39 47 45 43" fill="none" stroke="#2B1A10" strokeWidth="2.2" strokeLinecap="round"/><path d="M55 43 Q61 47 67 43" fill="none" stroke="#2B1A10" strokeWidth="2.2" strokeLinecap="round"/></>}
+        {!isHappy&&!isSad&&!isHungry&&!isEating&&!isSleeping&&<path d="M45 58 Q50 61 55 58" fill="none" stroke="#8B5040" strokeWidth="1.8" strokeLinecap="round"/>}
+        {/* Cheek blush */}
+        {(isHappy||isEating||isHungry||isDance)&&<>
+          <ellipse cx="33" cy="55" rx="3.5" ry="2" fill="#F3AEA8" opacity="0.55"/>
+          <ellipse cx="67" cy="55" rx="3.5" ry="2" fill="#F3AEA8" opacity="0.55"/>
+        </>}
+        {/* Chest line */}
+        <path d="M50 66 Q49 74 50 83" fill="none" stroke="#E8CCA8" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+        {/* Fur highlights on head */}
+        <circle cx="35" cy="24" r="1.3" fill="#fff" opacity="0.6" className="tk-sparkle"/>
+        <circle cx="65" cy="26" r="1" fill="#fff" opacity="0.45" className="tk-sparkle" style={{animationDelay:'.8s'}}/>
+        <circle cx="50" cy="20" r="0.8" fill="#fff" opacity="0.35"/>
+        {/* Sleeping Zzz */}
+        {isSleeping&&<g fill="#7E74D8" fontFamily="Arial,sans-serif" fontWeight="700">
+          <text x="72" y="22" fontSize="8" className="tk-zzz1">z</text>
+          <text x="80" y="14" fontSize="10" className="tk-zzz2">Z</text>
+        </g>}
       </g>
     </g>
   </svg>

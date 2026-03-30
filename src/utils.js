@@ -103,7 +103,15 @@ export function splitSyllables(text){
     result.push(syls)});
   return result}
 
-export function getMascotTier(s){if(s>=1000)return 5;if(s>=500)return 4;if(s>=300)return 3;if(s>=150)return 2;if(s>=50)return 1;return 0}
+export function getMascotTier(s){
+  const cycle=Math.floor(s/1000); // 0=yellow,1=green,2=blue,3=purple,4=red...
+  const inCycle=s-cycle*1000;
+  const tier=inCycle>=1000?5:inCycle>=500?4:inCycle>=300?3:inCycle>=150?2:inCycle>=50?1:0;
+  return tier; // tier 0-5 within current cycle
+}
+export function getMascotCycle(s){return Math.floor(s/1000)} // color cycle index
+export const CYCLE_COLORS=['#FFD700','#2ECC71','#3498DB','#9B59B6','#E74C3C','#E67E22'];
+export const CYCLE_NAMES=['Oro','Esmeralda','Zafiro','Amatista','Rubí','Ámbar'];
 
 // M1: Phrase repetition counter
 export function getRepCount(userId, phraseKey) {
@@ -237,8 +245,11 @@ export function getGroupsForUser(user,GROUPS){
       mods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     } else {
       pres.forEach((p,i)=>{
+        if(p.active===false)return; // skip inactive presentations
         mods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
       });
+      // If all are inactive, keep at least a fallback
+      if(mods.length===0)mods.push({k:'quiensoy',l:pres[0].name||'Presentación 1',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     }
     return {...g,modules:mods};
   });

@@ -75,7 +75,7 @@ export function genPatterns(difficulty){const sh=a=>[...a].sort(()=>Math.random(
     let seq;if(patType==='AB')seq=[a,b,a,b,a,b];else if(patType==='AAB')seq=[a,a,b,a,a,b];else if(patType==='ABC')seq=[a,b,c,a,b,c];else seq=[a,a,b,b,a,a,b,b];
     const shown=seq.slice(0,4);const answer=seq[4];
     const optsPool=sh([...pool]).filter(x=>x.em!==answer.em).slice(0,3);optsPool.push(answer);
-    return{q:'¿Qué sigue?',seq:shown.map(x=>x.em),ans:answer.em,opts:sh(optsPool).map(x=>x.em)}}
+    return{q:'¿Qué sigue?',seq:shown.map(x=>x.em),ans:answer.em,ansText:answer.n,opts:sh(optsPool).map(x=>x.em)}}
   const pats=['AB','AAB','ABC','AABB'];
   if(difficulty==='easy'){for(let i=0;i<12;i++){const pool=sh([...COLORS]).slice(0,3);items.push({ty:'razona',mode:'pattern',data:mkPattern(pool,pats[i%4]),id:'rz_pat_e'+i})}}
   else if(difficulty==='medium'){for(let i=0;i<12;i++){const pool=sh([...SHAPES]).slice(0,3);items.push({ty:'razona',mode:'pattern',data:mkPattern(pool,pats[i%4]),id:'rz_pat_m'+i})}}
@@ -349,7 +349,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='cause')return ex.data.ans;
     if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
     if(ex.mode==='classify')return 'bien clasificado';
-    if(ex.mode==='pattern')return ex.data.ans;
+    if(ex.mode==='pattern')return ex.data.ansText||ex.data.ans;
     return String(ans);
   }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;

@@ -3,20 +3,37 @@ import { GOLD, GREEN } from '../constants.js'
 import { isSober } from '../utils.js'
 
 export function Stars({n,sz=32,burst=false}){
+  // Generate random offsets once per render via useMemo
+  const sparkles=useMemo(()=>[1,2,3,4].map(i=>({
+    dx:(Math.random()-.5)*40,        // random x offset ±20px
+    dy:(Math.random()-.5)*24,        // random y offset ±12px
+    scale:.7+Math.random()*.6,       // size variation 70%-130%
+    rot:(Math.random()-.5)*40,       // rotation ±20deg
+    delay:Math.random()*.3,          // stagger 0-0.3s
+  })),[]);
   if(burst){
-    // Pirotecnia — estrellas explotando en distintas posiciones como fuegos artificiales
-    const spots=[{x:10,y:10},{x:70,y:0},{x:0,y:70},{x:65,y:65}];
-    return <div style={{position:'relative',width:100,height:110}}>
-      {[1,2,3,4].map(i=>{const s=spots[i-1];return <div key={i} style={{position:'absolute',left:s.x,top:s.y}}>
-        {/* Estrella con pop */}
-        <span style={{fontSize:sz,display:'block',opacity:0,animation:i<=n?`starPop 0.5s ${i*0.3}s both`:'none',filter:i<=n?'drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 4px #FF6B00)':'grayscale(1)'}}>{i<=n?'⭐':'☆'}</span>
-        {/* Anillo de explosión */}
-        {i<=n&&<div style={{position:'absolute',left:'50%',top:'50%',width:sz*2.5,height:sz*2.5,marginLeft:-sz*1.25,marginTop:-sz*1.25,borderRadius:'50%',border:'2px solid #FFD700',animation:`starBurstRing 0.6s ${i*0.3}s both`}}/>}
+    // Pirotecnia — estrellas como chispas dispersas
+    return <div style={{position:'relative',width:120,height:110,margin:'0 auto'}}>
+      {[1,2,3,4].map(i=>{const s=sparkles[i-1];const cx=15+(i-1)*28+s.dx;const cy=40+s.dy;return <div key={i} style={{position:'absolute',left:cx,top:cy}}>
+        <span style={{fontSize:sz*s.scale,display:'block',opacity:0,
+          transform:`rotate(${s.rot}deg)`,
+          animation:i<=n?`starPop 0.5s ${s.delay+i*0.2}s both, sparkleFlicker 0.8s ${s.delay+i*0.2+0.3}s 2`:'none',
+          filter:i<=n?'drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 4px #FF6B00)':'grayscale(1)'}}>{i<=n?'⭐':'☆'}</span>
+        {i<=n&&<div style={{position:'absolute',left:'50%',top:'50%',width:sz*s.scale*2,height:sz*s.scale*2,marginLeft:-sz*s.scale,marginTop:-sz*s.scale,borderRadius:'50%',border:'2px solid #FFD700',animation:`starBurstRing 0.6s ${s.delay+i*0.2}s both`}}/>}
       </div>})}
     </div>
   }
-  // Standard inline stars (for other modules)
-  return <div style={{display:'flex',gap:6,justifyContent:'center'}}>{[1,2,3,4].map(i=><span key={i} style={{fontSize:sz,opacity:i<=n?1:0.15,animation:i<=n?`starPop 0.5s ${i*0.25}s both`:'none',filter:i<=n?'drop-shadow(0 0 8px #FFD700)':'grayscale(1)'}}>{i<=n?'⭐':'☆'}</span>)}</div>
+  // Standard sparkle stars — scattered with varied sizes
+  return <div style={{display:'flex',gap:6,justifyContent:'center',position:'relative',minHeight:sz*1.5}}>
+    {[1,2,3,4].map(i=>{const s=sparkles[i-1];return <span key={i} style={{
+      fontSize:sz*s.scale,
+      opacity:i<=n?1:0.15,
+      transform:`translateX(${s.dx*.3}px) translateY(${s.dy*.4}px) rotate(${s.rot}deg)`,
+      animation:i<=n?`starPop 0.5s ${s.delay+i*0.15}s both, sparkleFlicker 0.8s ${s.delay+i*0.15+0.4}s 2`:'none',
+      filter:i<=n?'drop-shadow(0 0 8px #FFD700)':'grayscale(1)',
+      transition:'transform .3s'
+    }}>{i<=n?'⭐':'☆'}</span>})}
+  </div>
 }
 
 // ===== CELEBRATION OVERLAY — reusable fireworks across screen =====

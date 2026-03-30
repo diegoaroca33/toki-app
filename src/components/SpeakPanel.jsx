@@ -137,7 +137,7 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids}){
   </div>;
 }
 
-export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,fraccionado,_skipFraccionado}){
+export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,_skipFraccionado}){
   // M9: If fraccionado active and phrase has 4+ words, use FraccionadoMode
   const wordCount=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length,[text]);
   if(fraccionado&&wordCount>=4&&!_skipFraccionado&&!burstMode){
@@ -146,6 +146,8 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
   const[burstFade,setBurstFade]=useState(false);
+  const[burstRepsDone,setBurstRepsDone]=useState(0);const[burstStars,setBurstStars]=useState(0);
+  const repsTarget=burstReps||1;
   const alive=useRef(true);const gen=useRef(0);const ttsPlaying=useRef(false);const{idleMsg,poke}=useIdle(name,!sf&&!mic);
   const dur=useMemo(()=>Math.max(6,Math.ceil(text.split(/\s+/).length*0.9)+4),[text]);
   const syllables=useMemo(()=>splitSyllables(text),[text]);
@@ -177,10 +179,15 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     // M5: Update adaptive speed
     if(uid)updatePhraseSpeed(uid,phraseKey,b>=3);
 
-    // === BURST MODE: instant visual feedback, no audio, immediate next ===
+    // === BURST MODE: instant visual feedback, repeat repsTarget times ===
     if(burstMode){
-      setBurstFade(true);
-      setTimeout(()=>{if(alive.current){setBurstFade(false);onOk(b,1)}},300);
+      setBurstStars(b);setBurstFade(true);
+      const nextRep=burstRepsDone+1;
+      setBurstRepsDone(nextRep);
+      setTimeout(()=>{if(!alive.current)return;setBurstFade(false);
+        if(nextRep<repsTarget){sSf(null);doPlay()}
+        else{onOk(b,1)}
+      },300);
       return;
     }
 
@@ -188,11 +195,12 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     const exPct=getExigencia()/100;// e.g. 0.65
     const passThreshold=exPct*0.6*4;// 60% of exigencia applied to 4-star scale
     const na=att+1;sAtt(na);
-    if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk(b,na)})}
+    // Only say verbal encouragement every 8 exercises to avoid distraction
+    const shouldCheer=!exerciseNum||exerciseNum%8===0;
+    if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');if(shouldCheer){cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk(b,na)})}else{starBeep(b);setTimeout(()=>{if(alive.current)onOk(b,na)},400)}}
     else if(b>=passThreshold){
-      // Pass with earned stars
-      if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk(b,na)})}
-      else{const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');sayFB(gm);setTimeout(()=>{if(alive.current)onOk(b,na)},800)}
+      if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');if(shouldCheer){cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk(b,na)})}else{starBeep(b);setTimeout(()=>{if(alive.current)onOk(b,na)},400)}}
+      else{const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');if(shouldCheer)sayFB(gm);setTimeout(()=>{if(alive.current)onOk(b,na)},shouldCheer?800:400)}
     }
     else if(na>=3){
       // M3: Auto-pass after 3 attempts with 1 star and encouraging message
@@ -215,7 +223,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     if(!alive.current)return;
     sr.go();setMic(true);
   }
-  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);setBurstFade(false);stopVoice();sr.stop();
+  useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);setBurstFade(false);setBurstRepsDone(0);setBurstStars(0);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
     const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:1200);
@@ -228,7 +236,10 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     if(uid&&exId)updateRepCount(uid,exId,0);
     // M5: Update adaptive speed on timeout
     if(uid)updatePhraseSpeed(uid,phraseKey,false);
-    if(burstMode){onOk(0,1);return}
+    if(burstMode){
+      const nextRep=burstRepsDone+1;setBurstRepsDone(nextRep);
+      if(nextRep<repsTarget){sSf(null);setTimeout(()=>{if(alive.current)doPlay()},300);return}
+      onOk(0,1);return}
     if(na>=3){
       // M3: Auto-pass after 3 attempts
       const autoMsg=rnd(['¡Buen esfuerzo!','¡Seguimos!']);sMsg(autoMsg);sSf('pass');setStars(1);sayFB(autoMsg);
@@ -251,7 +262,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     </div>
     {/* Stars */}
     <div style={{minHeight:burstMode?40:70,marginBottom:burstMode?4:12}}>
-    {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?28:40}/></div>}
+    {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?28:40}/>{burstMode&&repsTarget>1&&<p style={{fontSize:12,color:'rgba(255,255,255,.5)',margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
     {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
     {!burstMode&&idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     </div>
@@ -283,7 +294,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     <div style={{height:100}}/>
   </div>}
 
-export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,fraccionado}){
+export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado}){
   // M9: Auto-activate fraccionado for phrases with 4+ words (unless explicitly set)
   const autoFrac=useMemo(()=>{
     if(typeof fraccionado==='boolean')return fraccionado;
@@ -292,7 +303,7 @@ export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,fra
   },[ex.ph,fraccionado]);
   return <div style={{textAlign:'center',padding:12}}>
   <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
-  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} fraccionado={autoFrac}/></div>}
+  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} fraccionado={autoFrac}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);

@@ -1,7 +1,34 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+
+// Bark sound using Web Audio API
+function playBark(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type='sawtooth';osc.frequency.setValueAtTime(350,ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180,ctx.currentTime+0.08);
+    osc.frequency.exponentialRampToValueAtTime(400,ctx.currentTime+0.12);
+    osc.frequency.exponentialRampToValueAtTime(150,ctx.currentTime+0.2);
+    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.25);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.25);
+    // Second bark
+    setTimeout(()=>{
+      const osc2=ctx.createOscillator();const g2=ctx.createGain();
+      osc2.connect(g2);g2.connect(ctx.destination);
+      osc2.type='sawtooth';osc2.frequency.setValueAtTime(380,ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(200,ctx.currentTime+0.1);
+      osc2.frequency.exponentialRampToValueAtTime(120,ctx.currentTime+0.2);
+      g2.gain.setValueAtTime(0.25,ctx.currentTime);
+      g2.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.22);
+      osc2.start(ctx.currentTime);osc2.stop(ctx.currentTime+0.22);
+    },280);
+  }catch(e){}
+}
 
 export default function TokiPlayground({
-  size = 320,
+  size = 380,
   feedMode = false,
   countdown = null,
   onContinue,
@@ -38,6 +65,7 @@ export default function TokiPlayground({
     if (idleTimer.current) clearTimeout(idleTimer.current);
     if (state === "eating") return;
     idleTimer.current = setTimeout(() => {
+      // First yawn, then bark if still idle
       setState("yawn");
       setIsLying(false);
       setEyesClosed(true);
@@ -47,8 +75,12 @@ export default function TokiPlayground({
       actionTimer.current = setTimeout(() => {
         setState("idle");
         setEyesClosed(false);
+        // Bark after yawn if still idle
+        barkTimer.current = setTimeout(() => {
+          if (state !== "eating") bark();
+        }, 3000);
       }, 1500);
-    }, 3000);
+    }, 4000);
   };
 
   useEffect(() => {
@@ -159,6 +191,7 @@ export default function TokiPlayground({
     setShowWoof(true);
     setTailFast(true);
     setEyesClosed(false);
+    playBark();
     barkTimer.current = setTimeout(() => {
       setState("idle");
       setMouthOpen(false);

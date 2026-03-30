@@ -280,7 +280,9 @@ export function ExWriting({ex,onOk,onSkip,name}){
         <p style={{fontSize:16,color:stars>=3?GREEN:GOLD,fontWeight:700,margin:'8px 0 0'}}>{stars>=4?'¡Perfecto!':stars===3?'¡Muy bien!':stars===2?'¡Intenta no salirte!':'¡Buen intento! Sigue el modelo'}</p></div>}
       {idleMsg&&!done&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
       {speakPhase&&<div style={{position:'fixed',top:0,left:0,width:'100vw',height:'100vh',background:'rgba(0,0,0,0.7)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',zIndex:9999}}>
-        <p style={{fontSize:48,fontWeight:700,color:'#fff',textAlign:'center',margin:'0 0 32px',fontFamily:"'Fredoka',sans-serif"}}>{ex.letter}</p>
+        <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)',maxWidth:340,margin:'0 auto 32px'}}>
+          <p style={{fontSize:26,fontWeight:700,color:'#fff',textAlign:'center',margin:0,lineHeight:1.3}}>"{ex.letter}"</p>
+        </div>
         <div style={{width:80,height:80,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 24px #E74C3C55',animation:'pulse 1.2s infinite'}}>
           <span style={{fontSize:38,color:'#fff',lineHeight:1}}>🎤</span>
         </div>

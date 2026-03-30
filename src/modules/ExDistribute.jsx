@@ -19,7 +19,7 @@ export function DominoSVG({size=48,dots}){const l=dots?dots[0]:2,r2=dots?dots[1]
 </svg>}
 
 // ===== REPARTE Y CUENTA =====
-export function genDistribute(lv,user){const items=[];const pNames=(loadData('personas',[])||[]).filter(p=>p.name).map(p=>p.name);const friends=pNames.length>=2?pNames:((user?.amigos||'Yasser,Lola,Vega,Amir,Carlos').split(',').map(s=>s.trim()).filter(Boolean));
+export function genDistribute(lv,user){const items=[];const pNames=(loadData('personas',[])||[]).filter(p=>p.name).map(p=>p.name);const friends=pNames.length>=2?pNames:((user?.amigos||'Ana,Pablo,Lucía,Carlos,Marta').split(',').map(s=>s.trim()).filter(Boolean));
   if(lv===1){for(let i=0;i<12;i++){const n=2+Math.floor(Math.random()*8);const f=friends[i%friends.length]||'Amigo';items.push({ty:'distribute',mode:'put',count:n,friend:f,id:'dist_put_'+i})}}
   else if(lv===2){for(let i=0;i<12;i++){const bags=2+Math.floor(Math.random()*3);const each=2+Math.floor(Math.random()*4);const total=bags*each;const names=friends.slice(0,bags);items.push({ty:'distribute',mode:'equal',total,bags,each,names,id:'dist_eq_'+i})}}
   else{for(let i=0;i<10;i++){const a=2+Math.floor(Math.random()*6);const b=2+Math.floor(Math.random()*6);const na=friends[0]||'Ana',nb=friends[1]||'Carlos';items.push({ty:'distribute',mode:'compare',a,b,nameA:na,nameB:nb,id:'dist_cmp_'+i})}}

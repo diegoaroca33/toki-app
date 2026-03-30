@@ -55,7 +55,9 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
         <div style={{fontSize:32,color:op==='+'?GREEN:RED,fontWeight:700,alignSelf:'center'}}>{op}</div>
         <div style={{textAlign:'center'}}><Fingers n={b} color={BLUE} color2={BLUE}/><p style={{fontSize:16,color:BLUE,margin:0,fontWeight:700}}>{b}</p></div>
       </div>
-      <NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>
+      <div style={{marginTop:16,paddingTop:8}}>
+        <NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>
+      </div>
       <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:6}}><button className="btn btn-ghost btn-half skip-btn" style={{maxWidth:100}} onClick={()=>{stopVoice();onSkip()}}>⏭️</button></div>
     </div>}
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'15',borderRadius:14,padding:20,marginBottom:14}}>

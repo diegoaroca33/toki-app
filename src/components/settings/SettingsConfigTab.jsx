@@ -412,6 +412,23 @@ export default function SettingsConfigTab(props) {
           <div style={{ color: DIM, fontSize: 12, marginTop: -4 }}>
             Rafaga se activa automaticamente en sesiones intensas (1h+ o 200+ ejercicios)
           </div>
+          <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>🎯 Tolerancia del micrófono:</span>
+              <span style={{ color: GOLD, fontWeight: 800, fontSize: 18, minWidth: 36, textAlign: 'center' }}>{exigencia}%</span>
+            </div>
+            <input type="range" min={30} max={100} step={5} value={exigencia}
+              onChange={e => { const v = parseInt(e.target.value); setExigencia && setExigencia(v) }}
+              style={{ width: '100%', accentColor: GOLD, height: 6, cursor: 'pointer' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginTop: 2 }}>
+              <span>Flexible</span><span>Exigente</span>
+            </div>
+            <p style={{ fontSize: 12, color: DIM, marginTop: 4 }}>
+              {exigencia <= 50 ? 'Acepta aproximaciones amplias — ideal para empezar' :
+               exigencia <= 75 ? 'Equilibrado — acepta buenas aproximaciones' :
+               'Exigente — requiere buena dicción para puntuar'}
+            </p>
+          </div>
         </div>
       </Card>
 

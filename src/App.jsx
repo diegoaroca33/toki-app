@@ -6,8 +6,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed } from './utils.js'
-import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, cheerOrSay } from './voice.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed } from './utils.js'
+import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason } from './components/UIKit.jsx'
 import { RocketTransition } from './components/RocketTransition.jsx'
@@ -15,7 +15,7 @@ import { CelebrationOverlay, Stars } from './components/CelebrationOverlay.jsx'
 import { PhotoCropOverlay } from './components/PhotoCropOverlay.jsx'
 import { EmergencyButton } from './components/EmergencyButton.jsx'
 import { MonthlyReport } from './components/MonthlyReport.jsx'
-import { DoneScreen, victoryBeeps } from './components/DoneScreen.jsx'
+import { DoneScreen } from './components/DoneScreen.jsx'
 import { VoiceRec } from './components/VoiceRec.jsx'
 import { SpeakPanel, ExFlu, ExFrases, ExFrasesBlank, ExSit } from './components/SpeakPanel.jsx'
 import { ExCount, NUM_BLOCK_COLORS } from './modules/ExCount.jsx'
@@ -96,9 +96,12 @@ export default function App(){
           if(newLines!==oldLines){pp.presentations[autoIdx]={...old,lines:gen.lines,slides:gen.slides,date:new Date().toISOString().slice(0,10)};changed=true}}
       }
     }
+    // Migrate: ensure first 3 presentations have active field
+    if(pp.presentations&&pp.presentations.length>0&&pp.presentations.some(pr=>pr.active===undefined)){
+      let actCount=0;pp.presentations.forEach((pr,pi)=>{if(pr.active===undefined){pr.active=actCount<3;actCount++}else if(pr.active)actCount++});changed=true}
     // Inject Down syndrome presentation for Guillermo
     if(pp.presentations&&!pp.presentations.some(pr=>pr.specific)&&fbUser&&fbUser.email==='diegoarocavillalba@hotmail.com'&&pp.name&&pp.name.toLowerCase().includes('guillermo')){
-      const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img,picto:q.picto})),specific:true};
+      const sdownPres={name:'El Síndrome de Down',date:'2024-01-01',lines:QUIEN_SOY.map(q=>q.text),slides:QUIEN_SOY.map(q=>({text:q.text,img:q.img})),specific:true};
       pp.presentations.forEach(pr=>{if(pr.auto&&pr.name==='Mi presentación')pr.name='Quién Soy'});
       pp.presentations.unshift(sdownPres);changed=true}
     return pp});
@@ -184,6 +187,7 @@ export default function App(){
   const[goalCount,setGoalCount]=useState(0);
   const[sessionStartTime,setSessionStartTime]=useState(null);
   const[showTokiBreak,setShowTokiBreak]=useState(false);
+  const[showCompanion,setShowCompanion]=useState(false);
   // Auto cloud sync when profiles change (debounced)
   const cloudSyncTimer=useRef(null);
   useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
@@ -306,18 +310,18 @@ export default function App(){
       // Build slides from whatever data we have
       const items=[];
       if(thisPres){
-        const slides=thisPres.slides||(thisPres.lines||[]).map(t=>({text:t,img:null,picto:null}));
+        const slides=thisPres.slides||(thisPres.lines||[]).map(t=>({text:t,img:null}));
         // Always generate estudio-style items (one per slide) with presentation attached for switch
         const presData={...thisPres,slides};
         const canToggle=hasEstudio&&hasPres;
         if(slides.length>0){
-          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||u.photo||null,picto:s.picto||null,presentation:presData,canToggle})));
+          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||u.photo||null,presentation:presData,canToggle})));
         }
       }
       // Ultimate fallback: if nothing found, create from user data
       if(!items.length){
         const fallback='Hola, me llamo '+(u.name||'');
-        items.push({ty:'quiensoy',id:'pres_fb_0',text:fallback,img:u.photo||null,picto:null});
+        items.push({ty:'quiensoy',id:'pres_fb_0',text:fallback,img:u.photo||null});
       }
       return _noRepeat(items)}
     // Multi-level support: if slv is an array, merge exercises from all levels
@@ -407,7 +411,7 @@ export default function App(){
   // Start random session directly from active modules (DILO sandwich: 8 DILO, 8 others, repeat)
   function startRandomFromActiveModules(){
     if(!user)return;
-    const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false);
+    const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false&&m.k!=='quiensoy');
     if(allMods.length<2)return startGame();
     const perMod=8;
     const modQueues=allMods.map(m=>{
@@ -468,13 +472,11 @@ export default function App(){
     const nextEx=queue[nextIdx];
     const curEx=queue[idx];
     if(nextEx&&curEx&&nextEx._randomModule!==curEx._randomModule){
-      // Show transition overlay
-      setRandomTransition({emoji:nextEx._randomPlanet,name:nextEx._randomName,groupEmoji:nextEx._randomGroupEmoji});
-      // Update sec for correct component rendering
+      // Smooth transition: just update section and advance, no black overlay
       const allMods=dynGroups.flatMap(g=>g.modules);
       const nextMod=allMods.find(m=>m.lvKey===nextEx._randomModule);
       if(nextMod){setSec(nextMod.k);if(nextMod.lvKey)curPresLvKeyRef.current=nextMod.lvKey}
-      setTimeout(()=>{setRandomTransition(null);setIdx(nextIdx)},1200);
+      setIdx(nextIdx);
     } else {
       setIdx(nextIdx);
     }
@@ -489,8 +491,8 @@ export default function App(){
   useEffect(()=>{if(randomActive&&scr==='game'){randomTimeUpRef.current=false}},[randomActive,scr]);
   // No longer auto-finish on timeUp - let kid continue freely after guided time
   const timeUpShown=useRef(false);
-  useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryBeeps();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
-  useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryBeeps()}},[elapsedSt,scr,ss]);
+  useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryJingle();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
+  useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryJingle()}},[elapsedSt,scr,ss]);
   // TokiBreak every 15 min for time mode
   const lastBreakMin=useRef(0);
   useEffect(()=>{if(scr!=='game'||!ss||sessionType!=='time')return;
@@ -501,9 +503,9 @@ export default function App(){
   function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
     // Streak & milestone tracking
     const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+1);
-    const totalOk=nextSt.ok;const MS=[{n:5,emoji:'🌟',text:'¡Vas genial!',sub:'5 respuestas correctas'},{n:10,emoji:'🔥',text:'¡Imparable!',sub:'10 respuestas correctas'},{n:20,emoji:'🏆',text:'¡Superestrella!',sub:'20 respuestas correctas'}];
+    const totalOk=nextSt.ok;const MS=[{n:10,emoji:'🌟',text:'¡Vas genial!',sub:'10 ejercicios'},{n:25,emoji:'🔥',text:'¡Imparable!',sub:'25 ejercicios'},{n:50,emoji:'💪',text:'¡Medio centenar!',sub:'50 ejercicios'},{n:75,emoji:'⭐',text:'¡Casi!',sub:'75 ejercicios'},{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Increíble esfuerzo!'},{n:150,emoji:'🚀',text:'¡Superestrella!',sub:'150 ejercicios'},{n:200,emoji:'👑',text:'¡Leyenda!',sub:'200 ejercicios'},{n:300,emoji:'🌈',text:'¡Récord absoluto!',sub:'300 ejercicios'}];
     const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
-    if(hit){milestoneShown.current.add(hit.n);setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub});setTimeout(()=>setMilestone(null),2500)},300)}
+    if(hit){milestoneShown.current.add(hit.n);stopVoice();setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub});setTimeout(()=>setMilestone(null),2500)},300)}
     // M7a: Dynamic DILO tracking on success
     if(sec==='decir'&&user&&getDynamicDilo(user.id)){
       diloExCount.current++;
@@ -757,24 +759,24 @@ export default function App(){
     {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️</button></div></div>
       <div style={{padding:'4px 4px 2px'}}>
-        {/* Single row: Dog | Avatar | Greeting | Tier stars | Stats */}
+        {/* Row 1: Dog | Avatar | Greeting | Stars counter + streak */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-          <div style={{flexShrink:0}}>
-            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={38}/>})()}
+          <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>setShowCompanion(true)} title="Compañía">
+            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
           </div>
           <div style={{flexShrink:0}}>
-            <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={42} helmet={showHelmet}/>
+            <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={48} helmet={showHelmet}/>
           </div>
-          <div style={{flex:1,minWidth:0,textAlign:'center'}}>
+          <div style={{flex:1,minWidth:0}}>
             <h2 style={{fontSize:20,margin:0,color:'#FFF',textShadow:'0 1px 6px rgba(0,0,0,.6)',lineHeight:1.2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{getGreeting(user.name)}</h2>
-            <p style={{fontSize:11,color:'rgba(255,255,255,.6)',margin:'1px 0 0'}}>⏱️ Sesión {sm===0?'∞':'de '+sm+' min'}</p>
+            <div style={{display:'flex',alignItems:'center',gap:4,marginTop:2}}>
+              {(()=>{const s3=user?.totalStars3plus||0;const current=getMascotTier(s3);const cycle=getMascotCycle(s3);const cc=CYCLE_COLORS[cycle%CYCLE_COLORS.length];return [0,1,2,3,4,5].map(i=>{const active=i<=current;return <span key={i} style={{fontSize:14,opacity:active?1:0.18,filter:active?'none':'grayscale(1)',transition:'all .3s',color:active?cc:undefined}}>{i===0?'⭐':i===1?'🌟':i===2?'💫':i===3?'✨':i===4?'🏅':'🏆'}</span>})})()}{getMascotCycle(user?.totalStars3plus||0)>0&&<span style={{fontSize:10,color:CYCLE_COLORS[getMascotCycle(user?.totalStars3plus||0)%CYCLE_COLORS.length],fontWeight:700}}>×{getMascotCycle(user?.totalStars3plus||0)+1}</span>}
+              <span style={{fontSize:11,color:'rgba(255,255,255,.5)',marginLeft:4}}>⏱️{sm===0?'∞':sm+'m'}</span>
+            </div>
           </div>
-          <div style={{display:'flex',gap:2,flexShrink:0,alignItems:'center'}}>
-            {[0,1,2,3,4,5].map(i=>{const current=getMascotTier(user?.totalStars3plus||0);const active=i<=current;return <span key={i} style={{fontSize:14,opacity:active?1:0.18,filter:active?'none':'grayscale(1)',transition:'all .3s'}}>{i===0?'⭐':i===1?'🌟':i===2?'💫':i===3?'✨':i===4?'🏅':'🏆'}</span>})}
-          </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0}}>
-            <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'4px 10px',minHeight:36,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:13,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
-            {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:8,padding:'3px 8px',display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:11,color:'#E67E22',fontWeight:700}}>🔥 {streak}d</span></div>}
+          <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+            <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'5px 10px',minHeight:36,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:15,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
+            {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:8,padding:'3px 8px'}}><span style={{fontSize:12,color:'#E67E22',fontWeight:700}}>🔥{streak}d</span></div>}
           </div>
         </div>
       </div>
@@ -962,9 +964,13 @@ export default function App(){
     </div>}
     {/* TokiBreak overlay */}
     {showTokiBreak&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>setShowTokiBreak(false)}/>
+      <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/>
     </div>}
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={36}/>}{randomActive
+    {/* Companion screen - accessible from goals */}
+    {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
+      <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/>
+    </div>}
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={36}/>}{randomActive
         ?<span style={{fontSize:14,color:randomTimer<=60&&sessionType==='time'?'#FF5722':DIM,fontWeight:700}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(randomTimer/60)}:${String(randomTimer%60).padStart(2,'0')}`}</span>
         :<span style={{fontSize:14,color:DIM,fontWeight:600}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')} / ${(sessionTime||sm)===0?'∞':(sessionTime||sm)+"'"}`}</span>
       }</div></div>
@@ -988,12 +994,18 @@ export default function App(){
         <input type="range" min="0.7" max="1.2" step="0.1" value={burstSpeed} onChange={e=>setBurstSpeedVal(parseFloat(e.target.value))} style={{width:120,accentColor:'#FF5722',height:6,cursor:'pointer'}}/>
         <span style={{fontSize:14}}>⚡</span>
       </div>}
-      <Tower placed={st.ok} total={st.ok+st.sk+Math.max(1,queue.length-idx)}/>
+      {/* Session counter - compact 2-line display */}
+      <div style={{display:'flex',justifyContent:'center',gap:14,alignItems:'center',margin:'4px 0',fontSize:15,fontWeight:700,fontFamily:"'Fredoka'"}}>
+        <span style={{color:GOLD}}>⭐ {st.ok}{sessionType==='goal'?'/'+sessionGoal:''}</span>
+        <span style={{color:'rgba(255,255,255,.3)'}}>│</span>
+        <span style={{color:'#E67E22'}}>🔥 {Math.floor(((Date.now()-(ss||Date.now()))/60000))}min</span>
+        {sessionType==='goal'&&<><span style={{color:'rgba(255,255,255,.3)'}}>│</span><span style={{color:GREEN}}>{Math.round((st.ok/Math.max(1,sessionGoal))*100)}%</span></>}
+      </div>
       <div style={{marginTop:10}}>
         {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed}/>}
+        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk}/>}
         {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='math'&&<ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='multi'&&<ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}

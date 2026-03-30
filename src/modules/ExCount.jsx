@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, DIM, BG3, CARD, BORDER } from '../constants.js'
 import { NUMS_1_100 } from '../constants.js'
 import { say, sayFast, stopVoice } from '../voice.js'
-import { listenQuick, starBeep, cheerOrSay } from '../voice.js'
-import { score, beep, mkPerfect } from '../utils.js'
+import { starBeep, cheerOrSay } from '../voice.js'
+import { mkPerfect } from '../utils.js'
 import { OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
 
@@ -48,7 +48,6 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     window.addEventListener('toki-sos',sosKill);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();window.removeEventListener('toki-sos',sosKill)}},[ex]);
   async function runSequence(){
-    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
     for(let i=0;i<nums.length;i++){
       if(!alive.current)return;
       const n=nums[i];setCi(i);
@@ -59,16 +58,10 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
       await sayFast(text);
       ttsPlaying.current=false;
       if(!alive.current)return;
-      // Delay = base speed + word-length buffer so longer words (dieciocho) get more time
+      // Continuous counting: just a brief pause based on speed, no recording
       const baseDelay=speedRef.current.ms;
-      const wordBuffer=text.length*30;
-      await new Promise(r=>setTimeout(r,Math.max(200,baseDelay+wordBuffer-600)));
-      if(!alive.current)return;
-      setPhase('child');
-      const heard=await listenQuick(2200);
-      if(!alive.current)return;
-      if(heard){const rawB=Math.max(...heard.split('|').map(a=>score(a,text)));if(rawB>=2)beep(500+n*5,50)}
-      await new Promise(r=>setTimeout(r,120));
+      const wordBuffer=text.length*20;
+      await new Promise(r=>setTimeout(r,Math.max(150,baseDelay+wordBuffer-500)));
     }
     if(!alive.current)return;setPhase('done');setCi(-1);
     starBeep(4);await cheerOrSay(mkPerfect(name),uid,vids,'perfect');
@@ -108,11 +101,7 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
     </div>
     {phase==='done'&&!oralPhrase&&<><div className="ab" style={{marginTop:8}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
-    {phase==='child'&&curNum&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',marginTop:8}}>
-      <div style={{width:70,height:70,borderRadius:'50%',background:'#E74C3C',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 0 20px #E74C3C55',animation:'pulse .8s infinite'}}>
-        <span style={{fontSize:34,color:'#fff'}}>🎤</span>
-      </div>
-    </div>}
+    {phase==='toki'&&curNum&&<p style={{fontSize:14,color:DIM,margin:'8px 0 0',fontWeight:600}}>🔊 ¡Cuenta conmigo!</p>}
     {/* Speed controls removed — will become slider in future */}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();alive.current=false;onSkip()}} style={{marginTop:4}}>⏭️ Saltar</button>
   </div>}
