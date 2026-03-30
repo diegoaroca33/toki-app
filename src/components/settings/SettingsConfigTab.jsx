@@ -1,12 +1,57 @@
 import React, { useMemo, useState } from 'react'
 import {
   BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER,
-  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS, SUPPORT_EMAIL
+  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS, SUPPORT_EMAIL, VER
 } from '../../constants.js'
 import { Button, Card, Badge } from '../ui/index.js'
 import SessionModeControl from './SessionModeControl.jsx'
 import { NumPad } from '../UIKit.jsx'
 import { saveData, getModuleLvOrDef, setModuleLv, getDynamicDilo, setDynamicDilo } from '../../utils.js'
+import { fbGetMyPublicVoiceCount, fbDeleteMyPublicVoices } from '../../firebase.js'
+
+function PublicVoiceManager({ fbUser }) {
+  const [count, setCount] = React.useState(null)
+  const [deleting, setDeleting] = React.useState(false)
+  const [confirmDel, setConfirmDel] = React.useState(false)
+  const [deleted, setDeleted] = React.useState(false)
+
+  React.useEffect(() => {
+    if (fbUser) fbGetMyPublicVoiceCount(fbUser.uid).then(c => setCount(c)).catch(() => setCount(0))
+  }, [fbUser, deleted])
+
+  if (!fbUser || count === null || count === 0) return null
+
+  return (
+    <div style={{ padding: '10px 16px', background: CARD, border: '2px solid ' + BORDER, borderRadius: 12, textAlign: 'left' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>🎙️ Voces públicas: {count}</div>
+          <div style={{ fontSize: 11, color: DIM }}>Grabaciones cedidas como modelo educativo</div>
+        </div>
+        {!confirmDel && !deleted && (
+          <button onClick={() => setConfirmDel(true)} style={{ background: RED + '22', border: '2px solid ' + RED + '44', borderRadius: 10, padding: '6px 12px', color: RED, fontSize: 12, cursor: 'pointer', fontFamily: "'Fredoka'", fontWeight: 600 }}>Revocar</button>
+        )}
+      </div>
+      {confirmDel && !deleted && (
+        <div style={{ marginTop: 10, padding: 12, background: RED + '11', borderRadius: 10, border: '1px solid ' + RED + '33' }}>
+          <p style={{ fontSize: 13, color: DIM, margin: '0 0 8px' }}>Esto eliminará permanentemente tus {count} grabaciones públicas. Otros usuarios ya no podrán escucharlas.</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setConfirmDel(false)} style={{ flex: 1, padding: '8px', borderRadius: 8, border: '1px solid ' + BORDER, background: 'transparent', color: DIM, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka'" }}>Cancelar</button>
+            <button disabled={deleting} onClick={async () => {
+              setDeleting(true)
+              await fbDeleteMyPublicVoices(fbUser.uid)
+              setDeleting(false)
+              setConfirmDel(false)
+              setDeleted(true)
+              setCount(0)
+            }} style={{ flex: 1, padding: '8px', borderRadius: 8, border: '2px solid ' + RED, background: RED + '22', color: RED, fontSize: 13, cursor: 'pointer', fontFamily: "'Fredoka'", fontWeight: 700 }}>{deleting ? 'Eliminando...' : 'Sí, revocar todo'}</button>
+          </div>
+        </div>
+      )}
+      {deleted && <p style={{ fontSize: 13, color: GREEN, margin: '8px 0 0', fontWeight: 600 }}>✅ Voces públicas eliminadas correctamente</p>}
+    </div>
+  )
+}
 
 function Dot({ color, active, onClick, label }) {
   return (
@@ -514,11 +559,12 @@ export default function SettingsConfigTab(props) {
         </div>
       </Card>
 
-      {/* Support link */}
-      <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
-        <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: DIM, fontSize: 13, textDecoration: 'none' }}>
-          📩 Incidencias o soporte: <span style={{ color: GOLD, textDecoration: 'underline' }}>{SUPPORT_EMAIL}</span>
+      {/* Support + legal + public voices */}
+      <div style={{ textAlign: 'center', padding: '12px 0 4px', display: 'grid', gap: 8 }}>
+        <a href={'mailto:' + SUPPORT_EMAIL + '?subject=Soporte%20Toki%20' + VER} style={{ color: DIM, fontSize: 14, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 20px', background: CARD, border: '2px solid ' + BORDER, borderRadius: 12, cursor: 'pointer' }}>
+          📩 <span style={{ color: GOLD, fontWeight: 600 }}>Soporte Toki</span>
         </a>
+        <PublicVoiceManager fbUser={props.fbUser} />
       </div>
     </div>
   )

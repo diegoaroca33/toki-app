@@ -242,6 +242,38 @@ export async function fbGetBestVoice(phraseKey, userSex, userAge) {
   return pool[0]?.audioURL || null
 }
 
+// Get count of public voices uploaded by a user
+export async function fbGetMyPublicVoiceCount(uid) {
+  if (!db || !uid) return 0
+  try {
+    const q2 = query(collection(db, 'public_voices'), where('uploadedBy', '==', uid))
+    const snap = await getDocs(q2)
+    return snap.size
+  } catch (e) { return 0 }
+}
+
+// Delete ALL public voices uploaded by a user (revoke consent)
+export async function fbDeleteMyPublicVoices(uid) {
+  if (!db || !storage || !uid) return 0
+  try {
+    const q2 = query(collection(db, 'public_voices'), where('uploadedBy', '==', uid))
+    const snap = await getDocs(q2)
+    let deleted = 0
+    for (const d2 of snap.docs) {
+      const data = d2.data()
+      // Delete from Storage
+      try {
+        const sRef = storageRef(storage, `public_voices/${data.phraseKey}/${uid}.webm`)
+        await deleteObject(sRef)
+      } catch (e) {}
+      // Delete Firestore doc
+      await deleteDoc(d2.ref)
+      deleted++
+    }
+    return deleted
+  } catch (e) { console.warn('[Toki] Delete public voices error:', e); return 0 }
+}
+
 export async function fbUploadUserVoice(uid, phraseKey, blob) {
   const sRef = storageRef(storage, `users/${uid}/voices/${phraseKey}.webm`)
   await uploadBytes(sRef, blob)

@@ -80,10 +80,11 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
       <p style={{fontSize:24,fontWeight:700,color:GREEN,margin:'0 0 12px'}}>¡Gracias por tu aportaci\u00f3n!</p>
       <p style={{fontSize:18,color:TXT,margin:'0 0 20px'}}>Eso ayudar\u00e1 a {user.name||'tu peque'}</p>
       {fbUser&&<div style={{borderTop:'1px solid '+BORDER,paddingTop:16}}>
-        <p style={{fontSize:17,color:GOLD,fontWeight:600,margin:'0 0 12px'}}>¿Quieres hacer tu voz p\u00fablica y ayudar a otros usuarios?</p>
-        <label style={{display:'flex',gap:10,alignItems:'center',cursor:'pointer',padding:12,background:cedeVoz?GREEN+'22':BG3,borderRadius:12,border:'2px solid '+(cedeVoz?GREEN:BORDER)}} onClick={()=>setCedeVoz(!cedeVoz)}>
-          <span style={{fontSize:24}}>{cedeVoz?'✅':'⬜'}</span>
-          <span style={{fontSize:15,color:cedeVoz?GREEN:DIM}}>Cedo mi voz para uso educativo en Toki</span>
+        <p style={{fontSize:17,color:GOLD,fontWeight:600,margin:'0 0 10px'}}>¿Quieres hacer tu voz p\u00fablica y ayudar a otros usuarios?</p>
+        <p style={{fontSize:12,color:DIM,margin:'0 0 10px',lineHeight:1.5}}>Las grabaciones se usar\u00e1n exclusivamente como modelo de voz en ejercicios de Toki para otros alumnos. Se almacenan de forma an\u00f3nima (solo nombre, edad y sexo del hablante). Puedes retirar tus voces p\u00fablicas en cualquier momento desde Ajustes &gt; Config.</p>
+        <label style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer',padding:12,background:cedeVoz?GREEN+'22':BG3,borderRadius:12,border:'2px solid '+(cedeVoz?GREEN:BORDER)}} onClick={()=>setCedeVoz(!cedeVoz)}>
+          <span style={{fontSize:24,flexShrink:0,marginTop:2}}>{cedeVoz?'✅':'⬜'}</span>
+          <span style={{fontSize:14,color:cedeVoz?GREEN:DIM,lineHeight:1.4}}>Como padre/madre/tutor legal, autorizo la cesi\u00f3n de estas grabaciones de voz con fines educativos en la plataforma Toki, conforme al RGPD (art. 6.1.a). Entiendo que puedo revocar este consentimiento en cualquier momento.</span>
         </label>
       </div>}
       <div style={{display:'flex',gap:10,marginTop:16}}>
