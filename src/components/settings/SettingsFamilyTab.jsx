@@ -4,6 +4,7 @@ import { generateAutoPresentation, processImage } from '../../cloud.js'
 import { fbCreateShareCode } from '../../firebase.js'
 import { AstronautAvatar } from '../UIKit.jsx'
 import { Button, Card, Badge } from '../ui/index.js'
+import { getCustomPhrases, saveCustomPhrases, MAX_PHRASE_LEN } from '../../modules/ExWriting.jsx'
 
 // ── PersonaRow ──────────────────────────────────────────────────
 function PersonaRow({ p, idx, onPatch, onRequestDelete, delPersonaIdx, setDelPersonaIdx, onPhoto }) {
@@ -161,6 +162,117 @@ function PresEditInline({ pres, onSave, onCancel, setPhotoCrop, editIdx, pickPho
         <Button variant="gold" fullWidth={false} size="sm" onClick={() => onSave({ name: name || 'Presentación', slides, auto: false })}>
           Guardar
         </Button>
+      </div>
+    </Card>
+  )
+}
+
+// ── MisFrasesEditor ─────────────────────────────────────────────
+function MisFrasesEditor({ user, personas }) {
+  const [phrases, setPhrases] = React.useState(() => getCustomPhrases(user))
+  const [newPhrase, setNewPhrase] = React.useState('')
+  const [editIdx, setEditIdx] = React.useState(null)
+  const [editVal, setEditVal] = React.useState('')
+
+  const save = (next) => { setPhrases(next); saveCustomPhrases(next) }
+
+  const addPhrase = () => {
+    const t = newPhrase.trim()
+    if (!t || t.length > MAX_PHRASE_LEN) return
+    save([...phrases, t.toUpperCase()])
+    setNewPhrase('')
+  }
+
+  const removePhrase = (i) => save(phrases.filter((_, idx) => idx !== i))
+
+  const startEdit = (i) => { setEditIdx(i); setEditVal(phrases[i]) }
+  const saveEdit = () => {
+    const t = editVal.trim()
+    if (!t || t.length > MAX_PHRASE_LEN) return
+    const next = [...phrases]; next[editIdx] = t.toUpperCase()
+    save(next); setEditIdx(null); setEditVal('')
+  }
+
+  const resetDefaults = () => {
+    const defaults = []
+    if (user?.name) defaults.push('ME LLAMO ' + user.name.toUpperCase())
+    if (user?.direccion) defaults.push('VIVO EN ' + user.direccion.toUpperCase())
+    if (user?.telefono) defaults.push('LLAMA AL ' + user.telefono)
+    try {
+      const ps = personas || []
+      const padre = ps.find(p => p.relation === 'Padre' && p.name)
+      const madre = ps.find(p => p.relation === 'Madre' && p.name)
+      if (padre) defaults.push('MI PAPA SE LLAMA ' + padre.name.toUpperCase())
+      if (madre) defaults.push('MI MAMA SE LLAMA ' + madre.name.toUpperCase())
+    } catch (e) {}
+    if (user?.colegio) defaults.push('VOY AL COLE ' + user.colegio.toUpperCase())
+    if (defaults.length === 0) defaults.push('ME LLAMO ' + (user?.name || 'TOKI').toUpperCase())
+    save(defaults)
+  }
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ color: GOLD, fontWeight: 800, fontSize: 18 }}>✏️ Mis frases</div>
+        <Badge tone="ghost">{phrases.length} frases</Badge>
+      </div>
+      <div style={{ color: DIM, fontSize: 13, marginBottom: 12 }}>
+        Frases personalizadas para practicar escritura. Máx {MAX_PHRASE_LEN} caracteres.
+      </div>
+
+      {/* Existing phrases list */}
+      <div style={{ display: 'grid', gap: 6, marginBottom: 12, maxHeight: phrases.length > 8 ? 300 : undefined, overflowY: phrases.length > 8 ? 'auto' : undefined }}>
+        {phrases.map((f, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 8, alignItems: 'center',
+            background: `${CARD}`, border: `1px solid ${BORDER}`, borderRadius: 10, padding: '6px 10px'
+          }}>
+            {editIdx === i ? (
+              <>
+                <input
+                  className="inp"
+                  value={editVal}
+                  onChange={(e) => setEditVal(e.target.value.slice(0, MAX_PHRASE_LEN))}
+                  onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                  style={{ flex: 1, fontSize: 14, padding: 6 }}
+                  autoFocus
+                />
+                <Button variant="gold" fullWidth={false} size="sm" onClick={saveEdit}>✓</Button>
+                <Button variant="ghost" fullWidth={false} size="sm" onClick={() => setEditIdx(null)}>✕</Button>
+              </>
+            ) : (
+              <>
+                <div style={{ flex: 1, fontSize: 14, fontWeight: 600, fontFamily: "'Fredoka'", letterSpacing: .5 }}>{f}</div>
+                <button onClick={() => startEdit(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2, color: DIM }}>✏️</button>
+                <button onClick={() => removePhrase(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2, color: RED }}>✕</button>
+              </>
+            )}
+          </div>
+        ))}
+        {phrases.length === 0 && <div style={{ color: DIM, fontSize: 14 }}>No hay frases. Pulsa "Generar" para crear frases automáticas.</div>}
+      </div>
+
+      {/* Add new phrase */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <input
+          className="inp"
+          placeholder="Escribe una frase nueva..."
+          value={newPhrase}
+          onChange={(e) => setNewPhrase(e.target.value.slice(0, MAX_PHRASE_LEN))}
+          onKeyDown={(e) => e.key === 'Enter' && addPhrase()}
+          style={{ flex: 1, fontSize: 14, padding: 8 }}
+        />
+        <Button variant="gold" fullWidth={false} size="sm" onClick={addPhrase} style={{ flexShrink: 0 }}>＋</Button>
+      </div>
+      {newPhrase.length > 0 && (
+        <div style={{ fontSize: 11, color: newPhrase.length >= MAX_PHRASE_LEN - 5 ? RED : DIM, marginBottom: 6 }}>
+          {newPhrase.length}/{MAX_PHRASE_LEN} caracteres
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Button variant="ghost" fullWidth={false} size="sm" onClick={resetDefaults}>🔄 Generar desde perfil</Button>
       </div>
     </Card>
   )
@@ -469,6 +581,9 @@ export default function SettingsFamilyTab(props) {
           </div>
         )}
       </Card>
+
+      {/* ─── Mis frases (custom writing phrases) ──────────────── */}
+      <MisFrasesEditor user={safeUser} personas={safePersonas} />
 
       {/* ─── Voice recording ─────────────────────────────────── */}
       <Card>

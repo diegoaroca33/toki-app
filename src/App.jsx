@@ -357,7 +357,7 @@ export default function App(){
       // Use escribe preferences to determine levels
       const eCase=loadData('escribe_case','upper');
       const eTypes=loadData('escribe_types',['letras']);
-      const eGuide=loadData('escribe_guide',{letras:true,palabras:true,frases:true});
+      const eGuide=loadData('escribe_guide',{letras:true,palabras:true,frases:true,misfrases:true});
       const lvs=[];
       eTypes.forEach(t=>{
         const guide=eGuide[t]!==false;
@@ -370,6 +370,9 @@ export default function App(){
         }else if(t==='frases'){
           if(eCase==='upper')lvs.push(guide?6:61);
           else lvs.push(guide?62:63);
+        }else if(t==='misfrases'){
+          if(eCase==='upper')lvs.push(guide?7:71);
+          else lvs.push(guide?72:73);
         }
       });
       if(lvs.length===0)lvs.push(1);

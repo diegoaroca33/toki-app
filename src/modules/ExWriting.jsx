@@ -16,6 +16,38 @@ const DESCENDERS='gjpqy'.split('');const ASCENDERS='bdfhklt'.split('');
 
 const WRITE_WORDS_LOWER=['casa','mesa','sol','pan','luz','ojo','uno','dos','mar','pie','oso','ave','rio','dia','rey','mis','tus','sus','hoy','agua','leche','mama','papa','cole','amigo','perro','gato','coche','pelota','parque','calle','tienda','movil','musica','silla','libro','zapato','cocina','baño','toalla','jabon','reloj','llave'];
 const WRITE_PHRASES_LOWER=['me llamo guillermo','hoy es lunes','quiero agua','tengo hambre','mi casa es','sol y luna','pan con queso','quiero agua por favor','voy al parque','es mi amigo','estoy contento','no me gusta','tengo mucho hambre','hoy hace mucho frio','mañana es sabado','me gusta la musica','juego con mis amigos','voy al cole en autobus','mi padre se llama {padre}','quiero ir a la piscina'];
+// Generate default custom phrases from user profile data
+function getDefaultCustomPhrases(user){
+  const frases=[];
+  if(user?.name)frases.push('ME LLAMO '+user.name.toUpperCase());
+  if(user?.direccion)frases.push('VIVO EN '+user.direccion.toUpperCase());
+  if(user?.telefono)frases.push('LLAMA AL '+user.telefono);
+  // Find padre/madre from personas
+  try{const ps=JSON.parse(localStorage.getItem('toki_personas')||'[]');
+    const padre=ps.find(p=>p.relation==='Padre'&&p.name);
+    const madre=ps.find(p=>p.relation==='Madre'&&p.name);
+    if(padre)frases.push('MI PAPA SE LLAMA '+padre.name.toUpperCase());
+    if(madre)frases.push('MI MAMA SE LLAMA '+madre.name.toUpperCase());
+  }catch(e){}
+  if(user?.colegio)frases.push('VOY AL COLE '+user.colegio.toUpperCase());
+  return frases;
+}
+
+export function getCustomPhrases(user){
+  try{const saved=JSON.parse(localStorage.getItem('toki_custom_phrases')||'null');
+    if(saved&&saved.length>0)return saved;
+  }catch(e){}
+  return getDefaultCustomPhrases(user);
+}
+
+export function saveCustomPhrases(phrases){
+  try{localStorage.setItem('toki_custom_phrases',JSON.stringify(phrases))}catch(e){}
+}
+
+const MAX_PHRASE_LEN=40; // max characters per custom phrase
+
+export { MAX_PHRASE_LEN }
+
 export function genWriting(rawLv,user){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
   const pz=t=>user?personalize(t,user):t;
   if(lv<=2){const letters=LETTERS_UPPER;const guide=lv===1;letters.forEach(l=>{items.push({ty:'writing',letter:l,guide,isUpper:true,mode:'letter',id:'wr_'+lv+'_'+l})});return items.sort(()=>Math.random()-.5).slice(0,20)}
@@ -27,7 +59,14 @@ export function genWriting(rawLv,user){const lv=parseInt(Array.isArray(rawLv)?ra
   if(lv===6){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}))}
   if(lv===61){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:false,isUpper:true,mode:'phrase',id:'wr_pf_'+p.replace(/\s/g,'_')}))}
   if(lv===62){return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:false,mode:'phrase',id:'wr_pl_'+p.replace(/\s/g,'_')}))}
-  return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:false,isUpper:false,mode:'phrase',id:'wr_plf_'+p.replace(/\s/g,'_')}))}
+  if(lv===63){return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:false,isUpper:false,mode:'phrase',id:'wr_plf_'+p.replace(/\s/g,'_')}))}
+  // Custom phrases levels: 7=upper+guide, 71=upper-guide, 72=lower+guide, 73=lower-guide
+  const customRaw=getCustomPhrases(user);
+  if(customRaw.length===0)return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}));
+  const isUp=lv===7||lv===71;
+  const guide=lv===7||lv===72;
+  const pool=isUp?customRaw.map(f=>f.toUpperCase()):customRaw.map(f=>f.toLowerCase());
+  return pool.sort(()=>Math.random()-.5).slice(0,Math.min(pool.length,10)).map(p=>({ty:'writing',letter:pz(p),guide,isUpper:isUp,mode:'phrase',id:'wr_cp_'+p.replace(/\s/g,'_')}));}
 
 export function ExWriting({ex,onOk,onSkip,name}){
   const canvasRef=useRef(null);const modelRef=useRef(null);const drawing=useRef(false);const strokePts=useRef([]);const[done,setDone]=useState(false);const[stars,setStars]=useState(0);const[showModel,setShowModel]=useState(false);const{idleMsg,poke}=useIdle(name,!done);

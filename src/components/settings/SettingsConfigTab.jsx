@@ -150,9 +150,9 @@ function EscribeConfig({ escribeCase, setEscribeCase, escribeTypes, setEscribeTy
       {/* Type checkboxes */}
       <div>
         <div style={{ fontWeight: 700, marginBottom: 8 }}>Contenido (max 2)</div>
-        {['letras', 'palabras', 'frases'].map((t) => {
+        {['letras', 'palabras', 'frases', 'misfrases'].map((t) => {
           const on = types.includes(t)
-          const labelMap = { letras: 'Letras', palabras: 'Palabras', frases: 'Frases' }
+          const labelMap = { letras: 'Letras', palabras: 'Palabras', frases: 'Frases', misfrases: '✏️ Mis frases' }
           return (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <button
