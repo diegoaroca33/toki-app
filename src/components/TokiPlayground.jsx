@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { sayFB } from '../voice.js';
 
-// Bark sound using Web Audio API
+// Bark sound using Web Audio API — LOUD
 function playBark(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -11,7 +11,7 @@ function playBark(){
     osc.frequency.exponentialRampToValueAtTime(180,ctx.currentTime+0.08);
     osc.frequency.exponentialRampToValueAtTime(400,ctx.currentTime+0.12);
     osc.frequency.exponentialRampToValueAtTime(150,ctx.currentTime+0.2);
-    gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.setValueAtTime(0.7,ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.25);
     osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.25);
     // Second bark
@@ -21,14 +21,15 @@ function playBark(){
       osc2.type='sawtooth';osc2.frequency.setValueAtTime(380,ctx.currentTime);
       osc2.frequency.exponentialRampToValueAtTime(200,ctx.currentTime+0.1);
       osc2.frequency.exponentialRampToValueAtTime(120,ctx.currentTime+0.2);
-      g2.gain.setValueAtTime(0.25,ctx.currentTime);
+      g2.gain.setValueAtTime(0.6,ctx.currentTime);
       g2.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.22);
       osc2.start(ctx.currentTime);osc2.stop(ctx.currentTime+0.22);
     },280);
+    setTimeout(()=>ctx.close(),600);
   }catch(e){}
 }
 
-// Whine / happy sound
+// Whine / happy sound — LOUD
 function playWhine(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -37,7 +38,7 @@ function playWhine(){
     osc.frequency.setValueAtTime(600,ctx.currentTime);
     osc.frequency.linearRampToValueAtTime(900,ctx.currentTime+0.3);
     osc.frequency.linearRampToValueAtTime(700,ctx.currentTime+0.5);
-    g.gain.setValueAtTime(0.12,ctx.currentTime);
+    g.gain.setValueAtTime(0.35,ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.55);
     osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.55);
     setTimeout(()=>ctx.close(),700);
@@ -321,10 +322,11 @@ export default function TokiPlayground({
     resetIdleTimer();
     if (actionTimer.current) clearTimeout(actionTimer.current);
 
-    // Show speech bubble
+    // Show speech bubble AND say it out loud
     if (cmd.response) {
       setSpeechBubble(cmd.response);
-      setTimeout(() => setSpeechBubble(null), 2200);
+      sayFB(cmd.response);
+      setTimeout(() => setSpeechBubble(null), 2500);
     }
 
     switch (cmd.id) {
@@ -452,47 +454,54 @@ export default function TokiPlayground({
     }
   }, []);
 
-  // ── Continuous voice listening ─────────────────────────────
+  // ── Continuous voice listening (robust restart) ────────────
   const startListening = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) { setVoiceHint('🎤 Voz no disponible'); return; }
     try {
-      if (srRef.current) { try { srRef.current.abort(); } catch(e){} }
+      if (srRef.current) { try { srRef.current.abort(); } catch(e){} srRef.current = null; }
+      if (voiceTimeout.current) { clearTimeout(voiceTimeout.current); voiceTimeout.current = null; }
       const r = new SR();
-      r.lang = 'es-ES'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 3;
+      r.lang = 'es-ES'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 5;
+      let handled = false;
       r.onresult = (e) => {
+        handled = true;
         const alts = [];
         for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript.toLowerCase().trim());
         const text = alts.join(' ');
         const cmd = matchCommand(text);
         if (cmd) {
-          setVoiceHint('🎤 ¡Entendido!');
+          setVoiceHint('🎤 ¡' + (cmd.response || 'Entendido') + '!');
           execCommand(cmd);
         } else {
-          setVoiceHint('🎤 ¿Qué dices? 🤔');
-          // Toki tilts head confused
+          setVoiceHint('🤔 Dile: salta, baila, dame la pata...');
           setState('idle'); setTailFast(false);
-          playWhine();
+          bark(); // Confused bark
         }
-        // Restart listening after a pause
+        // Restart listening after trick finishes
         voiceTimeout.current = setTimeout(() => {
           setVoiceHint('🎤 Háblale a Toki');
           startListening();
-        }, 2500);
+        }, 2000);
       };
       r.onerror = () => {
-        voiceTimeout.current = setTimeout(() => startListening(), 1500);
+        if (!handled) {
+          voiceTimeout.current = setTimeout(() => startListening(), 1000);
+        }
       };
       r.onend = () => {
-        // If no result, restart
-        if (!voiceTimeout.current) {
-          voiceTimeout.current = setTimeout(() => startListening(), 800);
+        // Always restart if no result was handled
+        if (!handled && !voiceTimeout.current) {
+          voiceTimeout.current = setTimeout(() => startListening(), 500);
         }
       };
       srRef.current = r;
       r.start();
       setVoiceActive(true);
-    } catch(e) { console.warn('SR error', e); }
+    } catch(e) {
+      console.warn('SR error', e);
+      voiceTimeout.current = setTimeout(() => startListening(), 2000);
+    }
   }, [execCommand]);
 
   const stopListening = useCallback(() => {

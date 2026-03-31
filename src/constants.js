@@ -191,6 +191,7 @@ export const GROUPS=[
     {k:'quiensoy',l:'Quién Soy',defLv:[1,2],lvKey:'pres_0',presIdx:0}]},
   {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
     {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
+    {k:'misfrases_dilo',l:'Mis frases',defLv:1,lvKey:'misfrases_dilo'},
     {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
     {k:'contar',l:'Cuenta conmigo',defLv:1,lvKey:'contar'}]},
   {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[

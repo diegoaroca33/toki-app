@@ -82,11 +82,36 @@ export function getSessionsSinceLastCheckpoint(user) {
   return hist.filter(h => h.dt > lastCheckpointDate).length
 }
 
-// Returns true when sessions are in the 28-63 range (pending window)
-// After 63 sessions without checkpoint, a new window opens (next 30)
+// Returns true when baseline is missing OR 28+ sessions since last checkpoint
 export function isCheckpointPending(user) {
+  const cps = getCheckpoints(user?.id)
+  if (cps.length === 0) return true // No baseline → always pending
   const since = getSessionsSinceLastCheckpoint(user)
   return since >= 28
+}
+
+// Can we do a checkpoint right now? (at least 7 days since last)
+export function canDoCheckpointNow(user) {
+  const cps = getCheckpoints(user?.id)
+  if (cps.length === 0) return true // Baseline always allowed
+  const last = cps[cps.length - 1]
+  if (!last.date) return true
+  const lastDate = new Date(last.date)
+  const now = new Date()
+  const diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24))
+  return diffDays >= 7
+}
+
+// Days until next checkpoint is allowed
+export function daysUntilNextCheckpoint(user) {
+  const cps = getCheckpoints(user?.id)
+  if (cps.length === 0) return 0
+  const last = cps[cps.length - 1]
+  if (!last.date) return 0
+  const lastDate = new Date(last.date)
+  const now = new Date()
+  const diffDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24))
+  return Math.max(0, 7 - diffDays)
 }
 
 // Legacy — kept for compatibility
@@ -295,33 +320,53 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
   const avgScore = results.length > 0 ? (results.reduce((s, r) => s + r.score, 0) / results.length).toFixed(1) : '—'
 
   if (phase === 'intro') {
+    const existingCps = getCheckpoints(user?.id)
+    const isBaseline = existingCps.length === 0
     return (
       <div style={{ position: 'fixed', inset: 0, background: BG, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <Card style={{ maxWidth: 500, textAlign: 'center', padding: 30 }}>
-          <div style={{ fontSize: 60, marginBottom: 12 }}>🎯</div>
+          <div style={{ fontSize: 60, marginBottom: 12 }}>{isBaseline ? '📋' : '🎯'}</div>
           <h2 style={{ color: GOLD, fontSize: 24, fontWeight: 800, margin: '0 0 12px' }}>
-            Control de progresión
+            {isBaseline ? 'Control inicial (punto de partida)' : 'Control de progresión'}
           </h2>
-          <p style={{ color: DIM, fontSize: 15, margin: '0 0 8px', lineHeight: 1.5 }}>
-            ¡Han pasado 30 sesiones! Es hora de comprobar cómo progresa {user?.name || 'el alumno'}.
-          </p>
-          <p style={{ color: DIM, fontSize: 14, margin: '0 0 20px', lineHeight: 1.5 }}>
-            Toki dirá <b style={{ color: '#fff' }}>25 frases</b> y {user?.name || 'el alumno'} las repetirá.
-            Se grabarán para comparar con controles anteriores.
-          </p>
+          {isBaseline ? (
+            <>
+              <p style={{ color: DIM, fontSize: 15, margin: '0 0 8px', lineHeight: 1.5 }}>
+                Antes de empezar a entrenar, vamos a hacer un <b style={{ color: '#fff' }}>control inicial</b> para
+                saber desde dónde parte {user?.name || 'el alumno'}.
+              </p>
+              <p style={{ color: DIM, fontSize: 14, margin: '0 0 8px', lineHeight: 1.5 }}>
+                Toki dirá <b style={{ color: '#fff' }}>25 frases</b> y {user?.name || 'el alumno'} las repetirá.
+                Se grabarán como referencia para medir el progreso futuro.
+              </p>
+              <p style={{ color: GOLD, fontSize: 13, margin: '0 0 20px', lineHeight: 1.5, fontWeight: 600 }}>
+                Este control es muy importante: sin él no podremos comparar la evolución.
+              </p>
+            </>
+          ) : (
+            <>
+              <p style={{ color: DIM, fontSize: 15, margin: '0 0 8px', lineHeight: 1.5 }}>
+                Es hora de comprobar cómo progresa {user?.name || 'el alumno'}.
+              </p>
+              <p style={{ color: DIM, fontSize: 14, margin: '0 0 20px', lineHeight: 1.5 }}>
+                Toki dirá <b style={{ color: '#fff' }}>25 frases</b> y {user?.name || 'el alumno'} las repetirá.
+                Se compararán con el control anterior y el punto de partida.
+              </p>
+            </>
+          )}
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button variant="gold" fullWidth={false} onClick={() => { setPhase('listen'); setTimeout(() => startPhrase(), 600) }}>
-              🎤 Empezar control
+              🎤 {isBaseline ? 'Hacer control inicial' : 'Empezar control'}
             </Button>
             <Button variant="ghost" fullWidth={false} onClick={onSkip}>
               Ahora no
             </Button>
           </div>
 
-          {getCheckpoints(user?.id).length > 0 && (
+          {existingCps.length > 0 && (
             <div style={{ marginTop: 16, color: DIM, fontSize: 13 }}>
-              Control anterior: #{getCheckpoints(user?.id).length} ({getCheckpoints(user?.id).slice(-1)[0]?.date})
+              Control anterior: #{existingCps.length} ({existingCps[existingCps.length - 1]?.date})
             </div>
           )}
         </Card>
@@ -332,23 +377,32 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
   if (phase === 'done') {
     const prevCheckpoints = getCheckpoints(user?.id)
     const prev = prevCheckpoints.length > 0 ? prevCheckpoints[prevCheckpoints.length - 1] : null
+    const baseline = prevCheckpoints.length > 0 ? prevCheckpoints[0] : null
     const prevAvg = prev ? prev.avgScore : null
+    const baselineAvg = baseline ? baseline.avgScore : null
     const currentAvg = results.reduce((s, r) => s + r.score, 0) / Math.max(1, results.length)
     const improved = prevAvg !== null ? currentAvg > prevAvg : null
+    const isBaseline = prevCheckpoints.length === 0
+    const vsBaseline = baselineAvg !== null && !isBaseline ? currentAvg - baselineAvg : null
 
     return (
       <div style={{ position: 'fixed', inset: 0, background: BG, zIndex: 200, overflowY: 'auto', padding: 16 }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <Card style={{ padding: 24, marginBottom: 16 }}>
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 50, marginBottom: 8 }}>{improved === true ? '📈' : improved === false ? '📊' : '🎯'}</div>
+              <div style={{ fontSize: 50, marginBottom: 8 }}>{isBaseline ? '📋' : improved === true ? '📈' : improved === false ? '📊' : '🎯'}</div>
               <h2 style={{ color: GOLD, fontSize: 22, fontWeight: 800, margin: '0 0 6px' }}>
-                Control #{prevCheckpoints.length + 1} completado
+                {isBaseline ? 'Control inicial completado' : `Control #${prevCheckpoints.length + 1} completado`}
               </h2>
               <p style={{ color: DIM, fontSize: 14 }}>{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              {isBaseline && (
+                <p style={{ color: GOLD, fontSize: 13, marginTop: 6 }}>
+                  Este es el punto de partida. Los próximos controles se compararán con este.
+                </p>
+              )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: prevAvg !== null ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
               <Card variant="stat">
                 <div style={{ fontSize: 24, fontWeight: 800 }}>{currentAvg.toFixed(1)}</div>
                 <div style={{ fontSize: 12, color: DIM }}>Puntuación media</div>
@@ -366,6 +420,18 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
                 </Card>
               )}
             </div>
+
+            {/* Comparison vs baseline (only if we have 2+ previous checkpoints) */}
+            {vsBaseline !== null && prev !== baseline && (
+              <div style={{ padding: '10px 14px', borderRadius: 12, marginBottom: 16, background: vsBaseline > 0 ? `${GREEN}11` : `${RED}11`, border: `1px solid ${vsBaseline > 0 ? GREEN : RED}33` }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: vsBaseline > 0 ? GREEN : RED }}>
+                  {vsBaseline > 0 ? '📈' : '📉'} Desde el punto de partida: {vsBaseline > 0 ? '+' : ''}{vsBaseline.toFixed(1)} puntos
+                </div>
+                <div style={{ fontSize: 12, color: DIM, marginTop: 2 }}>
+                  Control inicial ({baseline.date}): ⭐ {baselineAvg.toFixed(1)} → Ahora: ⭐ {currentAvg.toFixed(1)}
+                </div>
+              </div>
+            )}
 
             {/* Per-phrase results */}
             <div style={{ fontWeight: 700, color: GOLD, fontSize: 16, marginBottom: 8 }}>Detalle por frase</div>

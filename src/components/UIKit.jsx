@@ -543,3 +543,94 @@ export function AbacusHelp({a,b,op='+',result}){
     </div>
     {step>showN&&<p style={{fontSize:28,fontWeight:700,color:GREEN}}>{a} {op} {b} = {result}</p>}
   </div>}
+
+// ===== ASTRONAUT DAILY — Evolutionary astronaut based on daily exercise count =====
+export function AstronautDaily({ phase = 1, size = 36, onClick }) {
+  const colors = {
+    1: { suit: '#B0BEC5', visor: '#42A5F5', accent: '#78909C' },
+    2: { suit: '#E0E0E0', visor: '#66BB6A', accent: '#FFD54F' },
+    3: { suit: '#CE93D8', visor: '#EF5350', accent: '#FF7043' },
+    4: { suit: '#FFD54F', visor: '#FF6F00', accent: '#FFF176' },
+  };
+  const c = colors[phase] || colors[1];
+  const glow = phase >= 3;
+  return (
+    <div onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default', display: 'inline-block', position: 'relative' }}>
+      {glow && <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', background: `radial-gradient(circle, ${c.accent}44 0%, transparent 70%)`, animation: 'astro-glow 2s ease-in-out infinite' }} />}
+      <svg width={size} height={size} viewBox="0 0 64 64">
+        {/* Helmet */}
+        <circle cx="32" cy="24" r="18" fill={c.suit} stroke="#fff" strokeWidth="2" />
+        {/* Visor */}
+        <ellipse cx="32" cy="24" rx="12" ry="10" fill={c.visor} opacity="0.85" />
+        <ellipse cx="28" cy="21" rx="3" ry="2" fill="rgba(255,255,255,.4)" />
+        {/* Body */}
+        <rect x="22" y="40" width="20" height="16" rx="6" fill={c.suit} stroke="#fff" strokeWidth="1.5" />
+        {/* Arms */}
+        <rect x="12" y="42" width="12" height="6" rx="3" fill={c.suit} stroke="#fff" strokeWidth="1" />
+        <rect x="40" y="42" width="12" height="6" rx="3" fill={c.suit} stroke="#fff" strokeWidth="1" />
+        {/* Legs */}
+        <rect x="24" y="54" width="6" height="8" rx="3" fill={c.suit} />
+        <rect x="34" y="54" width="6" height="8" rx="3" fill={c.suit} />
+        {/* Phase 2+: Medal */}
+        {phase >= 2 && <circle cx="32" cy="46" r="4" fill="#FFD54F" stroke="#FFA000" strokeWidth="1" />}
+        {phase >= 2 && <text x="32" y="48" textAnchor="middle" fontSize="5" fill="#795548" fontWeight="bold">&#9733;</text>}
+        {/* Phase 3+: Cape */}
+        {phase >= 3 && <path d="M22 42 L16 58 L32 54 L48 58 L42 42" fill={c.accent} opacity="0.7" />}
+        {/* Phase 4: Crown */}
+        {phase === 4 && <polygon points="24,8 28,2 32,8 36,2 40,8" fill="#FFD54F" stroke="#FFA000" strokeWidth="1" />}
+      </svg>
+    </div>
+  );
+}
+
+// ===== ASTRONAUT OVERLAY — Podium display with phases =====
+export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
+  const phases = [
+    { n: 1, label: '0-99', title: 'Empezando', emoji: '\u{1F331}' },
+    { n: 2, label: '100-199', title: 'Entrenado', emoji: '\u{1F3C5}' },
+    { n: 3, label: '200-299', title: 'Campe\u00F3n', emoji: '\u{1F9B8}' },
+    { n: 4, label: '300+', title: 'Leyenda', emoji: '\u{1F451}' },
+  ];
+  const cheers = {
+    1: ['\u00A1Sigue, puedes hacerlo!', '\u00A1Vamos a por los 100!', '\u00A1T\u00FA puedes!', '\u00A1Arriba!', '\u00A1Dale ca\u00F1a!', '\u00A1\u00C1nimo!'],
+    2: ['\u00A1Bien hecho!', '\u00A1Eres un campe\u00F3n!', '\u00A1Entrenamiento completado!', '\u00A1Genial!', '\u00A1Impresionante!', '\u00A1Qu\u00E9 crack!'],
+    3: ['\u00A1Est\u00E1s que te sales!', '\u00A1Incre\u00EDble esfuerzo!', '\u00A1M\u00E1quina!', '\u00A1Imparable!', '\u00A1Brutal!', '\u00A1Vas volando!'],
+    4: ['\u00A1Leyenda absoluta!', '\u00A1Pero qu\u00E9 has comido hoy!', '\u00A1Eres imparable!', '\u00A1R\u00E9cord hist\u00F3rico!', '\u00A1Fuera de serie!', '\u00A1De otro planeta!'],
+  };
+  const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '\u00A1Sigue as\u00ED!';
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.9)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#FFD54F', marginBottom: 20 }}>Progreso del d\u00EDa: {dailyCount} ejercicios</div>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 24 }}>
+        {phases.map(p => {
+          const achieved = phase >= p.n;
+          const active = phase === p.n;
+          const sz = 48 + p.n * 12;
+          return (
+            <div key={p.n} style={{ textAlign: 'center', opacity: achieved ? 1 : 0.3, transition: 'all .3s' }}>
+              <div style={{ fontSize: sz * 0.6, marginBottom: 4, animation: active ? 'astro-dance .5s ease-in-out infinite alternate' : 'none' }}>
+                {p.emoji}
+              </div>
+              {active && photo && (
+                <img src={photo} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #FFD54F', marginBottom: 4 }} />
+              )}
+              {active && !photo && <div style={{ fontSize: 10, color: '#FFD54F', marginBottom: 4 }}>T\u00DA</div>}
+              <div style={{ fontSize: 11, fontWeight: 700, color: achieved ? '#fff' : '#666' }}>{p.title}</div>
+              <div style={{ fontSize: 10, color: achieved ? '#aaa' : '#444' }}>{p.label}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#FFD54F', textAlign: 'center', animation: 'astro-bounce 1s ease-in-out infinite alternate' }}>
+        {cheer}
+      </div>
+      <div style={{ marginTop: 16, fontSize: 13, color: 'rgba(255,255,255,.4)' }}>Toca para cerrar</div>
+      <style>{`
+        @keyframes astro-dance{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-8px) rotate(5deg)}}
+        @keyframes astro-bounce{0%{transform:scale(1)}100%{transform:scale(1.05)}}
+        @keyframes astro-glow{0%,100%{opacity:.5}50%{opacity:1}}
+      `}</style>
+    </div>
+  );
+}

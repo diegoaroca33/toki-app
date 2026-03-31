@@ -6,10 +6,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed } from './utils.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
-import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason } from './components/UIKit.jsx'
+import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
 import { RocketTransition } from './components/RocketTransition.jsx'
 import { CelebrationOverlay, Stars } from './components/CelebrationOverlay.jsx'
 import { PhotoCropOverlay } from './components/PhotoCropOverlay.jsx'
@@ -26,7 +26,7 @@ import { COINS, BILLS, genMoney, ExMoney } from './modules/ExMoney.jsx'
 import { clockText, genClock, ClockFace, ExClock } from './modules/ExClock.jsx'
 import { genCalendar, ExCalendar } from './modules/ExCalendar.jsx'
 import { genDistribute, BagSVG, ExDistribute, CardSVG, dominoDots, DominoSVG } from './modules/ExDistribute.jsx'
-import { genWriting, ExWriting, LETTER_STROKE_PATHS } from './modules/ExWriting.jsx'
+import { genWriting, ExWriting, LETTER_STROKE_PATHS, getCustomPhrases } from './modules/ExWriting.jsx'
 import { genPatterns, genRazona, SceneSVG, SpatialDrag, ExRazona } from './modules/ExRazona.jsx'
 import { genLee, ExLee } from './modules/ExLee.jsx'
 import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres, ExQuienSoyUnified } from './modules/ExQuienSoy.jsx'
@@ -197,6 +197,8 @@ export default function App(){
   const[sessionStartTime,setSessionStartTime]=useState(null);
   const[showTokiBreak,setShowTokiBreak]=useState(false);
   const[showCompanion,setShowCompanion]=useState(false);
+  const[dailyCount,setDailyCount]=useState(()=>user?.id?getDailyCount(user.id):0);
+  const[showAstroOverlay,setShowAstroOverlay]=useState(false);
   // Auto cloud sync when profiles change (debounced)
   const cloudSyncTimer=useRef(null);
   useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
@@ -216,6 +218,8 @@ export default function App(){
       saveData('session_goal', 100)
     }
   }, [])
+  // Sync daily count when user changes
+  useEffect(()=>{if(user?.id)setDailyCount(getDailyCount(user.id))},[user?.id]);
   // Dog evolution announcement
   useEffect(() => {
     if (!user) return;
@@ -245,14 +249,32 @@ export default function App(){
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);
   // M4: Burst mode state
-  const[burstMode,setBurstMode]=useState(()=>loadData('burst_mode',false));
+  const[burstMode,setBurstMode]=useState(()=>loadData('burst_mode',true));
   const[burstSpeed,setBurstSpeed]=useState(()=>loadData('burst_speed',1.0));
-  const[burstReps,setBurstReps]=useState(()=>loadData('burst_reps',3));
+  const[burstReps,setBurstReps]=useState(()=>loadData('burst_reps',2));
   function toggleBurst(){const nv=!burstMode;setBurstMode(nv);saveData('burst_mode',nv)}
   function setBurstSpeedVal(v){setBurstSpeed(v);saveData('burst_speed',v)}
   function setBurstRepsVal(v){setBurstReps(v);saveData('burst_reps',v)}
+  // First-time initialization: all modules OFF except DILO N1 (decir), burst ON with 2 reps
+  useEffect(()=>{
+    if(loadData('first_init_done',false))return;
+    const allLvKeys=['decir','misfrases_dilo','frase','contar','math','multi','frac','razona_spatial','razona_series','razona_piensa','razona_clasifica','razona_emociones','money','clock','calendar','distribute','writing_1','lee_intruso','lee_word_img','lee_complete','lee_syllables','lee_read_do'];
+    const initMods={};
+    allLvKeys.forEach(k=>{initMods[k]=(k==='decir'||k==='misfrases_dilo')});
+    setActiveMods(initMods);saveData('active_mods',initMods);
+    setBurstMode(true);saveData('burst_mode',true);
+    setBurstReps(2);saveData('burst_reps',2);
+    saveData('first_init_done',true);
+  },[]);
   const[ss,setSs]=useState(null);const[sm,setSm]=useState(25);const[audioOk,setAudioOk]=useState(false);
   const activeMs=useRef(0);const lastAct=useRef(0);const actTimer=useRef(null);const IDLE_THRESH=120000; // 2 min idle before pausing timer
+  // === PAUSE system ===
+  const[paused,setPaused]=useState(false);const pauseTimerRef=useRef(null);const snoozeTimerRef=useRef(null);const[showSnooze,setShowSnooze]=useState(false);const pausedRef=useRef(false);
+  useEffect(()=>{pausedRef.current=paused},[paused]);
+  function playBark(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(350,c.currentTime);o.frequency.exponentialRampToValueAtTime(150,c.currentTime+0.2);g.gain.setValueAtTime(0.7,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.25);o.start();o.stop(c.currentTime+0.25);setTimeout(()=>c.close(),400)}catch(e){}}
+  function pauseSession(){stopVoice();setPaused(true);pauseTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},60000)}
+  function resumeSession(){setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
+  function snoozeSession(){setShowSnooze(false);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);snoozeTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},240000)}
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
   const[correctStreak,setCorrectStreak]=useState(0);
   const[maxStreak,setMaxStreak]=useState(0);
@@ -281,7 +303,7 @@ export default function App(){
   function pokeActive(){lastAct.current=Date.now()}
   useEffect(()=>{if(!ss){if(actTimer.current)clearInterval(actTimer.current);return}
     activeMs.current=0;lastAct.current=Date.now();setElapsedSt(0);
-    actTimer.current=setInterval(()=>{const now=Date.now();if(now-lastAct.current<IDLE_THRESH)activeMs.current+=1000;setElapsedSt(Math.floor(activeMs.current/1000))},1000);
+    actTimer.current=setInterval(()=>{if(pausedRef.current)return;const now=Date.now();if(now-lastAct.current<IDLE_THRESH)activeMs.current+=1000;setElapsedSt(Math.floor(activeMs.current/1000))},1000);
     return()=>clearInterval(actTimer.current)},[ss]);
   function tU(){pokeActive();if(audioOk)return;setAudioOk(true);if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0.01;u.lang='es-ES';window.speechSynthesis.speak(u)}
     // Request mic permission on any touch
@@ -303,9 +325,18 @@ export default function App(){
   function timeUp(){if(sessionType==='goal')return false;const mins=sessionTime||sm||30;return ss&&mins>0&&activeMs.current>=(mins*60000)}
   const curPresLvKeyRef=useRef('pres_0');
   const[selModKey,setSelModKey]=useState('pres_0');
+  const recentExKeysRef=useRef(new Set());
   function buildQ(u,section,slv){const sh=a=>[...a].sort(()=>Math.random()-.5);const curPresLvKey=curPresLvKeyRef.current;
-    // Session no-repeat filter: removes exercises whose text was already used in another module this session
-    function _noRepeat(exercises){return exercises.filter(ex=>{const key=(ex.ph||ex.text||ex.word||ex.letter||'').toString().toLowerCase().trim();if(!key||key.length<=1)return true;if(sessionUsedPhrases.current.has(key))return false;sessionUsedPhrases.current.add(key);return true})}
+    // Session + 3-day no-repeat filter: removes exercises used this session OR in last 3 days
+    // If filtering would remove ALL exercises, skip history filter (pool exhausted = allow repeats)
+    function _noRepeat(exercises){
+      if(!recentExKeysRef.current.size&&u?.id)recentExKeysRef.current=getRecentExerciseKeys(u.id);
+      const histKeys=recentExKeysRef.current;
+      const filtered=exercises.filter(ex=>{const key=(ex.ph||ex.text||ex.word||ex.letter||'').toString().toLowerCase().trim();if(!key||key.length<=1)return true;if(sessionUsedPhrases.current.has(key))return false;if(histKeys.has(key))return false;sessionUsedPhrases.current.add(key);return true});
+      // If history filter removed everything, fall back to session-only filter (pool exhausted)
+      if(filtered.length===0&&exercises.length>0){return exercises.filter(ex=>{const key=(ex.ph||ex.text||ex.word||ex.letter||'').toString().toLowerCase().trim();if(!key||key.length<=1)return true;if(sessionUsedPhrases.current.has(key))return false;sessionUsedPhrases.current.add(key);return true})}
+      return filtered
+    }
     // APRENDE: find the selected presentation and build exercises
     if(section==='quiensoy'){
       const lvArr=Array.isArray(slv)?slv:[slv||1];
@@ -323,8 +354,9 @@ export default function App(){
         // Always generate estudio-style items (one per slide) with presentation attached for switch
         const presData={...thisPres,slides};
         const canToggle=hasEstudio&&hasPres;
+        const defaultMode=hasPres&&!hasEstudio?'presentacion':'estudio';
         if(slides.length>0){
-          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||u.photo||null,presentation:presData,canToggle})));
+          items.push(...slides.filter(s=>(typeof s==='string'?s:s.text||'').trim()).map((s,si)=>({ty:'quiensoy',id:`pres${pi}_e${si}`,text:personalize(typeof s==='string'?s:s.text||'',u),img:s.img||u.photo||null,presentation:presData,canToggle,defaultMode})));
         }
       }
       // Ultimate fallback: if nothing found, create from user data
@@ -343,12 +375,13 @@ export default function App(){
       const wRange=lv===1?[1,2]:lv===2?[2,3]:lv===3?[3,4]:lv===4?[4,5]:[5,99];
       const pool=EX.filter(e=>e.ty==='flu'&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
       const rev=pool.filter(e=>needsRev(e.id,u)),fresh=pool.filter(e=>!(u.srs&&u.srs[e.id])),rest=pool.filter(e=>!rev.includes(e)&&!fresh.includes(e));let sel=[...sh(rev).slice(0,24),...sh(fresh).slice(0,12),...sh(rest).slice(0,4)];while(sel.length<40){const r=pool.filter(e=>!sel.includes(e));if(!r.length)break;sel.push(r[Math.floor(Math.random()*r.length)])}return _noRepeat(sel.slice(0,40).sort(()=>Math.random()-.5).map(e=>{const p={...e};if(p.ph)p.ph=personalize(p.ph,u);if(p.fu)p.fu=personalize(p.fu,u);if(p.su)p.su=personalize(p.su,u);if(p.q)p.q=personalize(p.q,u);if(p.si)p.si=personalize(p.si,u);if(p.op)p.op=p.op.map(o=>personalize(o,u));return p}))}
+    if(section==='misfrases_dilo'){const phrases=getCustomPhrases(u);if(!phrases.length)return[];return _noRepeat(sh(phrases.map((ph,i)=>({ty:'flu',id:'mf_dilo_'+i,ph:ph.toLowerCase(),su:ph.toLowerCase(),q:'¿Cómo dices esto?'}))).slice(0,20))}
     if(section==='frase'){const flv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;const wc=flv===1?3:flv===2?4:flv===3?5:[6,7];
       const pool=EX.filter(e=>e.ty==='flu'&&e.ph).filter(e=>{const w=e.ph.replace(/[¿?¡!,\.]/g,'').split(/\s+/).length;return Array.isArray(wc)?w>=wc[0]&&w<=wc[1]:w===wc});
       let sel=sh(pool).slice(0,40);return _noRepeat(sel.map(e=>{const ph=personalize(e.ph,u);const q=ph.split(/\s+/).length<=3?'¿Cómo dices esto?':'¿Cómo se dice?';
         if(slv===4&&Math.random()>0.5){const words=ph.split(/\s+/);const bi=1+Math.floor(Math.random()*(words.length-2));const blank=words[bi];words[bi]='___';return{...e,ty:'frases_blank',q:'Completa la frase',fu:ph,blank,words,ph:personalize(e.ph,u)}}
         return{...e,ty:'frases',q,fu:ph,ph:personalize(e.ph,u)}}))}
-    if(section==='contar'){const clv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;let start=1,end=20;if(clv===2){start=20;end=50}else if(clv===3){start=50;end=100}else if(clv>=4){start=1;end=100}
+    if(section==='contar'){const clv=parseInt(Array.isArray(slv)?slv[0]:slv)||1;let start=1,end=20;if(clv===2){start=21;end=50}else if(clv===3){start=51;end=100}else if(clv>=4){start=1;end=100}
       const firstD=Math.floor((start-1)/10),lastD=Math.floor((end-1)/10);const batches=[];
       for(let d=firstD;d<=lastD;d++){const b=[];for(let c=0;c<10;c++){const n=d*10+c+1;if(n>=start&&n<=end&&n<=100)b.push(n)}if(b.length>0)batches.push(b)}
       // Merge small batches (<5) with next/prev
@@ -413,7 +446,7 @@ export default function App(){
     }
     // M7a: Reset DILO exercise counter for session tracking
     diloExCount.current=0;
-    sessionUsedPhrases.current=new Set();
+    sessionUsedPhrases.current=new Set();recentExKeysRef.current=user?.id?getRecentExerciseKeys(user.id):new Set();
     setGoalCount(0);setSessionStartTime(Date.now());
     // Auto-enable burst for long sessions
     if((sessionType==='time'&&sessionTime>=60)||(sessionType==='goal'&&sessionGoal>=200)){
@@ -423,17 +456,17 @@ export default function App(){
   // Start random session directly from active modules (DILO sandwich: 8 DILO, 8 others, repeat)
   function startRandomFromActiveModules(){
     if(!user)return;
-    const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false&&m.k!=='quiensoy');
+    const allMods=dynGroups.flatMap(g=>g.modules.map(m=>({...m,groupEmoji:g.emoji,groupName:g.name,groupId:g.id}))).filter(m=>activeMods[m.lvKey]!==false);
     if(allMods.length<2)return startGame();
     const perMod=8;
     const modQueues=allMods.map(m=>{
       const lv=getModuleLvOrDef(m.lvKey,m.defLv);
       if(m.lvKey)curPresLvKeyRef.current=m.lvKey;
-      const exs=buildQ(user,m.k,lv).map(e=>({...e,_randomModule:m.lvKey,_randomPlanet:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',_randomName:m.l,_randomGroupEmoji:m.groupEmoji}));
+      const exs=buildQ(user,m.k,lv).map(e=>({...e,_randomModule:m.lvKey,_randomPlanet:m.k==='decir'?'🎤':m.k==='misfrases_dilo'?'✏️':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',_randomName:m.l,_randomGroupEmoji:m.groupEmoji}));
       return{mod:m,exs,cursor:0};
     });
     const superQ=[];
-    const modOrder=allMods.map(m=>({lvKey:m.lvKey,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',name:m.l,groupEmoji:m.groupEmoji}));
+    const modOrder=allMods.map(m=>({lvKey:m.lvKey,emoji:m.k==='decir'?'🎤':m.k==='misfrases_dilo'?'✏️':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',name:m.l,groupEmoji:m.groupEmoji}));
     const effMins=sessionType==='time'?(sessionTime||30):(sm||30);
     const totalNeeded=sessionType==='goal'?Math.max(sessionGoal,200):Math.ceil(effMins*2);
     const diloQueues=modQueues.filter(mq=>mq.mod.groupId==='dilo');
@@ -462,7 +495,7 @@ export default function App(){
     const initStats={};
     allMods.forEach(m=>{initStats[m.lvKey]={ok:0,total:0,name:m.l,emoji:m.k==='decir'?'🎤':m.k==='frase'?'🧱':m.k==='contar'?'🔢':m.k==='math'?'➕':m.k==='multi'?'✖️':m.k==='frac'?'🍕':m.k==='money'?'💶':m.k==='clock'?'🕐':m.k==='calendar'?'📅':m.k==='distribute'?'🍬':m.k==='writing'?'✏️':m.k==='razona'?'🧩':m.k==='lee'?'📖':m.k==='quiensoy'?'👤':'⭐',groupEmoji:m.groupEmoji}});
     randomModOrder.current=modOrder;setRandomStats(initStats);setRandomActive(true);setRandomModIdx(0);setRandomExInRound(0);setRandomTimer(sessionType==='goal'?0:effMins*60);setRandomTime(effMins);setRandomPerRound(perMod);
-    diloExCount.current=0;sessionUsedPhrases.current=new Set();
+    diloExCount.current=0;sessionUsedPhrases.current=new Set();recentExKeysRef.current=user?.id?getRecentExerciseKeys(user.id):new Set();
     setGoalCount(0);setSessionStartTime(Date.now());
     setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();
     const firstMod=allMods[0];setSec(firstMod.k);if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey;
@@ -512,9 +545,13 @@ export default function App(){
     if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;setShowTokiBreak(true)}
   },[elapsedSt,scr,ss,sessionType]);
   function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
-  function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+1;setUser(up);saveP(up);const nextSt={ok:st.ok+1,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
+  function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;const repsCount=(burstMode&&burstReps>1)?burstReps:1;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+repsCount;setUser(up);saveP(up);const nextSt={ok:st.ok+repsCount,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
+    // Mark exercise in 3-day history
+    const exKey=(e.ph||e.text||e.word||e.letter||'').toString().toLowerCase().trim();if(user?.id&&exKey)markExerciseUsed(user.id,exKey);
+    // Daily global counter
+    if(user?.id){const newDaily=addDailyCount(user.id,repsCount);setDailyCount(newDaily);}
     // Streak & milestone tracking
-    const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+1);
+    const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+repsCount);
     const totalOk=nextSt.ok;const MS=[{n:10,emoji:'🌟',text:'¡Vas genial!',sub:'10 ejercicios'},{n:25,emoji:'🔥',text:'¡Imparable!',sub:'25 ejercicios'},{n:50,emoji:'💪',text:'¡Medio centenar!',sub:'50 ejercicios'},{n:75,emoji:'⭐',text:'¡Casi!',sub:'75 ejercicios'},{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Increíble esfuerzo!'},{n:150,emoji:'🚀',text:'¡Superestrella!',sub:'150 ejercicios'},{n:200,emoji:'👑',text:'¡Leyenda!',sub:'200 ejercicios'},{n:300,emoji:'🌈',text:'¡Récord absoluto!',sub:'300 ejercicios'}];
     const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
     if(hit){milestoneShown.current.add(hit.n);stopVoice();setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub});setTimeout(()=>setMilestone(null),2500)},300)}
@@ -532,7 +569,7 @@ export default function App(){
     // Goal mode: increment goalCount (only on correct answers, not skips)
     if(sessionType==='goal'){
       setGoalCount(prev=>{
-        const next=prev+1;
+        const next=prev+repsCount;
         if(next>0&&next%50===0&&next<sessionGoal){setShowTokiBreak(true)}
         if(next>=sessionGoal){setTimeout(()=>fin(nextSt),300);return next}
         return next
@@ -540,6 +577,8 @@ export default function App(){
     }
     setTimeout(()=>{if(sessionType==='goal'&&goalCount+1>=sessionGoal)return;if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}},200)}
   function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);setCorrectStreak(0);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);
+    // Mark exercise in 3-day history
+    const exKey=(e.ph||e.text||e.word||e.letter||'').toString().toLowerCase().trim();if(user?.id&&exKey)markExerciseUsed(user.id,exKey);
     // M7a: Dynamic DILO tracking on fail (silent level-down)
     if(sec==='decir'&&user&&getDynamicDilo(user.id)){
       diloExCount.current++;
@@ -551,11 +590,11 @@ export default function App(){
     if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
-  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);
+  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
     setOv('done')
     // Check if dog can be fed (session >= 15 min)
-    if(user&&amin>=15&&canFeedDog(user.id)){setShowFeedDog(true)}}
-  function tryExit(){stopVoice();if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
+    if(user&&amin>=15&&canFeedDog(user.id)){stopVoice();setShowFeedDog(true)}}
+  function tryExit(){stopVoice();setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
@@ -848,11 +887,12 @@ export default function App(){
     </div>}
 
     {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
+    {showAstroOverlay&&<AstronautOverlay phase={getDailyPhase(dailyCount)} dailyCount={dailyCount} photo={user?.photo} onClose={()=>setShowAstroOverlay(false)} />}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0,position:'relative'}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️{isCheckpointPending(user)&&<span style={{position:'absolute',top:4,right:4,width:10,height:10,borderRadius:'50%',background:RED,border:'2px solid '+BG}} title="Grabación control pendiente"/>}</button></div></div>
       <div style={{padding:'4px 4px 2px'}}>
         {/* Row 1: Dog | Avatar | Greeting | Stars counter + streak */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-          <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>setShowCompanion(true)} title="Compañía">
+          <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Compañía">
             {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
           </div>
           <div style={{flexShrink:0}}>
@@ -866,6 +906,10 @@ export default function App(){
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+            <div style={{display:'flex',alignItems:'center',gap:4,cursor:'pointer'}} onClick={()=>setShowAstroOverlay(true)}>
+              <AstronautDaily phase={getDailyPhase(dailyCount)} size={32} />
+              <span style={{fontSize:13,color:'rgba(255,255,255,.7)',fontWeight:600}}>Hoy: {dailyCount}</span>
+            </div>
             <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'5px 10px',minHeight:36,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:15,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
             {streak>1&&<div style={{background:CARD,border:'2px solid '+BORDER,borderRadius:8,padding:'3px 8px'}}><span style={{fontSize:12,color:'#E67E22',fontWeight:700}}>🔥{streak}d</span></div>}
           </div>
@@ -1061,7 +1105,7 @@ export default function App(){
     {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
       <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/>
     </div>}
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={36}/>}{randomActive
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={36}/>}<div style={{display:'flex',alignItems:'center',gap:4}}><AstronautDaily phase={getDailyPhase(dailyCount)} size={28} onClick={()=>setShowAstroOverlay(true)} /><span style={{fontSize:11,color:'rgba(255,255,255,.5)',fontWeight:600}}>{dailyCount}</span></div>{randomActive
         ?<span style={{fontSize:14,color:randomTimer<=60&&sessionType==='time'?'#FF5722':DIM,fontWeight:700}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(randomTimer/60)}:${String(randomTimer%60).padStart(2,'0')}`}</span>
         :<span style={{fontSize:14,color:DIM,fontWeight:600}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')} / ${(sessionTime||sm)===0?'∞':(sessionTime||sm)+"'"}`}</span>
       }</div></div>
@@ -1079,12 +1123,6 @@ export default function App(){
       </div>}
       {correctStreak>=2&&<div style={{position:'absolute',top:randomActive?86:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
       <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sessionType==='goal'?Math.min(100,(goalCount/sessionGoal)*100)+'%':randomActive?Math.min(100,(1-randomTimer/(randomTime*60))*100)+'%':(sessionTime||sm)===0?'0%':Math.min(100,(elapsed/60)/(sessionTime||sm)*100)+'%'}}/></div>
-      {/* M4: Burst speed slider — only visible when burst mode is ON */}
-      {burstMode&&(sec==='decir'||sec==='quiensoy')&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,marginBottom:8}}>
-        <span style={{fontSize:14}}>🐢</span>
-        <input type="range" min="0.7" max="1.2" step="0.1" value={burstSpeed} onChange={e=>setBurstSpeedVal(parseFloat(e.target.value))} style={{width:120,accentColor:'#FF5722',height:6,cursor:'pointer'}}/>
-        <span style={{fontSize:14}}>⚡</span>
-      </div>}
       {/* Session counter - compact 2-line display */}
       <div style={{display:'flex',justifyContent:'center',gap:14,alignItems:'center',margin:'4px 0',fontSize:15,fontWeight:700,fontFamily:"'Fredoka'"}}>
         <span style={{color:GOLD}}>⭐ {st.ok}{sessionType==='goal'?'/'+sessionGoal:''}</span>
@@ -1093,10 +1131,10 @@ export default function App(){
         {sessionType==='goal'&&<><span style={{color:'rgba(255,255,255,.3)'}}>│</span><span style={{color:GREEN}}>{Math.round((st.ok/Math.max(1,sessionGoal))*100)}%</span></>}
       </div>
       <div style={{marginTop:10}}>
-        {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk}/>}
+        {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
+        {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
+        {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
+        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk} onPause={pauseSession}/>}
         {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='math'&&<ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='multi'&&<ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
@@ -1108,6 +1146,18 @@ export default function App(){
         {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
         {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
         {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={true} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>}
+        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>}
       </div></div>}
+    {/* === PAUSE OVERLAY === */}
+    {paused&&ss&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.85)',zIndex:300,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:20}}>
+      <div style={{fontSize:60}}>⏸️</div>
+      <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:"'Fredoka'"}}>En pausa</div>
+      {showSnooze&&<div style={{fontSize:16,color:'#FFD54F',marginBottom:8,fontFamily:"'Fredoka'"}}>🐕 ¡Toki te está esperando!</div>}
+      <button onClick={resumeSession} style={{background:'#4CAF50',color:'#fff',border:'none',borderRadius:20,padding:'14px 40px',fontSize:20,fontWeight:700,cursor:'pointer',fontFamily:"'Fredoka'"}}>
+        ▶️ Continuar
+      </button>
+      {showSnooze&&<button onClick={snoozeSession} style={{background:'none',border:'1px solid rgba(255,255,255,.3)',color:'rgba(255,255,255,.6)',borderRadius:16,padding:'8px 24px',fontSize:14,cursor:'pointer',marginTop:8,fontFamily:"'Fredoka'"}}>
+        😴 Posponer 4 min
+      </button>}
+    </div>}
   </div>}

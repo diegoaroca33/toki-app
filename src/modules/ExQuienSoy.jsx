@@ -42,8 +42,8 @@ function ModeSwitch({mode,onToggle,canToggle}){
   </div>}
 
 // ===== QUIÉN SOY UNIFICADO — con switch Estudio/Presentación =====
-export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation,canToggle,burstMode,burstSpeed,burstReps}){
-  const[mode,setMode]=useState('estudio');
+export function ExQuienSoyUnified({ex,onOk,onSkip,sex,name,uid,vids,presentation,canToggle,defaultMode,burstMode,burstSpeed,burstReps}){
+  const[mode,setMode]=useState(defaultMode||'estudio');
   // When mode changes mid-exercise, reset
   const modeRef=useRef(mode);
   useEffect(()=>{modeRef.current=mode},[mode]);
@@ -197,6 +197,13 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
     return()=>{timers.current.forEach(clearTimeout);timers.current=[];stopVoice();sr.stop()}
   },[qi,finished]);
 
+  // === Auto-advance in random mode: call onOk after 3s when finished ===
+  const autoAdvanceRef=useRef(null);
+  useEffect(()=>{
+    if(finished&&onOk){autoAdvanceRef.current=setTimeout(()=>onOk(),3000)}
+    return()=>{if(autoAdvanceRef.current)clearTimeout(autoAdvanceRef.current)}
+  },[finished]);
+
   // === Completion screen (visual only, Toki does NOT speak) ===
   if(finished){
     const spoke=spokeAny.current;
@@ -205,7 +212,7 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
       <h2 style={{fontSize:28,color:spoke?GOLD:'#90CAF9',margin:'0 0 12px'}}>{spoke?'¡Presentación completada!':'¡Presentación lista!'}</h2>
       {spoke&&<p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>{slides.length} frases presentadas</p>}
       {!spoke&&<p style={{fontSize:16,color:DIM,margin:'0 0 24px'}}>{slides.length} frases revisadas</p>}
-      <button className="btn btn-gold" onClick={onOk} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>Terminado</button>
+      <button className="btn btn-gold" onClick={()=>{if(autoAdvanceRef.current)clearTimeout(autoAdvanceRef.current);onOk()}} style={{fontSize:22,maxWidth:300,margin:'0 auto'}}>Terminado</button>
     </div>}
 
   return <div style={{textAlign:'center',position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',maxHeight:'calc(100dvh - 120px)'}}>

@@ -1,123 +1,36 @@
 import { useState, useMemo } from 'react'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER } from '../constants.js'
-import { getExigencia, getModuleLv } from '../utils.js'
 
-// ===== SVG Evolution Chart =====
-function EvolutionChart({ data, freqData, xLabels, yMin, yMax, width, height }) {
-  // data = [{x, y}], freqData = [{x, y}] (optional), xLabels = string[]
-  if (!data || data.length === 0) return <p style={{fontSize:14,color:DIM,textAlign:'center',margin:'12px 0'}}>Sin datos suficientes para la gráfica</p>
-  const pad = { top: 28, right: 20, bottom: 44, left: 40 }
-  const w = width - pad.left - pad.right
-  const h = height - pad.top - pad.bottom
-  const xStep = data.length > 1 ? w / (data.length - 1) : w / 2
-  const yRange = yMax - yMin || 1
-  const toX = i => pad.left + (data.length > 1 ? i * xStep : w / 2)
-  const toY = v => pad.top + h - ((v - yMin) / yRange) * h
-  // Stars line path
-  const starPts = data.map((d, i) => ({ px: toX(i), py: toY(d.y) }))
-  const starPath = starPts.map((p, i) => (i === 0 ? 'M' : 'L') + p.px.toFixed(1) + ',' + p.py.toFixed(1)).join(' ')
-  // Frequency line (scaled to right axis)
-  const maxFreq = freqData ? Math.max(...freqData.map(d => d.y), 1) : 1
-  const freqToY = v => pad.top + h - (v / maxFreq) * h
-  const freqPts = freqData ? freqData.map((d, i) => ({ px: toX(i), py: freqToY(d.y) })) : []
-  const freqPath = freqPts.map((p, i) => (i === 0 ? 'M' : 'L') + p.px.toFixed(1) + ',' + p.py.toFixed(1)).join(' ')
-  // Grid lines for Y axis (1, 2, 3, 4 stars)
-  const yTicks = [1, 2, 3, 4]
-  // X labels: show up to ~8 labels evenly
-  const maxLabels = 8
-  const labelStep = Math.max(1, Math.ceil(xLabels.length / maxLabels))
+// ===== Date helpers =====
+const DIAS_SHORT = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
-  return <svg viewBox={`0 0 ${width} ${height}`} style={{width:'100%',height:'auto',display:'block'}}>
-    {/* Background */}
-    <rect x={pad.left} y={pad.top} width={w} height={h} rx={6} fill={BG3} opacity={0.5}/>
-    {/* Grid lines */}
-    {yTicks.map(t => {
-      const yy = toY(t)
-      return <g key={t}>
-        <line x1={pad.left} y1={yy} x2={pad.left + w} y2={yy} stroke={BORDER} strokeWidth={1} strokeDasharray="4,4"/>
-        <text x={pad.left - 6} y={yy + 4} textAnchor="end" fill={DIM} fontSize={11} fontFamily="Fredoka">{t}</text>
-      </g>
-    })}
-    {/* Y axis label */}
-    <text x={12} y={pad.top + h / 2} textAnchor="middle" fill={GOLD} fontSize={11} fontFamily="Fredoka" transform={`rotate(-90,12,${pad.top + h / 2})`}>Estrellas</text>
-    {/* X axis labels */}
-    {xLabels.map((l, i) => {
-      if (i % labelStep !== 0 && i !== xLabels.length - 1) return null
-      return <text key={i} x={toX(i)} y={pad.top + h + 18} textAnchor="middle" fill={DIM} fontSize={10} fontFamily="Fredoka">{l}</text>
-    })}
-    {/* Frequency line (behind) */}
-    {freqData && freqPts.length > 1 && <>
-      <path d={freqPath} fill="none" stroke={BLUE} strokeWidth={1.5} strokeOpacity={0.5} strokeLinejoin="round"/>
-      {freqPts.map((p, i) => <circle key={i} cx={p.px} cy={p.py} r={3} fill={BLUE} opacity={0.6}/>)}
-    </>}
-    {/* Stars line */}
-    {starPts.length > 1 && <path d={starPath} fill="none" stroke={GOLD} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round"/>}
-    {/* Star data points */}
-    {starPts.map((p, i) => <g key={i}>
-      <circle cx={p.px} cy={p.py} r={4.5} fill={GOLD} stroke="#fff" strokeWidth={1.5}/>
-      <text x={p.px} y={p.py - 8} textAnchor="middle" fill={GOLD} fontSize={10} fontFamily="Fredoka" fontWeight={700}>{data[i].y.toFixed(1)}</text>
-    </g>)}
-    {/* Right axis label for frequency */}
-    {freqData && <text x={width - 8} y={pad.top + h / 2} textAnchor="middle" fill={BLUE} fontSize={10} fontFamily="Fredoka" opacity={0.7} transform={`rotate(90,${width - 8},${pad.top + h / 2})`}>Ejercicios</text>}
-    {/* Legend */}
-    <g transform={`translate(${pad.left + 4},${pad.top - 14})`}>
-      <rect x={0} y={-2} width={10} height={3} rx={1} fill={GOLD}/>
-      <text x={14} y={2} fill={GOLD} fontSize={10} fontFamily="Fredoka">Media estrellas</text>
-      {freqData && <>
-        <rect x={110} y={-2} width={10} height={3} rx={1} fill={BLUE} opacity={0.6}/>
-        <text x={124} y={2} fill={BLUE} fontSize={10} fontFamily="Fredoka" opacity={0.7}>Ejercicios</text>
-      </>}
-    </g>
-  </svg>
+function parseDt(dt) {
+  if (!dt) return null
+  // Supports "dd/M/yyyy" or "d/M/yyyy" format
+  const parts = dt.split('/')
+  if (parts.length === 3) {
+    const [d, m, y] = parts.map(Number)
+    return new Date(y, m - 1, d)
+  }
+  // Fallback: try ISO
+  const d = new Date(dt)
+  return isNaN(d.getTime()) ? null : d
 }
 
-// ===== Period helpers =====
-function filterByPeriod(hist, period) {
-  const now = new Date()
-  let cutoff = null
-  if (period === '1m') { cutoff = new Date(now); cutoff.setMonth(cutoff.getMonth() - 1) }
-  else if (period === '3m') { cutoff = new Date(now); cutoff.setMonth(cutoff.getMonth() - 3) }
-  else if (period === '1y') { cutoff = new Date(now); cutoff.setFullYear(cutoff.getFullYear() - 1) }
-  // 'all' => no cutoff
-  if (!cutoff) return hist
-  return hist.filter(h => { if (!h.dt) return false; return new Date(h.dt) >= cutoff })
+function dateKey(date) {
+  // Returns "YYYY-MM-DD" for grouping
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')
 }
 
-function groupByWeek(entries) {
-  const weeks = {}
-  entries.forEach(h => {
-    if (!h.dt) return
-    const d = new Date(h.dt)
-    // ISO week start (Monday)
-    const day = d.getDay() || 7
-    const mon = new Date(d)
-    mon.setDate(d.getDate() - day + 1)
-    const key = mon.toISOString().slice(0, 10)
-    if (!weeks[key]) weeks[key] = []
-    weeks[key].push(h)
-  })
-  return Object.entries(weeks).sort((a, b) => a[0].localeCompare(b[0]))
+function formatDateShort(date) {
+  return date.getDate() + '/' + (date.getMonth() + 1)
 }
 
-function groupByMonth(entries) {
-  const months = {}
-  entries.forEach(h => {
-    if (!h.dt) return
-    const key = h.dt.slice(0, 7) // YYYY-MM
-    if (!months[key]) months[key] = []
-    months[key].push(h)
-  })
-  return Object.entries(months).sort((a, b) => a[0].localeCompare(b[0]))
-}
-
-function avgStars(entries) {
-  const total = entries.reduce((s, h) => s + (h.ok || 0) + (h.sk || 0), 0)
-  const ok = entries.reduce((s, h) => s + (h.ok || 0), 0)
-  return total > 0 ? (ok / total) * 4 : 0
-}
-
-function maxStreak(entries) {
-  const dates = [...new Set(entries.map(h => h.dt).filter(Boolean))].sort()
+function maxStreak(hist) {
+  const dates = [...new Set(hist.map(h => {
+    const d = parseDt(h.dt)
+    return d ? dateKey(d) : null
+  }).filter(Boolean))].sort()
   if (dates.length === 0) return 0
   let max = 1, cur = 1
   for (let i = 1; i < dates.length; i++) {
@@ -128,111 +41,89 @@ function maxStreak(entries) {
   return Math.max(max, cur)
 }
 
-const MESES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-function weekLabel(dateStr) {
-  const d = new Date(dateStr)
-  return d.getDate() + ' ' + MESES_SHORT[d.getMonth()]
-}
-function monthLabel(ym) {
-  const [y, m] = ym.split('-')
-  return MESES_SHORT[parseInt(m) - 1] + ' ' + y.slice(2)
-}
-
-// ===== Top phrases from localStorage toki_rep_* =====
-function getRepPhrases() {
-  const phrases = []
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (k && k.startsWith('toki_rep_')) {
-        const data = JSON.parse(localStorage.getItem(k))
-        if (data && typeof data.count === 'number') {
-          phrases.push({ key: k.slice(9), count: data.count || 0, avgStars: data.avgStars || 0, text: data.text || k.slice(9) })
-        }
-      }
-    }
-  } catch (e) {}
-  return phrases
-}
-
 // ===== MAIN COMPONENT =====
 export function MonthlyReport({ user, activeMods, exigencia }) {
   const [show, setShow] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [period, setPeriod] = useState('1m')
 
   const hist = user.hist || []
-  const filtered = useMemo(() => filterByPeriod(hist, period), [hist, period])
 
-  // ---- 1. Summary stats ----
-  const sessions = filtered.length
-  const totalOk = filtered.reduce((s, h) => s + (h.ok || 0), 0)
-  const totalTime = filtered.reduce((s, h) => s + (h.min || 0), 0)
-  const streak = maxStreak(filtered)
-  const totalAll = filtered.reduce((s, h) => s + (h.ok || 0) + (h.sk || 0), 0)
-  const pct = totalAll > 0 ? Math.round((totalOk / totalAll) * 100) : 0
+  // ---- Group hist by date ----
+  const byDate = useMemo(() => {
+    const map = {}
+    hist.forEach(h => {
+      const d = parseDt(h.dt)
+      if (!d) return
+      const key = dateKey(d)
+      if (!map[key]) map[key] = { exercises: 0, min: 0, date: d }
+      map[key].exercises += (h.ok || 0) + (h.sk || 0)
+      map[key].min += (h.min || 0)
+    })
+    return map
+  }, [hist])
 
-  // ---- 2. Active config ----
+  // ---- Today stats ----
+  const todayKey = dateKey(new Date())
+  const todayData = byDate[todayKey] || { exercises: 0, min: 0 }
+
+  // ---- Last 10 days ----
+  const last10Days = useMemo(() => {
+    const days = []
+    const now = new Date()
+    for (let i = 9; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      const key = dateKey(d)
+      const data = byDate[key]
+      days.push({
+        date: key,
+        label: DIAS_SHORT[d.getDay()] + '\n' + d.getDate(),
+        shortLabel: d.getDate() + '',
+        dayName: DIAS_SHORT[d.getDay()],
+        count: data ? data.exercises : 0,
+        min: data ? data.min : 0,
+      })
+    }
+    return days
+  }, [byDate])
+
+  const maxCount = Math.max(...last10Days.map(d => d.count), 1)
+
+  // ---- Consistency (last 7 days) ----
+  const last7 = last10Days.slice(-7)
+  const trainedDays7 = last7.filter(d => d.count > 0).length
+
+  // ---- Overall stats ----
+  const totalExercises = hist.reduce((s, h) => s + (h.ok || 0) + (h.sk || 0), 0)
+  const totalTime = hist.reduce((s, h) => s + (h.min || 0), 0)
+  const totalDaysTrained = new Set(hist.map(h => { const d = parseDt(h.dt); return d ? dateKey(d) : null }).filter(Boolean)).size
+  const streak = maxStreak(hist)
+
+  // ---- Active config ----
   const activeModNames = useMemo(() => {
     if (!activeMods) return []
     return Object.entries(activeMods).filter(([, v]) => v !== false).map(([k]) => k)
   }, [activeMods])
 
-  // ---- 3. Phrase stats from SRS ----
-  const srs = user.srs || {}
-  const phraseList = useMemo(() => {
-    return Object.entries(srs).map(([k, v]) => {
-      const attempts = (v.ok || 0) + (v.fail || 0)
-      const avg = attempts > 0 ? ((v.ok || 0) / attempts) * 4 : 0
-      return { key: k, attempts, avg, lv: v.lv || 0 }
-    }).filter(p => p.attempts > 0)
-  }, [srs])
-  const topRepeated = [...phraseList].sort((a, b) => b.attempts - a.attempts).slice(0, 10)
-  const topHardest = [...phraseList].filter(p => p.attempts > 2).sort((a, b) => a.avg - b.avg).slice(0, 10)
-
-  // ---- 5. Evolution graph data ----
-  const useWeeks = period === '1m' || period === '3m'
-  const graphData = useMemo(() => {
-    if (filtered.length === 0) return { stars: [], freq: [], labels: [] }
-    const grouped = useWeeks ? groupByWeek(filtered) : groupByMonth(filtered)
-    const stars = grouped.map(([, entries]) => ({ y: avgStars(entries) }))
-    const freq = grouped.map(([, entries]) => ({ y: entries.reduce((s, h) => s + (h.ok || 0) + (h.sk || 0), 0) }))
-    const labels = grouped.map(([key]) => useWeeks ? weekLabel(key) : monthLabel(key))
-    return { stars, freq, labels }
-  }, [filtered, useWeeks])
-
   // ---- Generate text report ----
   function generateTextReport() {
-    const periodNames = { '1m': 'Último mes', '3m': '3 meses', '1y': '1 año', 'all': 'Todo el historial' }
-    let txt = 'INFORME — ' + (user.name || 'Alumno') + '\n'
-    txt += 'Periodo: ' + (periodNames[period] || period) + '\n\n'
-    txt += 'Sesiones: ' + sessions + '\n'
-    txt += 'Aciertos: ' + totalOk + ' de ' + totalAll + ' (' + pct + '%)\n'
+    let txt = 'INFORME — ' + (user.name || 'Alumno') + '\n\n'
+    txt += 'Ejercicios totales: ' + totalExercises + '\n'
     txt += 'Tiempo total: ' + Math.floor(totalTime / 60) + 'h ' + (totalTime % 60) + 'min\n'
+    txt += 'Días entrenados: ' + totalDaysTrained + '\n'
     txt += 'Racha máxima: ' + streak + ' días\n\n'
+    txt += 'Últimos 7 días: entrenó ' + trainedDays7 + ' de 7 días (' + Math.round((trainedDays7 / 7) * 100) + '%)\n'
+    txt += 'Hoy: ' + todayData.exercises + ' ejercicios · ' + todayData.min + ' min\n\n'
     if (activeModNames.length > 0) {
       txt += 'Módulos activos: ' + activeModNames.length + '\n'
     }
     if (typeof exigencia === 'number') {
       txt += 'Tolerancia micrófono: ' + exigencia + '%\n'
     }
-    txt += '\n'
-    if (topRepeated.length > 0) {
-      txt += 'Frases más practicadas:\n'
-      topRepeated.forEach((p, i) => { txt += '  ' + (i + 1) + '. ' + p.key + ' — ' + p.attempts + ' intentos, ' + p.avg.toFixed(1) + ' avg\n' })
-      txt += '\n'
-    }
-    if (topHardest.length > 0) {
-      txt += 'Frases con más dificultad:\n'
-      topHardest.forEach((p, i) => { txt += '  ' + (i + 1) + '. ' + p.key + ' — ' + p.avg.toFixed(1) + ' avg (' + p.attempts + ' intentos)\n' })
-      txt += '\n'
-    }
-    // Graph summary
-    if (graphData.stars.length > 1) {
-      const first = graphData.stars[0].y, last = graphData.stars[graphData.stars.length - 1].y
-      const diff = last - first
-      txt += 'Evolución: ' + (diff > 0.2 ? 'Mejorando' : diff < -0.2 ? 'Bajando' : 'Estable') + ' (' + first.toFixed(1) + ' → ' + last.toFixed(1) + ' estrellas)\n'
-    }
+    txt += '\nÚltimos 10 días:\n'
+    last10Days.forEach(d => {
+      txt += '  ' + d.date + ': ' + d.count + ' ejercicios, ' + d.min + ' min\n'
+    })
     return txt
   }
 
@@ -249,19 +140,22 @@ export function MonthlyReport({ user, activeMods, exigencia }) {
         <button onClick={() => { setShow(false); setCopied(false) }} style={{ background: 'none', border: '2px solid ' + DIM, borderRadius: 10, padding: '8px 16px', color: DIM, fontSize: 16, fontWeight: 600, fontFamily: "'Fredoka'", cursor: 'pointer' }}>✕</button>
       </div>
 
-      {/* Period selector */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {[['1m', 'Último mes'], ['3m', '3 meses'], ['1y', '1 año'], ['all', 'Todo']].map(([k, l]) =>
-          <button key={k} onClick={() => setPeriod(k)} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: `3px solid ${period === k ? GOLD : BORDER}`, background: period === k ? GOLD + '22' : BG3, color: period === k ? GOLD : DIM, fontFamily: "'Fredoka'", fontWeight: 600, fontSize: 15, cursor: 'pointer', minHeight: 48 }}>{l}</button>
-        )}
+      {/* 1. Daily Summary Card */}
+      <div style={{ background: BG3, borderRadius: 14, padding: '16px 18px', marginBottom: 16, border: '2px solid ' + GOLD + '44' }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: GOLD, marginBottom: 6 }}>Hoy</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: TXT }}>
+          {todayData.exercises} <span style={{ fontSize: 16, fontWeight: 600, color: DIM }}>ejercicios</span>
+          <span style={{ color: DIM, margin: '0 8px' }}>·</span>
+          {todayData.min} <span style={{ fontSize: 16, fontWeight: 600, color: DIM }}>min</span>
+        </div>
       </div>
 
-      {/* 1. Summary */}
+      {/* 2. Summary stats grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
         {[
-          { l: 'Sesiones', v: sessions, c: GREEN },
-          { l: 'Aciertos', v: totalOk + '/' + totalAll, c: BLUE },
-          { l: 'Tiempo', v: Math.floor(totalTime / 60) + 'h ' + (totalTime % 60) + 'm', c: PURPLE },
+          { l: 'Ejercicios totales', v: totalExercises, c: BLUE },
+          { l: 'Tiempo total', v: Math.floor(totalTime / 60) + 'h ' + (totalTime % 60) + 'm', c: PURPLE },
+          { l: 'Días entrenados', v: totalDaysTrained, c: GREEN },
           { l: 'Racha máx.', v: streak + ' días', c: GOLD },
         ].map((s, i) => <div key={i} style={{ textAlign: 'center', background: BG3, borderRadius: 10, padding: '12px 4px' }}>
           <div style={{ fontSize: 22, color: s.c, fontWeight: 700 }}>{s.v}</div>
@@ -269,56 +163,61 @@ export function MonthlyReport({ user, activeMods, exigencia }) {
         </div>)}
       </div>
 
-      {/* 2. Active config */}
-      <div style={{ background: BG3, borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 14, color: DIM, fontWeight: 600 }}>Módulos activos: <span style={{ color: GREEN }}>{activeModNames.length}</span></span>
-        {typeof exigencia === 'number' && <span style={{ fontSize: 14, color: DIM, fontWeight: 600 }}>Tolerancia: <span style={{ color: GOLD }}>{exigencia}%</span></span>}
-      </div>
-
-      {/* 5. EVOLUTION GRAPH — most important */}
+      {/* 3. Weekly Chart (last 10 days) */}
       <div style={{ background: BG3 + '88', borderRadius: 14, padding: '14px 10px', marginBottom: 16, border: '1px solid ' + BORDER }}>
-        <p style={{ fontSize: 17, fontWeight: 700, color: GOLD, margin: '0 0 8px', textAlign: 'center' }}>Evolución</p>
-        <EvolutionChart
-          data={graphData.stars}
-          freqData={graphData.freq}
-          xLabels={graphData.labels}
-          yMin={0}
-          yMax={4}
-          width={600}
-          height={260}
-        />
-        {graphData.stars.length > 1 && (() => {
-          const first = graphData.stars[0].y, last = graphData.stars[graphData.stars.length - 1].y
-          const diff = last - first
-          const trend = diff > 0.2 ? 'Mejorando' : diff < -0.2 ? 'Bajando' : 'Estable'
-          const trendColor = diff > 0.2 ? GREEN : diff < -0.2 ? RED : GOLD
-          return <p style={{ fontSize: 15, fontWeight: 700, color: trendColor, textAlign: 'center', margin: '8px 0 0' }}>
-            {diff > 0.2 ? '📈' : diff < -0.2 ? '📉' : '➡️'} {trend} ({first.toFixed(1)} → {last.toFixed(1)} estrellas)
-          </p>
-        })()}
+        <p style={{ fontSize: 17, fontWeight: 700, color: GOLD, margin: '0 0 12px', textAlign: 'center' }}>Últimos 10 días</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 6, height: 120, paddingBottom: 4 }}>
+          {last10Days.map(day => (
+            <div key={day.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+              {day.count > 0 && <div style={{ fontSize: 10, color: GOLD, fontWeight: 700 }}>{day.count}</div>}
+              <div style={{
+                width: '100%',
+                maxWidth: 28,
+                background: day.count > 0 ? GOLD : BORDER,
+                borderRadius: 4,
+                height: day.count > 0 ? Math.max((day.count / maxCount) * 80, 6) : 3,
+                opacity: day.count > 0 ? 1 : 0.4,
+                transition: 'height 0.3s ease',
+              }}></div>
+              <div style={{ fontSize: 10, color: DIM, textAlign: 'center', lineHeight: 1.2 }}>
+                <div>{day.dayName}</div>
+                <div>{day.shortLabel}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* 3. Top 10 most repeated phrases */}
-      {topRepeated.length > 0 && <div style={{ background: BG3, borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: BLUE, margin: '0 0 8px' }}>Frases más practicadas</p>
-        {topRepeated.map((p, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < topRepeated.length - 1 ? '1px solid ' + BORDER : 'none' }}>
-          <span style={{ fontSize: 13, color: DIM, width: 20, textAlign: 'right', flexShrink: 0 }}>{i + 1}.</span>
-          <span style={{ fontSize: 14, color: TXT, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.key}</span>
-          <span style={{ fontSize: 12, color: DIM, flexShrink: 0 }}>{p.attempts}x</span>
-          <span style={{ fontSize: 12, color: GOLD, fontWeight: 600, flexShrink: 0 }}>{p.avg.toFixed(1)}★</span>
-        </div>)}
-      </div>}
+      {/* 4. Consistency */}
+      <div style={{ background: BG3, borderRadius: 14, padding: '14px 18px', marginBottom: 16, border: '1px solid ' + BORDER }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: GREEN, marginBottom: 6 }}>Constancia</div>
+        <div style={{ fontSize: 16, color: TXT }}>
+          Últimos 7 días: entrenó <b style={{ color: GREEN }}>{trainedDays7}</b> de 7 días
+          <span style={{ color: DIM, marginLeft: 8 }}>({Math.round((trainedDays7 / 7) * 100)}%)</span>
+        </div>
+        <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+          {last7.map((d, i) => (
+            <div key={i} style={{
+              flex: 1, height: 8, borderRadius: 4,
+              background: d.count > 0 ? GREEN : BORDER,
+              opacity: d.count > 0 ? 1 : 0.3,
+            }} title={d.dayName + ': ' + d.count + ' ejercicios'} />
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
+          {last7.map((d, i) => (
+            <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9, color: DIM }}>{d.dayName}</div>
+          ))}
+        </div>
+      </div>
 
-      {/* 4. Top 10 hardest phrases */}
-      {topHardest.length > 0 && <div style={{ background: BG3, borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: RED, margin: '0 0 8px' }}>Frases con más dificultad</p>
-        {topHardest.map((p, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < topHardest.length - 1 ? '1px solid ' + BORDER : 'none' }}>
-          <span style={{ fontSize: 13, color: DIM, width: 20, textAlign: 'right', flexShrink: 0 }}>{i + 1}.</span>
-          <span style={{ fontSize: 14, color: TXT, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.key}</span>
-          <span style={{ fontSize: 12, color: DIM, flexShrink: 0 }}>{p.attempts}x</span>
-          <span style={{ fontSize: 12, color: RED, fontWeight: 600, flexShrink: 0 }}>{p.avg.toFixed(1)}★</span>
-        </div>)}
-      </div>}
+      {/* 5. Active config */}
+      {(activeModNames.length > 0 || typeof exigencia === 'number') && (
+        <div style={{ background: BG3, borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 14, color: DIM, fontWeight: 600 }}>Módulos activos: <span style={{ color: GREEN }}>{activeModNames.length}</span></span>
+          {typeof exigencia === 'number' && <span style={{ fontSize: 14, color: DIM, fontWeight: 600 }}>Tolerancia: <span style={{ color: GOLD }}>{exigencia}%</span></span>}
+        </div>
+      )}
     </div>
 
     {/* Bottom buttons */}

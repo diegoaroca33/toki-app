@@ -587,16 +587,35 @@ export default function SettingsConfigTab(props) {
               </button>
               {(pOpenPlanet === g.id || openSection === g.id) && (
                 g.id === 'escribe' ? (
-                  <EscribeConfig
-                    escribeCase={escribeCase}
-                    setEscribeCase={setEscribeCase}
-                    escribeTypes={escribeTypes}
-                    setEscribeTypes={setEscribeTypes}
-                    escribeGuide={escribeGuide}
-                    setEscribeGuide={setEscribeGuide}
-                    escribePauta={escribePauta}
-                    setEscribePauta={setEscribePauta}
-                  />
+                  <div style={{ padding: '0 12px 12px' }}>
+                    {g.modules.map((m) => {
+                      const active = activeMods?.[m.lvKey] !== false
+                      return (
+                        <div key={m.lvKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ fontWeight: 700 }}>{m.l}</div>
+                          <Button variant={active ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => {
+                            const na = { ...(activeMods || {}), [m.lvKey]: !active }
+                            setActiveMods && setActiveMods(na)
+                            saveData('active_mods', na)
+                          }}>
+                            {active ? 'Activo' : 'Oculto'}
+                          </Button>
+                        </div>
+                      )
+                    })}
+                    {g.modules.some(m => activeMods?.[m.lvKey] !== false) && (
+                      <EscribeConfig
+                        escribeCase={escribeCase}
+                        setEscribeCase={setEscribeCase}
+                        escribeTypes={escribeTypes}
+                        setEscribeTypes={setEscribeTypes}
+                        escribeGuide={escribeGuide}
+                        setEscribeGuide={setEscribeGuide}
+                        escribePauta={escribePauta}
+                        setEscribePauta={setEscribePauta}
+                      />
+                    )}
+                  </div>
                 ) : (
                   <div style={{ padding: '0 12px 12px', display: 'grid', gap: 8 }}>
                     {g.modules.map((m) => {

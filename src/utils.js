@@ -47,6 +47,50 @@ export function getSkyClass(){const t=getTimeOfDay();return t==='morning'?'sky-m
 export function getGreeting(name){const t=getTimeOfDay();const n=name||'';if(t==='morning')return'¡Buenos días'+(n?', '+n:'')+'!';if(t==='afternoon')return'¡Buenas tardes'+(n?', '+n:'')+'!';return'¡Buenas noches'+(n?', '+n:'')+'!'}
 export function getStreak(){const dates=loadData('streak_dates',[]);const today=new Date().toISOString().slice(0,10);if(!dates.includes(today)){dates.push(today);saveData('streak_dates',dates)}const sorted=[...new Set(dates)].sort().reverse();let streak=1;for(let i=0;i<sorted.length-1;i++){const d1=new Date(sorted[i]),d2=new Date(sorted[i+1]);const diff=(d1-d2)/(86400000);if(diff===1)streak++;else break}return streak}
 export function getTotalStars(){const ps=loadData('profiles',[]);let total=0;ps.forEach(p=>{if(p.hist)p.hist.forEach(h=>{total+=h.ok||0})});return total}
+// ── Exercise history: 3-day anti-repeat system ─────────────
+const HISTORY_KEY='toki_ex_history';
+const HISTORY_DAYS=3;
+const HISTORY_MAX_ENTRIES=2000; // prevent unbounded growth
+
+export function getRecentExercises(userId){
+  try{
+    const all=JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}');
+    const mine=all[userId]||[];
+    const cutoff=Date.now()-(HISTORY_DAYS*86400000);
+    return mine.filter(e=>e.t>=cutoff)
+  }catch(e){return[]}
+}
+
+export function getRecentExerciseKeys(userId){
+  return new Set(getRecentExercises(userId).map(e=>e.k))
+}
+
+export function markExerciseUsed(userId,key){
+  if(!key||key.length<=1)return;
+  try{
+    const all=JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}');
+    if(!all[userId])all[userId]=[];
+    all[userId].push({k:key,t:Date.now()});
+    // Prune: remove entries older than 3 days + cap size
+    const cutoff=Date.now()-(HISTORY_DAYS*86400000);
+    all[userId]=all[userId].filter(e=>e.t>=cutoff).slice(-HISTORY_MAX_ENTRIES);
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(all))
+  }catch(e){}
+}
+
+export function markExerciseBatch(userId,keys){
+  if(!keys||!keys.length)return;
+  try{
+    const all=JSON.parse(localStorage.getItem(HISTORY_KEY)||'{}');
+    if(!all[userId])all[userId]=[];
+    const now=Date.now();
+    keys.forEach(k=>{if(k&&k.length>1)all[userId].push({k,t:now})});
+    const cutoff=now-(HISTORY_DAYS*86400000);
+    all[userId]=all[userId].filter(e=>e.t>=cutoff).slice(-HISTORY_MAX_ENTRIES);
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(all))
+  }catch(e){}
+}
+
 export function getGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;return loadData(key,0)}
 export function addGroupProgress(userId,groupId){const key='gp_'+userId+'_'+groupId;const cur=loadData(key,0);saveData(key,cur+1);return cur+1}
 export function getGroupStatus(userId,groupId){const n=getGroupProgress(userId,groupId);if(n===0)return'new';if(n>=50)return'mastered';return'progress'}
@@ -230,6 +274,31 @@ export function getDogEvolAnnounce(userId) {
 }
 export function setDogEvolAnnounce(userId, data) {
   saveData(`dog_evolannounce_${userId}`, data);
+}
+
+// ── Daily exercise counter ──────────────────────────────────
+export function getDailyCount(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const data = loadData('daily_count_' + userId, { date: '', count: 0 });
+  if (data.date !== today) return 0;
+  return data.count || 0;
+}
+
+export function addDailyCount(userId, n) {
+  const today = new Date().toISOString().slice(0, 10);
+  const data = loadData('daily_count_' + userId, { date: '', count: 0 });
+  if (data.date !== today) data.count = 0;
+  data.date = today;
+  data.count = (data.count || 0) + n;
+  saveData('daily_count_' + userId, data);
+  return data.count;
+}
+
+export function getDailyPhase(count) {
+  if (count >= 300) return 4;
+  if (count >= 200) return 3;
+  if (count >= 100) return 2;
+  return 1;
 }
 
 // Build GROUPS with dynamic Aprende modules from user.presentations

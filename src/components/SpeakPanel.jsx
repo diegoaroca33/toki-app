@@ -8,7 +8,7 @@ import { Stars } from './CelebrationOverlay.jsx'
 // ============================================================
 // M9: FraccionadoMode — Backward chaining for long phrases
 // ============================================================
-function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids}){
+function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
   const words=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean),[text]);
   const totalSteps=words.length;
   const[step,setStep]=useState(0); // 0-based, step 0 = last word only
@@ -111,14 +111,14 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids}){
     {/* Mic + controls */}
     <div style={{minHeight:70,marginBottom:12}}/>
     <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
-      <button onClick={()=>{stopVoice();sr.stop();setMic(false);doPlayStep()}} style={{
+      <button onClick={()=>{if(onPause)onPause()}} style={{
         width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:`radial-gradient(circle at 30% 25%,#90CAF9,${BLUE} 60%,#1565C0)`,
-        boxShadow:`0 3px 12px ${BLUE}44, inset 0 -3px 8px #1565C066`,
+        background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',
+        boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',
         display:'flex',alignItems:'center',justifyContent:'center',
         fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Escuchar otra vez">
-        <span style={{fontSize:30}}>🔊</span>
+      }} title="Pausar">
+        <span style={{fontSize:30}}>⏸️</span>
       </button>
       <div style={{width:80,height:80,flexShrink:0}}>
         <RecBtn dur={dur} onEnd={onTimeUpIntermediate} on={mic}/>
@@ -137,11 +137,11 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids}){
   </div>;
 }
 
-export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,_skipFraccionado}){
+export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,_skipFraccionado,onPause}){
   // M9: If fraccionado active and phrase has 4+ words, use FraccionadoMode
   const wordCount=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length,[text]);
   if(fraccionado&&wordCount>=4&&!_skipFraccionado&&!burstMode){
-    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>;
+    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause}/>;
   }
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
@@ -266,16 +266,16 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
     {!burstMode&&idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     </div>
-    {/* Fixed bottom bar: 🔊 left — 🎤 mic center — ⏭️ right */}
+    {/* Fixed bottom bar: ⏸️ left — 🎤 mic center — ⏭️ right */}
     <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
-      <button onClick={hearAgain} style={{
+      <button onClick={()=>{if(onPause)onPause()}} style={{
         width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:`radial-gradient(circle at 30% 25%,#90CAF9,${BLUE} 60%,#1565C0)`,
-        boxShadow:`0 3px 12px ${BLUE}44, inset 0 -3px 8px #1565C066`,
+        background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',
+        boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',
         display:'flex',alignItems:'center',justifyContent:'center',
         fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Escuchar otra vez">
-        <span style={{fontSize:30}}>🔊</span>
+      }} title="Pausar">
+        <span style={{fontSize:30}}>⏸️</span>
       </button>
       <div style={{width:80,height:80,flexShrink:0}}>
         <RecBtn dur={dur} onEnd={onTimeUp} on={mic}/>
@@ -294,7 +294,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     <div style={{height:100}}/>
   </div>}
 
-export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado}){
+export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,onPause}){
   // M9: Auto-activate fraccionado for phrases with 4+ words (unless explicitly set)
   const autoFrac=useMemo(()=>{
     if(typeof fraccionado==='boolean')return fraccionado;
@@ -303,9 +303,9 @@ export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,bur
   },[ex.ph,fraccionado]);
   return <div style={{textAlign:'center',padding:12}}>
   <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
-  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} fraccionado={autoFrac}/></div>}
+  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} fraccionado={autoFrac} onPause={onPause}/></div>}
 
-export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
+export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);
   const words=useMemo(()=>ex.fu.replace(/[¿?¡!,\.]/g,'').split(/\s+/),[ex.fu]);const{idleMsg,poke}=useIdle(name,ph==='build'&&!bf);
   useEffect(()=>{sPh('build');sBf(null);let sh=[...words];if(sh.length>1){let tries=0;do{for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]]}tries++}while(tries<50&&sh.every((w,i)=>w===words[i]));if(sh.every((w,i)=>w===words[i])){const a=0,b=sh.length-1;[sh[a],sh[b]]=[sh[b],sh[a]]}}sAv(sh.map((w,i)=>({w,oi:i,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
@@ -322,10 +322,10 @@ export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids}){
       {!bf&&<div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',marginBottom:14}}>{av.filter(x=>!x.u).map(x=><button key={x.i} className="btn btn-b btn-word" onClick={()=>place(x)}>{x.w}</button>)}</div>}
       <div style={{display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>{!bf&&pl.some(p=>p)&&<button className="btn btn-o btn-half" onClick={undo}>↩️ Borrar</button>}{bf!=='ok'&&!pl.every(p=>p!==null)&&<button onClick={()=>{poke();stopVoice();say(ex.fu)}} style={{width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:`radial-gradient(circle at 30% 25%,#CE93D8,${PURPLE} 60%,#6A1B9A)`,boxShadow:`0 3px 12px ${PURPLE}44`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:1,flexShrink:0,fontFamily:"'Fredoka'"}}><span style={{fontSize:22,lineHeight:1}}>🔊</span><span style={{fontSize:10,color:'#fff',fontWeight:600,lineHeight:1}}>Pista</span></button>}</div>
       <div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();stopVoice();onSkip()}}>⏭️ Saltar</button></div></div>}
-    {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
+    {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause}/>}
   </div>}
 
-export function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids}){
+export function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[ph,sPh]=useState('fill');const{idleMsg,poke}=useIdle(name,ph==='fill'&&!fb);
   useEffect(()=>{setAns('');setFb(null);sPh('fill');stopVoice();setTimeout(()=>{stopVoice();say('Completa la frase')},400);return()=>stopVoice()},[ex]);
   function check(){poke();if(ans.trim().toLowerCase()===ex.blank.toLowerCase()){setFb('ok');starBeep(4);stopVoice();cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{sPh('speak')})}
@@ -342,11 +342,11 @@ export function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids}){
       {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
       {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     </div>}
-    {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
+    {ph==='speak'&&<SpeakPanel text={ex.fu} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause}/>}
   </div>}
 
-export function ExSit({ex,onOk,onSkip,sex,name,uid,vids}){const[ph,sPh]=useState('choose');const[cf,sCf]=useState(null);const shuf=useMemo(()=>[...ex.op].sort(()=>Math.random()-.5),[ex]);const{idleMsg,poke}=useIdle(name,ph==='choose'&&!cf);useEffect(()=>{sPh('choose');sCf(null)},[ex]);function pick(o){poke();if(o===ex.op[0]){(async()=>{stopVoice();await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));stopVoice();const phr=await playRec(uid,vids,textKey(ex.su));if(!phr){stopVoice();await say(ex.su)}await new Promise(r=>setTimeout(r,400));stopVoice();sPh('speak')})()}else{sCf('no');setTimeout(()=>sCf(null),1000)}}
+export function ExSit({ex,onOk,onSkip,sex,name,uid,vids,onPause}){const[ph,sPh]=useState('choose');const[cf,sCf]=useState(null);const shuf=useMemo(()=>[...ex.op].sort(()=>Math.random()-.5),[ex]);const{idleMsg,poke}=useIdle(name,ph==='choose'&&!cf);useEffect(()=>{sPh('choose');sCf(null)},[ex]);function pick(o){poke();if(o===ex.op[0]){(async()=>{stopVoice();await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));stopVoice();const phr=await playRec(uid,vids,textKey(ex.su));if(!phr){stopVoice();await say(ex.su)}await new Promise(r=>setTimeout(r,400));stopVoice();sPh('speak')})()}else{sCf('no');setTimeout(()=>sCf(null),1000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16}}>{ex.em}</div><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:20,fontWeight:600,margin:0,lineHeight:1.4}}>{ex.si}</p></div>
     {ph==='choose'&&<div className="af"><p style={{fontSize:20,color:GOLD,fontWeight:700,margin:'0 0 14px'}}>¿Qué dirías?</p>{cf==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:12,padding:12,marginBottom:12}}><p style={{fontSize:17,color:GOLD,margin:0}}>¡Casi! Prueba otra 💪</p></div>}{idleMsg&&!cf&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:12}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}<div style={{display:'flex',flexDirection:'column',gap:12}}>{shuf.map((o,i)=><button key={i} className="btn btn-b" onClick={()=>pick(o)} style={{textAlign:'left',fontSize:18}}>{o}</button>)}</div><div style={{marginTop:14}}><button className="btn btn-ghost skip-btn" onClick={()=>{poke();onSkip()}}>⏭️ Saltar</button></div></div>}
-    {ph==='speak'&&<SpeakPanel text={ex.su} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids}/>}
+    {ph==='speak'&&<SpeakPanel text={ex.su} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause}/>}
   </div>}
