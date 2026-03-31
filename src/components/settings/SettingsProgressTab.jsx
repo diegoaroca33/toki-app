@@ -187,25 +187,33 @@ export default function SettingsProgressTab(props) {
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>Historial</div>
         <div style={{ display: 'grid', gap: 8 }}>
           {hist.length === 0 ? <div style={{ color: DIM, fontSize: 14 }}>Todavía no hay sesiones.</div>
-            : [...hist].slice(-14).reverse().map((h, idx) => {
-              const total = Number(h?.ok || 0) + Number(h?.sk || 0)
-              const min = Number(h?.min || 0)
-              return (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{h?.dt || h?.d || `Sesión ${hist.length - idx}`}</div>
-                    <div style={{ color: DIM, fontSize: 13 }}>{total} ejercicios · {min} min</div>
+            : (() => {
+              const byDay = {}
+              hist.forEach(h => {
+                const day = h?.dt || h?.d || 'Sin fecha'
+                if (!byDay[day]) byDay[day] = { exs: 0, min: 0 }
+                byDay[day].exs += Number(h?.ok || 0) + Number(h?.sk || 0)
+                byDay[day].min += Number(h?.min || 0)
+              })
+              return Object.entries(byDay).reverse().slice(0, 14).map(([day, d], idx) => {
+                const sessions = d.exs >= 100 ? Math.floor(d.exs / 100) + 1 : d.exs > 0 ? 1 : 0
+                return (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 12px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', flexWrap: 'wrap' }}>
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{day}</div>
+                      <div style={{ color: DIM, fontSize: 13 }}>{d.exs} ejercicios · {d.min} min · {sessions} sesión{sessions !== 1 ? 'es' : ''}</div>
+                    </div>
+                    <Badge tone="gold">{d.exs}</Badge>
                   </div>
-                  <Badge tone="gold">{total}</Badge>
-                </div>
-              )
-            })}
+                )
+              })
+            })()}
         </div>
       </Card>
 
       <Card>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>Texto para logopeda</div>
-        <textarea readOnly value={`TOKI · Resumen\nNombre: ${user?.name || ''}\nSesiones: ${hist.length}\nEjercicios totales: ${totalOk + totalSk}\nTiempo total: ${hist.reduce((a,h) => a + (h.min || 0), 0)} min\nDías entrenados: ${new Set(hist.map(h => h.dt)).size}\nRacha: ${streak}\nEstrellas: ${totalStars}`}
+        <textarea readOnly value={`TOKI · Resumen\nNombre: ${user?.name || ''}\nSesiones: ${(() => { const bd = {}; hist.forEach(h => { const d = h?.dt || ''; if (!bd[d]) bd[d] = 0; bd[d] += Number(h?.ok || 0) + Number(h?.sk || 0) }); return Object.values(bd).reduce((a, e) => a + (e >= 100 ? Math.floor(e / 100) + 1 : e > 0 ? 1 : 0), 0) })()}\nEjercicios totales: ${totalOk + totalSk}\nTiempo total: ${hist.reduce((a,h) => a + (h.min || 0), 0)} min\nDías entrenados: ${new Set(hist.map(h => h.dt)).size}\nRacha: ${streak}\nEstrellas: ${totalStars}`}
           style={{ width: '100%', minHeight: 120, resize: 'vertical', borderRadius: 12, padding: 12, border: '2px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)', color: '#fff', fontFamily: 'inherit', fontSize: 14 }} />
       </Card>
     </div>

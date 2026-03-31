@@ -895,6 +895,9 @@ export default function App(){
           <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Compañía">
             {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
           </div>
+          <div style={{flexShrink:0,position:'relative'}}>
+            <SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/>
+          </div>
           <div style={{flexShrink:0}}>
             <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={48} helmet={showHelmet}/>
           </div>

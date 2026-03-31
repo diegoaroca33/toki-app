@@ -586,22 +586,22 @@ export function AstronautDaily({ phase = 1, size = 36, onClick }) {
 // ===== ASTRONAUT OVERLAY — Podium display with phases =====
 export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
   const phases = [
-    { n: 1, label: '0-99', title: 'Empezando', emoji: '\u{1F331}' },
-    { n: 2, label: '100-199', title: 'Entrenado', emoji: '\u{1F3C5}' },
-    { n: 3, label: '200-299', title: 'Campe\u00F3n', emoji: '\u{1F9B8}' },
-    { n: 4, label: '300+', title: 'Leyenda', emoji: '\u{1F451}' },
+    { n: 1, label: '0-99', title: 'Empezando', emoji: '🌱' },
+    { n: 2, label: '100-199', title: 'Entrenado', emoji: '🏅' },
+    { n: 3, label: '200-299', title: 'Campeón', emoji: '🦸' },
+    { n: 4, label: '300+', title: 'Leyenda', emoji: '👑' },
   ];
   const cheers = {
-    1: ['\u00A1Sigue, puedes hacerlo!', '\u00A1Vamos a por los 100!', '\u00A1T\u00FA puedes!', '\u00A1Arriba!', '\u00A1Dale ca\u00F1a!', '\u00A1\u00C1nimo!'],
-    2: ['\u00A1Bien hecho!', '\u00A1Eres un campe\u00F3n!', '\u00A1Entrenamiento completado!', '\u00A1Genial!', '\u00A1Impresionante!', '\u00A1Qu\u00E9 crack!'],
-    3: ['\u00A1Est\u00E1s que te sales!', '\u00A1Incre\u00EDble esfuerzo!', '\u00A1M\u00E1quina!', '\u00A1Imparable!', '\u00A1Brutal!', '\u00A1Vas volando!'],
-    4: ['\u00A1Leyenda absoluta!', '\u00A1Pero qu\u00E9 has comido hoy!', '\u00A1Eres imparable!', '\u00A1R\u00E9cord hist\u00F3rico!', '\u00A1Fuera de serie!', '\u00A1De otro planeta!'],
+    1: ['¡Sigue, puedes hacerlo!', '¡Vamos a por los 100!', '¡Tú puedes!', '¡Arriba!', '¡Dale caña!', '¡Ánimo!'],
+    2: ['¡Bien hecho!', '¡Eres un campeón!', '¡Entrenamiento completado!', '¡Genial!', '¡Impresionante!', '¡Qué crack!'],
+    3: ['¡Estás que te sales!', '¡Increíble esfuerzo!', '¡Máquina!', '¡Imparable!', '¡Brutal!', '¡Vas volando!'],
+    4: ['¡Leyenda absoluta!', '¡Pero qué has comido hoy!', '¡Eres imparable!', '¡Récord histórico!', '¡Fuera de serie!', '¡De otro planeta!'],
   };
-  const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '\u00A1Sigue as\u00ED!';
+  const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '¡Sigue así!';
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.9)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#FFD54F', marginBottom: 20 }}>Progreso del d\u00EDa: {dailyCount} ejercicios</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: '#FFD54F', marginBottom: 20 }}>Progreso del día: {dailyCount} ejercicios</div>
       <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 24 }}>
         {phases.map(p => {
           const achieved = phase >= p.n;
@@ -615,7 +615,7 @@ export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
               {active && photo && (
                 <img src={photo} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #FFD54F', marginBottom: 4 }} />
               )}
-              {active && !photo && <div style={{ fontSize: 10, color: '#FFD54F', marginBottom: 4 }}>T\u00DA</div>}
+              {active && !photo && <div style={{ fontSize: 10, color: '#FFD54F', marginBottom: 4 }}>TÚ</div>}
               <div style={{ fontSize: 11, fontWeight: 700, color: achieved ? '#fff' : '#666' }}>{p.title}</div>
               <div style={{ fontSize: 10, color: achieved ? '#aaa' : '#444' }}>{p.label}</div>
             </div>
