@@ -2,9 +2,9 @@
 // TOKI · Aprende a decirlo
 // © 2026 Diego Aroca. Todos los derechos reservados.
 // ============================================================
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { AREAS, EX } from './exercises.js'
-import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from './firebase.js'
+import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
 import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
@@ -14,25 +14,39 @@ import { RocketTransition } from './components/RocketTransition.jsx'
 import { CelebrationOverlay, Stars } from './components/CelebrationOverlay.jsx'
 import { PhotoCropOverlay } from './components/PhotoCropOverlay.jsx'
 import { EmergencyButton } from './components/EmergencyButton.jsx'
-import { MonthlyReport } from './components/MonthlyReport.jsx'
-import { DoneScreen } from './components/DoneScreen.jsx'
-import { VoiceRec } from './components/VoiceRec.jsx'
 import { SpeakPanel, ExFlu, ExFrases, ExFrasesBlank, ExSit } from './components/SpeakPanel.jsx'
 import { ExCount, NUM_BLOCK_COLORS } from './modules/ExCount.jsx'
-import { genMath, Fingers, AnimCount, ExMath } from './modules/ExMath.jsx'
-import { genMulti, ExMulti } from './modules/ExMulti.jsx'
-import { PieChart, RectChart, genFractions, ExFraction } from './modules/ExFraction.jsx'
-import { COINS, BILLS, genMoney, ExMoney } from './modules/ExMoney.jsx'
-import { clockText, genClock, ClockFace, ExClock } from './modules/ExClock.jsx'
-import { genCalendar, ExCalendar } from './modules/ExCalendar.jsx'
-import { genDistribute, BagSVG, ExDistribute, CardSVG, dominoDots, DominoSVG } from './modules/ExDistribute.jsx'
-import { genWriting, ExWriting, LETTER_STROKE_PATHS, getCustomPhrases } from './modules/ExWriting.jsx'
-import { genPatterns, genRazona, SceneSVG, SpatialDrag, ExRazona } from './modules/ExRazona.jsx'
-import { genLee, ExLee } from './modules/ExLee.jsx'
-import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres, ExQuienSoyUnified } from './modules/ExQuienSoy.jsx'
-import { MiCielo } from './components/MiCielo.jsx'
-import { Settings } from './components/Settings.jsx'
-import TokiPlayground from './components/TokiPlayground.jsx'
+import { genMath, Fingers, AnimCount } from './modules/ExMath.jsx'
+import { genMulti } from './modules/ExMulti.jsx'
+import { PieChart, RectChart, genFractions } from './modules/ExFraction.jsx'
+import { COINS, BILLS, genMoney } from './modules/ExMoney.jsx'
+import { clockText, genClock, ClockFace } from './modules/ExClock.jsx'
+import { genCalendar } from './modules/ExCalendar.jsx'
+import { genDistribute, BagSVG, CardSVG, dominoDots, DominoSVG } from './modules/ExDistribute.jsx'
+import { genWriting, LETTER_STROKE_PATHS, getCustomPhrases } from './modules/ExWriting.jsx'
+import { genPatterns, genRazona, SceneSVG, SpatialDrag } from './modules/ExRazona.jsx'
+import { genLee } from './modules/ExLee.jsx'
+import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres } from './modules/ExQuienSoy.jsx'
+
+const Settings=React.lazy(()=>import('./components/Settings.jsx'))
+const DoneScreen=React.lazy(()=>import('./components/DoneScreen.jsx').then(m=>({default:m.default||m.DoneScreen})))
+const VoiceRec=React.lazy(()=>import('./components/VoiceRec.jsx').then(m=>({default:m.default||m.VoiceRec})))
+const MiCielo=React.lazy(()=>import('./components/MiCielo.jsx').then(m=>({default:m.default||m.MiCielo})))
+const TokiPlayground=React.lazy(()=>import('./components/TokiPlayground.jsx'))
+const MonthlyReport=React.lazy(()=>import('./components/MonthlyReport.jsx').then(m=>({default:m.default||m.MonthlyReport})))
+const ExMath=React.lazy(()=>import('./modules/ExMath.jsx').then(m=>({default:m.ExMath})))
+const ExMulti=React.lazy(()=>import('./modules/ExMulti.jsx').then(m=>({default:m.ExMulti})))
+const ExFraction=React.lazy(()=>import('./modules/ExFraction.jsx').then(m=>({default:m.ExFraction})))
+const ExMoney=React.lazy(()=>import('./modules/ExMoney.jsx').then(m=>({default:m.ExMoney})))
+const ExClock=React.lazy(()=>import('./modules/ExClock.jsx').then(m=>({default:m.ExClock})))
+const ExCalendar=React.lazy(()=>import('./modules/ExCalendar.jsx').then(m=>({default:m.ExCalendar})))
+const ExDistribute=React.lazy(()=>import('./modules/ExDistribute.jsx').then(m=>({default:m.ExDistribute})))
+const ExWriting=React.lazy(()=>import('./modules/ExWriting.jsx').then(m=>({default:m.ExWriting})))
+const ExRazona=React.lazy(()=>import('./modules/ExRazona.jsx').then(m=>({default:m.ExRazona})))
+const ExLee=React.lazy(()=>import('./modules/ExLee.jsx').then(m=>({default:m.ExLee})))
+const ExQuienSoyUnified=React.lazy(()=>import('./modules/ExQuienSoy.jsx').then(m=>({default:m.ExQuienSoyUnified})))
+
+function LazyFallback(){return<div style={{minHeight:'40vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10,background:'#080C18',color:'#fff',fontFamily:"'Fredoka'",borderRadius:24}}><div style={{fontSize:42}}>🐾</div><div style={{fontSize:20,fontWeight:700}}>Cargando...</div></div>}
 import { isCheckpointPending } from './components/ControlCheckpoint.jsx'
 import TokiWelcome from './components/TokiWelcome.jsx'
 import TokiLogoPro from './components/TokiLogoPro.jsx'
@@ -47,6 +61,7 @@ import TokiLogoPro from './components/TokiLogoPro.jsx'
 
 export default function App(){
   const[showWelcome,setShowWelcome]=useState(true);
+  const[viewport,setViewport]=useState(()=>({w:typeof window!=='undefined'?window.innerWidth:1280,h:typeof window!=='undefined'?window.innerHeight:800}));
   const[profs,setProfs]=useState(()=>loadData('profiles',[]));const[user,setUser]=useState(null);const[scr,setScr]=useState(()=>loadData('sup_pin',null)?'login':hasConfig?'login':'setup');const[ov,setOv]=useState(null);
   const[supPin,setSupPin]=useState(()=>loadData('sup_pin',null));const[supInp,setSupInp]=useState('');
   const[pinStep,setPinStep]=useState('enter'); // 'enter' | 'confirm'
@@ -113,6 +128,9 @@ export default function App(){
     if(changed){setProfs(updated);saveData('profiles',updated)}},[profs.length,fbUser?.email,personas]);
   // Dynamic GROUPS: Aprende modules generated from user.presentations
   const dynGroups=useMemo(()=>getGroupsForUser(user,GROUPS),[user,user?.presentations])
+  useEffect(()=>{const onResize=()=>setViewport({w:window.innerWidth,h:window.innerHeight});window.addEventListener('resize',onResize,{passive:true});window.addEventListener('orientationchange',onResize,{passive:true});return()=>{window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize)}},[])
+  const isPhone=viewport.w<=480;const isTabletPortrait=viewport.w>=768&&viewport.w<=1023&&viewport.h>=viewport.w;const isTabletLandscape=viewport.w>=1024&&viewport.w<=1365&&viewport.w>viewport.h;const isDesktop=viewport.w>=1366;
+  const gameShellStyle=useMemo(()=>({position:'relative',minHeight:'calc(100dvh - var(--safe-top) - var(--safe-bottom) - 8px)',display:'grid',gridTemplateRows:'auto auto auto minmax(0,1fr)',gap:isPhone?8:12,paddingBottom:'calc(var(--dock-h) + var(--safe-bottom) + 16px)'}),[isPhone]);
   useEffect(()=>{if(hasConfig)setFbLoading(false)},[]);
   // Listen to Firebase auth state changes
   useEffect(()=>{if(!hasConfig||!auth)return;
@@ -129,10 +147,14 @@ export default function App(){
         // Load cloud data and merge with local
         if(data&&data.profiles){
           const localProfs=loadData('profiles',[]);
-          // Cloud has data — use cloud as source of truth if local is empty or cloud is newer
-          if(!localProfs.length||data.profiles.length>0){
-            saveData('profiles',data.profiles);setProfs(data.profiles)}
-          if(data.personas){saveData('personas',data.personas);setPersonas(data.personas)}
+          const cloudTime=data.lastSaved||0;
+          const localTime=loadData('last_saved_time',0);
+          // Use cloud if local is empty OR cloud is newer
+          if(!localProfs.length||cloudTime>localTime){
+            saveData('profiles',data.profiles);setProfs(data.profiles);
+            if(data.personas){saveData('personas',data.personas);setPersonas(data.personas)}
+            saveData('last_saved_time',cloudTime);
+          }
         }
         setFbMode('cloud')}
       else{setFbMode(hasConfig?'auth':'guest');setRevoked(false)}
@@ -204,8 +226,11 @@ export default function App(){
   useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
     clearTimeout(cloudSyncTimer.current);
     cloudSyncTimer.current=setTimeout(()=>{
-      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email})
-    },2000)
+      const now=Date.now();
+      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email,lastSaved:now});
+      saveData('last_saved_time',now);
+    },2000);
+    return()=>clearTimeout(cloudSyncTimer.current)
   },[profs,personas,fbMode,fbUser]);
   // Data migration: old sessionMin -> new session_time
   useEffect(() => {
@@ -255,6 +280,9 @@ export default function App(){
   function toggleBurst(){const nv=!burstMode;setBurstMode(nv);saveData('burst_mode',nv)}
   function setBurstSpeedVal(v){setBurstSpeed(v);saveData('burst_speed',v)}
   function setBurstRepsVal(v){setBurstReps(v);saveData('burst_reps',v)}
+  // M9: Backward chaining (encadenamiento inverso)
+  const[fraccionado,setFraccionado]=useState(()=>loadData('fraccionado',false));
+  function toggleFraccionado(){const nv=!fraccionado;setFraccionado(nv);saveData('fraccionado',nv)}
   // First-time initialization: all modules OFF except DILO N1 (decir), burst ON with 2 reps
   useEffect(()=>{
     if(loadData('first_init_done',false))return;
@@ -272,8 +300,9 @@ export default function App(){
   const[paused,setPaused]=useState(false);const pauseTimerRef=useRef(null);const snoozeTimerRef=useRef(null);const[showSnooze,setShowSnooze]=useState(false);const pausedRef=useRef(false);
   useEffect(()=>{pausedRef.current=paused},[paused]);
   function playBark(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(350,c.currentTime);o.frequency.exponentialRampToValueAtTime(150,c.currentTime+0.2);g.gain.setValueAtTime(0.7,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.25);o.start();o.stop(c.currentTime+0.25);setTimeout(()=>c.close(),400)}catch(e){}}
-  function pauseSession(){stopVoice();setPaused(true);pauseTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},60000)}
-  function resumeSession(){setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
+  function pauseSession(){stopVoice();window.dispatchEvent(new Event('toki-pause'));setPaused(true);pauseTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},60000)}
+  const[resumeKey,setResumeKey]=useState(0);
+  function resumeSession(){setPaused(false);setShowSnooze(false);setResumeKey(k=>k+1);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
   function snoozeSession(){setShowSnooze(false);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);snoozeTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},240000)}
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
   const[correctStreak,setCorrectStreak]=useState(0);
@@ -452,7 +481,8 @@ export default function App(){
     if((sessionType==='time'&&sessionTime>=60)||(sessionType==='goal'&&sessionGoal>=200)){
       if(!loadData('burst_mode',false)){setBurstMode(true);saveData('burst_mode',true);if(burstReps<2){setBurstReps(2);saveData('burst_reps',2)}}
     }
-    setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();setShowRocket(true)}
+    setSecLv(freshLv);    setQ(buildQ(user,gameSec,freshLv));setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();goalReachedRef.current=false;setShowRocket(true);
+    track('session_started',{mode:sessionMode,module:gameSec,level:String(freshLv),session_type:sessionType})}
   // Start random session directly from active modules (DILO sandwich: 8 DILO, 8 others, repeat)
   function startRandomFromActiveModules(){
     if(!user)return;
@@ -497,9 +527,10 @@ export default function App(){
     randomModOrder.current=modOrder;setRandomStats(initStats);setRandomActive(true);setRandomModIdx(0);setRandomExInRound(0);setRandomTimer(sessionType==='goal'?0:effMins*60);setRandomTime(effMins);setRandomPerRound(perMod);
     diloExCount.current=0;sessionUsedPhrases.current=new Set();recentExKeysRef.current=user?.id?getRecentExerciseKeys(user.id):new Set();
     setGoalCount(0);setSessionStartTime(Date.now());
-    setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();
+    setQ(superQ);setIdx(0);setSt({ok:0,sk:0});setConsec(0);trophy8shown.current=false;setTrophy8(false);timeUpShown.current=false;setCorrectStreak(0);setMaxStreak(0);setSessionStars(0);milestoneShown.current=new Set();goalReachedRef.current=false;
     const firstMod=allMods[0];setSec(firstMod.k);if(firstMod.lvKey)curPresLvKeyRef.current=firstMod.lvKey;
     setOv(null);setShowRocket(true);
+    track('session_started',{mode:'random',module:'mixed',modules_count:allMods.length,session_type:sessionType})
   }
   function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
     // M7b: Start random timer if random session (only for time mode)
@@ -527,6 +558,7 @@ export default function App(){
     }
   }
   // M7b: Auto-finish random session when timer hits 0 (only for time mode)
+  const goalReachedRef=useRef(false);
   const randomTimeUpRef=useRef(false);
   useEffect(()=>{if(!randomActive||scr!=='game'||!ss||sessionType==='goal')return;
     if(randomTimer<=0&&!randomTimeUpRef.current){randomTimeUpRef.current=true;
@@ -544,8 +576,9 @@ export default function App(){
     const mins=Math.floor(elapsedSt/60);
     if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;setShowTokiBreak(true)}
   },[elapsedSt,scr,ss,sessionType]);
-  function saveP(u){const uLv=u.maxLv||u.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>u.srs&&u.srs[e.id]&&u.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)u.maxLv=uLv+1;u.level=u.maxLv||u.level||1;setProfs(p=>p.map(x=>x.id===u.id?u:x))}
+  function saveP(u){const c={...u};const uLv=c.maxLv||c.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>c.srs&&c.srs[e.id]&&c.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)c.maxLv=uLv+1;c.level=c.maxLv||c.level||1;setProfs(p=>p.map(x=>x.id===c.id?c:x))}
   function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;const repsCount=(burstMode&&burstReps>1)?burstReps:1;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+repsCount;setUser(up);saveP(up);const nextSt={ok:st.ok+repsCount,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
+    track('exercise_completed',{module:sec,stars:s,attempts,burst:burstMode,reps:repsCount})
     // Mark exercise in 3-day history
     const exKey=(e.ph||e.text||e.word||e.letter||'').toString().toLowerCase().trim();if(user?.id&&exKey)markExerciseUsed(user.id,exKey);
     // Daily global counter
@@ -571,12 +604,13 @@ export default function App(){
       setGoalCount(prev=>{
         const next=prev+repsCount;
         if(next>0&&next%50===0&&next<sessionGoal){setShowTokiBreak(true)}
-        if(next>=sessionGoal){setTimeout(()=>fin(nextSt),300);return next}
+        if(next>=sessionGoal){goalReachedRef.current=true;setTimeout(()=>fin(nextSt),300);return next}
         return next
       })
     }
-    setTimeout(()=>{if(sessionType==='goal'&&goalCount+1>=sessionGoal)return;if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}},200)}
+    setTimeout(()=>{if(sessionType==='goal'&&goalReachedRef.current)return;if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}},200)}
   function onSk(){stopVoice();pokeActive();setMascotMood('sad');setTimeout(()=>setMascotMood('idle'),1500);const e=queue[idx];const up=srsUp(e.id,false,user);setUser(up);saveP(up);setCorrectStreak(0);const nf=consec+1;setConsec(nf);const nextSt={ok:st.ok,sk:st.sk+1};setSt(nextSt);
+    track('exercise_skipped',{module:sec,consecutive_skips:nf});
     // Mark exercise in 3-day history
     const exKey=(e.ph||e.text||e.word||e.letter||'').toString().toLowerCase().trim();if(user?.id&&exKey)markExerciseUsed(user.id,exKey);
     // M7a: Dynamic DILO tracking on fail (silent level-down)
@@ -591,15 +625,19 @@ export default function App(){
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
   function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+    track('session_completed',{ok:f.ok,sk:f.sk,min:amin,module:sec,mode:sessionMode,stars:sessionStars,session_type:sessionType,random:randomActive});
+    if(fbUser)saveDailyMetrics(fbUser.uid,{ok:f.ok,sk:f.sk,min:amin,module:sec,stars:sessionStars,streak:getStreak()});
     setOv('done')
     // Check if dog can be fed (session >= 15 min)
     if(user&&amin>=15&&canFeedDog(user.id)){stopVoice();setShowFeedDog(true)}}
-  function tryExit(){stopVoice();setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
+  function tryExit(){stopVoice();setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+    track('session_abandoned',{ok:st.ok,sk:st.sk,min:Math.floor(activeMs.current/60000),module:sec,mode:sessionMode});
+    if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
   return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style>{showWelcome&&<TokiWelcome onDone={()=>setShowWelcome(false)}/>}{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))} shape={photoCrop.shape||'circle'}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?.photo||avStr(user?.av)} planetEmoji={dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={aprende:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
-    {showRec&&user&&<VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/>}
+    {showRec&&user&&<Suspense fallback={<LazyFallback/>}><VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/></Suspense>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
     {ov==='admin'&&fbUser&&fbUser.email===ADMIN_EMAIL&&<div className="ov" onClick={()=>setOv(null)}><div className="ovp" onClick={e=>e.stopPropagation()} style={{maxWidth:500,maxHeight:'80vh',overflowY:'auto'}}>
@@ -622,9 +660,9 @@ export default function App(){
     {dynamicLvUp&&<div className="ov" style={{zIndex:155,pointerEvents:'none'}}><div className="ovp ab" style={{maxWidth:280,background:'transparent',boxShadow:'none'}}><h2 style={{fontSize:36,color:GOLD,fontWeight:800,textShadow:'0 2px 12px rgba(255,215,0,.6)',animation:'bounceIn .4s'}}>🎯 ¡Nivel {dynamicLvUp}!</h2></div></div>}
     {/* Dog evolution announcement */}
     {dogEvolMsg&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:200,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setDogEvolMsg(null)}><div style={{textAlign:'center',padding:30}}><div style={{fontSize:24,color:GOLD,fontWeight:700,fontFamily:"'Fredoka'"}}>{dogEvolMsg}</div></div></div>}
-    {ov==='done'&&<DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} randomStats={randomActive?randomStats:null} showFeedDog={showFeedDog} onFeedDog={()=>{if(user){feedDog(user.id);setDogFedToday(true);setShowFeedDog(false)}}} onExit={(action)=>{setOv(null);setMascotMood('idle');setShowFeedDog(false);if(action==='repeat'){if(randomActive||sessionMode==='random'){startRandomFromActiveModules()}else{startGame()}}else{setRandomActive(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setScr('goals')}}}/>}
+    {ov==='done'&&<Suspense fallback={<LazyFallback/>}><DoneScreen st={st} elapsed={elapsed} user={user} supPin={supPin} sessionStars={sessionStars} maxStreak={maxStreak} totalLifetimeStars={user?.totalStars3plus||0} randomStats={randomActive?randomStats:null} showFeedDog={showFeedDog} onFeedDog={()=>{if(user){feedDog(user.id);setDogFedToday(true);setShowFeedDog(false)}}} onExit={(action)=>{setOv(null);setMascotMood('idle');setShowFeedDog(false);if(action==='repeat'){setSt({ok:0,sk:0});setSessionStars(0);setGoalCount(0);setCorrectStreak(0);setMaxStreak(0);milestoneShown.current=new Set();setIdx(0);if(randomActive||sessionMode==='random'){startRandomFromActiveModules()}else{startGame()}}else{setRandomActive(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setScr('goals')}}}/></Suspense>}
     {ov==='parentGate'&&user&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>👨‍👩‍👦</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 8px'}}>Panel de Supervisor</p><p style={{fontSize:14,color:DIM,margin:'0 0 14px'}}>Introduce el PIN</p><NumPad value={parentPin} onChange={setParentPin} onSubmit={()=>{if(!supPin||parentPin===supPin){setParentPin('');setSupervisorMode(true);clearTimeout(supervisorTimer.current);supervisorTimer.current=setTimeout(()=>setSupervisorMode(false),600000);setOv('parent')}else{setPe(true);setParentPin('');setTimeout(()=>setPe(false),1500)}}} maxLen={4}/>{pe&&<p style={{fontSize:16,color:RED,fontWeight:600,margin:'8px 0 0'}}>PIN incorrecto</p>}<button className="btn btn-ghost" style={{marginTop:12}} onClick={()=>{setOv(null);setParentPin('')}}>Cancelar</button></div></div>}
-    {ov==='parent'&&user&&<Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups} sessionType={sessionType} setSessionType={setSessionType} sessionTime={sessionTime} setSessionTime={setSessionTime} sessionGoal={sessionGoal} setSessionGoal={setSessionGoal} burstMode={burstMode} setBurstMode={setBurstMode} burstReps={burstReps} setBurstReps={setBurstRepsVal}/>}
+    {ov==='parent'&&user&&<Suspense fallback={<LazyFallback/>}><Settings user={user} setUser={setUser} saveP={saveP} supPin={supPin} setSupPin={setSupPin} pp={pp} setPp={setPp} sm={sm} setSm={setSm} sec={sec} setSec={setSec} secLv={secLv} setSecLv={setSecLv} freeChoice={freeChoice} setFreeChoice={setFreeChoice} activeMods={activeMods} setActiveMods={setActiveMods} openSection={openSection} setOpenSection={setOpenSection} ptab={ptab} setPtab={setPtab} theme={theme} setTheme={setTheme} rocketColor={rocketColor} setRocketColor={setRocketColor} exigencia={exigencia} setExigencia={setExigencia} maxDaily={maxDaily} setMaxDaily={setMaxDaily} sessionMode={sessionMode} setSessionMode={setSessionMode} guidedTasks={guidedTasks} setGuidedTasks={setGuidedTasks} escribeCase={escribeCase} setEscribeCase={setEscribeCase} escribeTypes={escribeTypes} setEscribeTypes={setEscribeTypes} escribeGuide={escribeGuide} setEscribeGuide={setEscribeGuide} escribePauta={escribePauta} setEscribePauta={setEscribePauta} personas={personas} savePersonas={savePersonas} setOv={setOv} setOpenGroup={setOpenGroup} setPhotoCrop={setPhotoCrop} setShowRec={setShowRec} delConf={delConf} setDelConf={setDelConf} delPersonaIdx={delPersonaIdx} setDelPersonaIdx={setDelPersonaIdx} presEdit={presEdit} setPresEdit={setPresEdit} presNewMode={presNewMode} setPresNewMode={setPresNewMode} presDelIdx={presDelIdx} setPresDelIdx={setPresDelIdx} shareCode={shareCode} setShareCode={setShareCode} shareMsg={shareMsg} setShareMsg={setShareMsg} fbUser={fbUser} hasConfig={hasConfig} pOpenPlanet={pOpenPlanet} setPOpenPlanet={setPOpenPlanet} setProfs={setProfs} setScr={setScr} helmetMode={helmetMode} setHelmetMode={setHelmetMode} showHelmet={showHelmet} dynGroups={dynGroups} sessionType={sessionType} setSessionType={setSessionType} sessionTime={sessionTime} setSessionTime={setSessionTime} sessionGoal={sessionGoal} setSessionGoal={setSessionGoal} burstMode={burstMode} setBurstMode={setBurstMode} burstReps={burstReps} setBurstReps={setBurstRepsVal} fraccionado={fraccionado} setFraccionado={setFraccionado}/></Suspense>}
 
     {scr==='setup'&&<div className="af" style={{textAlign:'center',padding:'24px 0'}}><div style={{marginBottom:-6}}><TokiLogoPro size={130}/></div><h1 style={{fontSize:44,color:GOLD,margin:'0 0 4px',letterSpacing:-1}}>Toki</h1><p style={{color:DIM,fontSize:16,margin:'0 0 32px',fontStyle:'italic'}}>Aprende a decirlo</p>
       <div className="card" style={{padding:24,textAlign:'left',marginBottom:16}}>
@@ -811,7 +849,7 @@ export default function App(){
           return <button key={p.id}
             onMouseEnter={()=>setHoveredProf(pi)} onMouseLeave={()=>setHoveredProf(null)}
             onTouchStart={()=>setHoveredProf(pi)}
-            onClick={()=>{setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
+            onClick={()=>{stopVoice();setSs(null);setPaused(false);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false);setUser(p);setSm(p.sessionMin||25);setSec(p.sec||'decir');setSecLv(p.secLv||1);setFreeChoice(true);setVoiceProfile(p.age,p.sex);setScr('goals')}} style={{
             background:'none',border:'none',cursor:'pointer',fontFamily:"'Fredoka'",color:TXT,
             display:'flex',flexDirection:'column',alignItems:'center',gap:isCompact?3:6,padding:0,
             transition:'transform .4s cubic-bezier(.34,1.56,.64,1)',position:'relative',
@@ -886,7 +924,7 @@ export default function App(){
                 setProfs(prev=>[...prev,p]);setUser(p);setCreating(false);setFn('');setFa('');setFTel('');setFDir('');setFApellidos('');setFColegio('');setFPhoto(null);setVoiceProfile(Math.max(1,age),fsex);setScr('goals')}}>Crear ✓</button></div></div>}
     </div>}
 
-    {showMiCielo&&<MiCielo user={user} onClose={()=>setShowMiCielo(false)}/>}
+    {showMiCielo&&<Suspense fallback={<LazyFallback/>}><MiCielo user={user} onClose={()=>setShowMiCielo(false)}/></Suspense>}
     {showAstroOverlay&&<AstronautOverlay phase={getDailyPhase(dailyCount)} dailyCount={dailyCount} photo={user?.photo} onClose={()=>setShowAstroOverlay(false)} />}
     {scr==='goals'&&user&&<div className="af"><div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(openGroup){setOpenGroup(null)}else{setScr('login');setUser(null);setOpenGroup(null)}}}>{openGroup?'← Volver':'← Cambiar perfil'}</button><div style={{display:'flex',gap:12}}><button style={{background:'none',border:'none',color:DIM,fontSize:32,width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',borderRadius:14,padding:0,position:'relative'}} onClick={()=>{setParentPinOk(false);setParentPin('');setPp('');setPtab('config');setDelConf(false);setOv(supPin?'parentGate':'parent')}}>⚙️{isCheckpointPending(user)&&<span style={{position:'absolute',top:4,right:4,width:10,height:10,borderRadius:'50%',background:RED,border:'2px solid '+BG}} title="Grabación control pendiente"/>}</button></div></div>
       <div style={{padding:'4px 4px 2px'}}>
@@ -896,7 +934,7 @@ export default function App(){
             {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
           </div>
           <div style={{flexShrink:0,position:'relative'}}>
-            <SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/>
+            <SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/>
           </div>
           <div style={{flexShrink:0}}>
             <AstronautAvatar photo={user.photo} emoji={avStr(user.av)} size={48} helmet={showHelmet}/>
@@ -910,7 +948,7 @@ export default function App(){
           </div>
           <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
             <div style={{display:'flex',alignItems:'center',gap:4,cursor:'pointer'}} onClick={()=>setShowAstroOverlay(true)}>
-              <AstronautDaily phase={getDailyPhase(dailyCount)} size={32} />
+              <AstronautDaily phase={getDailyPhase(dailyCount)} size={44} />
               <span style={{fontSize:13,color:'rgba(255,255,255,.7)',fontWeight:600}}>Hoy: {dailyCount}</span>
             </div>
             <button onClick={()=>setShowMiCielo(true)} style={{background:CARD,border:'2px solid '+BORDER,borderRadius:10,padding:'5px 10px',minHeight:36,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',gap:3}}><span style={{fontSize:15,color:GOLD,fontWeight:700}}>{totalStars} ⭐</span></button>
@@ -930,27 +968,33 @@ export default function App(){
         };
         const openG=openGroup?visibleGroups.find(g=>g.id===openGroup):null;
         const otherGroups=openGroup?visibleGroups.filter(g=>g.id!==openGroup):[];
-        return <div style={{position:'relative',minHeight:320}}>
+        return <div style={{position:'relative',minHeight:isPhone?'calc(100dvh - 180px)':'min(76vh,720px)'}}>
         {/* When NO group is open: orbiting planets around center */}
         {!openGroup&&(()=>{
           const allGroups=dynGroups;
           const n=allGroups.length;
-          const orbitR=160;const scX=1.8;const scY=0.7;const tilt=-8;
-          const planetSize=82;
-          const cW=orbitR*2*scX+planetSize+50;const cH=orbitR*2*scY+planetSize+70;
+          const viewportW=Math.max(320,viewport.w-(isPhone?24:isTabletPortrait?40:isTabletLandscape?64:96));
+          const viewportH=Math.max(420,viewport.h-(isPhone?240:isTabletLandscape?220:260));
+          const planetSize=Math.round(Math.max(isPhone?58:isTabletPortrait?74:isTabletLandscape?88:94,Math.min(isPhone?70:isTabletPortrait?82:isTabletLandscape?98:104,viewportW*(isPhone?0.16:isTabletPortrait?0.1:0.075))));
+          const cW=Math.round(Math.min(isPhone?viewportW:viewportW*0.92,isPhone?viewportW:1220));
+          const cH=Math.round(Math.min(isPhone?Math.max(430,viewportH*0.62):Math.max(500,viewportH*0.72),isTabletLandscape?760:820));
+          const orbitR=Math.max(90,Math.min((cW-planetSize-42)/(isPhone?2.15:isTabletPortrait?2.8:3.4),(cH-planetSize-70)/(isPhone?1.9:1.55)));
+          const scX=isPhone?1.08:isTabletPortrait?1.28:isTabletLandscape?1.55:1.72;
+          const scY=isPhone?0.98:isTabletPortrait?0.88:isTabletLandscape?0.74:0.7;
+          const tilt=isPhone?-2:isTabletPortrait?-5:-8;
           const orbitDuration=60;
-          return <div style={{position:'relative',width:cW,height:cH,margin:'0 auto'}}>
+          return <div style={{position:'relative',width:'100%',maxWidth:cW,height:cH,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'center'}}>
             {/* Center: rocket — functional in random/guiada, decorative in libre */}
             <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:2,
               padding:0,
-              display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",position:'relative',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
               <button onClick={()=>{
                 if(sessionMode==='random'){startRandomFromActiveModules()}
-                else if(sessionMode==='guided'){startRandomFromActiveModules()}
+                else if(sessionMode==='guided'){startGame()}
                 else{/* libre: show hint */setRocketHint(true);setTimeout(()=>setRocketHint(false),2500)}
               }} style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
-                <span style={{fontSize:72,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
+                <span style={{fontSize:isPhone?56:isTabletPortrait?66:isTabletLandscape?78:84,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.5))',animation:'planetFloat 3s ease-in-out infinite',display:'block'}}>🚀</span>
               </button>
               {rocketHint&&<div style={{position:'absolute',bottom:-50,left:'50%',transform:'translateX(-50%)',background:'rgba(26,26,46,.9)',border:'2px solid #F0C850',borderRadius:14,padding:'10px 18px',whiteSpace:'nowrap',fontSize:15,color:'#F0C850',fontWeight:600,fontFamily:"'Fredoka'",boxShadow:'0 4px 16px rgba(0,0,0,.4)',zIndex:10,animation:'fadeIn .3s'}}>🪐 ¡Elige un planeta!</div>}
             </div>
@@ -1102,13 +1146,13 @@ export default function App(){
     </div>}
     {/* TokiBreak overlay */}
     {showTokiBreak&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {/* Companion screen - accessible from goals */}
     {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
-    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={{position:'relative'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:16,padding:'10px 8px',minHeight:44,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={36} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={36}/>}<div style={{display:'flex',alignItems:'center',gap:4}}><AstronautDaily phase={getDailyPhase(dailyCount)} size={28} onClick={()=>setShowAstroOverlay(true)} /><span style={{fontSize:11,color:'rgba(255,255,255,.5)',fontWeight:600}}>{dailyCount}</span></div>{randomActive
+    {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={gameShellStyle}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:isPhone?8:12,marginBottom:isPhone?6:8,flexWrap:'wrap'}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:isPhone?15:16,padding:'10px 8px',minHeight:48,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={isPhone?34:isTabletLandscape?42:36}/>}<div style={{display:'flex',alignItems:'center',gap:4}}><AstronautDaily phase={getDailyPhase(dailyCount)} size={isPhone?32:isTabletLandscape?40:34} onClick={()=>setShowAstroOverlay(true)} /><span style={{fontSize:11,color:'rgba(255,255,255,.5)',fontWeight:600}}>{dailyCount}</span></div>{randomActive
         ?<span style={{fontSize:14,color:randomTimer<=60&&sessionType==='time'?'#FF5722':DIM,fontWeight:700}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(randomTimer/60)}:${String(randomTimer%60).padStart(2,'0')}`}</span>
         :<span style={{fontSize:14,color:DIM,fontWeight:600}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')} / ${(sessionTime||sm)===0?'∞':(sessionTime||sm)+"'"}`}</span>
       }</div></div>
@@ -1125,31 +1169,31 @@ export default function App(){
           }} title={m.name}>{m.emoji}</div>})}
       </div>}
       {correctStreak>=2&&<div style={{position:'absolute',top:randomActive?86:48,right:16,background:'rgba(255,100,0,.9)',borderRadius:20,padding:'4px 12px',fontSize:14,fontWeight:700,color:'#fff',fontFamily:"'Fredoka'",zIndex:10,animation:'bounceIn .3s'}}>{correctStreak>=5?'🔥🔥':correctStreak>=3?'🔥':'⚡'} x{correctStreak}</div>}
-      <div className="pbar" style={{marginBottom:10}}><div className="pfill" style={{width:sessionType==='goal'?Math.min(100,(goalCount/sessionGoal)*100)+'%':randomActive?Math.min(100,(1-randomTimer/(randomTime*60))*100)+'%':(sessionTime||sm)===0?'0%':Math.min(100,(elapsed/60)/(sessionTime||sm)*100)+'%'}}/></div>
+      <div className="pbar" style={{marginBottom:isPhone?8:10}}><div className="pfill" style={{width:sessionType==='goal'?Math.min(100,(goalCount/sessionGoal)*100)+'%':randomActive?Math.min(100,(1-randomTimer/(randomTime*60))*100)+'%':(sessionTime||sm)===0?'0%':Math.min(100,(elapsed/60)/(sessionTime||sm)*100)+'%'}}/></div>
       {/* Session counter - compact 2-line display */}
-      <div style={{display:'flex',justifyContent:'center',gap:14,alignItems:'center',margin:'4px 0',fontSize:15,fontWeight:700,fontFamily:"'Fredoka'"}}>
+      <div style={{display:'flex',justifyContent:'center',gap:isPhone?10:14,alignItems:'center',margin:'4px 0',fontSize:isPhone?14:isTabletLandscape?17:15,fontWeight:700,fontFamily:"'Fredoka'",flexWrap:'wrap'}}>
         <span style={{color:GOLD}}>⭐ {st.ok}{sessionType==='goal'?'/'+sessionGoal:''}</span>
         <span style={{color:'rgba(255,255,255,.3)'}}>│</span>
         <span style={{color:'#E67E22'}}>🔥 {Math.floor(((Date.now()-(ss||Date.now()))/60000))}min</span>
         {sessionType==='goal'&&<><span style={{color:'rgba(255,255,255,.3)'}}>│</span><span style={{color:GREEN}}>{Math.round((st.ok/Math.max(1,sessionGoal))*100)}%</span></>}
       </div>
-      <div style={{marginTop:10}}>
+      <div key={'ex_'+idx+'_'+resumeKey} style={{marginTop:isPhone?6:10,minHeight:'min(58dvh,620px)',display:'flex',flexDirection:'column',justifyContent:'flex-start'}}>
         {cur.ty==='frases'&&<ExFrases ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
         {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
         {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
-        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk} onPause={pauseSession}/>}
+        {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk} fraccionado={fraccionado} onPause={pauseSession}/>}
         {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='math'&&<ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='multi'&&<ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='frac'&&<ExFraction ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
-        {cur.ty==='money'&&<ExMoney ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='clock'&&<ExClock ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='calendar'&&<ExCalendar ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='distribute'&&<ExDistribute ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='writing'&&<ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/>}
-        {cur.ty==='razona'&&<ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='lee'&&<ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='quiensoy'&&<ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/>}
+        {cur.ty==='math'&&<Suspense fallback={<LazyFallback/>}><ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='multi'&&<Suspense fallback={<LazyFallback/>}><ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='frac'&&<Suspense fallback={<LazyFallback/>}><ExFraction ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/></Suspense>}
+        {cur.ty==='money'&&<Suspense fallback={<LazyFallback/>}><ExMoney ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='clock'&&<Suspense fallback={<LazyFallback/>}><ExClock ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='calendar'&&<Suspense fallback={<LazyFallback/>}><ExCalendar ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='distribute'&&<Suspense fallback={<LazyFallback/>}><ExDistribute ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='writing'&&<Suspense fallback={<LazyFallback/>}><ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/></Suspense>}
+        {cur.ty==='razona'&&<Suspense fallback={<LazyFallback/>}><ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='lee'&&<Suspense fallback={<LazyFallback/>}><ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='quiensoy'&&<Suspense fallback={<LazyFallback/>}><ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/></Suspense>}
       </div></div>}
     {/* === PAUSE OVERLAY === */}
     {paused&&ss&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.85)',zIndex:300,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:20}}>

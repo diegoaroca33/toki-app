@@ -8,17 +8,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "vitest run && vite build"
   },
   "dependencies": {
-    "canvas": "^3.2.1",
     "firebase": "^12.11.0",
     "pdf-lib": "^1.17.1",
-    "pdf-poppler": "^0.2.3",
-    "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "sharp": "^0.34.5"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

@@ -1,31 +1,31 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { sayFB } from '../voice.js';
 
-// Bark sound using Web Audio API — LOUD
+// Bark sound using Web Audio API — noise-based for natural dog bark
 function playBark(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const osc=ctx.createOscillator();const gain=ctx.createGain();
-    osc.connect(gain);gain.connect(ctx.destination);
-    osc.type='sawtooth';osc.frequency.setValueAtTime(350,ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(180,ctx.currentTime+0.08);
-    osc.frequency.exponentialRampToValueAtTime(400,ctx.currentTime+0.12);
-    osc.frequency.exponentialRampToValueAtTime(150,ctx.currentTime+0.2);
-    gain.gain.setValueAtTime(0.7,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.25);
-    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.25);
-    // Second bark
-    setTimeout(()=>{
-      const osc2=ctx.createOscillator();const g2=ctx.createGain();
-      osc2.connect(g2);g2.connect(ctx.destination);
-      osc2.type='sawtooth';osc2.frequency.setValueAtTime(380,ctx.currentTime);
-      osc2.frequency.exponentialRampToValueAtTime(200,ctx.currentTime+0.1);
-      osc2.frequency.exponentialRampToValueAtTime(120,ctx.currentTime+0.2);
-      g2.gain.setValueAtTime(0.6,ctx.currentTime);
-      g2.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.22);
-      osc2.start(ctx.currentTime);osc2.stop(ctx.currentTime+0.22);
-    },280);
-    setTimeout(()=>ctx.close(),600);
+    function singleBark(delay,freq,dur,vol){
+      const t=ctx.currentTime+delay;
+      // Noise burst through bandpass = natural bark texture
+      const bufLen=Math.ceil(ctx.sampleRate*dur);
+      const buf=ctx.createBuffer(1,bufLen,ctx.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<bufLen;i++)d[i]=Math.random()*2-1;
+      const src=ctx.createBufferSource();src.buffer=buf;
+      const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.setValueAtTime(freq,t);
+      bp.frequency.exponentialRampToValueAtTime(freq*0.4,t+dur);bp.Q.value=3;
+      // Add tonal component for pitch
+      const osc=ctx.createOscillator();osc.type='triangle';
+      osc.frequency.setValueAtTime(freq*0.8,t);osc.frequency.exponentialRampToValueAtTime(freq*0.3,t+dur);
+      const oscG=ctx.createGain();oscG.gain.setValueAtTime(vol*0.3,t);oscG.gain.exponentialRampToValueAtTime(0.01,t+dur);
+      const nG=ctx.createGain();nG.gain.setValueAtTime(vol,t);nG.gain.exponentialRampToValueAtTime(0.01,t+dur*0.8);
+      src.connect(bp);bp.connect(nG);nG.connect(ctx.destination);
+      osc.connect(oscG);oscG.connect(ctx.destination);
+      src.start(t);src.stop(t+dur);osc.start(t);osc.stop(t+dur);
+    }
+    singleBark(0,500,0.18,0.5);
+    singleBark(0.25,450,0.15,0.45);
+    setTimeout(()=>ctx.close(),700);
   }catch(e){}
 }
 
@@ -48,38 +48,50 @@ function playWhine(){
 // Voice command definitions: {patterns, action, response}
 const VOICE_COMMANDS=[
   // Movimiento
-  {id:'dance',patterns:['baila','dance','bailar','mueve'],response:'¡Mira cómo bailo!'},
-  {id:'jump',patterns:['salta','saltar','salto','jump','arriba'],response:'¡Yuhuuu!'},
-  {id:'spin',patterns:['gira','girar','vuelta','spin','la cola','persigue'],response:'¡Voy a pillarla!'},
-  {id:'roll',patterns:['rueda','rolar','roll','voltea','voltereta'],response:'¡Allá voy!'},
+  {id:'dance',patterns:['baila','dance','bailar','mueve','bailando','baile'],response:'¡Mira cómo bailo!'},
+  {id:'jump',patterns:['salta','saltar','salto','jump','arriba','bota','brinco','brinca'],response:'¡Yuhuuu!'},
+  {id:'spin',patterns:['gira','girar','vuelta','spin','la cola','persigue','dar vuelta','da vuelta','giro'],response:'¡Voy a pillarla!'},
+  {id:'roll',patterns:['rueda','rolar','roll','voltea','voltereta','ruedas'],response:'¡Allá voy!'},
   {id:'floss',patterns:['floss','fortnite','baile viral','moda'],response:'¡Floss!'},
   // Trucos
-  {id:'sit',patterns:['sienta','sentado','sit','quieto','para'],response:'¡Sentado!'},
-  {id:'paw',patterns:['pata','dame la pata','choca','shake','mano'],response:'¡Choca esos cinco!'},
-  {id:'down',patterns:['tumba','suelo','echate','tumbado','down','abajo','al suelo'],response:'¡Estoy cómodo!'},
-  {id:'sleep',patterns:['duerme','dormir','nana','sleep','a dormir','descansa'],response:'Zzzzz...'},
+  {id:'sit',patterns:['sienta','sentado','sit','quieto','para','sientate','siéntate'],response:'¡Sentado!'},
+  {id:'paw',patterns:['pata','dame la pata','choca','shake','mano','dame','patita','cinco'],response:'¡Choca esos cinco!'},
+  {id:'down',patterns:['tumba','suelo','echate','tumbado','down','abajo','al suelo','tumbate','túmbate'],response:'¡Estoy cómodo!'},
+  {id:'sleep',patterns:['duerme','dormir','nana','sleep','a dormir','descansa','duermete','duérmete'],response:'Zzzzz...'},
   // Sonidos
-  {id:'bark',patterns:['ladra','ladrar','guau','woof','habla','di algo'],response:null},
+  {id:'bark',patterns:['ladra','ladrar','guau','woof','habla','di algo','ladrido','bark','voz'],response:null},
   // Afecto
-  {id:'love',patterns:['te quiero','love','cariño','guapo','bonito','bueno','precioso','lindo'],response:'¡Y yo a ti!'},
-  {id:'hello',patterns:['hola','hello','hey','toki','buenos','saludar'],response:'¡Guau guau!'},
-  {id:'howru',patterns:['cómo estás','como estas','qué tal','que tal','estás bien'],response:'¡Estoy genial!'},
+  {id:'love',patterns:['te quiero','love','cariño','guapo','bonito','bueno','precioso','lindo','mono','te amo'],response:'¡Y yo a ti!'},
+  {id:'hello',patterns:['hola','hello','hey','toki','buenos','saludar','buenas'],response:'¡Guau guau!'},
+  {id:'howru',patterns:['cómo estás','como estas','qué tal','que tal','estás bien','estas bien'],response:'¡Estoy genial!'},
   // Comida
-  {id:'hungry',patterns:['hambre','comer','come','comida','galleta','premio','treat'],response:'¡Ñam ñam!'},
+  {id:'hungry',patterns:['hambre','comer','come','comida','galleta','premio','treat','ñam','croqueta'],response:'¡Ñam ñam!'},
   // Diversión
-  {id:'brave',patterns:['valiente','fuerte','héroe','heroe','super','campeón','campeon'],response:'¡Soy Super Toki!'},
-  {id:'happy',patterns:['contento','feliz','alegre','happy','bien'],response:'¡Estoy feliz!'},
-  {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge'],response:'¡La tengo!'},
-  {id:'kiss',patterns:['beso','besito','kiss','muack','mua'],response:'¡Muuuack!'},
+  {id:'brave',patterns:['valiente','fuerte','héroe','heroe','super','campeón','campeon','crack','fuerza'],response:'¡Soy Super Toki!'},
+  {id:'happy',patterns:['contento','feliz','alegre','happy','bien','genial'],response:'¡Estoy feliz!'},
+  {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge','atrapa'],response:'¡La tengo!'},
+  {id:'kiss',patterns:['beso','besito','kiss','muack','mua','muac'],response:'¡Muuuack!'},
 ];
 
+function simpleLev(a,b){if(a===b)return 0;const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
 function matchCommand(text){
   if(!text)return null;
   const t=text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  // Exact substring match first
   for(const cmd of VOICE_COMMANDS){
     for(const p of cmd.patterns){
       const pn=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       if(t.includes(pn))return cmd;
+    }
+  }
+  // Fuzzy match: allow 1-2 char distance for kid pronunciation
+  const words=t.split(/\s+/);
+  for(const cmd of VOICE_COMMANDS){
+    for(const p of cmd.patterns){
+      const pn=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(pn.includes(' '))continue; // skip multi-word patterns for fuzzy
+      const maxDist=pn.length<=3?1:2;
+      if(words.some(w=>simpleLev(w,pn)<=maxDist))return cmd;
     }
   }
   return null;
@@ -606,7 +618,7 @@ export default function TokiPlayground({
           @keyframes tpBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.012,.992)}}
           @keyframes tpBowlSettle{0%{transform:scale(.92)}100%{transform:scale(1)}}
           .tp-jump{animation:tpJump .5s ease-in-out 3;transform-origin:150px 240px}
-          .tp-spin{animation:tpSpin .7s ease-in-out 3;transform-origin:150px 180px}
+          .tp-spin{animation:tpSpin 1.2s ease-in-out 2;transform-origin:150px 180px}
           .tp-floss{animation:tpFloss .35s ease-in-out 7;transform-origin:150px 200px}
           .tp-sit{animation:tpSit .6s ease-out forwards;transform-origin:150px 240px}
           .tp-paw{animation:tpPaw .8s ease-in-out 2;transform-origin:150px 200px}
@@ -614,7 +626,7 @@ export default function TokiPlayground({
           .tp-bubble{animation:tpBubble 2s ease-out forwards}
           .tp-mic-pulse{animation:tpMicPulse 1.5s ease-in-out infinite}
           @keyframes tpJump{0%,100%{transform:translateY(0) scaleY(1)}15%{transform:translateY(4px) scaleY(.92)}50%{transform:translateY(-40px) scaleY(1.05)}85%{transform:translateY(2px) scaleY(.96)}}
-          @keyframes tpSpin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(.9)}100%{transform:rotate(360deg) scale(1)}}
+          @keyframes tpSpin{0%{transform:translateX(0) rotate(0) scale(1)}25%{transform:translateX(40px) rotate(90deg) scale(.95)}50%{transform:translateX(0) rotate(180deg) scale(.9)}75%{transform:translateX(-40px) rotate(270deg) scale(.95)}100%{transform:translateX(0) rotate(360deg) scale(1)}}
           @keyframes tpFloss{0%,100%{transform:translateX(0) skewX(0)}25%{transform:translateX(-8px) skewX(-6deg)}75%{transform:translateX(8px) skewX(6deg)}}
           @keyframes tpSit{0%{transform:translateY(0) scaleY(1)}100%{transform:translateY(12px) scaleY(.85)}}
           @keyframes tpPaw{0%,100%{transform:rotate(0)}30%{transform:rotate(-8deg) translateY(-3px)}60%{transform:rotate(4deg)}}

@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import { BG, GOLD, GREEN, RED, DIM, CARD, BORDER } from '../../constants.js'
 import { getStreak } from '../../utils.js'
-import { MonthlyReport } from '../MonthlyReport.jsx'
+const MonthlyReport=React.lazy(()=>import('../MonthlyReport.jsx').then(m=>({default:m.default||m.MonthlyReport})))
 import ControlCheckpoint, { getCheckpoints, getSessionsSinceLastCheckpoint, isCheckpointPending, canDoCheckpointNow, daysUntilNextCheckpoint } from '../ControlCheckpoint.jsx'
 import { Card, StatBox, Badge } from '../ui/index.js'
 
@@ -48,7 +48,7 @@ export default function SettingsProgressTab(props) {
 
       <Card>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 10 }}>Informe mensual</div>
-        <MonthlyReport user={user} />
+        <Suspense fallback={<div style={{minHeight:180,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontFamily:"'Fredoka'"}}><span style={{fontSize:42}}>🐾</span></div>}><MonthlyReport user={user} /></Suspense>
       </Card>
 
       {/* ── Controles de progresión ── */}

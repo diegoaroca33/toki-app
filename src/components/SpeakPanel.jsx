@@ -2,21 +2,29 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, TXT, BUILD_OK, GOOD_MSG } from '../constants.js'
 import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay } from '../voice.js'
 import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
+import { track } from '../firebase.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
 import { Stars } from './CelebrationOverlay.jsx'
+
+// Responsive dock helpers
+const getViewportFlags=()=>{const w=typeof window!=='undefined'?window.innerWidth:1280;return{isPhone:w<=480,isTabletPortrait:w>=768&&w<=1023,isTabletLandscape:w>=1024&&w<=1365,isDesktop:w>=1366}};
+const getDockStyles=()=>{const{isPhone,isTabletPortrait,isTabletLandscape,isDesktop}=getViewportFlags();const micSize=isPhone?84:isTabletPortrait?92:isTabletLandscape?104:isDesktop?112:96;const sideBtn=isPhone?62:isTabletPortrait?68:isTabletLandscape?76:isDesktop?80:72;const gap=isPhone?14:isTabletLandscape?24:18;const dockBottom='calc(var(--safe-bottom) + 12px)';return{micSize,sideBtn,gap,dockBottom}};
+const getDockContainerStyle=(gap,dockBottom)=>({position:'fixed',left:'50%',bottom:dockBottom,transform:'translateX(-50%)',display:'flex',alignItems:'center',justifyContent:'center',gap,zIndex:10,padding:'10px 14px',borderRadius:999,background:'rgba(10,22,40,.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,.06)'});
 
 // ============================================================
 // M9: FraccionadoMode — Backward chaining for long phrases
 // ============================================================
-function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
+function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause,burstReps:bReps=1}){
   const words=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean),[text]);
-  const totalSteps=words.length;
-  const[step,setStep]=useState(0); // 0-based, step 0 = last word only
+  const totalSteps=Math.max(1,words.length); // steps per round (1 word, 2 words, ..., full phrase); min 1 to avoid division by zero
+  const totalRounds=Math.max(1,bReps); // how many times to repeat the full chain
+  const[round,setRound]=useState(0); // current round (0-based)
+  const[step,setStep]=useState(0); // current step within round (0-based)
   const[mic,setMic]=useState(false);
   const[done,setDone]=useState(false);
   const alive=useRef(true);
   const ttsPlaying=useRef(false);
-  const dur=useMemo(()=>Math.max(4,Math.ceil(words.length*0.7)+3),[words]);
+  const dur=useMemo(()=>Math.max(3,Math.ceil(words.length*0.6)+2),[words]);
 
   // Build partial phrase for current step (backward chaining)
   const partial=useMemo(()=>{
@@ -26,13 +34,35 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
 
   const isFinalStep=step===totalSteps-1;
 
-  // For intermediate steps: just listen and advance
+  const isLastRound=round===totalRounds-1;
+
+  // Advance: next step, or next round, or done
+  function advance(){
+    if(!alive.current)return;
+    if(isFinalStep){
+      // End of this round
+      const nextRound=round+1;
+      if(nextRound<totalRounds){
+        // Restart chain for next round
+        setRound(nextRound);
+        setStep(0);
+      }else{
+        // All rounds done — go to final evaluation
+        setDone(true);
+      }
+    }else if(step===totalSteps-2&&isLastRound){
+      // Last round, about to reach final step → skip to evaluated SpeakPanel
+      setDone(true);
+    }else{
+      setStep(s=>s+1);
+    }
+  }
+
   function handleSRIntermediate(said){
     if(!alive.current)return;
     if(ttsPlaying.current){sr.go();return}
     setMic(false);sr.stop();stopVoice();
-    // No scoring — just advance to next step
-    setTimeout(()=>{if(alive.current)setStep(s=>s+1)},300);
+    setTimeout(()=>advance(),300);
   }
 
   const sr=useSR(handleSRIntermediate);
@@ -41,10 +71,12 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
     if(!alive.current)return;
     stopVoice();sr.stop();setMic(false);
     ttsPlaying.current=true;
-    await say(partial,0.55);
+    // First round slower, subsequent rounds slightly faster
+    const rate=round===0?0.55:0.65;
+    await say(partial,rate);
     ttsPlaying.current=false;
     if(!alive.current)return;
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,150));
     if(!alive.current)return;
     sr.go();setMic(true);
   }
@@ -52,27 +84,27 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
   function onTimeUpIntermediate(){
     if(!alive.current)return;
     setMic(false);sr.stop();stopVoice();
-    // Just advance on timeout for intermediate steps
-    setTimeout(()=>{if(alive.current)setStep(s=>s+1)},300);
+    setTimeout(()=>advance(),300);
   }
 
-  // Launch play for each intermediate step
+  // Launch play for each step
   useEffect(()=>{
     if(done)return;
-    if(isFinalStep){setDone(true);return}
     alive.current=true;
-    const t=setTimeout(()=>{if(alive.current)doPlayStep()},1000);
-    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()}
-  },[step]);
+    const delay=step===0&&round>0?600:1000; // shorter gap between rounds
+    const t=setTimeout(()=>{if(alive.current)doPlayStep()},delay);
+    const pauseKill=()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()};
+    window.addEventListener('toki-pause',pauseKill);window.addEventListener('toki-sos',pauseKill);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-pause',pauseKill);window.removeEventListener('toki-sos',pauseKill)}
+  },[step,round]);
 
   // Cleanup on unmount
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;stopVoice()}},[]);
 
-  // Highlight: new word(s) in gold, rest in white
+  // Highlight: new word in gold, rest in white
   const renderPartial=()=>{
     const startIdx=totalSteps-1-step;
     const parWords=words.slice(startIdx);
-    // The "new" word is always the first one in the partial (the newly added word)
     return <p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.4}}>
       {parWords.map((w,i)=><span key={i}>
         {i>0?' ':''}
@@ -81,8 +113,10 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
     </p>;
   };
 
-  // Progress dots
-  const renderDots=()=><div style={{display:'flex',gap:8,justifyContent:'center',marginBottom:14}}>
+  // Progress: dots for steps + round indicator
+  const renderDots=()=><div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginBottom:14}}>
+    {totalRounds>1&&<p style={{fontSize:13,color:'rgba(255,255,255,.35)',margin:0}}>Ronda {round+1} de {totalRounds}</p>}
+    <div style={{display:'flex',gap:8,justifyContent:'center'}}>
     {Array.from({length:totalSteps}).map((_,i)=><div key={i} style={{
       width:14,height:14,borderRadius:'50%',
       background:i<step?GREEN:i===step?GOLD:'rgba(255,255,255,.15)',
@@ -90,9 +124,10 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
       transition:'all .3s',
       boxShadow:i===step?`0 0 8px ${GOLD}66`:'none'
     }}/>)}
+    </div>
   </div>;
 
-  // If final step reached, render the normal SpeakPanel for full evaluation
+  // All rounds done — render normal SpeakPanel for final scored evaluation
   if(done){
     return <div>
       {renderDots()}
@@ -100,48 +135,35 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause}){
     </div>;
   }
 
-  return <div style={{textAlign:'center'}}>
-    {renderDots()}
-    {/* Partial phrase bubble */}
-    <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)'}}>
-      {renderPartial()}
-    </div>
-    {/* Step indicator */}
-    <p style={{fontSize:14,color:'rgba(255,255,255,.4)',margin:'0 0 12px'}}>Paso {step+1} de {totalSteps}</p>
-    {/* Mic + controls */}
-    <div style={{minHeight:70,marginBottom:12}}/>
-    <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
-      <button onClick={()=>{if(onPause)onPause()}} style={{
-        width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',
-        boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Pausar">
-        <span style={{fontSize:30}}>⏸️</span>
-      </button>
-      <div style={{width:80,height:80,flexShrink:0}}>
-        <RecBtn dur={dur} onEnd={onTimeUpIntermediate} on={mic}/>
+  const{micSize,sideBtn,gap,dockBottom}=getDockStyles();
+  return <div style={{textAlign:'center',display:'grid',gridTemplateRows:'auto minmax(120px,1fr) auto auto',gap:10,minHeight:'min(62dvh,640px)',paddingBottom:'calc(var(--dock-h) + var(--safe-bottom) + 12px)'}}>
+    <div>{renderDots()}</div>
+    <div style={{display:'flex',flexDirection:'column',justifyContent:'flex-start',alignItems:'center',gap:10}}>
+      <div style={{padding:'clamp(16px,3vw,24px)',marginBottom:4,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)',width:'min(100%,840px)'}}>
+        {renderPartial()}
       </div>
-      <button className="skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}} style={{
-        width:56,height:56,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:`radial-gradient(circle at 30% 25%,#999,#666 60%,#444)`,
-        boxShadow:'0 2px 8px rgba(0,0,0,.3)',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Saltar">
-        <span style={{fontSize:24}}>⏭️</span>
+      <p style={{fontSize:14,color:'rgba(255,255,255,.4)',margin:0}}>Paso {step+1} de {totalSteps}</p>
+    </div>
+    <div style={{minHeight:'var(--game-feedback-h)',display:'flex',alignItems:'center',justifyContent:'center'}}/>
+    <div style={getDockContainerStyle(gap,dockBottom)}>
+      <button onClick={()=>{if(onPause)onPause()}} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Pausar">
+        <span style={{fontSize:Math.round(sideBtn*0.45)}}>⏸️</span>
+      </button>
+      <div style={{width:micSize,height:micSize,flexShrink:0}}>
+        <RecBtn dur={dur} onEnd={onTimeUpIntermediate} on={mic} size={micSize}/>
+      </div>
+      <button className="skip-btn" onClick={()=>{stopVoice();sr.stop();alive.current=false;onSkip()}} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#999,#666 60%,#444)',boxShadow:'0 2px 8px rgba(0,0,0,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Saltar">
+        <span style={{fontSize:Math.round(sideBtn*0.36)}}>⏭️</span>
       </button>
     </div>
-    <div style={{height:100}}/>
   </div>;
 }
 
 export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,_skipFraccionado,onPause}){
   // M9: If fraccionado active and phrase has 4+ words, use FraccionadoMode
   const wordCount=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length,[text]);
-  if(fraccionado&&wordCount>=4&&!_skipFraccionado&&!burstMode){
-    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause}/>;
+  if(fraccionado&&wordCount>=2&&!_skipFraccionado){
+    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause} burstReps={burstMode?Math.min(burstReps||2,3):1}/>;
   }
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
@@ -149,7 +171,8 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   const[burstRepsDone,setBurstRepsDone]=useState(0);const[burstStars,setBurstStars]=useState(0);
   const repsTarget=burstReps||1;
   const alive=useRef(true);const gen=useRef(0);const ttsPlaying=useRef(false);const{idleMsg,poke}=useIdle(name,!sf&&!mic);
-  const dur=useMemo(()=>Math.max(6,Math.ceil(text.split(/\s+/).length*0.9)+4),[text]);
+  const baseDur=useMemo(()=>Math.max(3,Math.ceil(text.split(/\s+/).length*0.7)+2),[text]);
+  const dur=useMemo(()=>burstMode&&burstRepsDone>0?Math.max(2,Math.round(baseDur*0.65)):baseDur,[baseDur,burstMode,burstRepsDone]);
   const syllables=useMemo(()=>splitSyllables(text),[text]);
   const flatSyls=useMemo(()=>syllables.flat(),[syllables]);
   const key=text+'|'+exId;
@@ -173,6 +196,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     const pm='¡Seguimos!';sMsg(pm);sSf('pass');sayFB(pm);setTimeout(()=>{if(alive.current)onOk(1,3)},800)}
   function handleSR(said){if(!alive.current)return;if(ttsPlaying.current){sr.go();return}poke();setMic(false);sr.stop();stopVoice();
     const rawB=Math.max(...said.split('|').map(a=>score(a,text)));const b=adjScore(rawB);
+    if(rawB===0)track('sr_no_match',{phrase_words:text.split(/\s+/).length,text_length:text.length});
     setStars(b);starBeep(b);
     // M1: Update repetition counter
     if(uid&&exId)updateRepCount(uid,exId,b);
@@ -214,7 +238,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     }}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setBurstFade(false);
-    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){}
+    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){track('mic_failed',{reason:e?.name||'unknown'})}
     // Play TTS first, mark as playing so SR ignores Toki's voice
     ttsPlaying.current=true;
     const rate=getAdaptiveRate();
@@ -228,8 +252,8 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
     const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:1200);
     const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()};
-    window.addEventListener('toki-sos',sosKill);
-    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-sos',sosKill)}},[key]);
+    window.addEventListener('toki-sos',sosKill);window.addEventListener('toki-pause',sosKill);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-sos',sosKill);window.removeEventListener('toki-pause',sosKill)}},[key]);
   function onTimeUp(){if(!alive.current)return;setMic(false);sr.stop();stopVoice();
     const na=att+1;sAtt(na);
     // M1: Count timeout as 0-star attempt
@@ -250,48 +274,38 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
   const fc=stars>=4?GOLD:stars>=3?GREEN:stars>=2?BLUE:'#E67E22';
   let sylFlatIdx=0;
-  return <div style={{textAlign:'center'}} onClick={poke}>
-    {/* Phrase bubble */}
-    <div style={{padding:'18px 24px',marginBottom:16,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)'}}>
-      {!sylShow&&<p style={{fontSize:26,fontWeight:700,margin:0,lineHeight:1.3,color:TXT}}>"{text}"</p>}
-      {sylShow&&<div style={{display:'flex',flexWrap:'wrap',gap:'clamp(4px, 1.5vw, 10px)',justifyContent:'center',alignItems:'center'}}>{syllables.map((wordSyls,wi)=>{
-        const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:16}}/>);
-        wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=sylIdx===-1||fi<sylIdx;
-          items.push(<span key={wi+'_'+si} style={{fontSize:'clamp(20px, 4.5vw, 28px)',fontWeight:700,padding:'8px 12px',borderRadius:14,transition:'all .3s',background:active?GOLD+'44':past&&sylIdx!==-1?GREEN+'22':'rgba(255,255,255,.08)',color:active?GOLD:past&&sylIdx!==-1?GREEN:TXT,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
-        return items})}</div>}
-    </div>
-    {/* Stars */}
-    <div style={{minHeight:burstMode?40:70,marginBottom:burstMode?4:12}}>
-    {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?28:40}/>{burstMode&&repsTarget>1&&<p style={{fontSize:12,color:'rgba(255,255,255,.5)',margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
-    {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:22,fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
-    {!burstMode&&idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
-    </div>
-    {/* Fixed bottom bar: ⏸️ left — 🎤 mic center — ⏭️ right */}
-    <div style={{position:'fixed',bottom:180,left:0,right:0,display:'flex',alignItems:'center',justifyContent:'center',gap:20,zIndex:10}}>
-      <button onClick={()=>{if(onPause)onPause()}} style={{
-        width:66,height:66,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',
-        boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Pausar">
-        <span style={{fontSize:30}}>⏸️</span>
-      </button>
-      <div style={{width:80,height:80,flexShrink:0}}>
-        <RecBtn dur={dur} onEnd={onTimeUp} on={mic}/>
+  const{micSize,sideBtn,gap,dockBottom}=getDockStyles();
+  const{isTabletLandscape:_tl,isDesktop:_dt}=getViewportFlags();
+  return <div style={{textAlign:'center',display:'grid',gridTemplateRows:'minmax(110px,auto) minmax(72px,var(--game-feedback-h)) auto',gap:12,minHeight:'min(62dvh,700px)',paddingBottom:'calc(var(--dock-h) + var(--safe-bottom) + 12px)'}} onClick={poke}>
+    {/* Phrase / prompt zone */}
+    <div style={{display:'flex',flexDirection:'column',justifyContent:'flex-start',alignItems:'center',gap:12}}>
+      <div style={{padding:'clamp(16px,3vw,24px)',marginBottom:4,borderRadius:24,background:'rgba(255,255,255,.06)',border:'2px solid rgba(255,255,255,.1)',width:'min(100%,920px)'}}>
+        {!sylShow&&<p style={{fontSize:'clamp(24px, 5vw, 38px)',fontWeight:700,margin:0,lineHeight:1.28,color:TXT}}>"{text}"</p>}
+        {sylShow&&<div style={{display:'flex',flexWrap:'wrap',gap:'clamp(4px, 1.5vw, 10px)',justifyContent:'center',alignItems:'center'}}>{syllables.map((wordSyls,wi)=>{
+          const items=[];if(wi>0)items.push(<span key={'sp'+wi} style={{width:16}}/>);
+          wordSyls.forEach((s,si)=>{const fi=sylFlatIdx++;const active=fi===sylIdx;const past=sylIdx===-1||fi<sylIdx;
+            items.push(<span key={wi+'_'+si} style={{fontSize:'clamp(20px, 4.5vw, 30px)',fontWeight:700,padding:'8px 12px',borderRadius:14,transition:'all .3s',background:active?GOLD+'44':past&&sylIdx!==-1?GREEN+'22':'rgba(255,255,255,.08)',color:active?GOLD:past&&sylIdx!==-1?GREEN:TXT,transform:active?'scale(1.15)':'scale(1)',textTransform:'uppercase'}}>{s}</span>)});
+          return items})}</div>}
       </div>
-      <button className="skip-btn" onClick={skip} style={{
-        width:56,height:56,borderRadius:'50%',border:'none',cursor:'pointer',
-        background:`radial-gradient(circle at 30% 25%,#999,#666 60%,#444)`,
-        boxShadow:'0 2px 8px rgba(0,0,0,.3)',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0,
-      }} title="Saltar">
-        <span style={{fontSize:24}}>⏭️</span>
+    </div>
+    {/* Feedback zone */}
+    <div style={{minHeight:'var(--game-feedback-h)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column'}}>
+    {stars>0&&<div className="ab" style={burstMode?{transition:'opacity .3s',opacity:burstFade?0:1}:{}}><Stars n={stars} sz={burstMode?30:(_tl||_dt)?48:40}/>{burstMode&&repsTarget>1&&<p style={{fontSize:12,color:'rgba(255,255,255,.5)',margin:'2px 0 0'}}>{burstRepsDone}/{repsTarget}</p>}</div>}
+    {!burstMode&&msg&&<div className={sf==='perfect'||sf==='ok'?'ab':'af'} style={{borderRadius:18,padding:14,marginTop:8}}><p style={{fontSize:'clamp(20px, 4vw, 26px)',fontWeight:700,margin:0,color:fc}}>{msg}</p></div>}
+    {!burstMode&&idleMsg&&!sf&&!msg&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14}}><p style={{fontSize:'clamp(16px, 3.5vw, 20px)',fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    </div>
+    {/* Fixed bottom dock */}
+    <div style={getDockContainerStyle(gap,dockBottom)}>
+      <button onClick={()=>{if(onPause)onPause()}} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Pausar">
+        <span style={{fontSize:Math.round(sideBtn*0.45)}}>⏸️</span>
+      </button>
+      <div style={{width:micSize,height:micSize,flexShrink:0}}>
+        <RecBtn dur={dur} onEnd={onTimeUp} on={mic} size={micSize}/>
+      </div>
+      <button className="skip-btn" onClick={skip} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#999,#666 60%,#444)',boxShadow:'0 2px 8px rgba(0,0,0,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Saltar">
+        <span style={{fontSize:Math.round(sideBtn*0.36)}}>⏭️</span>
       </button>
     </div>
-    {/* Spacer so content doesn't go behind fixed bar */}
-    <div style={{height:100}}/>
   </div>}
 
 export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,onPause}){
@@ -302,7 +316,7 @@ export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,bur
     return wc>=4;
   },[ex.ph,fraccionado]);
   return <div style={{textAlign:'center',padding:12}}>
-  <div style={{fontSize:100,marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
+  <div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
   <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} fraccionado={autoFrac} onPause={onPause}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){

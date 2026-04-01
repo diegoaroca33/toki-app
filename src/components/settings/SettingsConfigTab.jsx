@@ -7,7 +7,7 @@ import { Button, Card, Badge } from '../ui/index.js'
 import SessionModeControl from './SessionModeControl.jsx'
 import { NumPad } from '../UIKit.jsx'
 import { saveData, getModuleLvOrDef, setModuleLv, getDynamicDilo, setDynamicDilo, loadData } from '../../utils.js'
-import { fbGetMyPublicVoiceCount, fbDeleteMyPublicVoices } from '../../firebase.js'
+import { fbGetMyPublicVoiceCount, fbDeleteMyPublicVoices, track } from '../../firebase.js'
 import { getVoicePriority, setVoicePriority as setVPrio, getForcedVoice, setForcedVoice as setFV } from '../../voice.js'
 
 function PublicVoiceManager({ fbUser }) {
@@ -388,6 +388,7 @@ export default function SettingsConfigTab(props) {
     user,
     burstMode, setBurstMode,
     burstReps, setBurstReps,
+    fraccionado, setFraccionado,
   } = props
 
   const currentMode = useMemo(() => {
@@ -526,24 +527,30 @@ export default function SettingsConfigTab(props) {
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Metodo pedagogico</div>
         <div style={{ display: 'grid', gap: 12 }}>
           <ToggleRow label="DILO dinamico" help="Ajusta nivel automaticamente segun aciertos" value={!!dynDilo} onChange={handleDynDilo} />
-          <ToggleRow label="Modo rafaga" help="Repite cada ejercicio varias veces seguidas" value={!!burstMode} onChange={(v) => { setBurstMode && setBurstMode(v); saveData('burst_mode', v) }} />
+          <ToggleRow label="Modo rafaga" help="Repite cada ejercicio varias veces seguidas" value={!!burstMode} onChange={(v) => { setBurstMode && setBurstMode(v); saveData('burst_mode', v); track('settings_changed',{field:'burst_mode',value:v}) }} />
           {burstMode && (
             <div style={{ marginLeft: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontWeight: 700, fontSize: 14 }}>Repeticiones:</span>
                 <span style={{ color: GOLD, fontWeight: 800, fontSize: 18, minWidth: 24, textAlign: 'center' }}>{burstReps}</span>
               </div>
-              <input type="range" min={2} max={10} step={1} value={burstReps}
+              <input type="range" min={2} max={5} step={1} value={Math.min(burstReps,5)}
                 onChange={e => { const v = parseInt(e.target.value); setBurstReps && setBurstReps(v) }}
                 style={{ width: '100%', accentColor: GOLD, height: 6, cursor: 'pointer', marginTop: 4 }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: DIM, marginTop: 2 }}>
-                <span>2</span><span>5</span><span>10</span>
+                <span>2</span><span>3</span><span>5</span>
               </div>
             </div>
           )}
           <div style={{ color: DIM, fontSize: 12, marginTop: -4 }}>
             Rafaga se activa automaticamente en sesiones intensas (1h+ o 200+ ejercicios)
           </div>
+          <ToggleRow label="Encadenamiento inverso" help="Frases de 4+ palabras: empieza por la ultima y va sumando" value={!!fraccionado} onChange={(v) => { setFraccionado && setFraccionado(v); saveData('fraccionado', v); track('settings_changed',{field:'fraccionado',value:v}) }} />
+          {fraccionado && (
+            <div style={{ color: DIM, fontSize: 12, marginTop: -4 }}>
+              Ej: "quiero agua" → agua → quiero agua{burstMode ? '. Con rafaga: la cadena completa se repite ' + Math.min(burstReps||2,3) + ' veces (max 3).' : ''}
+            </div>
+          )}
           <div style={{ marginTop: 14, borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>🎯 Tolerancia del micrófono:</span>

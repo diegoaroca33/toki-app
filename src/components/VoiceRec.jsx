@@ -5,7 +5,7 @@ import { score, saveData, loadData, textKey } from '../utils.js'
 import { SR_AVAILABLE } from '../voice.js'
 import { fbUploadPublicVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration } from '../firebase.js'
 
-export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useState('menu');const[recLv,setRecLv]=useState(1);const[selV,setSelV]=useState(null);const[vn,setVn]=useState('');const[va,setVa]=useState('👨');const[vs,setVs]=useState('m');const[vAge,setVAge]=useState('');const[ri,setRi]=useState(0);const[rec,setRec]=useState(false);const[mr,setMr]=useState(null);const[saved,setSaved]=useState(0);const[pp,setPp]=useState(-1);const[showRules,setShowRules]=useState(false);const[recMsg,setRecMsg]=useState('');const[recBlobs,setRecBlobs]=useState({});const[showDone,setShowDone]=useState(false);const[cedeVoz,setCedeVoz]=useState(false);const[uploading,setUploading]=useState(false);const ch=useRef([]);const vid=useRef(null);const voices=user.voices||[];
+export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useState('menu');const[recLv,setRecLv]=useState(1);const[selV,setSelV]=useState(null);const[vn,setVn]=useState('');const[va,setVa]=useState('👨');const[vs,setVs]=useState('m');const[vAge,setVAge]=useState('');const[ri,setRi]=useState(0);const[rec,setRec]=useState(false);const[mr,setMr]=useState(null);const[saved,setSaved]=useState(0);const[pp,setPp]=useState(-1);const[showRules,setShowRules]=useState(false);const[recMsg,setRecMsg]=useState('');const[recBlobs,setRecBlobs]=useState({});const[showDone,setShowDone]=useState(false);const[cedeVoz,setCedeVoz]=useState(false);const[uploading,setUploading]=useState(false);const ch=useRef([]);const vid=useRef(null);const riAtStart=useRef(0);const voices=user.voices||[];
   function init(ex){if(ex){setSelV(ex);vid.current=ex.id;setVn(ex.name);setVa(ex.avatar);setVs(ex.sex||'m');setVAge(String(ex.age||''));setSaved(ex.saved||0)}else{const existing=voices.find(v=>v.name.toLowerCase()===vn.trim().toLowerCase());if(existing){setSelV(existing);vid.current=existing.id;setVa(existing.avatar);setVs(existing.sex||'m');setVAge(String(existing.age||''));setSaved(existing.saved||0)}else{setSelV(null);vid.current=Date.now()+'';setSaved(0)}}}
   const cheerItems=useMemo(()=>[...PERFECT_T.map(t=>t.replace(/\{N\}/g,user.name||'Nico')),...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK],[user.name]);
   const phraseItems=useMemo(()=>EX.filter(e=>e.lv===recLv).map(e=>({text:e.ph||e.fu||e.su,id:e.id})).filter(x=>x.text),[recLv]);
@@ -16,9 +16,9 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
   const items=mode==='cheers'?cheerItems2:mode==='counting'?countItems:mode==='personal'?personalItems:mode==='quiensoy'?quiensoyItems:phraseItems;const cur=items[ri]?.text||'';
   function startMode(m){setShowRules(true);setMode(m)}
   function confirmRules(){setShowRules(false)}
-  async function startR(){setRecMsg('');try{const s=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true}});const m=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm',audioBitsPerSecond:32000});ch.current=[];m.ondataavailable=e=>{if(e.data.size>0)ch.current.push(e.data)};m.onstop=async()=>{const rawBlob=new Blob(ch.current,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop());
+  async function startR(){setRecMsg('');if(mr){try{mr.stop()}catch(e){}}setMr(null);riAtStart.current=ri;const curAtStart=items[ri]?.text||'';try{const s=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true}});const m=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm',audioBitsPerSecond:32000});ch.current=[];m.ondataavailable=e=>{if(e.data.size>0)ch.current.push(e.data)};m.onstop=async()=>{const rawBlob=new Blob(ch.current,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop());
       // Validate duration
-      const val=await validateVoiceDuration(rawBlob,cur);
+      const val=await validateVoiceDuration(rawBlob,curAtStart);
       if(!val.ok){setRecMsg(val.reason==='too_short'?'Grabaci\u00f3n muy corta, repite':'Grabaci\u00f3n muy larga (m\u00e1x 10s), repite');return}
       // Trim silence
       let blob=rawBlob;try{blob=await trimSilence(rawBlob)}catch(e){}
@@ -28,18 +28,18 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
           // Play back the blob for SR to hear
           // Note: SR above listens to mic, we validate by replaying
           // Actually, we validate the recorded audio by matching what was said
-          if(srCheck){const bestScore=Math.max(...srCheck.split('|').map(a=>score(a,cur)));if(bestScore<3){setRecMsg('Repite esta frase, no se ha grabado bien');return}}
+          if(srCheck){const bestScore=Math.max(...srCheck.split('|').map(a=>score(a,curAtStart)));if(bestScore<3){setRecMsg('Repite esta frase, no se ha grabado bien');return}}
         }catch(e){}
       }
       // Save to localStorage
-      const reader2=new FileReader();reader2.onload=()=>{const item=items[ri];const k=mode==='cheers'?item.id:textKey(item.text);const sk='voice_'+user.id+'_'+vid.current;const d=loadData(sk,{});d[k]=reader2.result;d.name=vn;d.avatar=va;d.sex=vs;saveData(sk,d);setSaved(sv=>sv+1);
+      const reader2=new FileReader();const capturedRi=riAtStart.current;reader2.onload=()=>{const item=items[capturedRi];if(!item)return;const k=mode==='cheers'?item.id:textKey(item.text);const sk='voice_'+user.id+'_'+vid.current;const d=loadData(sk,{});d[k]=reader2.result;d.name=vn;d.avatar=va;d.sex=vs;saveData(sk,d);setSaved(sv=>sv+1);
         // Store blob for potential Firebase upload
         setRecBlobs(prev=>({...prev,[k]:blob}));
         // Upload to Firebase for logged-in users
         if(fbUser){fbUploadUserVoice(fbUser.uid,k,blob).catch(()=>{})}
         setRecMsg('');
         // Auto-advance to next phrase
-        if(ri<items.length-1){setTimeout(()=>setRi(ri+1),400)}
+        if(capturedRi<items.length-1){setTimeout(()=>setRi(capturedRi+1),400)}
         else{setShowDone(true)}
       };reader2.readAsDataURL(blob)
     };m.start();setMr(m);setRec(true)}catch(e){alert('No se puede acceder al micr\u00f3fono')}}
@@ -109,6 +109,6 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
       {recMsg&&<div className="as" style={{background:RED+'22',borderRadius:12,padding:14,marginBottom:12,textAlign:'center'}}><p style={{fontSize:16,color:GOLD,fontWeight:600,margin:0}}>{recMsg}</p></div>}
       <div style={{display:'flex',justifyContent:'center',gap:10,marginBottom:16}}><button className="btn btn-ghost btn-half" style={{width:'auto',padding:'8px 14px'}} onClick={()=>preview(ri)} disabled={pp>=0}>🔊 Escuchar</button><span style={{color:GREEN,fontWeight:700,alignSelf:'center'}}>{saved}</span></div>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>{!rec?<button className="btn btn-g" onClick={startR} style={{fontSize:22}}>🔴 Grabar</button>:<button className="btn btn-o" onClick={stopR} style={{fontSize:22,animation:'pulse 1s infinite'}}>⬛ Parar</button>}
-        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost btn-half" disabled={ri===0} onClick={()=>{setRi(ri-1);setRec(false);setRecMsg('')}}>←</button><button className="btn btn-b btn-half" disabled={ri>=items.length-1} onClick={()=>{setRi(ri+1);setRec(false);setRecMsg('')}}>→</button></div>
+        <div style={{display:'flex',gap:10}}><button className="btn btn-ghost btn-half" disabled={ri===0||rec} onClick={()=>{setRi(ri-1);setRec(false);setRecMsg('')}}>←</button><button className="btn btn-b btn-half" disabled={ri>=items.length-1||rec} onClick={()=>{setRi(ri+1);setRec(false);setRecMsg('')}}>→</button></div>
         <div style={{display:'flex',gap:10,marginTop:10}}><button className="btn btn-ghost btn-half" onClick={()=>{setMode('menu');setRecMsg('')}}>← Men\u00fa</button><button className="btn btn-gold btn-half" onClick={fin}>✅ Guardar</button></div></div></div>}
   </div></div>}

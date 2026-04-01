@@ -8,7 +8,7 @@ export function lev(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let
 export function digToText(s){const m={'0':'cero','1':'uno','2':'dos','3':'tres','4':'cuatro','5':'cinco','6':'seis','7':'siete','8':'ocho','9':'nueve','10':'diez','11':'once','12':'doce','13':'trece','14':'catorce','15':'quince','16':'dieciséis','17':'diecisiete','18':'dieciocho','19':'diecinueve','20':'veinte','30':'treinta','40':'cuarenta','50':'cincuenta','60':'sesenta','70':'setenta','80':'ochenta','90':'noventa','100':'cien'};return s.replace(/\d+/g,n=>{if(m[n])return m[n];const num=parseInt(n);if(num>20&&num<30)return'veinti'+['uno','dós','trés','cuatro','cinco','séis','siete','ocho','nueve'][num-21];const d=['','','','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];const t=Math.floor(num/10),r=num%10;if(r===0)return d[t]||n;const u=['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve'];return(d[t]||'')+' y '+(u[r]||'')})}
 export function score(said,tgt){if(!said||!said.trim())return 0;const c=s=>digToText(s.toLowerCase()).replace(/[^a-záéíóúñü\s]/g,'').trim();const a=c(said),b=c(tgt);if(!a)return 0;if(a===b)return 4;const sw=a.split(/\s+/),tw=b.split(/\s+/);let exact=0,close=0;tw.forEach(t=>{if(sw.some(s=>s===t))exact++;else{const maxLev=t.length<=3?0:t.length<=5?1:2;if(sw.some(s=>lev(s,t)<=maxLev))close++}});const exactR=exact/Math.max(tw.length,1);if(exactR>=1)return 4;if(exactR>=.8)return 3;const totalR=(exact+close*.7)/Math.max(tw.length,1);if(totalR>=.5||exact>=1)return 2;return 1}
 export function getExigencia(){try{const v=localStorage.getItem('toki_exigencia');return v?parseInt(v):65}catch(e){return 65}}
-export function adjScore(raw){const ex=getExigencia();if(ex>=100)return raw;return Math.min(4,Math.max(0,Math.round(raw*(ex/100))))}
+export function adjScore(raw){return raw}// exigencia now only affects passThreshold in SpeakPanel, not the raw score
 export function cap(s){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
 export function saveData(key,val){try{const seen=new WeakSet();localStorage.setItem('toki_'+key,JSON.stringify(val,(k,v)=>{if(v instanceof HTMLElement||v instanceof Node)return undefined;if(typeof v==='object'&&v!==null&&v.$$typeof)return undefined;if(typeof v==='object'&&v!==null){if(seen.has(v))return undefined;seen.add(v)}return v}))}catch(e){console.warn('[Toki] saveData error:',key,e)}}
 export function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
@@ -31,7 +31,7 @@ export function srsUp(id,ok,u,stars,attempts){const d={...u};if(!d.srs)d.srs={};
   return d}
 export function needsRev(id,u){const s=u.srs&&u.srs[id];if(!s)return true;const g=[0,30000,120000,86400000,259200000,604800000];return(Date.now()-s.t)>=g[Math.min(s.lv,5)]}
 export const avStr=v=>typeof v==='string'?v:'🧑‍🚀';
-export const tdy=()=>new Date().toLocaleDateString('es-ES');
+export const tdy=()=>{const d=new Date();return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear()};
 export const rnd=a=>a[Math.floor(Math.random()*a.length)];
 let _lastMsg='';
 export function pickMsg(positive,name,section){const pool=[];if(positive){if(Math.random()<0.2&&name){const t=rnd(PERFECT_T).replace(/\{N\}/g,name);if(t!==_lastMsg){_lastMsg=t;return t}}pool.push(...SHORT_OK);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}else{pool.push(...SHORT_FAIL);if(MODULE_MSG[section])pool.push(...MODULE_MSG[section])}const filtered=pool.filter(m=>m!==_lastMsg);const msg=rnd(filtered.length?filtered:pool);_lastMsg=msg;return msg}
@@ -322,4 +322,20 @@ export function getGroupsForUser(user,GROUPS){
     }
     return {...g,modules:mods};
   });
+}
+
+// Weekly progress index — compares this week vs last week
+export function getWeeklyProgress(hist){
+  if(!hist||!hist.length)return{thisWeek:{ok:0,sk:0,min:0,sessions:0,pct:0},lastWeek:{ok:0,sk:0,min:0,sessions:0,pct:0},improvement:0};
+  const now=new Date();const dayMs=86400000;
+  const weekStart=new Date(now);weekStart.setDate(now.getDate()-now.getDay());weekStart.setHours(0,0,0,0);
+  const lastWeekStart=new Date(weekStart.getTime()-7*dayMs);
+  function parseDate(dt){if(!dt)return null;const p=dt.split('/');if(p.length===3)return new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));return new Date(dt)}
+  function sumWeek(start,end){const entries=hist.filter(h=>{const d=parseDate(h.dt);return d&&d>=start&&d<end});
+    const ok=entries.reduce((s,h)=>s+(h.ok||0),0);const sk=entries.reduce((s,h)=>s+(h.sk||0),0);const min=entries.reduce((s,h)=>s+(h.min||0),0);
+    const total=ok+sk;const pct=total>0?Math.round(ok/total*100):0;return{ok,sk,min,sessions:entries.length,pct}}
+  const thisWeek=sumWeek(weekStart,now);
+  const lastWeek=sumWeek(lastWeekStart,weekStart);
+  const improvement=thisWeek.pct-lastWeek.pct;
+  return{thisWeek,lastWeek,improvement}
 }

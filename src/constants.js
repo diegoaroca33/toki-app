@@ -3,13 +3,14 @@
 // ============================================================
 
 export const BG='#0B1D3A',BG2='#122548',BG3='#1A3060',GOLD='#F0C850',GREEN='#2ECC71',RED='#E74C3C',BLUE='#3498DB',PURPLE='#9B59B6',TXT='#ECF0F1',DIM='#A0AEC0',CARD='#152D55',BORDER='#1E3A6A';
-export const VER='v25.12';
+export const VER='v25.13';
 export const ADMIN_EMAIL='diego@toki-app.es';
 export const SUPPORT_EMAIL='diegoarocavillalba@hotmail.com';
 
 export const CSS=`
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min-height:100dvh;transition:background 2s}
+body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min-height:100dvh;transition:background 2s;overflow-x:hidden}
+:root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--dock-h:104px;--game-topbar-h:112px;--game-feedback-h:84px;--root-pad-x:clamp(12px,3vw,28px);--root-pad-y:clamp(10px,2.4vw,22px);--planet-size:82px;--tap-target:48px}
 body.sky-morning{background:linear-gradient(180deg,#1a3a6a 0%,#2e6bb5 40%,#5ba3d9 100%)}
 body.sky-afternoon{background:linear-gradient(180deg,#1a2744 0%,#c0392b 30%,#e67e22 60%,#f39c12 100%)}
 body.sky-night{background:${BG}}
@@ -18,7 +19,7 @@ body.sky-night::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;p
 button{font-family:'Fredoka',sans-serif;touch-action:manipulation;cursor:pointer}
 input{font-family:'Fredoka',sans-serif}
 input::placeholder{color:${DIM}}
-#root{max-width:1100px;margin:0 auto;padding:16px 20px;position:relative;z-index:1}
+#root{width:min(100%,1440px);max-width:none;margin:0 auto;padding:calc(var(--root-pad-y) + var(--safe-top)) calc(var(--root-pad-x) + var(--safe-right)) calc(var(--root-pad-y) + var(--safe-bottom)) calc(var(--root-pad-x) + var(--safe-left));position:relative;z-index:1}
 .btn{display:block;width:100%;border:3px solid;border-radius:14px;padding:22px 28px;font-weight:600;font-size:22px;transition:transform .1s;color:#fff;text-align:center;min-height:48px}
 .btn:active{transform:scale(.93)!important}
 .btn:disabled{opacity:.35;cursor:not-allowed}
@@ -78,24 +79,31 @@ body.theme-sober::before{display:none!important}
 body.theme-sober .sky-morning,body.theme-sober .sky-afternoon,body.theme-sober .sky-night{background:none!important}
 body.theme-sober .sober-hide{display:none!important}
 @media (max-width:480px){
-  #root{padding:8px 10px;max-width:100%}
-  .btn{padding:14px 16px;font-size:18px;border-radius:12px;min-height:44px}
+  :root{--dock-h:96px;--game-topbar-h:104px;--game-feedback-h:76px;--planet-size:64px;--root-pad-x:12px;--root-pad-y:10px}
+  #root{width:100%}
+  .btn{padding:14px 16px;font-size:18px;border-radius:12px;min-height:48px}
   .btn-word{padding:10px 14px;font-size:17px}
-  .btn-half{font-size:16px;padding:12px 0}
+  .btn-half{font-size:16px;padding:12px 0;min-height:48px}
   .card{padding:14px;border-radius:14px}
   .inp{padding:12px;font-size:17px}
   .ovp{padding:20px 16px;border-radius:16px;max-width:340px}
   .ws{min-width:44px;height:44px;font-size:17px;padding:0 10px}
 }
+@media (min-width:768px) and (max-width:1023px){
+  :root{--dock-h:112px;--game-topbar-h:118px;--game-feedback-h:90px;--planet-size:80px;--tap-target:56px;--root-pad-x:20px;--root-pad-y:14px}
+}
+@media (min-width:1024px) and (max-width:1365px){
+  :root{--dock-h:124px;--game-topbar-h:124px;--game-feedback-h:94px;--planet-size:92px;--tap-target:60px;--root-pad-x:24px;--root-pad-y:16px}
+}
+@media (min-width:1366px){
+  :root{--dock-h:128px;--game-topbar-h:128px;--game-feedback-h:96px;--planet-size:96px;--tap-target:62px;--root-pad-x:28px;--root-pad-y:18px}
+}
 @media (max-width:360px){
-  #root{padding:6px 8px}
-  .btn{padding:12px 12px;font-size:16px;border-width:2px;border-radius:10px}
+  :root{--dock-h:90px;--game-topbar-h:98px;--planet-size:58px;--root-pad-x:10px;--root-pad-y:8px}
+  #root{width:100%}
+  .btn{padding:12px 12px;font-size:16px;border-width:2px;border-radius:10px;min-height:44px}
   .card{padding:10px;border-radius:12px}
   .ovp{padding:16px 12px;max-width:300px}
-}
-@media (min-width:768px) and (orientation:landscape){
-  #root{max-width:1100px;padding:12px 24px}
-  .btn{font-size:22px;padding:20px 24px}
 }
 @media (hover:none){
   *{-webkit-user-select:none;user-select:none}

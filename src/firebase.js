@@ -6,6 +6,7 @@ import { initializeApp } from 'firebase/app'
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, deleteDoc, query, where, orderBy } from 'firebase/firestore'
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject, listAll } from 'firebase/storage'
+import { getAnalytics, logEvent, isSupported } from 'firebase/analytics'
 
 const firebaseConfig = {
   apiKey: "AIzaSyCyhnUMPzjImUa34rFKagE-eg6BGVfXty4",
@@ -22,6 +23,63 @@ export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 export const hasConfig = true
+
+// Analytics — initialized async (not all browsers support it)
+let analytics = null
+isSupported().then(ok => { if(ok) analytics = getAnalytics(app) }).catch(() => {})
+
+/**
+ * Central tracking function. Sends event to Firebase Analytics.
+ * Safe to call even if analytics is not available (guest mode, unsupported browser).
+ * @param {string} event - Event name (snake_case, max 40 chars)
+ * @param {Object} params - Event parameters (values must be string/number/boolean)
+ */
+export function track(event, params = {}) {
+  try {
+    if(analytics) logEvent(analytics, event, { ...params, app_version: 'v25.13' })
+  } catch(e) { /* silent — analytics should never break the app */ }
+}
+
+/**
+ * Save daily metrics summary to Firestore.
+ * Merges with existing data for the same day (multiple sessions).
+ */
+export async function saveDailyMetrics(uid, metrics) {
+  if(!hasConfig || !db || !uid) return
+  try {
+    const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const docRef = doc(db, 'daily_metrics', uid + '_' + today)
+    const existing = await getDoc(docRef)
+    if(existing.exists()) {
+      const prev = existing.data()
+      await setDoc(docRef, {
+        uid,
+        date: today,
+        sessions: (prev.sessions || 0) + 1,
+        ok: (prev.ok || 0) + (metrics.ok || 0),
+        sk: (prev.sk || 0) + (metrics.sk || 0),
+        totalMin: (prev.totalMin || 0) + (metrics.min || 0),
+        stars: (prev.stars || 0) + (metrics.stars || 0),
+        topModule: metrics.module || prev.topModule || '',
+        streak: metrics.streak || prev.streak || 0,
+        updatedAt: new Date().toISOString()
+      })
+    } else {
+      await setDoc(docRef, {
+        uid,
+        date: today,
+        sessions: 1,
+        ok: metrics.ok || 0,
+        sk: metrics.sk || 0,
+        totalMin: metrics.min || 0,
+        stars: metrics.stars || 0,
+        topModule: metrics.module || '',
+        streak: metrics.streak || 0,
+        updatedAt: new Date().toISOString()
+      })
+    }
+  } catch(e) { console.warn('[Toki] saveDailyMetrics error:', e) }
+}
 
 // ---- Auth helpers ----
 export async function fbSignIn(email, password) {
