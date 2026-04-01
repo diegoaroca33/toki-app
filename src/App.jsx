@@ -7,7 +7,7 @@ import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
 import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase } from './utils.js'
-import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
+import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, startTTSKeepAlive, stopTTSKeepAlive, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
 import { RocketTransition } from './components/RocketTransition.jsx'
@@ -532,7 +532,7 @@ export default function App(){
     setOv(null);setShowRocket(true);
     track('session_started',{mode:'random',module:'mixed',modules_count:allMods.length,session_type:sessionType})
   }
-  function onRocketDone(){warmUpTTS();setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
+  function onRocketDone(){warmUpTTS();startTTSKeepAlive();setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
     // M7b: Start random timer if random session (only for time mode)
     if(randomActive&&sessionType==='time'){
       if(randomTimerRef.current)clearInterval(randomTimerRef.current);
@@ -624,13 +624,13 @@ export default function App(){
     if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
-  function fin(s){const f=s||st;if(f.ok+f.sk===0)return;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+  function fin(s){const f=s||st;if(f.ok+f.sk===0)return;stopTTSKeepAlive();const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
     track('session_completed',{ok:f.ok,sk:f.sk,min:amin,module:sec,mode:sessionMode,stars:sessionStars,session_type:sessionType,random:randomActive});
     if(fbUser)saveDailyMetrics(fbUser.uid,{ok:f.ok,sk:f.sk,min:amin,module:sec,stars:sessionStars,streak:getStreak()});
     setOv('done')
     // Check if dog can be fed (session >= 15 min)
     if(user&&amin>=15&&canFeedDog(user.id)){stopVoice();setShowFeedDog(true)}}
-  function tryExit(){stopVoice();setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+  function tryExit(){stopVoice();stopTTSKeepAlive();setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
     track('session_abandoned',{ok:st.ok,sk:st.sk,min:Math.floor(activeMs.current/60000),module:sec,mode:sessionMode});
     if(freeChoice){setScr('goals')}else{setOv('pin');setPi('')}}
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
