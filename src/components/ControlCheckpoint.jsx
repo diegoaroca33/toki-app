@@ -158,12 +158,23 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
     if (saidN === tgtN) return 4
     const saidW = saidN.split(/\s+/)
     const tgtW = tgtN.split(/\s+/)
-    let match = 0
-    tgtW.forEach(w => { if (saidW.includes(w)) match++ })
-    const pct = match / Math.max(1, tgtW.length)
-    if (pct >= 0.8) return 3
-    if (pct >= 0.5) return 2
-    if (match >= 1) return 1
+    // Exact word matches
+    let exact = 0
+    tgtW.forEach(w => { if (saidW.includes(w)) exact++ })
+    // Approximate matches (Levenshtein ≤ 2 for words > 3 chars)
+    let approx = 0
+    const lev = (a,b) => {const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
+    tgtW.forEach(w => {
+      if (saidW.includes(w)) return // already counted as exact
+      const maxDist = w.length <= 3 ? 1 : 2
+      if (saidW.some(s => lev(s, w) <= maxDist)) approx++
+    })
+    const total = exact + approx * 0.7
+    const pct = total / Math.max(1, tgtW.length)
+    if (pct >= 0.9) return 4
+    if (pct >= 0.6) return 3
+    if (pct >= 0.3 || exact >= 1) return 2
+    if (saidN.length > 0) return 1 // child spoke something
     return 0
   }
 

@@ -570,6 +570,16 @@ export default function App(){
   const timeUpShown=useRef(false);
   useEffect(()=>{if(scr!=='game'||!ss)return;const ch=setInterval(()=>{if(timeUp()&&!timeUpShown.current){timeUpShown.current=true;setTrophy8(true);victoryJingle();sayFB('¡Lo has hecho genial! ¿Quieres seguir?')}},2000);return()=>clearInterval(ch)},[scr,ss,elapsedSt]);
   useEffect(()=>{if(scr==='game'&&ss&&elapsedSt>=480&&!trophy8shown.current){trophy8shown.current=true;setTrophy8(true);victoryJingle()}},[elapsedSt,scr,ss]);
+  // Auto-save partial session every 2 min (prevents data loss if app closes)
+  useEffect(()=>{if(scr!=='game'||!ss)return;const autoSave=setInterval(()=>{
+    if(st.ok+st.sk>0){const amin=Math.floor(activeMs.current/60000);const partial={ok:st.ok,sk:st.sk,dt:tdy(),min:amin,partial:true};saveData('partial_session',{userId:user?.id,data:partial,ts:Date.now()})}
+  },120000);return()=>clearInterval(autoSave)},[scr,ss,st]);
+  // Recover partial session on mount
+  useEffect(()=>{try{const ps=loadData('partial_session',null);if(ps&&ps.userId&&ps.data&&ps.data.ok+ps.data.sk>0){
+    const profs2=loadData('profiles',[]);const u=profs2.find(p=>p.id===ps.userId);
+    if(u){const already=(u.hist||[]).some(h=>h.dt===ps.data.dt&&h.ok===ps.data.ok&&h.min===ps.data.min);
+    if(!already){u.hist=[...(u.hist||[]),{ok:ps.data.ok,sk:ps.data.sk,dt:ps.data.dt,min:ps.data.min}];saveData('profiles',profs2.map(p=>p.id===u.id?u:p))}}
+    saveData('partial_session',null)}}catch(e){}},[]);
   // TokiBreak every 15 min for time mode
   const lastBreakMin=useRef(0);
   useEffect(()=>{if(scr!=='game'||!ss||sessionType!=='time')return;
@@ -624,7 +634,7 @@ export default function App(){
     if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
-  function fin(s){const f=s||st;if(f.ok+f.sk===0)return;stopTTSKeepAlive();const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+  function fin(s){const f=s||st;if(f.ok+f.sk===0)return;stopTTSKeepAlive();saveData('partial_session',null);const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
     track('session_completed',{ok:f.ok,sk:f.sk,min:amin,module:sec,mode:sessionMode,stars:sessionStars,session_type:sessionType,random:randomActive});
     if(fbUser)saveDailyMetrics(fbUser.uid,{ok:f.ok,sk:f.sk,min:amin,module:sec,stars:sessionStars,streak:getStreak()});
     setOv('done')
