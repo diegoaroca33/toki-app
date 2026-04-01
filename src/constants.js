@@ -129,8 +129,8 @@ export const PERFECT_T=['¡Muy bien {N}!','¡Eres un crack {N}!','¡Genial {N}, 
 export const GOOD_MSG=['¡Bien!','¡Genial!','¡Muy bien!','¡Fenomenal!','¡Estupendo!','¡Olé!'];
 export const RETRY_MSG=['Otra vez','Venga, otra','Una más','Casi casi'];
 export const FAIL_MSG=['Poco a poco','No pasa nada','Seguimos','Ánimo'];
-export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Fenómeno!','¡Adelante!','¡Arriba!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!'];
-export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Adelante!','¡Arriba!','¡Vamos!'];
+export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Fenómeno!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!','¡Genial!','¡Muy bien!'];
+export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Vamos!','¡Tú puedes!'];
 export const MODULE_MSG={decir:['¡Dilo!','¡Dilo tú!','¡Dilo otra vez!','¡Venga, dilo!'],frase:['¡Dilo!','¡Dilo tú!','¡Venga, dilo!'],math:['¡Cuenta!','¡Cuenta conmigo!','¡Cuenta otra vez!'],multi:['¡Cuenta!','¡Cuenta conmigo!'],frac:['¡Cuenta!','¡Cuenta otra vez!'],contar:['¡Cuenta!','¡Cuenta conmigo!'],writing:['¡Escríbelo!','¡Escribe otra vez!'],calendar:['¡Piensa!','¡Tú puedes!','¡Razona!'],distribute:['¡Piensa!','¡Tú puedes!'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','¡Tú puedes!'],quiensoy:['¡Dilo!','¡Dilo tú!'],razona:['¡Piensa!','¡Tú puedes!','¡Razona!','¡Piensa bien!'],lee:['¡Léelo!','¡Lee otra vez!','¡Tú sabes leer!','¡Venga, lee!']};
 export const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK,...SHORT_OK];
 

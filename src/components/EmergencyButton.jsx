@@ -19,10 +19,10 @@ export function EmergencyButton({user,personas}){
   const telPadre=padre?.phone||user?.telefono||'';
   const telMadre=madre?.phone||user?.telefono||'';
   const nombre=user?.name||'';const apellidos=user?.apellidos||'';
-  const direccion=user?.direccion||'';
+  const direccion=user?.direccion||'';const ciudad=user?.ciudad||'';
   const lines=[];
   lines.push('ME LLAMO '+nombre.toUpperCase()+(apellidos?' '+apellidos.toUpperCase():''));
-  if(direccion)lines.push('MI DIRECCIÓN ES '+direccion.toUpperCase());
+  if(direccion)lines.push('MI DIRECCIÓN ES '+direccion.toUpperCase()+(ciudad?', '+ciudad.toUpperCase():''));
   lines.push('NECESITO AYUDA');
 
   function stopAllAudio(){

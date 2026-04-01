@@ -155,11 +155,7 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause,burstR
 }
 
 export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,_skipFraccionado,onPause}){
-  // M9: If fraccionado active and phrase has 4+ words, use FraccionadoMode
-  const wordCount=useMemo(()=>text.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length,[text]);
-  if(fraccionado&&wordCount>=2&&!_skipFraccionado){
-    return <FraccionadoMode text={text} exId={exId} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause} burstReps={burstMode?Math.min(burstReps||2,3):1}/>;
-  }
+  // M9: fraccionado check moved to ExFlu wrapper to avoid hooks violation
   const[sf,sSf]=useState(null);const[stars,setStars]=useState(0);const[att,sAtt]=useState(0);const[msg,sMsg]=useState('');const[mic,setMic]=useState(false);
   const[sylShow,setSylShow]=useState(false);const[sylIdx,setSylIdx]=useState(-1);
   const[burstFade,setBurstFade]=useState(false);
@@ -304,15 +300,21 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   </div>}
 
 export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,burstReps,exerciseNum,fraccionado,onPause}){
-  // M9: Auto-activate fraccionado for phrases with 4+ words (unless explicitly set)
-  const autoFrac=useMemo(()=>{
-    if(typeof fraccionado==='boolean')return fraccionado;
+  // M9: Fraccionado logic here (not inside SpeakPanel) to avoid hooks violation
+  const useFrac=useMemo(()=>{
+    if(typeof fraccionado!=='boolean'||!fraccionado)return false;
     const wc=(ex.ph||'').replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length;
-    return wc>=4;
+    return wc>=2;
   },[ex.ph,fraccionado]);
+  if(useFrac){
+    return <div style={{textAlign:'center',padding:12}}>
+      <div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
+      <FraccionadoMode text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause} burstReps={burstMode?Math.min(burstReps||2,3):1}/>
+    </div>;
+  }
   return <div style={{textAlign:'center',padding:12}}>
   <div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
-  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} fraccionado={autoFrac} onPause={onPause}/></div>}
+  <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} onPause={onPause}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);

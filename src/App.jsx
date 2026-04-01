@@ -476,7 +476,7 @@ export default function App(){
     // M7a: Reset DILO exercise counter for session tracking
     diloExCount.current=0;
     sessionUsedPhrases.current=new Set();recentExKeysRef.current=user?.id?getRecentExerciseKeys(user.id):new Set();
-    setGoalCount(0);setSessionStartTime(Date.now());
+    if(sessionMode!=='free')setGoalCount(0);setSessionStartTime(Date.now());
     // Auto-enable burst for long sessions
     if((sessionType==='time'&&sessionTime>=60)||(sessionType==='goal'&&sessionGoal>=200)){
       if(!loadData('burst_mode',false)){setBurstMode(true);saveData('burst_mode',true);if(burstReps<2){setBurstReps(2);saveData('burst_reps',2)}}
