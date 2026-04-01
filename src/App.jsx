@@ -7,7 +7,7 @@ import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
 import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase } from './utils.js'
-import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
+import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
 import { RocketTransition } from './components/RocketTransition.jsx'
@@ -532,7 +532,7 @@ export default function App(){
     setOv(null);setShowRocket(true);
     track('session_started',{mode:'random',module:'mixed',modules_count:allMods.length,session_type:sessionType})
   }
-  function onRocketDone(){setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
+  function onRocketDone(){warmUpTTS();setShowRocket(false);setSs(Date.now());setScr('game');sayFB('¡Vamos allá '+(user?.name||'crack')+'!');
     // M7b: Start random timer if random session (only for time mode)
     if(randomActive&&sessionType==='time'){
       if(randomTimerRef.current)clearInterval(randomTimerRef.current);
@@ -989,7 +989,7 @@ export default function App(){
               padding:0,
               display:'flex',flexDirection:'column',alignItems:'center',gap:0,fontFamily:"'Fredoka'",
             }}>
-              <button onClick={()=>{
+              <button onClick={()=>{warmUpTTS();
                 if(sessionMode==='random'){startRandomFromActiveModules()}
                 else if(sessionMode==='guided'){startGame()}
                 else{/* libre: show hint */setRocketHint(true);setTimeout(()=>setRocketHint(false),2500)}
@@ -1122,7 +1122,7 @@ export default function App(){
       </div>}
       {/* Rocket button only when a group is open and module selected */}
       {openGroup&&<div style={{display:'flex',justifyContent:'center',marginTop:10}}>
-        <button onClick={startGame} style={{
+        <button onClick={()=>{warmUpTTS();startGame()}} style={{
           width:80,height:80,borderRadius:'50%',border:'none',cursor:'pointer',
           background:'none',padding:0,fontFamily:"'Fredoka'",
           animation:'planetFloat 3s ease-in-out infinite',transition:'transform .15s',
