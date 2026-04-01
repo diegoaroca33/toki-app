@@ -302,7 +302,7 @@ export default function App(){
   function playBark(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(350,c.currentTime);o.frequency.exponentialRampToValueAtTime(150,c.currentTime+0.2);g.gain.setValueAtTime(0.7,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.25);o.start();o.stop(c.currentTime+0.25);setTimeout(()=>c.close(),400)}catch(e){}}
   function pauseSession(){stopVoice();window.dispatchEvent(new Event('toki-pause'));setPaused(true);pauseTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},60000)}
   const[resumeKey,setResumeKey]=useState(0);
-  function resumeSession(){setPaused(false);setShowSnooze(false);setResumeKey(k=>k+1);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
+  function resumeSession(){stopVoice();setPaused(false);setShowSnooze(false);setResumeKey(k=>k+1);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
   function snoozeSession(){setShowSnooze(false);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);snoozeTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},240000)}
   const[elapsedSt,setElapsedSt]=useState(0);const[trophy8,setTrophy8]=useState(false);const trophy8shown=useRef(false);
   const[correctStreak,setCorrectStreak]=useState(0);
@@ -624,7 +624,7 @@ export default function App(){
     if(randomActive&&e._randomModule){setRandomStats(prev=>{const s={...prev};const k=e._randomModule;if(s[k]){s[k]={...s[k],total:s[k].total+1}}return s})}
     if(nf>=3&&(user.maxLv||user.level||1)>1)setShowLvAdj(true);else{if(idx+1>=queue.length)fin(nextSt);else if(randomActive){randomAdvance(idx+1,nextSt)}else{setIdx(idx+1)}}}
   function doLvDn(){const up={...user,maxLv:Math.max(1,(user.maxLv||user.level||1)-1),level:Math.max(1,(user.maxLv||user.level||1)-1)};setUser(up);saveP(up);setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else if(randomActive){randomAdvance(idx+1,st)}else{setIdx(idx+1)}}
-  function fin(s){const f=s||st;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
+  function fin(s){const f=s||st;if(f.ok+f.sk===0)return;const amin=Math.floor(activeMs.current/60000);const rec={ok:f.ok,sk:f.sk,dt:tdy(),min:amin};const up={...user,hist:[...(user.hist||[]),rec]};setUser(up);saveP(up);setSs(null);if(randomTimerRef.current)clearInterval(randomTimerRef.current);setPaused(false);setShowSnooze(false);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);
     track('session_completed',{ok:f.ok,sk:f.sk,min:amin,module:sec,mode:sessionMode,stars:sessionStars,session_type:sessionType,random:randomActive});
     if(fbUser)saveDailyMetrics(fbUser.uid,{ok:f.ok,sk:f.sk,min:amin,module:sec,stars:sessionStars,streak:getStreak()});
     setOv('done')
@@ -968,7 +968,7 @@ export default function App(){
         };
         const openG=openGroup?visibleGroups.find(g=>g.id===openGroup):null;
         const otherGroups=openGroup?visibleGroups.filter(g=>g.id!==openGroup):[];
-        return <div style={{position:'relative',minHeight:isPhone?'calc(100dvh - 180px)':'min(76vh,720px)'}}>
+        return <div style={{position:'relative',minHeight:isPhone?280:'min(66vh,620px)'}}>
         {/* When NO group is open: orbiting planets around center */}
         {!openGroup&&(()=>{
           const allGroups=dynGroups;
@@ -977,7 +977,7 @@ export default function App(){
           const viewportH=Math.max(420,viewport.h-(isPhone?240:isTabletLandscape?220:260));
           const planetSize=Math.round(Math.max(isPhone?58:isTabletPortrait?74:isTabletLandscape?88:94,Math.min(isPhone?70:isTabletPortrait?82:isTabletLandscape?98:104,viewportW*(isPhone?0.16:isTabletPortrait?0.1:0.075))));
           const cW=Math.round(Math.min(isPhone?viewportW:viewportW*0.92,isPhone?viewportW:1220));
-          const cH=Math.round(Math.min(isPhone?Math.max(430,viewportH*0.62):Math.max(500,viewportH*0.72),isTabletLandscape?760:820));
+          const cH=Math.round(Math.min(isPhone?Math.max(320,viewportH*0.52):Math.max(460,viewportH*0.65),isTabletLandscape?680:720));
           const orbitR=Math.max(90,Math.min((cW-planetSize-42)/(isPhone?2.15:isTabletPortrait?2.8:3.4),(cH-planetSize-70)/(isPhone?1.9:1.55)));
           const scX=isPhone?1.08:isTabletPortrait?1.28:isTabletLandscape?1.55:1.72;
           const scY=isPhone?0.98:isTabletPortrait?0.88:isTabletLandscape?0.74:0.7;

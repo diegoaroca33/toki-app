@@ -22,6 +22,7 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause,burstR
   const[step,setStep]=useState(0); // current step within round (0-based)
   const[mic,setMic]=useState(false);
   const[done,setDone]=useState(false);
+  const doneRef=useRef(false);
   const alive=useRef(true);
   const ttsPlaying=useRef(false);
   const dur=useMemo(()=>Math.max(3,Math.ceil(words.length*0.6)+2),[words]);
@@ -38,21 +39,15 @@ function FraccionadoMode({text,exId,onOk,onSkip,sex,name,uid,vids,onPause,burstR
 
   // Advance: next step, or next round, or done
   function advance(){
-    if(!alive.current)return;
+    if(!alive.current||doneRef.current)return;
     if(isFinalStep){
-      // End of this round
       const nextRound=round+1;
       if(nextRound<totalRounds){
-        // Restart chain for next round
         setRound(nextRound);
         setStep(0);
       }else{
-        // All rounds done — go to final evaluation
-        setDone(true);
+        doneRef.current=true;setDone(true);
       }
-    }else if(step===totalSteps-2&&isLastRound){
-      // Last round, about to reach final step → skip to evaluated SpeakPanel
-      setDone(true);
     }else{
       setStep(s=>s+1);
     }

@@ -16,21 +16,14 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
   const items=mode==='cheers'?cheerItems2:mode==='counting'?countItems:mode==='personal'?personalItems:mode==='quiensoy'?quiensoyItems:phraseItems;const cur=items[ri]?.text||'';
   function startMode(m){setShowRules(true);setMode(m)}
   function confirmRules(){setShowRules(false)}
-  async function startR(){setRecMsg('');if(mr){try{mr.stop()}catch(e){}}setMr(null);riAtStart.current=ri;const curAtStart=items[ri]?.text||'';try{const s=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true}});const m=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm',audioBitsPerSecond:32000});ch.current=[];m.ondataavailable=e=>{if(e.data.size>0)ch.current.push(e.data)};m.onstop=async()=>{const rawBlob=new Blob(ch.current,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop());
+  async function startR(){setRecMsg('');if(mr){try{mr.stop()}catch(e){}}setMr(null);riAtStart.current=ri;const curAtStart=items[ri]?.text||'';try{const s=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true}});const m=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm',audioBitsPerSecond:32000});ch.current=[];m.ondataavailable=e=>{if(e.data.size>0)ch.current.push(e.data)};m.onstop=async()=>{setRec(false);setMr(null);const rawBlob=new Blob(ch.current,{type:'audio/webm'});s.getTracks().forEach(t=>t.stop());
       // Validate duration
       const val=await validateVoiceDuration(rawBlob,curAtStart);
       if(!val.ok){setRecMsg(val.reason==='too_short'?'Grabaci\u00f3n muy corta, repite':'Grabaci\u00f3n muy larga (m\u00e1x 10s), repite');return}
       // Trim silence
       let blob=rawBlob;try{blob=await trimSilence(rawBlob)}catch(e){}
-      // Speech recognition validation for phrases (not cheers/counting)
-      if(mode==='phrases'||mode==='personal'||mode==='quiensoy'){
-        try{const srCheck=await new Promise(res2=>{if(!SR_AVAILABLE){res2(null);return}const S=window.SpeechRecognition||window.webkitSpeechRecognition;const r2=new S();r2.lang='es-ES';r2.continuous=false;r2.interimResults=false;r2.maxAlternatives=5;let d2=false;const f2=v2=>{if(!d2){d2=true;try{r2.abort()}catch(e2){}res2(v2)}};r2.onresult=e2=>{const a2=[];for(let i2=0;i2<e2.results[0].length;i2++)a2.push(e2.results[0][i2].transcript.toLowerCase().trim());f2(a2.join('|'))};r2.onerror=()=>f2(null);r2.onend=()=>f2(null);r2.start();setTimeout(()=>f2(null),4000)});
-          // Play back the blob for SR to hear
-          // Note: SR above listens to mic, we validate by replaying
-          // Actually, we validate the recorded audio by matching what was said
-          if(srCheck){const bestScore=Math.max(...srCheck.split('|').map(a=>score(a,curAtStart)));if(bestScore<3){setRecMsg('Repite esta frase, no se ha grabado bien');return}}
-        }catch(e){}
-      }
+      // Skip SR validation — it listens to live mic (ambient noise), not the recorded blob
+      // Duration validation above is sufficient to ensure a real recording was made
       // Save to localStorage
       const reader2=new FileReader();const capturedRi=riAtStart.current;reader2.onload=()=>{const item=items[capturedRi];if(!item)return;const k=mode==='cheers'?item.id:textKey(item.text);const sk='voice_'+user.id+'_'+vid.current;const d=loadData(sk,{});d[k]=reader2.result;d.name=vn;d.avatar=va;d.sex=vs;saveData(sk,d);setSaved(sv=>sv+1);
         // Store blob for potential Firebase upload
@@ -42,7 +35,7 @@ export function VoiceRec({user,onBack,onSave,fbUser}){const[mode,setMode]=useSta
         if(capturedRi<items.length-1){setTimeout(()=>setRi(capturedRi+1),400)}
         else{setShowDone(true)}
       };reader2.readAsDataURL(blob)
-    };m.start();setMr(m);setRec(true)}catch(e){alert('No se puede acceder al micr\u00f3fono')}}
+    };m.start();setMr(m);setRec(true)}catch(e){setRec(false);setMr(null);alert('No se puede acceder al micrófono')}}
   function stopR(){if(mr){mr.stop();setMr(null);setRec(false)}}
   function preview(i){const item=items[i];const k=mode==='cheers'?item.id:textKey(item.text);try{const d=loadData('voice_'+user.id+'_'+vid.current,{});if(d[k]){setPp(i);const a=new Audio(d[k]);a.onended=()=>setPp(-1);a.play().catch(()=>setPp(-1))}}catch(e){}}
   async function fin(){

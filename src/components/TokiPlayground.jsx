@@ -1,31 +1,25 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { sayFB } from '../voice.js';
 
-// Bark sound using Web Audio API — noise-based for natural dog bark
+// Bark sound — simple square wave "woof woof", loud and clear on all devices
 function playBark(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    function singleBark(delay,freq,dur,vol){
+    function woof(delay,freq,dur,vol){
       const t=ctx.currentTime+delay;
-      // Noise burst through bandpass = natural bark texture
-      const bufLen=Math.ceil(ctx.sampleRate*dur);
-      const buf=ctx.createBuffer(1,bufLen,ctx.sampleRate);
-      const d=buf.getChannelData(0);for(let i=0;i<bufLen;i++)d[i]=Math.random()*2-1;
-      const src=ctx.createBufferSource();src.buffer=buf;
-      const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.setValueAtTime(freq,t);
-      bp.frequency.exponentialRampToValueAtTime(freq*0.4,t+dur);bp.Q.value=3;
-      // Add tonal component for pitch
-      const osc=ctx.createOscillator();osc.type='triangle';
-      osc.frequency.setValueAtTime(freq*0.8,t);osc.frequency.exponentialRampToValueAtTime(freq*0.3,t+dur);
-      const oscG=ctx.createGain();oscG.gain.setValueAtTime(vol*0.3,t);oscG.gain.exponentialRampToValueAtTime(0.01,t+dur);
-      const nG=ctx.createGain();nG.gain.setValueAtTime(vol,t);nG.gain.exponentialRampToValueAtTime(0.01,t+dur*0.8);
-      src.connect(bp);bp.connect(nG);nG.connect(ctx.destination);
-      osc.connect(oscG);oscG.connect(ctx.destination);
-      src.start(t);src.stop(t+dur);osc.start(t);osc.stop(t+dur);
+      const o=ctx.createOscillator();const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='square';
+      o.frequency.setValueAtTime(freq,t);
+      o.frequency.exponentialRampToValueAtTime(freq*0.5,t+dur);
+      g.gain.setValueAtTime(vol,t);
+      g.gain.setValueAtTime(vol,t+dur*0.3);
+      g.gain.exponentialRampToValueAtTime(0.01,t+dur);
+      o.start(t);o.stop(t+dur);
     }
-    singleBark(0,500,0.18,0.5);
-    singleBark(0.25,450,0.15,0.45);
-    setTimeout(()=>ctx.close(),700);
+    woof(0,280,0.15,0.6);
+    woof(0.22,250,0.12,0.5);
+    setTimeout(()=>ctx.close(),500);
   }catch(e){}
 }
 
