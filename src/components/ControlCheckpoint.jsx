@@ -123,6 +123,7 @@ export function shouldTriggerCheckpoint(user) {
 export default function ControlCheckpoint({ user, personas, onComplete, onSkip }) {
   const phrases = getControlPhrases(user, personas)
   const [currentIdx, setCurrentIdx] = useState(0)
+  const currentIdxRef = useRef(0)
   const [phase, setPhase] = useState('intro') // intro, listen, recording, result, done
   const [results, setResults] = useState([]) // {phrase, transcript, score, confidence, audioBlob}
   const [isRecording, setIsRecording] = useState(false)
@@ -180,7 +181,7 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
 
   // Start recording a single phrase
   const startPhrase = useCallback(async () => {
-    const phrase = phrases[currentIdx]
+    const phrase = phrases[currentIdxRef.current]
     setPhase('listen')
     setTranscript('')
     transcriptRef.current = ''
@@ -269,7 +270,7 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
         }, 500)
       }, 5000)
     }, 2500) // 3x800ms countdown
-  }, [currentIdx, phrases])
+  }, [phrases])
 
   const finishPhrase = (phrase, said, score, confidence, audioB64) => {
     const result = {
@@ -285,10 +286,12 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
   }
 
   const nextPhrase = () => {
-    if (currentIdx + 1 >= phrases.length) {
+    const nextIdx = currentIdxRef.current + 1
+    if (nextIdx >= phrases.length) {
       setPhase('done')
     } else {
-      setCurrentIdx(currentIdx + 1)
+      currentIdxRef.current = nextIdx
+      setCurrentIdx(nextIdx)
       setPhase('listen')
       setTimeout(() => startPhrase(), 500)
     }
@@ -549,9 +552,17 @@ export default function ControlCheckpoint({ user, personas, onComplete, onSkip }
             <Badge tone={lastResult.score >= 3 ? 'green' : lastResult.score >= 2 ? 'gold' : 'red'} size="lg">
               {'⭐'.repeat(lastResult.score)}{'☆'.repeat(4 - lastResult.score)}
             </Badge>
-            <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
+              {lastResult.audio && (
+                <Button variant="ghost" fullWidth={false} onClick={() => { const a = new Audio(lastResult.audio); a.play() }}>
+                  🔊 Escuchar
+                </Button>
+              )}
+              <Button variant="ghost" fullWidth={false} onClick={() => { stopVoice(); say(phrase, 0.7) }}>
+                🗣️ Modelo
+              </Button>
               <Button variant="gold" fullWidth={false} onClick={nextPhrase}>
-                {currentIdx + 1 >= phrases.length ? '📊 Ver resultados' : '→ Siguiente frase'}
+                {currentIdx + 1 >= phrases.length ? '📊 Ver resultados' : '→ Siguiente'}
               </Button>
             </div>
           </div>

@@ -1311,6 +1311,67 @@ export const EX = [
 {id:'si0037',a:'sentimientos',ty:'sit',lv:3,si:'Tu amigo ha dicho algo que te ha dolido.',op:['Eso que has dicho me ha dolido','Le pego','No hago nada'],su:'Eso que has dicho me ha dolido',em:'😢'},
 {id:'si0038',a:'sentimientos',ty:'sit',lv:2,si:'Has hecho algo muy bien y estás orgulloso.',op:['¡Lo he conseguido! ¡Estoy orgulloso!','No es para tanto','Me da igual'],su:'¡Lo he conseguido! ¡Estoy orgulloso!',em:'🥇'},
 {id:'si0039',a:'sentimientos',ty:'sit',lv:3,si:'Echas de menos a un amigo que se ha mudado.',op:['Echo mucho de menos a mi amigo','No pienso en ello','Me da igual'],su:'Echo mucho de menos a mi amigo',em:'💭'},
+// === SITUACIONES AMPLIADAS — Rutinas, hogar, autonomía, social ===
+// Rutinas diarias
+{id:'si0040',a:'casa',ty:'sit',lv:2,si:'Es de noche y no ves nada en la habitación.',op:['Enciendo la luz','Me quedo a oscuras','Grito'],su:'Enciendo la luz',em:'💡'},
+{id:'si0041',a:'casa',ty:'sit',lv:2,si:'Tienes las manos sucias después de comer.',op:['Me lavo las manos','Las limpio en la ropa','No hago nada'],su:'Me lavo las manos',em:'🧼'},
+{id:'si0042',a:'casa',ty:'sit',lv:2,si:'Tienes mucha sed.',op:['Quiero agua, por favor','Espero','No digo nada'],su:'Quiero agua, por favor',em:'💧'},
+{id:'si0043',a:'casa',ty:'sit',lv:2,si:'Es hora de dormir y mamá te dice buenas noches.',op:['¡Buenas noches, mamá!','No digo nada','No quiero dormir'],su:'¡Buenas noches, mamá!',em:'🌙'},
+{id:'si0044',a:'casa',ty:'sit',lv:2,si:'Te acabas de despertar por la mañana.',op:['¡Buenos días!','Me quedo en la cama','No hablo'],su:'¡Buenos días!',em:'☀️'},
+{id:'si0045',a:'casa',ty:'sit',lv:2,si:'Necesitas ir al baño.',op:['Necesito ir al baño','Me aguanto','No digo nada'],su:'Necesito ir al baño',em:'🚻'},
+{id:'si0046',a:'casa',ty:'sit',lv:2,si:'Tienes frío.',op:['Tengo frío, ¿me das una chaqueta?','No digo nada','Tiemblo'],su:'Tengo frío, ¿me das una chaqueta?',em:'🥶'},
+{id:'si0047',a:'casa',ty:'sit',lv:2,si:'Tienes mucho calor.',op:['Tengo calor, ¿abro la ventana?','Me aguanto','Grito'],su:'Tengo calor, ¿abro la ventana?',em:'🥵'},
+{id:'si0048',a:'casa',ty:'sit',lv:2,si:'Se ha caído un vaso de agua al suelo.',op:['Se me ha caído el agua, lo siento','Salgo corriendo','No digo nada'],su:'Se me ha caído el agua, lo siento',em:'💦'},
+{id:'si0049',a:'casa',ty:'sit',lv:3,si:'Mamá está hablando por teléfono y tú quieres decirle algo.',op:['Espero a que termine','Le interrumpo','Me enfado'],su:'Espero a que termine',em:'📱'},
+// Higiene y autonomía
+{id:'si0050',a:'necesidades',ty:'sit',lv:2,si:'Vas a salir a la calle y está lloviendo.',op:['Cojo el paraguas','Salgo sin nada','Me quedo en casa'],su:'Cojo el paraguas',em:'☂️'},
+{id:'si0051',a:'necesidades',ty:'sit',lv:2,si:'Te toca lavarte los dientes.',op:['Me lavo los dientes','No quiero','Escondo el cepillo'],su:'Me lavo los dientes',em:'🪥'},
+{id:'si0052',a:'necesidades',ty:'sit',lv:2,si:'La ropa está sucia.',op:['Esta ropa está sucia, necesito otra','Me la pongo igual','No digo nada'],su:'Esta ropa está sucia, necesito otra',em:'👕'},
+{id:'si0053',a:'necesidades',ty:'sit',lv:3,si:'Se te ha desatado el zapato.',op:['Se me ha desatado el zapato, ¿me ayudas?','Sigo andando','Me lo quito'],su:'Se me ha desatado el zapato, ¿me ayudas?',em:'👟'},
+{id:'si0054',a:'necesidades',ty:'sit',lv:2,si:'Te pica mucho un mosquito.',op:['Me ha picado un mosquito','Me rasco fuerte','No digo nada'],su:'Me ha picado un mosquito',em:'🦟'},
+// Colegio ampliado
+{id:'si0055',a:'colegio',ty:'sit',lv:2,si:'Has terminado el ejercicio antes que los demás.',op:['Ya he terminado, ¿qué hago ahora?','Molesto al compañero','Me duermo'],su:'Ya he terminado, ¿qué hago ahora?',em:'✅'},
+{id:'si0056',a:'colegio',ty:'sit',lv:3,si:'Te toca leer en voz alta delante de la clase.',op:['Leo en voz alta con calma','No quiero leer','Me pongo a llorar'],su:'Leo en voz alta con calma',em:'📖'},
+{id:'si0057',a:'colegio',ty:'sit',lv:2,si:'Se te ha olvidado el estuche en casa.',op:['Se me ha olvidado el estuche, ¿me prestas un lápiz?','No hago nada','Me enfado'],su:'Se me ha olvidado el estuche, ¿me prestas un lápiz?',em:'✏️'},
+{id:'si0058',a:'colegio',ty:'sit',lv:3,si:'Hay un examen y no sabes una pregunta.',op:['Paso a la siguiente y luego vuelvo','Copio del compañero','Dejo todo en blanco'],su:'Paso a la siguiente y luego vuelvo',em:'📝'},
+{id:'si0059',a:'colegio',ty:'sit',lv:2,si:'La seño dice que toca clase de música.',op:['¡Bien, me gusta la música!','No quiero ir','Me quejo'],su:'¡Bien, me gusta la música!',em:'🎵'},
+// Social avanzado
+{id:'si0060',a:'relaciones',ty:'sit',lv:3,si:'Dos amigos se están peleando y tú lo ves.',op:['¡Parad! No os peleéis','Me meto en la pelea','No hago nada'],su:'¡Parad! No os peleéis',em:'✋'},
+{id:'si0061',a:'relaciones',ty:'sit',lv:2,si:'Un niño se ha hecho daño en el recreo.',op:['¿Estás bien? Voy a avisar a la seño','Me río','Paso de largo'],su:'¿Estás bien? Voy a avisar a la seño',em:'🩹'},
+{id:'si0062',a:'relaciones',ty:'sit',lv:3,si:'Quieres que un amigo te perdone.',op:['Lo siento mucho, ¿me perdonas?','No pido perdón','Hago como si nada'],su:'Lo siento mucho, ¿me perdonas?',em:'🙏'},
+{id:'si0063',a:'relaciones',ty:'sit',lv:2,si:'Un compañero te pide jugar con él.',op:['¡Sí, vamos a jugar!','No quiero','Me voy'],su:'¡Sí, vamos a jugar!',em:'⚽'},
+{id:'si0064',a:'relaciones',ty:'sit',lv:3,si:'Tu amigo dice algo gracioso.',op:['¡Qué gracioso, me estoy riendo!','No tiene gracia','Le ignoro'],su:'¡Qué gracioso, me estoy riendo!',em:'😂'},
+{id:'si0065',a:'relaciones',ty:'sit',lv:3,si:'Un niño más mayor te pide las chuches.',op:['No, son mías, por favor no me molestes','Se las doy','Le pego'],su:'No, son mías, por favor no me molestes',em:'🍬'},
+// Transporte y calle
+{id:'si0066',a:'transporte',ty:'sit',lv:2,si:'Llegas al paso de cebra y el semáforo está rojo.',op:['Espero a que se ponga verde','Cruzo corriendo','No miro'],su:'Espero a que se ponga verde',em:'🚦'},
+{id:'si0067',a:'transporte',ty:'sit',lv:3,si:'Estás en el coche y necesitas que paren.',op:['¿Puedes parar un momento, por favor?','Abro la puerta','Grito'],su:'¿Puedes parar un momento, por favor?',em:'🚗'},
+{id:'si0068',a:'transporte',ty:'sit',lv:2,si:'Subís al ascensor y hay que elegir piso.',op:['¡Yo pulso el botón! Vamos al tercero','Pulso todos','No hago nada'],su:'¡Yo pulso el botón! Vamos al tercero',em:'🛗'},
+// Comida y restaurante
+{id:'si0069',a:'restaurante',ty:'sit',lv:2,si:'No te gusta lo que hay de comida.',op:['Esto no me gusta mucho, ¿hay otra cosa?','Tiro la comida','Grito'],su:'Esto no me gusta mucho, ¿hay otra cosa?',em:'😖'},
+{id:'si0070',a:'restaurante',ty:'sit',lv:2,si:'Quieres repetir postre.',op:['¿Puedo repetir postre, por favor?','Cojo más sin preguntar','Grito'],su:'¿Puedo repetir postre, por favor?',em:'🍰'},
+{id:'si0071',a:'restaurante',ty:'sit',lv:3,si:'Se te cae la servilleta al suelo.',op:['Se me ha caído la servilleta, ¿me das otra?','La recojo y la uso','No digo nada'],su:'Se me ha caído la servilleta, ¿me das otra?',em:'🧻'},
+// Tecnología y ocio
+{id:'si0072',a:'tecnologia',ty:'sit',lv:2,si:'Quieres ver una película pero no sabes cuál.',op:['¿Qué película vemos hoy?','Pongo cualquiera','Me enfado'],su:'¿Qué película vemos hoy?',em:'🎬'},
+{id:'si0073',a:'tecnologia',ty:'sit',lv:3,si:'Se te ha bloqueado el juego.',op:['Papá, el juego se ha bloqueado, ¿me ayudas?','Tiro la tablet','Grito'],su:'Papá, el juego se ha bloqueado, ¿me ayudas?',em:'🎮'},
+{id:'si0074',a:'ocio',ty:'sit',lv:2,si:'Quieres ir al parque.',op:['¿Vamos al parque?','Salgo solo','Me enfado'],su:'¿Vamos al parque?',em:'🌳'},
+{id:'si0075',a:'ocio',ty:'sit',lv:2,si:'Tu pelota se ha ido al jardín del vecino.',op:['Perdone, ¿me devuelve la pelota?','Salto la valla','Me enfado'],su:'Perdone, ¿me devuelve la pelota?',em:'⚽'},
+{id:'si0076',a:'ocio',ty:'sit',lv:3,si:'Quieres invitar a un amigo a tu cumpleaños.',op:['¿Quieres venir a mi cumpleaños?','No invito a nadie','Le obligo'],su:'¿Quieres venir a mi cumpleaños?',em:'🎉'},
+// Salud
+{id:'si0077',a:'salud',ty:'sit',lv:2,si:'Te duele una muela.',op:['Me duele una muela','No digo nada','Lloro'],su:'Me duele una muela',em:'🦷'},
+{id:'si0078',a:'salud',ty:'sit',lv:2,si:'El doctor te dice que abras la boca.',op:['Aaah','No abro','Salgo corriendo'],su:'Aaah',em:'👨‍⚕️'},
+{id:'si0079',a:'salud',ty:'sit',lv:3,si:'Te ponen una tirita y te preguntan si te duele.',op:['Ya no me duele tanto, gracias','Grito','No contesto'],su:'Ya no me duele tanto, gracias',em:'🩹'},
+// Sentimientos ampliado
+{id:'si0080',a:'sentimientos',ty:'sit',lv:2,si:'Has ganado una carrera.',op:['¡He ganado! ¡Estoy muy contento!','No es para tanto','Me da igual'],su:'¡He ganado! ¡Estoy muy contento!',em:'🏆'},
+{id:'si0081',a:'sentimientos',ty:'sit',lv:3,si:'Estás nervioso porque mañana es la excursión.',op:['Estoy nervioso, ¡mañana es la excursión!','No siento nada','Me da igual'],su:'Estoy nervioso, ¡mañana es la excursión!',em:'🦋'},
+{id:'si0082',a:'sentimientos',ty:'sit',lv:2,si:'No te dejan jugar y estás enfadado.',op:['Estoy enfadado porque no me dejan jugar','Pego a alguien','Rompo cosas'],su:'Estoy enfadado porque no me dejan jugar',em:'😤'},
+{id:'si0083',a:'sentimientos',ty:'sit',lv:3,si:'Un amigo te ha hecho un dibujo muy bonito.',op:['¡Qué bonito! Muchas gracias, me encanta','No me gusta','Lo tiro'],su:'¡Qué bonito! Muchas gracias, me encanta',em:'🎨'},
+{id:'si0084',a:'sentimientos',ty:'sit',lv:2,si:'Tienes miedo de la oscuridad.',op:['Tengo miedo, ¿dejas la luz encendida?','No digo nada','Lloro'],su:'Tengo miedo, ¿dejas la luz encendida?',em:'😨'},
+{id:'si0085',a:'sentimientos',ty:'sit',lv:3,si:'Tu mascota está enferma.',op:['Mi perro está malito, estoy preocupado','No me importa','Me enfado'],su:'Mi perro está malito, estoy preocupado',em:'🐕'},
+// Compras ampliado
+{id:'si0086',a:'compras',ty:'sit',lv:2,si:'Estás en el supermercado y ves tu fruta favorita.',op:['¿Compramos plátanos?','Los cojo sin decir nada','Grito'],su:'¿Compramos plátanos?',em:'🍌'},
+{id:'si0087',a:'compras',ty:'sit',lv:3,si:'La camiseta que te gusta no tiene tu talla.',op:['¿Tiene esta camiseta en mi talla?','Me la pruebo igual','Me enfado'],su:'¿Tiene esta camiseta en mi talla?',em:'👕'},
+{id:'si0088',a:'compras',ty:'sit',lv:2,si:'Llegas a la panadería con mamá.',op:['¡Hola! ¿Me pone una barra de pan?','No digo nada','Cojo lo que quiero'],su:'¡Hola! ¿Me pone una barra de pan?',em:'🥖'},
+{id:'si0089',a:'compras',ty:'sit',lv:3,si:'Has comprado algo y el dependiente te dice adiós.',op:['¡Gracias, adiós!','No digo nada','Me voy corriendo'],su:'¡Gracias, adiós!',em:'👋'},
 // === PREPOSICIONES (prep) ===
 {id:'prep0001',ty:'flu',lv:2,cat:'prep',ph:'En casa',em:'🏠'},
 {id:'prep0002',ty:'flu',lv:2,cat:'prep',ph:'Al cole',em:'🏫'},

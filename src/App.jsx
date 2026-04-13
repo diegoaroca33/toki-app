@@ -398,8 +398,9 @@ export default function App(){
     if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return _noRepeat(sh(merged))}
     if(Array.isArray(slv))slv=parseInt(slv[0])||1;
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
-      // M7a: Use dynamic level if enabled
-      const dynDiloOn=u&&getDynamicDilo(u.id);
+      // M7a: Use dynamic level if enabled (but NOT when explicit level passed from multi-level merge)
+      const explicitLv=typeof slv==='number'?slv:null;
+      const dynDiloOn=!explicitLv&&u&&getDynamicDilo(u.id);
       const lv=dynDiloOn?getDynamicDiloLevel(u.id):(parseInt(Array.isArray(slv)?slv[0]:slv)||1);
       const wRange=lv===1?[1,2]:lv===2?[2,3]:lv===3?[3,4]:lv===4?[4,5]:[5,99];
       const pool=EX.filter(e=>e.ty==='flu'&&wLen(e)>=wRange[0]&&wLen(e)<=wRange[1]);
@@ -584,7 +585,7 @@ export default function App(){
   const lastBreakMin=useRef(0);
   useEffect(()=>{if(scr!=='game'||!ss||sessionType!=='time')return;
     const mins=Math.floor(elapsedSt/60);
-    if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;setShowTokiBreak(true)}
+    if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;stopVoice();window.dispatchEvent(new Event('toki-pause'));setShowTokiBreak(true)}
   },[elapsedSt,scr,ss,sessionType]);
   function saveP(u){const c={...u};const uLv=c.maxLv||c.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>c.srs&&c.srs[e.id]&&c.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)c.maxLv=uLv+1;c.level=c.maxLv||c.level||1;setProfs(p=>p.map(x=>x.id===c.id?c:x))}
   function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;const repsCount=(burstMode&&burstReps>1)?burstReps:1;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+repsCount;setUser(up);saveP(up);const nextSt={ok:st.ok+repsCount,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
@@ -613,7 +614,7 @@ export default function App(){
     if(sessionType==='goal'){
       setGoalCount(prev=>{
         const next=prev+repsCount;
-        if(next>0&&next%50===0&&next<sessionGoal){setShowTokiBreak(true)}
+        if(next>0&&next%50===0&&next<sessionGoal){stopVoice();window.dispatchEvent(new Event('toki-pause'));setShowTokiBreak(true)}
         if(next>=sessionGoal){goalReachedRef.current=true;setTimeout(()=>fin(nextSt),300);return next}
         return next
       })
@@ -1156,11 +1157,11 @@ export default function App(){
     </div>}
     {/* TokiBreak overlay */}
     {showTokiBreak&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {/* Companion screen - accessible from goals */}
     {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={gameShellStyle}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:isPhone?8:12,marginBottom:isPhone?6:8,flexWrap:'wrap'}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:isPhone?15:16,padding:'10px 8px',minHeight:48,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={isPhone?34:isTabletLandscape?42:36}/>}<div style={{display:'flex',alignItems:'center',gap:4}}><AstronautDaily phase={getDailyPhase(dailyCount)} size={isPhone?32:isTabletLandscape?40:34} onClick={()=>setShowAstroOverlay(true)} /><span style={{fontSize:11,color:'rgba(255,255,255,.5)',fontWeight:600}}>{dailyCount}</span></div>{randomActive
         ?<span style={{fontSize:14,color:randomTimer<=60&&sessionType==='time'?'#FF5722':DIM,fontWeight:700}}>{sessionType==='goal'?`🎯 ${goalCount} / ${sessionGoal}`:`⏱️ ${Math.floor(randomTimer/60)}:${String(randomTimer%60).padStart(2,'0')}`}</span>

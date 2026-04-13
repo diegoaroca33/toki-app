@@ -5,6 +5,7 @@ import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep
 import { track } from '../firebase.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
 import { Stars } from './CelebrationOverlay.jsx'
+import { getColoredObject } from './ColoredObjects.jsx'
 
 // Responsive dock helpers
 const getViewportFlags=()=>{const w=typeof window!=='undefined'?window.innerWidth:1280;return{isPhone:w<=480,isTabletPortrait:w>=768&&w<=1023,isTabletLandscape:w>=1024&&w<=1365,isDesktop:w>=1366}};
@@ -223,9 +224,12 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
       setTimeout(()=>{if(alive.current)onOk(1,na)},800)
     }
     else{
-      // Retry with encouragement
-      const retryMsg=rnd(['¡Otra vez!','¡Tú puedes!','¡Inténtalo de nuevo!']);sMsg(retryMsg);sSf('try');sayFB(retryMsg);
-      setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)
+      // Retry with encouragement — ALWAYS replay model phrase after cheer (Rvachew: auditory model before every production)
+      // On 2nd failed attempt: use syllable help so the child hears it broken down
+      const useSylHelp=na>=2&&flatSyls.length>1&&!burstMode;
+      const retryMsg=useSylHelp?rnd(['¡Por sílabas!','¡Escucha!']):rnd(['¡Otra vez!','¡Tú puedes!','¡Venga!']);
+      sMsg(retryMsg);sSf('try');
+      (async()=>{await sayFB(retryMsg);if(!alive.current)return;sSf(null);if(useSylHelp){doSyllablePlay()}else{doPlay()}})()
     }}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setBurstFade(false);
@@ -260,7 +264,9 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
       const autoMsg=rnd(['¡Buen esfuerzo!','¡Seguimos!']);sMsg(autoMsg);sSf('pass');setStars(1);sayFB(autoMsg);
       setTimeout(()=>{if(alive.current)onOk(1,na)},800)
     }
-    else{const pm=pickMsg(false,null,'decir');sMsg(pm);sSf('wait');sayFB(pm);setTimeout(()=>{if(alive.current){sSf(null);doPlay()}},900)}}
+    else{const useSylHelp=na>=2&&flatSyls.length>1&&!burstMode;
+      const pm=useSylHelp?rnd(['¡Por sílabas!','¡Escucha!']):rnd(['¡Otra vez!','¡Venga!']);sMsg(pm);sSf('wait');
+      (async()=>{await sayFB(pm);if(!alive.current)return;sSf(null);if(useSylHelp){doSyllablePlay()}else{doPlay()}})()}}
   function hearAgain(){poke();stopVoice();sr.stop();sSf(null);setMic(false);doPlay()}
   function skip(){stopVoice();sr.stop();alive.current=false;onSkip()}
   const fc=stars>=4?GOLD:stars>=3?GREEN:stars>=2?BLUE:'#E67E22';
@@ -306,14 +312,18 @@ export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,bur
     const wc=(ex.ph||'').replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length;
     return wc>=2;
   },[ex.ph,fraccionado]);
+  const colorSvg=useMemo(()=>getColoredObject(ex.ph,140),[ex.ph]);
+  const emojiBlock=colorSvg
+    ?<div style={{marginBottom:12,display:'flex',justifyContent:'center',filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{colorSvg}</div>
+    :<div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>;
   if(useFrac){
     return <div style={{textAlign:'center',padding:12}}>
-      <div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
+      {emojiBlock}
       <FraccionadoMode text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} onPause={onPause} burstReps={burstMode?Math.min(burstReps||2,3):1}/>
     </div>;
   }
   return <div style={{textAlign:'center',padding:12}}>
-  <div style={{fontSize:'clamp(84px, 18vw, 132px)',marginBottom:12,lineHeight:1,filter:'drop-shadow(0 4px 12px rgba(0,0,0,.3))'}}>{ex.em}</div>
+  {emojiBlock}
   <SpeakPanel text={ex.ph} exId={ex.id} onOk={onOk} onSkip={onSkip} sex={sex} name={name} uid={uid} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={exerciseNum} onPause={onPause}/></div>}
 
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){

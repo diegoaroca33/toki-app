@@ -128,6 +128,7 @@ export default function TokiPlayground({
 
   const svgRef = useRef(null);
   const bowlPointerId = useRef(null);
+  const mountedRef = useRef(true);
 
   const tokiTarget = { x: 150, y: 206 };
 
@@ -135,6 +136,7 @@ export default function TokiPlayground({
     if (idleTimer.current) clearTimeout(idleTimer.current);
     if (state === "eating") return;
     idleTimer.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       // First yawn, then bark if still idle
       setState("yawn");
       setIsLying(false);
@@ -143,10 +145,12 @@ export default function TokiPlayground({
       setTailFast(false);
       setMouthOpen(false);
       actionTimer.current = setTimeout(() => {
+        if (!mountedRef.current) return;
         setState("idle");
         setEyesClosed(false);
         // Bark after yawn if still idle
         barkTimer.current = setTimeout(() => {
+          if (!mountedRef.current) return;
           if (state !== "eating") bark();
         }, 3000);
       }, 1500);
@@ -169,11 +173,14 @@ export default function TokiPlayground({
     }
 
     return () => {
+      mountedRef.current = false;
       if (idleTimer.current) clearTimeout(idleTimer.current);
       if (barkTimer.current) clearTimeout(barkTimer.current);
       if (actionTimer.current) clearTimeout(actionTimer.current);
       if (continueTimer.current) clearTimeout(continueTimer.current);
       if (countdownInterval.current) clearInterval(countdownInterval.current);
+      // Stop any TTS/audio that Toki might be producing
+      try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {}
     };
   }, []);
 
@@ -324,7 +331,7 @@ export default function TokiPlayground({
   };
 
   // ── Voice command execution ───────────────────────────────
-  const execCommand = useCallback((cmd) => {
+  const execCommand = (cmd) => {
     resetIdleTimer();
     if (actionTimer.current) clearTimeout(actionTimer.current);
 
@@ -458,9 +465,13 @@ export default function TokiPlayground({
       default:
         bark();
     }
-  }, []);
+  };
 
   // ── Continuous voice listening (robust restart) ────────────
+  const execCommandRef = useRef(execCommand);
+  execCommandRef.current = execCommand;
+  const startListeningRef = useRef(null);
+
   const startListening = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setVoiceHint('🎤 Voz no disponible'); return; }
@@ -478,27 +489,30 @@ export default function TokiPlayground({
         const cmd = matchCommand(text);
         if (cmd) {
           setVoiceHint('🎤 ¡' + (cmd.response || 'Entendido') + '!');
-          execCommand(cmd);
+          execCommandRef.current(cmd);
         } else {
           setVoiceHint('🤔 Dile: salta, baila, dame la pata...');
           setState('idle'); setTailFast(false);
           bark(); // Confused bark
         }
         // Restart listening after trick finishes
+        if (voiceTimeout.current) clearTimeout(voiceTimeout.current);
         voiceTimeout.current = setTimeout(() => {
+          if (!mountedRef.current) return;
           setVoiceHint('🎤 Háblale a Toki');
-          startListening();
+          if (startListeningRef.current) startListeningRef.current();
         }, 2000);
       };
       r.onerror = () => {
         if (!handled) {
-          voiceTimeout.current = setTimeout(() => startListening(), 1000);
+          if (voiceTimeout.current) clearTimeout(voiceTimeout.current);
+          voiceTimeout.current = setTimeout(() => { if (mountedRef.current && startListeningRef.current) startListeningRef.current(); }, 1000);
         }
       };
       r.onend = () => {
         // Always restart if no result was handled
         if (!handled && !voiceTimeout.current) {
-          voiceTimeout.current = setTimeout(() => startListening(), 500);
+          voiceTimeout.current = setTimeout(() => { if (mountedRef.current && startListeningRef.current) startListeningRef.current(); }, 500);
         }
       };
       srRef.current = r;
@@ -506,9 +520,11 @@ export default function TokiPlayground({
       setVoiceActive(true);
     } catch(e) {
       console.warn('SR error', e);
-      voiceTimeout.current = setTimeout(() => startListening(), 2000);
+      if (voiceTimeout.current) clearTimeout(voiceTimeout.current);
+      voiceTimeout.current = setTimeout(() => { if (mountedRef.current && startListeningRef.current) startListeningRef.current(); }, 2000);
     }
-  }, [execCommand]);
+  }, []);
+  startListeningRef.current = startListening;
 
   const stopListening = useCallback(() => {
     if (srRef.current) { try { srRef.current.abort(); } catch(e){} srRef.current = null; }
