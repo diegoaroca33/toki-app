@@ -43,7 +43,7 @@ export default function SettingsMethodTab() {
       </Card>
 
       <p style={{ fontSize: 12, color: DIM + '99', margin: '10px 0 0', textAlign: 'center' }}>
-        Toki · Aprende a decirlo — by Diego Aroca © 2026
+        Toki · Aprende a decirlo © 2026
       </p>
     </div>
   )
