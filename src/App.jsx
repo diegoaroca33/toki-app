@@ -235,18 +235,7 @@ export default function App(){
   const[showCompanion,setShowCompanion]=useState(false);
   const[dailyCount,setDailyCount]=useState(()=>user?.id?getDailyCount(user.id):0);
   const[showAstroOverlay,setShowAstroOverlay]=useState(false);
-  // Auto cloud sync when profiles change (debounced)
-  const cloudSyncTimer=useRef(null);
-  useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
-    clearTimeout(cloudSyncTimer.current);
-    cloudSyncTimer.current=setTimeout(()=>{
-      const now=Date.now();
-      const settings=gatherSettings();saveData('settings_ts',settings._ts);
-      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email,lastSaved:now,settings});
-      saveData('last_saved_time',now);
-    },2000);
-    return()=>clearTimeout(cloudSyncTimer.current)
-  },[profs,personas,fbMode,fbUser,activeMods,sessionMode,burstMode,burstReps,fraccionado,focalModule,focalWeight,guidedTasks]);
+  // Auto cloud sync — moved after all state declarations (see below line ~305)
   // Data migration: old sessionMin -> new session_time
   useEffect(() => {
     const oldMins = loadData('sessionMin') || loadData('session_mins')
@@ -302,6 +291,18 @@ export default function App(){
   function setFocalModuleVal(v){setFocalModule(v);saveData('focal_module',v)}
   function setFocalWeightVal(v){setFocalWeight(v);saveData('focal_weight',v)}
   function toggleFraccionado(){const nv=!fraccionado;setFraccionado(nv);saveData('fraccionado',nv)}
+  // Auto cloud sync when profiles or settings change (debounced)
+  const cloudSyncTimer=useRef(null);
+  useEffect(()=>{if(fbMode!=='cloud'||!fbUser)return;
+    clearTimeout(cloudSyncTimer.current);
+    cloudSyncTimer.current=setTimeout(()=>{
+      const now=Date.now();
+      const settings=gatherSettings();saveData('settings_ts',settings._ts);
+      cloudSaveProfile(fbUser.uid,{profiles:profs,personas,email:fbUser.email,lastSaved:now,settings});
+      saveData('last_saved_time',now);
+    },2000);
+    return()=>clearTimeout(cloudSyncTimer.current)
+  },[profs,personas,fbMode,fbUser,activeMods,sessionMode,burstMode,burstReps,fraccionado,focalModule,focalWeight,guidedTasks]);
   // First-time initialization: all modules OFF except DILO N1 (decir), burst ON with 2 reps
   useEffect(()=>{
     if(loadData('first_init_done',false))return;
