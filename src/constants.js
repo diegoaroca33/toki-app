@@ -173,6 +173,7 @@ export const LV_OPTS={
   razona_emociones:[{n:5,l:'Emociones'}],
   razona_numeros:[{n:9,l:'Series numéricas'}],
   razona_compara:[{n:10,l:'Comparar cantidades'}],
+  razona_secuencias:[{n:11,l:'Ordenar rutinas'}],
   decir:[{n:1,l:'N1'},{n:2,l:'N2'},{n:3,l:'N3'},{n:4,l:'N4'},{n:5,l:'N5'}],
   frase:[{n:1,l:'3 pal'},{n:2,l:'4 pal'},{n:3,l:'5 pal'}],
   contar:[{n:1,l:'1-20'},{n:2,l:'20-50'},{n:3,l:'50-100'},{n:4,l:'1-100'}],
@@ -219,6 +220,7 @@ export const GROUPS=[
     {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
     {k:'razona',l:'Series numéricas',defLv:9,lvKey:'razona_numeros'},
     {k:'razona',l:'Compara cantidades',defLv:10,lvKey:'razona_compara'},
+    {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'},
     {k:'money',l:'Monedas y Billetes',defLv:1,lvKey:'money'},
     {k:'clock',l:'La Hora',defLv:1,lvKey:'clock'},
     {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
@@ -235,3 +237,43 @@ export const GROUPS=[
     {k:'lee',l:'Preposiciones 2',defLv:7,lvKey:'lee_prep2'},
     {k:'lee',l:'Preposiciones 3',defLv:8,lvKey:'lee_prep3'}]},
 ];
+
+// 🌱🌿🌳 Competency level presets — configure all modules at once
+export const LEVEL_PRESETS = {
+  basica: {
+    label: '🌱 Básica', desc: 'Presentarse, pedir necesidades, contar hasta 20, monedas básicas',
+    active: {
+      pres_0:true,decir:true,misfrases_dilo:true,frase:false,contar:true,
+      math:true,multi:false,frac:false,
+      razona_spatial:true,razona_series:false,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:false,razona_compara:false,razona_secuencias:true,
+      money:true,clock:true,calendar:true,distribute:false,
+      writing_1:true,
+      lee_intruso:true,lee_word_img:true,lee_complete:false,lee_syllables:false,lee_read_do:false,lee_prep1:false,lee_prep2:false,lee_prep3:false,
+    },
+    levels: {decir:[1,2],contar:[1],math:[5,6],money:[1],clock:[1],calendar:[1],razona_spatial:[1],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],writing_1:[1],lee_intruso:[1],lee_word_img:[2]},
+  },
+  avanzada: {
+    label: '🌿 Avanzada', desc: 'Comprar, transporte, médico, sumas, reloj completo',
+    active: {
+      pres_0:true,decir:true,misfrases_dilo:true,frase:true,contar:true,
+      math:true,multi:false,frac:false,
+      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,
+      money:true,clock:true,calendar:true,distribute:true,
+      writing_1:true,
+      lee_intruso:true,lee_word_img:true,lee_complete:true,lee_syllables:true,lee_read_do:true,lee_prep1:true,lee_prep2:true,lee_prep3:false,
+    },
+    levels: {decir:[2,3],contar:[1,2,3],math:[5,6,1,2],money:[1,2,3],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],frase:[1,2],distribute:[1,2],writing_1:[1,3,5],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7]},
+  },
+  master: {
+    label: '🌳 Master', desc: 'Frases largas, multiplicar, fracciones, autonomía total',
+    active: {
+      pres_0:true,decir:true,misfrases_dilo:true,frase:true,contar:true,
+      math:true,multi:true,frac:true,
+      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,
+      money:true,clock:true,calendar:true,distribute:true,
+      writing_1:true,
+      lee_intruso:true,lee_word_img:true,lee_complete:true,lee_syllables:true,lee_read_do:true,lee_prep1:true,lee_prep2:true,lee_prep3:true,
+    },
+    levels: {decir:[3,4,5],contar:[1,2,3,4],math:[1,2,3,4],multi:[1,2,3],frac:[1,2,3],money:[1,2,3,4],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7,8],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],frase:[1,2,3],distribute:[1,2,3],writing_1:[1,2,3,4,5,6],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7],lee_prep3:[8]},
+  },
+};

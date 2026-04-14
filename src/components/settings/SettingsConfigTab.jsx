@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
   BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER,
-  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS, SUPPORT_EMAIL, VER
+  SESSION_TIMES, SESSION_TIME_LABELS, SESSION_GOALS, GOAL_LABELS, GOAL_ESTIMATES, GOAL_EMOJIS, LV_OPTS, SUPPORT_EMAIL, VER, LEVEL_PRESETS
 } from '../../constants.js'
 import { Button, Card, Badge } from '../ui/index.js'
 import SessionModeControl from './SessionModeControl.jsx'
@@ -435,8 +435,46 @@ export default function SettingsConfigTab(props) {
     setDynDiloLocal(v)
   }
 
+  // Level preset application
+  function applyPreset(key) {
+    const preset = LEVEL_PRESETS[key]
+    if (!preset) return
+    // Apply active modules
+    const na = { ...(activeMods || {}) }
+    Object.entries(preset.active).forEach(([lvKey, active]) => { na[lvKey] = active })
+    setActiveMods && setActiveMods(na)
+    saveData('active_mods', na)
+    // Apply levels
+    Object.entries(preset.levels).forEach(([lvKey, lvs]) => { setModuleLv(lvKey, lvs) })
+    saveData('competency_level', key)
+  }
+  const currentCompetency = loadData('competency_level', null)
+
   return (
     <div style={{ display: 'grid', gap: 14 }}>
+      {/* Competency level selector */}
+      <Card>
+        <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 8 }}>Nivel de competencia</div>
+        <p style={{ color: DIM, fontSize: 13, margin: '0 0 12px' }}>Configura todos los módulos de una vez según el nivel del alumno</p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {Object.entries(LEVEL_PRESETS).map(([key, preset]) => {
+            const active = currentCompetency === key
+            return <button key={key} onClick={() => applyPreset(key)} style={{
+              padding: '14px 16px', borderRadius: 14, border: active ? `2px solid ${GOLD}` : `2px solid ${BORDER}`,
+              background: active ? GOLD + '15' : CARD, cursor: 'pointer', textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 12, fontFamily: "'Fredoka'", transition: 'all .2s',
+            }}>
+              <span style={{ fontSize: 32 }}>{preset.label.split(' ')[0]}</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: active ? GOLD : TXT }}>{preset.label.split(' ').slice(1).join(' ')}</div>
+                <div style={{ fontSize: 12, color: DIM }}>{preset.desc}</div>
+              </div>
+              {active && <span style={{ marginLeft: 'auto', fontSize: 18, color: GOLD }}>✓</span>}
+            </button>
+          })}
+        </div>
+        <p style={{ color: DIM, fontSize: 11, margin: '10px 0 0', textAlign: 'center' }}>Puedes personalizar módulos individuales más abajo</p>
+      </Card>
       {/* PIN change */}
       <Card style={{ padding: 0, overflow: 'hidden' }}>
         <button onClick={() => { if (chgStep === 'closed') setChgStep('current'); else { setChgStep('closed'); setChgCur(''); setChgNew(''); setChgErr('') } }} style={{ width: '100%', padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: "'Fredoka'", color: TXT }}>

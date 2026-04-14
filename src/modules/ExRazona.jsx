@@ -132,6 +132,26 @@ function genCompare(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=
     const ans=a>b?'>':a<b?'<':'=';
     items.push({ty:'razona',mode:'compare',data:{a,b,emoji:em,ans,q:`¿${a} ${em} o ${b} ${em}?`},id:'rz_cmp_'+i})}
   return sh(items)}
+// Generate sequence ordering exercises (daily routines)
+function genSequences(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  const SEQUENCES=[
+    {title:'Por la mañana',steps:['⏰ Me despierto','🚿 Me ducho','👕 Me visto','🥣 Desayuno','🎒 Cojo la mochila','🚌 Voy al cole'],oral:'Por la mañana me despierto, me ducho, me visto y desayuno'},
+    {title:'Antes de dormir',steps:['🍽️ Ceno','📺 Veo un rato la tele','🪥 Me lavo los dientes','📖 Leo un cuento','🛏️ Me acuesto','😴 Me duermo'],oral:'Antes de dormir ceno, me lavo los dientes y me acuesto'},
+    {title:'Ir a comprar',steps:['📝 Hago la lista','🧥 Me pongo el abrigo','🚶 Voy a la tienda','🛒 Cojo lo que necesito','💰 Pago en la caja','🏠 Vuelvo a casa'],oral:'Para comprar hago la lista, voy a la tienda, pago y vuelvo'},
+    {title:'Ir al médico',steps:['📞 Pido cita','🚗 Voy al centro de salud','🪑 Espero mi turno','👨‍⚕️ Entro a consulta','💊 Me da la receta','🏠 Vuelvo a casa'],oral:'En el médico espero mi turno, entro y me da la receta'},
+    {title:'Coger el autobús',steps:['🚏 Voy a la parada','⏳ Espero el autobús','🚌 Subo al autobús','💳 Pago el billete','💺 Me siento','🔔 Pulso para bajar'],oral:'Para ir en bus, espero en la parada, subo y pago'},
+    {title:'Preparar un bocadillo',steps:['🍞 Cojo el pan','🔪 Lo corto por la mitad','🧀 Pongo el queso','🥬 Pongo la lechuga','🍞 Cierro el bocadillo','😋 Me lo como'],oral:'Para hacer un bocadillo corto el pan, pongo queso y lo cierro'},
+    {title:'Lavarse las manos',steps:['🚰 Abro el grifo','🧼 Echo jabón','🤲 Froto las manos','💦 Las enjuago con agua','🚰 Cierro el grifo','🧻 Me seco con la toalla'],oral:'Me lavo las manos con jabón y agua y me seco'},
+    {title:'Poner la mesa',steps:['🍽️ Pongo el mantel','🍽️ Pongo los platos','🍴 Pongo los cubiertos','🥛 Pongo los vasos','🧻 Pongo las servilletas','🪑 Me siento'],oral:'Pongo el mantel, los platos, los cubiertos y los vasos'},
+    {title:'Ir al parque',steps:['👟 Me pongo las zapatillas','🧴 Me echo crema','🚶 Voy andando','🌳 Llego al parque','⚽ Juego con amigos','🏠 Vuelvo a casa'],oral:'Voy al parque, juego con amigos y vuelvo a casa'},
+    {title:'Ducharse',steps:['🚿 Abro el agua','💧 Mojo el cuerpo','🧴 Echo gel','🤲 Me froto bien','💦 Me aclaro','🧻 Me seco con la toalla'],oral:'Para ducharme abro el agua, me enjabono y me seco'},
+  ];
+  SEQUENCES.forEach((seq,si)=>{
+    // Show 4 steps shuffled, child must order them
+    const shown=seq.steps.slice(0,4);
+    items.push({ty:'razona',mode:'sequence',data:{title:seq.title,steps:shown,oral:seq.oral},id:'rz_seq_'+si});
+  });
+  return sh(items)}
 export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
@@ -143,6 +163,7 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===8){return genPatterns('hard')}
   if(lv===9){return genNumberSeries()}
   if(lv===10){return genCompare()}
+  if(lv===11){return genSequences()}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -485,6 +506,38 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <div style={{flex:'0 0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:280}}>
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
+    </div>}
+    {/* Sequences — order daily routine steps */}
+    {ex.mode==='sequence'&&<div>
+      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.title}</p>
+      <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Ordena los pasos</p>
+      {/* Placed steps */}
+      <div style={{display:'grid',gap:6,marginBottom:12,minHeight:60}}>
+        {Object.keys(placed).sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>{
+          const step=placed[k];
+          return <div key={k} style={{display:'flex',gap:8,alignItems:'center',padding:'8px 12px',background:GREEN+'15',borderRadius:10,border:`1px solid ${GREEN}33`}}>
+            <span style={{fontSize:16,fontWeight:800,color:GREEN,minWidth:24}}>{parseInt(k)+1}.</span>
+            <span style={{fontSize:16}}>{step}</span>
+          </div>
+        })}
+      </div>
+      {/* Available steps to pick */}
+      {!fb&&<div style={{display:'grid',gap:6}}>
+        {ex.data.steps.filter(s=>!Object.values(placed).includes(s)).sort(()=>0.5-Math.random()).map(step=>
+          <button key={step} className="btn btn-b" onClick={()=>{
+            poke();const nextIdx=Object.keys(placed).length;
+            const np={...placed,[nextIdx]:step};setPlaced(np);
+            if(Object.keys(np).length===ex.data.steps.length){
+              const correct=ex.data.steps.every((s,i)=>np[i]===s);
+              if(correct){setFb('ok');starBeep(4);say('¡Perfecto! '+ex.data.title).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(ex.data.oral,4,1),300))}
+              else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
+                if(na>=2){sayFB('El orden correcto es...');setTimeout(()=>{setFb(null);const cp={};ex.data.steps.forEach((s,i)=>{cp[i]=s});setPlaced(cp);setTimeout(()=>onOk(1,na),2500)},1500)}
+                else{sayFB('¡Casi! Fíjate en el orden');setTimeout(()=>{setFb(null);setPlaced({})},1500)}}
+            }
+          }} style={{fontSize:16,padding:'10px 14px',textAlign:'left'}}>{step}</button>
+        )}
+      </div>}
+      {Object.keys(placed).length>0&&!fb&&<button className="btn btn-ghost" onClick={()=>setPlaced({})} style={{marginTop:8,fontSize:14}}>↩️ Empezar de nuevo</button>}
     </div>}
     {/* Number series — visual number bubbles with gap */}
     {ex.mode==='number_series'&&<div>
