@@ -488,7 +488,11 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();setTimeout(()=>say(ex.data.q||''),400);return()=>stopVoice()},[ex]);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();
+    // Voice instruction — fallback for modes without ex.data.q
+    const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?'Ordena los pasos de '+(ex.data.title||'la rutina'):ex.mode==='anterior_posterior'?ex.data.q:'');
+    setTimeout(()=>say(intro),400);
+    return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
     if(ex.mode==='emotion')return ex.data.emotion;
     if(ex.mode==='spatial'||ex.mode==='spatial_drag')return ex.data.ans||ex.data.pos;
@@ -508,6 +512,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='intruso'){const cat=ex.data.cat||'';return'Piensa: todos los demás son del mismo grupo'+(cat?' ('+cat+')':'')}
     if(ex.mode==='cause')return'Piensa: ¿qué harías tú en esa situación?';
     if(ex.mode==='emotion')return'Mira bien la cara: ¿está contenta, triste o enfadada?';
+    if(ex.mode==='pattern')return'Fíjate en el patrón que se repite';
     if(ex.mode==='anterior_posterior')return'Cuenta: ...'+Math.max(0,(ex.data.n||5)-2)+', '+(Math.max(0,(ex.data.n||5)-1))+', '+(ex.data.n||5)+', '+((ex.data.n||5)+1)+', '+((ex.data.n||5)+2)+'...';
     if(ex.mode==='temperature'){const t=ex.data.temp;return t<0?'Bajo cero: ¡hace mucho frío!':t<=10?'Pocos grados: hace frío':t<=20?'Temperatura agradable':t<=30?'Bastante calor':'¡Mucho calor!'}
     if(ex.mode==='compare')return'Cuenta los de cada lado y compara';
@@ -550,7 +555,9 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:19,padding:14,minHeight:52,fontWeight:600,letterSpacing:0.5,opacity:fb==='ok'&&o!==ex.data.ans?0.35:1,transition:'opacity 0.3s'}}>{o}</button>)}
       </div>
     </div>}
-    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.data.pos;setTimeout(()=>triggerOral(phrase,4,1),1800)})}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}} poke={poke}/>}
+    {ex.mode==='spatial_drag'&&<SpatialDrag ex={ex} fb={fb} onCorrect={()=>{setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.data.pos;setTimeout(()=>triggerOral(phrase,4,1),1800)})}} onWrong={(correctPos)=>{const na=att+1;setAtt(na);beep(200,200);setFb('no');
+      if(na>=2){stopVoice();sayFB('La respuesta es: ponlo '+correctPos);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
+      else{sayFB('¡No! Ponlo '+correctPos);setTimeout(()=>setFb(null),1500)}}} poke={poke}/>}
     {ex.mode==='intruso'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.3,color:GOLD}}>{ex.data.q}</p>

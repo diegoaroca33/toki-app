@@ -415,7 +415,12 @@ export default function App(){
       }
       return _noRepeat(items)}
     // Multi-level support: if slv is an array, merge exercises from all levels
-    if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});return _noRepeat(sh(merged))}
+    // NOTE: recursive buildQ calls already apply _noRepeat internally, so we only
+    // shuffle and dedupe (without re-adding to sessionUsedPhrases which would empty the list)
+    if(Array.isArray(slv)&&slv.length>1){const merged=[];slv.forEach(lv=>{merged.push(...buildQ(u,section,lv))});
+      // Dedupe by id (in case same exercise appears in overlapping level pools)
+      const seen=new Set();const unique=merged.filter(ex=>{if(seen.has(ex.id))return false;seen.add(ex.id);return true});
+      return sh(unique)}
     if(Array.isArray(slv))slv=parseInt(slv[0])||1;
     if(section==='decir'){const wLen=e=>{const t=e.ph||e.su||'';return t.replace(/[¿?¡!,\.]/g,'').split(/\s+/).filter(Boolean).length};
       // M7a: Use dynamic level if enabled (but NOT when explicit level passed from multi-level merge)

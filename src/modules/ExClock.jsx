@@ -49,8 +49,8 @@ export function ExClock({ex,onOk,onSkip,name,uid,vids}){
       const expl=buildExplanation();
       setFb('no');beep(200,200);
       // Cuando falla: explicación completa como un profesor
-      sayFB(expl.voice);
-      setTimeout(()=>setFb(null),4000) // más tiempo para que asimile
+      // Visual permanece hasta que TTS termine + 1.5s para asimilar
+      sayFB(expl.voice).then(()=>setTimeout(()=>setFb(null),1500));
     }}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>

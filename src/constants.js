@@ -211,7 +211,7 @@ export const GROUPS=[
     {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
     {k:'contar',l:'Cuenta conmigo',defLv:1,lvKey:'contar'}]},
   {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
-    {k:'math',l:'Sumas y Restas',defLv:1,lvKey:'math'},
+    {k:'math',l:'Sumas y Restas',defLv:5,lvKey:'math'},
     {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
     {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'}]},
   {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
@@ -249,35 +249,35 @@ export const LEVEL_PRESETS = {
     active: {
       pres_0:true,decir:true,misfrases_dilo:true,frase:false,contar:true,
       math:true,multi:false,frac:false,
-      razona_spatial:true,razona_series:false,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:false,razona_compara:false,razona_secuencias:true,
+      razona_spatial:true,razona_series:false,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:false,razona_compara:false,razona_secuencias:true,razona_anterior_posterior:true,razona_temperatura:false,
       money:true,clock:true,calendar:true,distribute:false,
       writing_1:true,
       lee_intruso:true,lee_word_img:true,lee_complete:false,lee_syllables:false,lee_read_do:false,lee_prep1:false,lee_prep2:false,lee_prep3:false,
     },
-    levels: {decir:[1,2],contar:[1],math:[5,6],money:[1],clock:[1],calendar:[1],razona_spatial:[1],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],writing_1:[1],lee_intruso:[1],lee_word_img:[2]},
+    levels: {decir:[1,2],contar:[1],math:[5,6],money:[1],clock:[1],calendar:[1],razona_spatial:[1],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_secuencias:[11],razona_anterior_posterior:[12],writing_1:[1],lee_intruso:[1],lee_word_img:[2]},
   },
   avanzada: {
     label: '🌿 Avanzada', desc: 'Comprar, transporte, médico, sumas, reloj completo',
     active: {
       pres_0:true,decir:true,misfrases_dilo:true,frase:true,contar:true,
       math:true,multi:false,frac:false,
-      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,
+      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,razona_secuencias:true,razona_anterior_posterior:true,razona_temperatura:true,
       money:true,clock:true,calendar:true,distribute:true,
       writing_1:true,
       lee_intruso:true,lee_word_img:true,lee_complete:true,lee_syllables:true,lee_read_do:true,lee_prep1:true,lee_prep2:true,lee_prep3:false,
     },
-    levels: {decir:[2,3],contar:[1,2,3],math:[5,6,1,2],money:[1,2,3],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],frase:[1,2],distribute:[1,2],writing_1:[1,3,5],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7]},
+    levels: {decir:[2,3],contar:[1,2,3],math:[5,6,7,1,2],money:[1,2,3],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],razona_secuencias:[11],razona_anterior_posterior:[12],razona_temperatura:[13],frase:[1,2],distribute:[1,2],writing_1:[1,3,5],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7]},
   },
   master: {
     label: '🌳 Master', desc: 'Frases largas, multiplicar, fracciones, autonomía total',
     active: {
       pres_0:true,decir:true,misfrases_dilo:true,frase:true,contar:true,
       math:true,multi:true,frac:true,
-      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,
+      razona_spatial:true,razona_series:true,razona_piensa:true,razona_clasifica:true,razona_emociones:true,razona_numeros:true,razona_compara:true,razona_secuencias:true,razona_anterior_posterior:true,razona_temperatura:true,
       money:true,clock:true,calendar:true,distribute:true,
       writing_1:true,
       lee_intruso:true,lee_word_img:true,lee_complete:true,lee_syllables:true,lee_read_do:true,lee_prep1:true,lee_prep2:true,lee_prep3:true,
     },
-    levels: {decir:[3,4,5],contar:[1,2,3,4],math:[1,2,3,4],multi:[1,2,3],frac:[1,2,3],money:[1,2,3,4],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7,8],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],frase:[1,2,3],distribute:[1,2,3],writing_1:[1,2,3,4,5,6],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7],lee_prep3:[8]},
+    levels: {decir:[3,4,5],contar:[1,2,3,4],math:[1,2,3,4,7],multi:[1,2,3],frac:[1,2,3],money:[1,2,3,4],clock:[1,2,3],calendar:[1,2,3,4],razona_spatial:[1,2],razona_series:[6,7,8],razona_piensa:[4],razona_clasifica:[3],razona_emociones:[5],razona_numeros:[9],razona_compara:[10],razona_secuencias:[11],razona_anterior_posterior:[12],razona_temperatura:[13],frase:[1,2,3],distribute:[1,2,3],writing_1:[1,2,3,4,5,6],lee_intruso:[1],lee_word_img:[2],lee_complete:[3],lee_syllables:[4],lee_read_do:[5],lee_prep1:[6],lee_prep2:[7],lee_prep3:[8]},
   },
 };

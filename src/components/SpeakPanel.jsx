@@ -212,7 +212,8 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     const passThreshold=exPct*0.6*4;// 60% of exigencia applied to 4-star scale
     const na=att+1;sAtt(na);
     // Only say verbal encouragement every 8 exercises to avoid distraction
-    const shouldCheer=!exerciseNum||exerciseNum%8===0;
+    // When exerciseNum is undefined (from ExFrases/ExFrasesBlank/ExSit wrappers), default to false
+    const shouldCheer=typeof exerciseNum==='number'&&exerciseNum>0&&exerciseNum%8===0;
     if(b>=4){const m=mkPerfect(name);sMsg(m);sSf('perfect');if(shouldCheer){cheerOrSay(m,uid,vids,'perfect').then(()=>{if(alive.current)onOk(b,na)})}else{starBeep(b);setTimeout(()=>{if(alive.current)onOk(b,na)},400)}}
     else if(b>=passThreshold){
       if(b>=3){const gm=pickMsg(true,name,'decir');sMsg(gm);sSf('ok');if(shouldCheer){cheerOrSay(rnd(GOOD_MSG),uid,vids,'good').then(()=>{if(alive.current)onOk(b,na)})}else{starBeep(b);setTimeout(()=>{if(alive.current)onOk(b,na)},400)}}
