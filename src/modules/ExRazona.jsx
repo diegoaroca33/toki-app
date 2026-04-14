@@ -60,6 +60,15 @@ const RAZONA_CLASSIFY=[
   {groups:['🏠 Dentro casa','🌳 Fuera casa'],items:[{w:'🛋️ Sofá',g:0},{w:'🌳 Árbol',g:1},{w:'🍳 Cocina',g:0},{w:'🏊 Piscina',g:1},{w:'🛁 Bañera',g:0},{w:'⛱️ Playa',g:1}]},
   {groups:['🔊 Hace ruido','🤫 Silencioso'],items:[{w:'🥁 Tambor',g:0},{w:'📚 Libro',g:1},{w:'📱 Teléfono',g:0},{w:'🧸 Peluche',g:1},{w:'🐕 Perro',g:0},{w:'🐟 Pez',g:1}]},
   {groups:['💧 Agua','🔥 Fuego'],items:[{w:'🏊 Nadar',g:0},{w:'🏕️ Hoguera',g:1},{w:'🚿 Ducha',g:0},{w:'🕯️ Vela',g:1},{w:'🌧️ Lluvia',g:0},{w:'☀️ Sol',g:1}]},
+  // Pictociencia: Origen alimentos
+  {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🥛 Leche',g:0},{w:'🍎 Manzana',g:1},{w:'🥚 Huevo',g:0},{w:'🥕 Zanahoria',g:1},{w:'🧀 Queso',g:0},{w:'🍌 Plátano',g:1}]},
+  {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🍗 Pollo',g:0},{w:'🍅 Tomate',g:1},{w:'🐟 Pescado',g:0},{w:'🥦 Brócoli',g:1},{w:'🍖 Carne',g:0},{w:'🍇 Uvas',g:1}]},
+  // Pictociencia: Usos del agua
+  {groups:['💧 Necesita agua','❌ No necesita agua'],items:[{w:'🧼 Lavarse',g:0},{w:'📺 Ver la tele',g:1},{w:'🍲 Cocinar',g:0},{w:'📖 Leer',g:1},{w:'🌱 Regar plantas',g:0},{w:'🎮 Jugar consola',g:1}]},
+  // Pictociencia: Profesiones que ayudan
+  {groups:['👨‍⚕️ Salud','🛡️ Seguridad'],items:[{w:'👨‍⚕️ Médico',g:0},{w:'👮 Policía',g:1},{w:'🏥 Enfermera',g:0},{w:'🚒 Bombero',g:1},{w:'🦷 Dentista',g:0},{w:'🛡️ Guardia',g:1}]},
+  // Pictociencia: Sentidos y órganos
+  {groups:['👀 Veo con...','👂 Oigo con...'],items:[{w:'👀 Ojos',g:0},{w:'👂 Oídos',g:1},{w:'📺 Televisión',g:0},{w:'🎵 Música',g:1},{w:'📖 Libro',g:0},{w:'📱 Teléfono',g:1}]},
 ];
 const RAZONA_CAUSE=[
   {q:'Si llueve... ¿qué cojo?',opts:['☂️ Paraguas','🕶️ Gafas de sol'],ans:'☂️ Paraguas'},
@@ -89,6 +98,27 @@ const RAZONA_CAUSE=[
   {q:'Si llueve y no tengo paraguas...',opts:['🏠 Espero bajo un techo','🏃 Corro bajo la lluvia'],ans:'🏠 Espero bajo un techo'},
   {q:'Si alguien me da un regalo...',opts:['🙏 Doy las gracias','😤 No digo nada'],ans:'🙏 Doy las gracias'},
   {q:'Si veo basura en el suelo...',opts:['🗑️ La tiro a la papelera','👟 La piso'],ans:'🗑️ La tiro a la papelera'},
+  // Pictociencia: Servicios municipales
+  {q:'Si hay un incendio... ¿a quién llamo?',opts:['🚒 A los bomberos','🌳 Al jardinero'],ans:'🚒 A los bomberos'},
+  {q:'Si veo un ladrón... ¿a quién llamo?',opts:['👮 A la policía','📬 Al cartero'],ans:'👮 A la policía'},
+  {q:'Si alguien se desmaya... ¿a quién llamo?',opts:['🚑 A la ambulancia','🧹 Al barrendero'],ans:'🚑 A la ambulancia'},
+  {q:'Si la calle está sucia... ¿quién la limpia?',opts:['🧹 El barrendero','🚒 El bombero'],ans:'🧹 El barrendero'},
+  {q:'Si se rompe una tubería... ¿a quién aviso?',opts:['🏛️ Al ayuntamiento','🚒 Al bombero'],ans:'🏛️ Al ayuntamiento'},
+  // Pictociencia: Medios de comunicación
+  {q:'Si quiero hablar con mamá ahora...',opts:['📱 La llamo por teléfono','✉️ Le mando una carta'],ans:'📱 La llamo por teléfono'},
+  {q:'Si quiero ver dibujos...',opts:['📺 Enciendo la tele','📱 Llamo por teléfono'],ans:'📺 Enciendo la tele'},
+  {q:'Si quiero mandar un mensaje a mi amigo...',opts:['📱 Le mando un mensaje','📻 Pongo la radio'],ans:'📱 Le mando un mensaje'},
+  {q:'Si quiero escuchar música en el coche...',opts:['📻 Pongo la radio','✉️ Mando una carta'],ans:'📻 Pongo la radio'},
+  // Pictociencia: Dónde voy a viajar
+  {q:'Si voy en tren... ¿dónde voy?',opts:['🚉 A la estación','✈️ Al aeropuerto'],ans:'🚉 A la estación'},
+  {q:'Si voy en avión... ¿dónde voy?',opts:['✈️ Al aeropuerto','⚓ Al puerto'],ans:'✈️ Al aeropuerto'},
+  {q:'Si voy en barco... ¿dónde voy?',opts:['⚓ Al puerto','🚉 A la estación'],ans:'⚓ Al puerto'},
+  {q:'Si cojo un autobús... ¿dónde espero?',opts:['🚏 En la parada','✈️ En el aeropuerto'],ans:'🚏 En la parada'},
+  // Pictociencia: Estaciones
+  {q:'Si las hojas se caen... ¿qué estación es?',opts:['🍂 Otoño','☀️ Verano'],ans:'🍂 Otoño'},
+  {q:'Si hace mucho calor y vamos a la piscina...',opts:['☀️ Es verano','❄️ Es invierno'],ans:'☀️ Es verano'},
+  {q:'Si nieva... ¿qué me pongo?',opts:['🧥 Abrigo y botas','👙 Bañador'],ans:'🧥 Abrigo y botas'},
+  {q:'Si salen flores y los pájaros cantan...',opts:['🌸 Es primavera','🍂 Es otoño'],ans:'🌸 Es primavera'},
 ];
 const RAZONA_EMOTIONS=[
   {emoji:'😊',emotion:'Contento',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
@@ -152,6 +182,15 @@ function genSequences(){const sh=a=>[...a].sort(()=>Math.random()-.5);const item
     items.push({ty:'razona',mode:'sequence',data:{title:seq.title,steps:shown,oral:seq.oral},id:'rz_seq_'+si});
   });
   return sh(items)}
+// Generate anterior/posterior exercises
+function genAnteriorPosterior(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  for(let i=0;i<15;i++){const n=2+Math.floor(Math.random()*18); // 2-19
+    const mode=Math.random()>.5?'anterior':'posterior';
+    const ans=mode==='anterior'?n-1:n+1;
+    const wrong=[ans+1,ans-1,ans+2,n].filter(w=>w!==ans&&w>=0);
+    const opts=sh([ans,...new Set(wrong)].slice(0,4));
+    items.push({ty:'razona',mode:'anterior_posterior',data:{n,questionMode:mode,ans:String(ans),q:mode==='anterior'?`¿Qué número va ANTES del ${n}?`:`¿Qué número va DESPUÉS del ${n}?`,opts:opts.map(String)},id:'rz_ap_'+i})}
+  return sh(items)}
 export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
@@ -164,6 +203,7 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===9){return genNumberSeries()}
   if(lv===10){return genCompare()}
   if(lv===11){return genSequences()}
+  if(lv===12){return genAnteriorPosterior()}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -426,6 +466,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='pattern')return ex.data.ansText||ex.data.ans;
     if(ex.mode==='number_series')return ex.data.ans;
     if(ex.mode==='compare')return ex.data.a>ex.data.b?ex.data.a+' es mayor':ex.data.a<ex.data.b?ex.data.b+' es mayor':'son iguales';
+    if(ex.mode==='anterior_posterior')return(ex.data.questionMode==='anterior'?'antes del '+ex.data.n+' va el ':'después del '+ex.data.n+' va el ')+ex.data.ans;
     return String(ans);
   }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
@@ -568,6 +609,20 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {['>','<','='].map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:36,padding:14,fontWeight:800,minHeight:60}}>{o}</button>)}
       </div>
       {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta los {ex.data.emoji} de cada lado 👆</p></div>}
+    </div>}
+    {/* Anterior/Posterior */}
+    {ex.mode==='anterior_posterior'&&<div>
+      <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{ex.data.q}</p>
+        <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'center'}}>
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='anterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='anterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='anterior'?GOLD:'#fff'}}>?</div>
+          <div style={{width:56,height:56,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'#fff'}}>{ex.data.n}</div>
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='posterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='posterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='posterior'?GOLD:'#fff'}}>?</div>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:28,padding:16,minHeight:68,fontWeight:800}}>{o}</button>)}
+      </div>
     </div>}
     {fb==='ok'&&ex.mode!=='spatial'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}

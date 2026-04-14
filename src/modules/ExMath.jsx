@@ -19,9 +19,34 @@ export function genAddObjects(){const sh=a=>[...a].sort(()=>Math.random()-.5);co
     ops.push({q:`${a} + ${b}`,ans:a+b,a,b,emoji:em,mode:'add_objects'})}
   return sh(ops)}
 
+// Generate word problems with context (Pictociencia-inspired)
+const WORD_PROB_TEMPLATES=[
+  {t:'{N} tiene {a} {E} y le dan {b} más. ¿Cuántas tiene?',op:'+',oral:'{N} tiene {ans} {E} en total'},
+  {t:'{N} tiene {a} {E} y pierde {b}. ¿Cuántas le quedan?',op:'-',oral:'Le quedan {ans} {E}'},
+  {t:'Hay {a} {E} en una caja y {b} en otra. ¿Cuántas hay en total?',op:'+',oral:'Hay {ans} {E} en total'},
+  {t:'{N} compra {a} {E} y {N2} compra {b}. ¿Cuántas tienen entre los dos?',op:'+',oral:'Tienen {ans} {E} entre los dos'},
+  {t:'En el parque hay {a} {E}. Se van {b}. ¿Cuántas quedan?',op:'-',oral:'Quedan {ans} {E}'},
+  {t:'{N} tiene {a} {E}. Regala {b} a su amigo. ¿Cuántas le quedan?',op:'-',oral:'Le quedan {ans} {E}'},
+];
+const WP_NAMES=['Guillermo','María','Pablo','Sara','Lucas','Elena','Hugo','Alba'];
+const WP_OBJECTS=[{e:'🍎',n:'manzanas'},{e:'🍬',n:'chuches'},{e:'⭐',n:'estrellas'},{e:'📚',n:'libros'},{e:'🖍️',n:'pinturas'},{e:'🧸',n:'peluches'},{e:'🍪',n:'galletas'},{e:'⚽',n:'pelotas'},{e:'🎈',n:'globos'},{e:'🌸',n:'flores'}];
+export function genWordProblems(){const sh=a=>[...a].sort(()=>Math.random()-.5);const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  for(let i=0;i<20;i++){
+    const tpl=WORD_PROB_TEMPLATES[Math.floor(Math.random()*WORD_PROB_TEMPLATES.length)];
+    const obj=WP_OBJECTS[Math.floor(Math.random()*WP_OBJECTS.length)];
+    const n1=WP_NAMES[Math.floor(Math.random()*WP_NAMES.length)];
+    let n2=WP_NAMES[Math.floor(Math.random()*WP_NAMES.length)];while(n2===n1)n2=WP_NAMES[Math.floor(Math.random()*WP_NAMES.length)];
+    let a,b,ans;
+    if(tpl.op==='+'){a=rng(2,10);b=rng(1,8);ans=a+b}else{a=rng(5,15);b=rng(1,a-1);ans=a-b}
+    const text=tpl.t.replace(/\{N\}/g,n1).replace(/\{N2\}/g,n2).replace(/\{a\}/g,a).replace(/\{b\}/g,b).replace(/\{E\}/g,obj.n);
+    const oral=tpl.oral.replace(/\{ans\}/g,ans).replace(/\{E\}/g,obj.n).replace(/\{N\}/g,n1);
+    ops.push({q:text,ans,emoji:obj.e,a,b,oral,mode:'word_problem'})}
+  return sh(ops)}
+
 export function genMath(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(lv===5){return genCountObjects()} // Nivel visual: contar objetos
   if(lv===6){return genAddObjects()} // Nivel visual: sumas con objetos
+  if(lv===7){return genWordProblems()} // Nivel verbal: problemas con contexto
   if(lv===1){for(let i=0;i<30;i++){const a=rng(1,10),b=rng(1,2);ops.push({q:`${a} + ${b}`,ans:a+b})}}
   else if(lv===2){for(let i=0;i<30;i++){const a=rng(5,20),b=Math.random()>.5?5:10;ops.push({q:`${a} + ${b}`,ans:a+b})}}
   else if(lv===3){for(let i=0;i<30;i++){const a=rng(3,15),b=rng(1,2);ops.push({q:`${a} - ${b}`,ans:a-b})}}
@@ -109,10 +134,32 @@ function ExAddObjects({ex,onOk,onSkip,name,uid,vids}){
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
 
+// Visual mode: Word problems with context
+function ExWordProblem({ex,onOk,onSkip,name,uid,vids}){
+  const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say(ex.q),500);return()=>stopVoice()},[ex]);
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
+    say(ex.oral).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>triggerOral(ex.oral,4,1))}
+    else{setFb('no');stopVoice();sayFB('Piensa bien... la respuesta es '+ex.ans);setTimeout(()=>setFb(null),2500)}}
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+    <div className="card" style={{padding:20,marginBottom:14,background:'rgba(255,255,255,.06)',borderColor:'rgba(255,255,255,.15)'}}>
+      <div style={{fontSize:48,marginBottom:12}}>{ex.emoji}</div>
+      <p style={{fontSize:20,fontWeight:700,margin:0,lineHeight:1.5,color:'#fff'}}>{ex.q}</p>
+    </div>
+    {!fb&&<NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={3}/>}
+    {fb==='ok'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{ex.oral}</p></div>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
+    {fb==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:14,padding:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>Piensa: ¿sumar o restar? 🤔</p></div>}
+    {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+  </div>}
+
 export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
   // Route to visual modes
   if(ex.mode==='count_objects')return <ExCountObjects ex={ex} onOk={onOk} onSkip={onSkip} name={name} uid={uid} vids={vids}/>
   if(ex.mode==='add_objects')return <ExAddObjects ex={ex} onOk={onOk} onSkip={onSkip} name={name} uid={uid} vids={vids}/>
+  if(ex.mode==='word_problem')return <ExWordProblem ex={ex} onOk={onOk} onSkip={onSkip} name={name} uid={uid} vids={vids}/>
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[showHelp,setShowHelp]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
