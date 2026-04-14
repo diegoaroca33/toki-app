@@ -93,7 +93,7 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     else{setFb('no');stopVoice();sayFB(ex.total+' entre '+ex.bags+' son '+ex.each+' cada uno');setT(()=>{setFb(null);setAns('')},2500)}}
   function checkCompare(who){poke();const correct=ex.a>ex.b?'a':ex.a<ex.b?'b':'equal';
     if(who===correct){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const winner=correct==='a'?ex.nameA:correct==='b'?ex.nameB:'igual';const phrase=winner+' tiene más';setT(()=>triggerOral(phrase,4,1),300)})}
-    else{setFb('no');beep(200,200);setT(()=>setFb(null),1200)}}
+    else{setFb('no');beep(200,200);const winner=correct==='a'?ex.nameA:correct==='b'?ex.nameB:'los dos igual';const hint=correct==='equal'?'Los dos tienen lo mismo: '+ex.a:winner+' tiene más porque '+Math.max(ex.a,ex.b)+' es mayor que '+Math.min(ex.a,ex.b);sayFB(hint);setT(()=>setFb(null),2500)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='put'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}>
@@ -154,7 +154,7 @@ export function ExDistribute({ex,onOk,onSkip,name,uid,vids}){
     </div>}
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>{ex.mode==='compare'?(ex.a>ex.b?ex.nameA+' tiene más ('+ex.a+' > '+ex.b+')':ex.a<ex.b?ex.nameB+' tiene más ('+ex.b+' > '+ex.a+')':'¡Tienen lo mismo! ('+ex.a+' = '+ex.b+')'):'¡Fíjate bien! 💪'}</p></div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}

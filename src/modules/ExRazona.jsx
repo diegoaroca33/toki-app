@@ -502,16 +502,38 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='temperature')return ex.data.oral;
     return String(ans);
   }
+  // Mode-specific hints for first failure (not just "Casi!")
+  function getFirstHint(){
+    if(ex.mode==='spatial')return'Fíjate bien en dónde está el objeto';
+    if(ex.mode==='intruso'){const cat=ex.data.cat||'';return'Piensa: todos los demás son del mismo grupo'+(cat?' ('+cat+')':'')}
+    if(ex.mode==='cause')return'Piensa: ¿qué harías tú en esa situación?';
+    if(ex.mode==='emotion')return'Mira bien la cara: ¿está contenta, triste o enfadada?';
+    if(ex.mode==='anterior_posterior')return'Cuenta: ...'+Math.max(0,(ex.data.n||5)-2)+', '+(Math.max(0,(ex.data.n||5)-1))+', '+(ex.data.n||5)+', '+((ex.data.n||5)+1)+', '+((ex.data.n||5)+2)+'...';
+    if(ex.mode==='temperature'){const t=ex.data.temp;return t<0?'Bajo cero: ¡hace mucho frío!':t<=10?'Pocos grados: hace frío':t<=20?'Temperatura agradable':t<=30?'Bastante calor':'¡Mucho calor!'}
+    if(ex.mode==='compare')return'Cuenta los de cada lado y compara';
+    if(ex.mode==='number_series')return'Cuenta de '+((ex.data&&ex.data.step)||1)+' en '+((ex.data&&ex.data.step)||1);
+    return'¡Fíjate bien!'}
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
     const celebTime=ex.mode==='spatial'?1800:300;
     if(ans===correct){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=getOralPhrase(ans);setTimeout(()=>triggerOral(phrase,a===1?4:a===2?2:1,a),celebTime)})}
-    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
-      else{setTimeout(()=>setFb(null),1200)}}}
+    else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
+      if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
+      else{const hint=getFirstHint();stopVoice();sayFB(hint);setTimeout(()=>setFb(null),2000)}}}
+  const[classifyAtt,setClassifyAtt]=useState(0);
   function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
       if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado',4,1),300))}
-      else{setFb('no');beep(200,200);sayFB('¡Casi! Algunos no están bien');setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}
+      else{const ca=classifyAtt+1;setClassifyAtt(ca);setFb('no');beep(200,200);
+        if(ca>=2){
+          // 2nd fail: show correct classification
+          const correctPlacement={};ex.data.items.forEach(it=>{correctPlacement[it.w]=it.g});
+          setPlaced(correctPlacement);
+          sayFB('Mira cómo va: '+ex.data.items.map(it=>it.w+' va en '+ex.data.groups[it.g]).join(', '));
+          setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,ca),300)},3500)
+        }else{
+          sayFB('Casi, fíjate bien en cada uno');
+          setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
       {/* Left side — celebration zone (symmetry with buttons) */}
