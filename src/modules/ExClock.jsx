@@ -31,32 +31,71 @@ export function ExClock({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setFb(null);resetOral();stopVoice();setTimeout(()=>say('¿Qué hora es?'),400);return()=>stopVoice()},[ex]);
-  function pick(t){poke();if(t===ex.text){setFb('ok');starBeep(4);stopVoice();say('Son '+ex.text).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const phrase='son '+ex.text;setTimeout(()=>triggerOral(phrase,4,1),250)})}
-    else{setFb('no');beep(200,200);const minHint=ex.m===0?'La aguja GRANDE apunta al 12':ex.m===30?'La aguja GRANDE apunta al 6, significa y media':ex.m===15?'La aguja GRANDE apunta al 3, significa y cuarto':'La aguja GRANDE apunta al 9, significa menos cuarto';const hrHint='La aguja PEQUEÑA apunta al '+ex.h;sayFB(hrHint+'. '+minHint);setTimeout(()=>setFb(null),2500)}}
+  // Build natural explanation like a teacher
+  function buildExplanation(){
+    const nh=ex.h===12?1:ex.h+1;
+    if(ex.m===0)return{short:'Son '+ex.text,voice:'Fíjate en la aguja pequeña: apunta al '+ex.h+'. Y la grande está en el 12, arriba, eso es en punto. Son '+ex.text+'.',hrText:'La pequeña apunta al '+ex.h,minText:'La grande está en el 12 = en punto',minNum:'12'};
+    if(ex.m===30)return{short:'Son '+ex.text,voice:'Fíjate en la aguja pequeña: pasa del '+ex.h+'. Y la grande está en el 6, abajo, eso es y media. Son '+ex.text+'.',hrText:'La pequeña pasa del '+ex.h,minText:'La grande está en el 6 = y media',minNum:'6'};
+    if(ex.m===15)return{short:'Son '+ex.text,voice:'Fíjate en la aguja pequeña: pasa del '+ex.h+'. Y la grande está en el 3, eso es un cuarto. Son '+ex.text+'.',hrText:'La pequeña pasa del '+ex.h,minText:'La grande está en el 3 = y cuarto',minNum:'3'};
+    return{short:'Son '+ex.text,voice:'Fíjate en la aguja pequeña: está llegando al '+nh+'. Y la grande está en el 9, eso es menos cuarto. Son '+ex.text+'.',hrText:'La pequeña llega al '+nh,minText:'La grande está en el 9 = menos cuarto',minNum:'9'};
+  }
+  function pick(t){poke();
+    if(t===ex.text){
+      const expl=buildExplanation();
+      setFb('ok');starBeep(4);stopVoice();
+      // Cuando acierta: explica brevemente Y dice la hora
+      say(expl.voice).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{setTimeout(()=>triggerOral('son '+ex.text,4,1),250)})
+    }else{
+      const expl=buildExplanation();
+      setFb('no');beep(200,200);
+      // Cuando falla: explicación completa como un profesor
+      sayFB(expl.voice);
+      setTimeout(()=>setFb(null),4000) // más tiempo para que asimile
+    }}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Qué hora es?</p>
       <div style={{display:'flex',justifyContent:'center'}}><ClockFace h={ex.h} m={ex.m}/></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
-    {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
+    {fb==='ok'&&!oralPhrase&&(()=>{const expl=buildExplanation();return <div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}>
+      <Stars n={4} sz={36}/>
+      <p style={{fontSize:18,fontWeight:700,color:GREEN,margin:'8px 0 0'}}>{expl.short.charAt(0).toUpperCase()+expl.short.slice(1)}</p>
+    </div>})()}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:16,marginTop:14}}>
-      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 10px'}}>Fíjate bien:</p>
-      <div style={{display:'flex',alignItems:'center',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
-        {/* Mini reloj de ejemplo mostrando la respuesta correcta */}
-        <ClockFace h={ex.h} m={ex.m} size={100}/>
-        <div style={{textAlign:'left'}}>
-          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
-            <div style={{width:24,height:3,background:GOLD,borderRadius:2}}/>
-            <p style={{fontSize:14,color:GOLD,fontWeight:600,margin:0}}>Pequeña → {ex.h}</p>
+    {fb==='no'&&(()=>{const expl=buildExplanation();return <div className="as" style={{background:'rgba(255,255,255,.06)',borderRadius:16,padding:18,marginTop:14,border:'2px solid rgba(255,255,255,.1)'}}>
+      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>Fíjate bien:</p>
+      <div style={{display:'flex',alignItems:'center',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
+        {/* Mini reloj señalando la respuesta */}
+        <div style={{position:'relative'}}>
+          <ClockFace h={ex.h} m={ex.m} size={120}/>
+          {/* Flecha señalando aguja pequeña */}
+          <div style={{position:'absolute',top:4,left:4,fontSize:11,color:GOLD,fontWeight:700,background:'rgba(0,0,0,.6)',borderRadius:6,padding:'2px 6px'}}>← pequeña</div>
+          {/* Flecha señalando aguja grande */}
+          <div style={{position:'absolute',bottom:4,right:4,fontSize:11,color:BLUE,fontWeight:700,background:'rgba(0,0,0,.6)',borderRadius:6,padding:'2px 6px'}}>← grande</div>
+        </div>
+        <div style={{textAlign:'left',maxWidth:220}}>
+          {/* Paso 1: aguja pequeña */}
+          <div style={{marginBottom:8}}>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:20,height:4,background:GOLD,borderRadius:2,flexShrink:0}}/>
+              <span style={{fontSize:14,fontWeight:700,color:GOLD}}>Aguja pequeña:</span>
+            </div>
+            <p style={{fontSize:15,color:'#fff',margin:'2px 0 0 26px',fontWeight:600}}>{expl.hrText}</p>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-            <div style={{width:32,height:3,background:BLUE,borderRadius:2}}/>
-            <p style={{fontSize:14,color:BLUE,fontWeight:600,margin:0}}>Grande → {ex.m===0?'12 (en punto)':ex.m===30?'6 (y media)':ex.m===15?'3 (y cuarto)':'9 (menos cuarto)'}</p>
+          {/* Paso 2: aguja grande */}
+          <div style={{marginBottom:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:28,height:3,background:BLUE,borderRadius:2,flexShrink:0}}/>
+              <span style={{fontSize:14,fontWeight:700,color:BLUE}}>Aguja grande:</span>
+            </div>
+            <p style={{fontSize:15,color:'#fff',margin:'2px 0 0 34px',fontWeight:600}}>{expl.minText}</p>
           </div>
-          <p style={{fontSize:16,fontWeight:700,color:'#fff',margin:0}}>Son {ex.text}</p>
+          {/* Resultado */}
+          <div style={{background:GREEN+'22',borderRadius:10,padding:'8px 12px',textAlign:'center'}}>
+            <p style={{fontSize:18,fontWeight:800,color:GREEN,margin:0}}>{expl.short.charAt(0).toUpperCase()+expl.short.slice(1)}</p>
+          </div>
         </div>
       </div>
-    </div>}
+    </div>})()}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
