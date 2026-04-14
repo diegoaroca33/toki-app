@@ -119,6 +119,11 @@ const RAZONA_CAUSE=[
   {q:'Si hace mucho calor y vamos a la piscina...',opts:['☀️ Es verano','❄️ Es invierno'],ans:'☀️ Es verano'},
   {q:'Si nieva... ¿qué me pongo?',opts:['🧥 Abrigo y botas','👙 Bañador'],ans:'🧥 Abrigo y botas'},
   {q:'Si salen flores y los pájaros cantan...',opts:['🌸 Es primavera','🍂 Es otoño'],ans:'🌸 Es primavera'},
+  // Peso funcional
+  {q:'¿Qué pesa más?',opts:['🚗 Un coche','🍎 Una manzana'],ans:'🚗 Un coche'},
+  {q:'¿Qué pesa más?',opts:['📚 Mochila llena','🪶 Una pluma'],ans:'📚 Mochila llena'},
+  {q:'Un kilo de manzanas... ¿cuántas son más o menos?',opts:['🍎 Unas 5 o 6','🍎 Unas 100'],ans:'🍎 Unas 5 o 6'},
+  {q:'¿Cuánto pesa más o menos una sandía?',opts:['🍉 Unos 4 kilos','🍉 Unos 100 gramos'],ans:'🍉 Unos 4 kilos'},
 ];
 const RAZONA_EMOTIONS=[
   {emoji:'😊',emotion:'Contento',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
@@ -191,6 +196,32 @@ function genAnteriorPosterior(){const sh=a=>[...a].sort(()=>Math.random()-.5);co
     const opts=sh([ans,...new Set(wrong)].slice(0,4));
     items.push({ty:'razona',mode:'anterior_posterior',data:{n,questionMode:mode,ans:String(ans),q:mode==='anterior'?`¿Qué número va ANTES del ${n}?`:`¿Qué número va DESPUÉS del ${n}?`,opts:opts.map(String)},id:'rz_ap_'+i})}
   return sh(items)}
+// Generate temperature/thermometer exercises
+function genTemperature(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  const temps=[
+    {t:-5,desc:'Hace mucho frío, bajo cero',emoji:'🥶',cat:'frío'},
+    {t:-2,desc:'Bajo cero, hielo',emoji:'❄️',cat:'frío'},
+    {t:0,desc:'Cero grados, puede helar',emoji:'❄️',cat:'frío'},
+    {t:3,desc:'Hace frío',emoji:'🧥',cat:'frío'},
+    {t:8,desc:'Hace fresquito',emoji:'🧣',cat:'fresco'},
+    {t:15,desc:'Está templado',emoji:'👕',cat:'templado'},
+    {t:20,desc:'Hace buen tiempo',emoji:'😊',cat:'templado'},
+    {t:25,desc:'Hace calor',emoji:'☀️',cat:'calor'},
+    {t:30,desc:'Hace mucho calor',emoji:'🥵',cat:'calor'},
+    {t:35,desc:'Hace muchísimo calor',emoji:'🔥',cat:'calor'},
+    {t:40,desc:'Ola de calor',emoji:'🌡️',cat:'calor'},
+  ];
+  temps.forEach((tmp,i)=>{
+    // "¿Qué ropa me pongo?" or "¿Hace frío o calor?"
+    const isCold=tmp.t<=5;const isHot=tmp.t>=25;
+    const q=`El termómetro marca ${tmp.t}°. ¿Cómo está el tiempo?`;
+    const correct=tmp.desc;
+    const wrongPool=temps.filter(t=>t.cat!==tmp.cat).map(t=>t.desc);
+    const wrong=sh(wrongPool).slice(0,3);
+    const opts=sh([correct,...wrong]).slice(0,4);
+    items.push({ty:'razona',mode:'temperature',data:{temp:tmp.t,desc:tmp.desc,emoji:tmp.emoji,q,ans:correct,opts,oral:`Hace ${tmp.t} grados, ${tmp.desc.toLowerCase()}`},id:'rz_temp_'+i});
+  });
+  return sh(items)}
 export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
@@ -204,6 +235,7 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===10){return genCompare()}
   if(lv===11){return genSequences()}
   if(lv===12){return genAnteriorPosterior()}
+  if(lv===13){return genTemperature()}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -467,6 +499,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='number_series')return ex.data.ans;
     if(ex.mode==='compare')return ex.data.a>ex.data.b?ex.data.a+' es mayor':ex.data.a<ex.data.b?ex.data.b+' es mayor':'son iguales';
     if(ex.mode==='anterior_posterior')return(ex.data.questionMode==='anterior'?'antes del '+ex.data.n+' va el ':'después del '+ex.data.n+' va el ')+ex.data.ans;
+    if(ex.mode==='temperature')return ex.data.oral;
     return String(ans);
   }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
@@ -609,6 +642,32 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {['>','<','='].map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:36,padding:14,fontWeight:800,minHeight:60}}>{o}</button>)}
       </div>
       {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta los {ex.data.emoji} de cada lado 👆</p></div>}
+    </div>}
+    {/* Temperature / Thermometer */}
+    {ex.mode==='temperature'&&<div>
+      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.q}</p>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,marginBottom:16}}>
+        {/* SVG Thermometer */}
+        <svg width={60} height={200} viewBox="0 0 60 200">
+          <rect x={20} y={10} width={20} height={150} rx={10} fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+          {/* Mercury fill — height based on temperature (-10 to 45 range) */}
+          <rect x={22} y={10+150-Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))} width={16} rx={8}
+            height={Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))}
+            fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'}/>
+          {/* Bulb */}
+          <circle cx={30} cy={175} r={18} fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'} stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+          {/* Scale marks */}
+          {[-10,0,10,20,30,40].map(t=>{const y=10+150-((t+10)/55)*148;return <g key={t}><line x1={42} y1={y} x2={50} y2={y} stroke="rgba(255,255,255,.4)" strokeWidth={1}/><text x={54} y={y+4} fill="rgba(255,255,255,.5)" fontSize={9}>{t}°</text></g>})}
+        </svg>
+        <div style={{textAlign:'center'}}>
+          <div style={{fontSize:48,marginBottom:8}}>{ex.data.emoji}</div>
+          <div style={{fontSize:36,fontWeight:800,color:ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'}}>{ex.data.temp}°</div>
+          {ex.data.temp<0&&<div style={{fontSize:14,color:'#42A5F5',fontWeight:600,marginTop:4}}>¡Bajo cero!</div>}
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:16,padding:14,fontWeight:600}}>{o}</button>)}
+      </div>
     </div>}
     {/* Anterior/Posterior */}
     {ex.mode==='anterior_posterior'&&<div>

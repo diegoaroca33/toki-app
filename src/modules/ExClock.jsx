@@ -39,7 +39,24 @@ export function ExClock({ex,onOk,onSkip,name,uid,vids}){
     <div style={{display:'flex',flexDirection:'column',gap:10}}>{opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o===ex.text?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:18,textAlign:'left'}}>{o.charAt(0).toUpperCase()+o.slice(1)}</button>)}</div>
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
-    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:16,color:GOLD,fontWeight:600,margin:0}}>La aguja PEQUEÑA apunta al {ex.h}</p><p style={{fontSize:16,color:BLUE,fontWeight:600,margin:'6px 0 0'}}>{ex.m===0?'La aguja GRANDE apunta al 12':ex.m===30?'La aguja GRANDE apunta al 6 = y media':ex.m===15?'La aguja GRANDE apunta al 3 = y cuarto':'La aguja GRANDE apunta al 9 = menos cuarto'}</p></div>}
+    {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:16,marginTop:14}}>
+      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 10px'}}>Fíjate bien:</p>
+      <div style={{display:'flex',alignItems:'center',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+        {/* Mini reloj de ejemplo mostrando la respuesta correcta */}
+        <ClockFace h={ex.h} m={ex.m} size={100}/>
+        <div style={{textAlign:'left'}}>
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
+            <div style={{width:24,height:3,background:GOLD,borderRadius:2}}/>
+            <p style={{fontSize:14,color:GOLD,fontWeight:600,margin:0}}>Pequeña → {ex.h}</p>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+            <div style={{width:32,height:3,background:BLUE,borderRadius:2}}/>
+            <p style={{fontSize:14,color:BLUE,fontWeight:600,margin:0}}>Grande → {ex.m===0?'12 (en punto)':ex.m===30?'6 (y media)':ex.m===15?'3 (y cuarto)':'9 (menos cuarto)'}</p>
+          </div>
+          <p style={{fontSize:16,fontWeight:700,color:'#fff',margin:0}}>Son {ex.text}</p>
+        </div>
+      </div>
+    </div>}
     {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
     <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
   </div>}
