@@ -382,3 +382,19 @@ export const LETTER_STROKE_PATHS={
   'Z':[[{x:.2,y:0},{x:.8,y:0}],[{x:.8,y:0},{x:.2,y:1}],[{x:.2,y:1},{x:.8,y:1}]],
 };
 LETTER_STROKE_PATHS['\u00d1']=LETTER_STROKE_PATHS['N']; // Ñ same as N strokes
+// Digit stroke paths 0-9 — curved strokes approximated with sampled points
+// Coordinates normalized (0-1). Y=0 top, Y=1 bottom.
+(function(){
+  // Helper: sample a circle or curve at N points
+  const arc=(cx,cy,r,a0,a1,n)=>Array.from({length:n},(_,i)=>{const t=a0+(a1-a0)*(i/(n-1));return{x:cx+r*Math.cos(t),y:cy+r*Math.sin(t)}});
+  LETTER_STROKE_PATHS['0']=[arc(.5,.5,.38,-Math.PI/2,3*Math.PI/2,16)]; // oval (closed circle)
+  LETTER_STROKE_PATHS['1']=[[{x:.3,y:.15},{x:.5,y:0}],[{x:.5,y:0},{x:.5,y:1}],[{x:.3,y:1},{x:.7,y:1}]];
+  LETTER_STROKE_PATHS['2']=[[...arc(.5,.3,.3,-Math.PI,Math.PI/3,10),{x:.2,y:1},{x:.8,y:1}]];
+  LETTER_STROKE_PATHS['3']=[[...arc(.45,.25,.28,-Math.PI*0.8,Math.PI*0.5,8),...arc(.45,.7,.3,-Math.PI*0.5,Math.PI*0.8,8)]];
+  LETTER_STROKE_PATHS['4']=[[{x:.7,y:0},{x:.2,y:.6},{x:.85,y:.6}],[{x:.7,y:0},{x:.7,y:1}]];
+  LETTER_STROKE_PATHS['5']=[[{x:.75,y:0},{x:.25,y:0},{x:.25,y:.45},...arc(.5,.7,.3,-Math.PI/2,Math.PI/2,10),{x:.2,y:1}]];
+  LETTER_STROKE_PATHS['6']=[[{x:.75,y:.05},...arc(.5,.65,.35,-Math.PI*0.4,Math.PI*1.6,14)]];
+  LETTER_STROKE_PATHS['7']=[[{x:.2,y:0},{x:.8,y:0},{x:.35,y:1}]];
+  LETTER_STROKE_PATHS['8']=[arc(.5,.28,.25,-Math.PI/2,3*Math.PI/2,12),arc(.5,.72,.3,-Math.PI/2,3*Math.PI/2,12)];
+  LETTER_STROKE_PATHS['9']=[arc(.5,.3,.3,-Math.PI/2,3*Math.PI/2,12),[{x:.8,y:.3},{x:.7,y:1}]];
+})();

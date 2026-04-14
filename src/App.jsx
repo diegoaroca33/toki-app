@@ -1243,19 +1243,24 @@ export default function App(){
         {cur.ty==='frases_blank'&&<ExFrasesBlank ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
         {cur.ty==='sit'&&<ExSit ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
         {cur.ty==='flu'&&<ExFlu ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps} exerciseNum={st.ok+st.sk} fraccionado={fraccionado} onPause={pauseSession}/>}
-        {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/>}
-        {cur.ty==='math'&&<Suspense fallback={<LazyFallback/>}><ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='multi'&&<Suspense fallback={<LazyFallback/>}><ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='frac'&&<Suspense fallback={<LazyFallback/>}><ExFraction ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/></Suspense>}
-        {cur.ty==='money'&&<Suspense fallback={<LazyFallback/>}><ExMoney ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='clock'&&<Suspense fallback={<LazyFallback/>}><ExClock ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='calendar'&&<Suspense fallback={<LazyFallback/>}><ExCalendar ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='distribute'&&<Suspense fallback={<LazyFallback/>}><ExDistribute ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='writing'&&<Suspense fallback={<LazyFallback/>}><ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name}/></Suspense>}
-        {cur.ty==='razona'&&<Suspense fallback={<LazyFallback/>}><ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
-        {cur.ty==='lee'&&<Suspense fallback={<LazyFallback/>}><ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids}/></Suspense>}
+        {cur.ty==='count'&&<ExCount ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/>}
+        {cur.ty==='math'&&<Suspense fallback={<LazyFallback/>}><ExMath ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='multi'&&<Suspense fallback={<LazyFallback/>}><ExMulti ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='frac'&&<Suspense fallback={<LazyFallback/>}><ExFraction ex={cur} onOk={onOk} onSkip={onSk} name={user.name} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='money'&&<Suspense fallback={<LazyFallback/>}><ExMoney ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='clock'&&<Suspense fallback={<LazyFallback/>}><ExClock ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='calendar'&&<Suspense fallback={<LazyFallback/>}><ExCalendar ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='distribute'&&<Suspense fallback={<LazyFallback/>}><ExDistribute ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='writing'&&<Suspense fallback={<LazyFallback/>}><ExWriting ex={cur} onOk={onOk} onSkip={onSk} name={user.name} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='razona'&&<Suspense fallback={<LazyFallback/>}><ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
+        {cur.ty==='lee'&&<Suspense fallback={<LazyFallback/>}><ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
         {cur.ty==='quiensoy'&&<Suspense fallback={<LazyFallback/>}><ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/></Suspense>}
-      </div></div>}
+      </div>
+      {/* Global pause button — visible para TODOS los ejercicios no-orales.
+          Los orales (SpeakPanel) ya tienen su propio dock con pausa integrada. */}
+      {cur&&!['flu','frases','frases_blank','sit','quiensoy'].includes(cur.ty)&&!paused&&
+        <button onClick={pauseSession} title="Pausar" style={{position:'fixed',left:'calc(var(--safe-left) + 14px)',bottom:'calc(var(--safe-bottom) + 14px)',width:60,height:60,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',boxShadow:'0 3px 12px #FF980066, inset 0 -3px 8px #E6510066',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",zIndex:20,fontSize:26}}>⏸️</button>}
+      </div>}
     {/* === PAUSE OVERLAY === */}
     {paused&&ss&&<div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.85)',zIndex:300,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:20}}>
       <div style={{fontSize:60}}>⏸️</div>

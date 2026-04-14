@@ -239,15 +239,38 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
       </div>
     </div>}
     {/* Preposiciones: drag preposition chips into blanks */}
-    {ex.mode==='preposiciones'&&<div>
-      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>Completa con la preposicion correcta</p>
+    {ex.mode==='preposiciones'&&(()=>{
+      // Place preposition at a specific blank position (drag or tap)
+      const placePrep=(p,targetPos)=>{
+        poke();
+        const blank=ex.data.blanks.find(b=>b.pos===targetPos);
+        if(!blank||prepFilled[targetPos]!==undefined)return;
+        const np={...prepFilled,[targetPos]:p};setPrepFilled(np);
+        if(ex.data.blanks.every(b=>np[b.pos]!==undefined)){
+          const allCorrect=ex.data.blanks.every(b=>np[b.pos]===b.ans);
+          if(allCorrect){setFb('ok');starBeep(4);say(ex.data.full).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
+          else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('La frase es: '+ex.data.full).then(()=>setTimeout(()=>triggerOral(ex.data.full,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
+            else{sayFB('Casi, prueba otra vez');setTimeout(()=>{setFb(null);setPrepFilled({})},1500)}}
+        }
+      };
+      // Tap fallback: fills next empty blank
+      const tapPrep=(p)=>{
+        const nextBlank=ex.data.blanks.find(b=>prepFilled[b.pos]===undefined);
+        if(nextBlank)placePrep(p,nextBlank.pos);
+      };
+      return <div>
+      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>Arrastra la preposición al hueco (o tócala)</p>
       <div className="card" style={{padding:20,marginBottom:14,background:'rgba(255,255,255,.06)'}}>
         <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',alignItems:'center',fontSize:24,fontWeight:700,lineHeight:2}}>
           {ex.data.sentence.map((word,i)=>{
             const blankInfo=ex.data.blanks.find(b=>b.pos===i);
             if(blankInfo){
               const filled=prepFilled[i];
-              return <span key={i} onClick={()=>{if(filled&&!fb){const np={...prepFilled};delete np[i];setPrepFilled(np)}}} style={{
+              return <span key={i}
+                onDragOver={e=>{e.preventDefault()}}
+                onDrop={e=>{e.preventDefault();const p=e.dataTransfer.getData('text/plain');if(p&&!fb&&!filled)placePrep(p,i)}}
+                onClick={()=>{if(filled&&!fb){const np={...prepFilled};delete np[i];setPrepFilled(np)}}} style={{
                 display:'inline-flex',alignItems:'center',justifyContent:'center',
                 minWidth:70,padding:'4px 12px',borderRadius:10,
                 background:filled?(fb==='ok'?GREEN+'33':fb==='no'&&filled!==blankInfo.ans?RED+'33':GOLD+'22'):'rgba(255,255,255,.08)',
@@ -260,25 +283,16 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
           })}
         </div>
       </div>
-      {/* Available preposition chips */}
+      {/* Draggable preposition chips */}
       {!fb&&<div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:14}}>
-        {prepAvail.filter(p=>!Object.values(prepFilled).includes(p)).map(p=><button key={p} className="btn btn-b" onClick={()=>{
-          poke();
-          const nextBlank=ex.data.blanks.find(b=>prepFilled[b.pos]===undefined);
-          if(!nextBlank)return;
-          const np={...prepFilled,[nextBlank.pos]:p};setPrepFilled(np);
-          // Check if all filled
-          if(ex.data.blanks.every(b=>np[b.pos]!==undefined)){
-            const allCorrect=ex.data.blanks.every(b=>np[b.pos]===b.ans);
-            if(allCorrect){setFb('ok');starBeep(4);say(ex.data.full).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
-            else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
-              if(na>=2){sayFB('La frase es: '+ex.data.full).then(()=>setTimeout(()=>triggerOral(ex.data.full,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
-              else{sayFB('Casi, prueba otra vez');setTimeout(()=>{setFb(null);setPrepFilled({})},1500)}}
-          }
-        }} style={{fontSize:18,padding:'8px 16px',fontWeight:700}}>{p}</button>)}
+        {prepAvail.filter(p=>!Object.values(prepFilled).includes(p)).map(p=><button key={p} className="btn btn-b"
+          draggable="true"
+          onDragStart={e=>{e.dataTransfer.setData('text/plain',p);e.dataTransfer.effectAllowed='move'}}
+          onClick={()=>tapPrep(p)}
+          style={{fontSize:18,padding:'8px 16px',fontWeight:700,cursor:'grab',touchAction:'none'}}>{p}</button>)}
       </div>}
       {fb==='ok'&&<p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'8px 0'}}>{ex.data.full}</p>}
-    </div>}
+    </div>})()}
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}

@@ -636,3 +636,21 @@ export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
     </div>
   );
 }
+
+// ===== ActionDock — dock fijo reutilizable para ejercicios no-orales =====
+// Proporciona pausa (izq) + contenido central (custom) + skip (der) en la MISMA
+// posición que SpeakPanel, manteniendo consistencia visual entre módulos.
+export function ActionDock({onPause,onSkip,center=null}){
+  const w=typeof window!=='undefined'?window.innerWidth:1280;
+  const isPhone=w<=480,isTabletLandscape=w>=1024&&w<=1365,isDesktop=w>=1366;
+  const sideBtn=isPhone?62:isTabletLandscape?76:isDesktop?80:72;
+  const gap=isPhone?14:isTabletLandscape?24:18;
+  const dockBottom='calc(var(--safe-bottom) + 12px)';
+  return <div style={{position:'fixed',left:'50%',bottom:dockBottom,transform:'translateX(-50%)',display:'flex',alignItems:'center',justifyContent:'center',gap,zIndex:10,padding:'10px 14px',borderRadius:999,background:'rgba(10,22,40,.22)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,.06)'}}>
+    {onPause?<button onClick={onPause} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#FFB74D,#FF9800 60%,#E65100)',boxShadow:'0 3px 12px #FF980044, inset 0 -3px 8px #E6510066',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Pausar"><span style={{fontSize:Math.round(sideBtn*0.45)}}>⏸️</span></button>
+    :<div style={{width:sideBtn,height:sideBtn,flexShrink:0}}/>}
+    {center}
+    {onSkip?<button className="skip-btn" onClick={onSkip} style={{width:sideBtn,height:sideBtn,borderRadius:'50%',border:'none',cursor:'pointer',background:'radial-gradient(circle at 30% 25%,#999,#666 60%,#444)',boxShadow:'0 2px 8px rgba(0,0,0,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Fredoka'",transition:'transform .15s',flexShrink:0}} title="Saltar"><span style={{fontSize:Math.round(sideBtn*0.36)}}>⏭️</span></button>
+    :<div style={{width:sideBtn,height:sideBtn,flexShrink:0}}/>}
+  </div>;
+}

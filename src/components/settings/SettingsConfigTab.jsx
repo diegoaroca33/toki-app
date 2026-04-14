@@ -451,9 +451,9 @@ export default function SettingsConfigTab(props) {
   const currentCompetency = loadData('competency_level', null)
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      {/* Competency level selector */}
-      <Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Competency level selector — ORDER 5 (justo antes de módulos) */}
+      <Card style={{ order: 5 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 8 }}>Nivel de competencia</div>
         <p style={{ color: DIM, fontSize: 13, margin: '0 0 12px' }}>Configura todos los módulos de una vez según el nivel del alumno</p>
         <div style={{ display: 'grid', gap: 8 }}>
@@ -475,8 +475,8 @@ export default function SettingsConfigTab(props) {
         </div>
         <p style={{ color: DIM, fontSize: 11, margin: '10px 0 0', textAlign: 'center' }}>Puedes personalizar módulos individuales más abajo</p>
       </Card>
-      {/* PIN change */}
-      <Card style={{ padding: 0, overflow: 'hidden' }}>
+      {/* PIN change — ORDER 90 (near bottom) */}
+      <Card style={{ padding: 0, overflow: 'hidden', order: 90 }}>
         <button onClick={() => { if (chgStep === 'closed') setChgStep('current'); else { setChgStep('closed'); setChgCur(''); setChgNew(''); setChgErr('') } }} style={{ width: '100%', padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: "'Fredoka'", color: TXT }}>
           <span style={{ fontSize: 20, fontWeight: 700 }}>🔒 Cambiar PIN</span>
           <span style={{ fontSize: 16, color: DIM }}>{chgStep !== 'closed' ? '▼' : '▸'}</span>
@@ -492,7 +492,8 @@ export default function SettingsConfigTab(props) {
         </div>}
       </Card>
 
-      <Card>
+      {/* Modo sesion — ORDER 70 (near bottom, cerca del botón A jugar) */}
+      <Card style={{ order: 70 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Modo de sesion</div>
         <SessionModeControl value={currentMode} onChange={setMode} />
         <div style={{ color: DIM, fontSize: 13, marginTop: 10 }}>
@@ -539,7 +540,8 @@ export default function SettingsConfigTab(props) {
         </>}
       </Card>
 
-      <Card>
+      {/* Sesion (time/goal) — ORDER 75 (after modo sesion) */}
+      <Card style={{ order: 75 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Sesion</div>
         {/* Mode selector tabs */}
         <div style={{ display: 'flex', gap: 4, background: BG3, borderRadius: 12, padding: 4, marginBottom: 14 }}>
@@ -580,7 +582,8 @@ export default function SettingsConfigTab(props) {
         )}
       </Card>
 
-      <Card>
+      {/* Tema visual — ORDER 50 */}
+      <Card style={{ order: 50 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Tema visual</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <Button variant={theme === 'space' ? 'gold' : 'ghost'} fullWidth={false} onClick={() => setTheme && setTheme('space')}>
@@ -601,7 +604,8 @@ export default function SettingsConfigTab(props) {
         </div>}
       </Card>
 
-      <Card>
+      {/* Metodo pedagogico — ORDER 60 */}
+      <Card style={{ order: 60 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Metodo pedagogico</div>
         <div style={{ display: 'grid', gap: 12 }}>
           <ToggleRow label="DILO dinamico" help="Ajusta nivel automaticamente segun aciertos" value={!!dynDilo} onChange={handleDynDilo} />
@@ -649,9 +653,11 @@ export default function SettingsConfigTab(props) {
         </div>
       </Card>
 
-      <VoicePriorityCard user={props.user} />
+      {/* Voice priority — ORDER 65 */}
+      <div style={{ order: 65 }}><VoicePriorityCard user={props.user} /></div>
 
-      <Card>
+      {/* Planetas y modulos — ORDER 10 (arriba, lo primero) */}
+      <Card style={{ order: 10 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 12 }}>Planetas y modulos activos</div>
         <div style={{ display: 'grid', gap: 10 }}>
           {(dynGroups || []).map((g) => (

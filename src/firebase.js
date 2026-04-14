@@ -213,10 +213,12 @@ export async function fbGetStorageUsage(uid) {
 export const STORAGE_LIMIT = 3 * 1024 * 1024
 
 // ---- Shared profiles ----
+// 6-char code: 3 letters from name + 3 digits (no separator, easier to type for DI users)
 function generateShareCode(name) {
-  const prefix = (name || 'TOK').substring(0, 3).toUpperCase()
+  const clean = (name || 'TOK').toUpperCase().replace(/[^A-Z]/g, '')
+  const prefix = (clean + 'TOK').substring(0, 3)
   const num = Math.floor(100 + Math.random() * 900)
-  return `${prefix}-${num}`
+  return `${prefix}${num}`
 }
 
 export async function fbCreateShareCode(ownerUid, profileId, profileName) {
