@@ -144,7 +144,7 @@ const LEE_PREPOSICIONES=[
   // Nivel 3: 3 huecos
   {sentence:['Voy','_','cine','_','mis amigos','_','autobús'],blanks:[{pos:1,ans:'al'},{pos:3,ans:'con'},{pos:5,ans:'en'}],full:'Voy al cine con mis amigos en autobús',lv:3},
   {sentence:['Mi hermano viene','_','parque','_','el perro','_','la tarde'],blanks:[{pos:1,ans:'del'},{pos:3,ans:'con'},{pos:5,ans:'por'}],full:'Mi hermano viene del parque con el perro por la tarde',lv:3},
-  {sentence:['El regalo es','_','mi madre','_','su cumpleaños','_','parte','_','todos'],blanks:[{pos:1,ans:'para'},{pos:3,ans:'por'},{pos:5,ans:'de'}],full:'El regalo es para mi madre por su cumpleaños de parte de todos',lv:3},
+  {sentence:['El regalo es','_','mi madre','_','su cumpleaños','_','todos'],blanks:[{pos:1,ans:'para'},{pos:3,ans:'por'},{pos:5,ans:'de'}],full:'El regalo es para mi madre por su cumpleaños de todos',lv:3},
 ];
 
 export function genLee(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const sh=a=>[...a].sort(()=>Math.random()-.5);

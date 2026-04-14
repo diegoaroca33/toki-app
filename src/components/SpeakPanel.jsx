@@ -177,7 +177,7 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   }
   async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
     for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
-      await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;window.speechSynthesis.speak(u);setTimeout(fin,1500)});
+      await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;const ss=window.speechSynthesis;ss.cancel();if(typeof ss.resume==='function')ss.resume();setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},100)},50);setTimeout(fin,1500)});
       await new Promise(r=>setTimeout(r,300))}
     ttsPlaying.current=false;setSylIdx(-1);await new Promise(r=>setTimeout(r,300));
     if(!alive.current)return;sr.go();setMic(true)}

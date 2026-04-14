@@ -120,7 +120,7 @@ function genNumberSeries(){const sh=a=>[...a].sort(()=>Math.random()-.5);const i
       const seq=[];for(let i=0;i<6;i++)seq.push(start+step*i);
       const hideIdx=2+Math.floor(Math.random()*3); // hide position 2,3, or 4
       const ans=seq[hideIdx];const shown=seq.slice(0,5).map((n,i)=>i===hideIdx?'?':String(n));
-      const wrong=[ans+step,ans-step,ans+1].filter(w=>w!==ans&&w>=0);
+      const wrongSet=new Set([ans+step,ans-step,ans+1,ans+2,ans-2,ans+step*2].filter(w=>w!==ans&&w>=0));const wrong=[...wrongSet];
       const opts=sh([ans,...wrong.slice(0,3)]);
       items.push({ty:'razona',mode:'number_series',data:{q:'¿Qué número falta?',seq:shown,ans:String(ans),step,opts:opts.map(String)},id:'rz_ns_'+s+'_'+r})}}
   return sh(items)}

@@ -331,9 +331,7 @@ export function ExWriting({ex,onOk,onSkip,name}){
       <div className="card" style={{padding:12,marginBottom:10,background:'#FAFAF5',borderColor:'#D4D4D4'}}>
         {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
         <canvas ref={canvasRef} width={cW} height={cH} style={{width:'100%',maxWidth:cW,height:'auto',aspectRatio:cW+'/'+cH,borderRadius:8,border:'2px solid #D4D4D4',touchAction:'none',cursor:'crosshair'}}
-          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
-          onTouchStart={start} onTouchMove={move} onTouchEnd={end}
-          onMouseDown={start} onMouseMove={move} onMouseUp={end}/>
+          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}/>
       </div>
       {!done&&<div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
         {ex.mode==='letter'&&ex.isUpper&&LETTER_STROKE_PATHS[ex.letter.toUpperCase()]&&<button className="btn btn-b" onClick={playGhostHand} disabled={ghostAnimating} style={{maxWidth:140,fontSize:16,padding:'10px 14px',opacity:ghostAnimating?0.5:1}}>{'▶️ Ver cómo'}</button>}

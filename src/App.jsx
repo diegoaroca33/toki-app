@@ -166,6 +166,8 @@ export default function App(){
             setBurstMode(loadData('burst_mode',true));setBurstReps(loadData('burst_reps',2));
             setFraccionado(loadData('fraccionado',false));setFocalModule(loadData('focal_module','decir'));
             setFocalWeight(loadData('focal_weight',3));setGuidedTasks(loadData('guided_tasks',[]));
+            setTheme(loadData('theme','space'));setExigencia(loadData('exigencia',65));
+            const cloudPin=loadData('sup_pin',null);if(cloudPin)setSupPin(cloudPin);
           }
         }
         setFbMode('cloud')}
