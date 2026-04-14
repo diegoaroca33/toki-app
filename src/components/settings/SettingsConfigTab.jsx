@@ -435,31 +435,59 @@ export default function SettingsConfigTab(props) {
     setDynDiloLocal(v)
   }
 
-  // Level preset application
-  function applyPreset(key) {
+  // Level preset application with confirmation modal
+  const [currentCompetency, setCurrentCompetency] = React.useState(() => loadData('competency_level', null))
+  const [pendingPreset, setPendingPreset] = React.useState(null) // key when user wants to apply a preset
+  const [manualConfirmAsked, setManualConfirmAsked] = React.useState(() => !!loadData('competency_level', null) ? false : true) // if no preset, no need to confirm manual
+  const [pendingManual, setPendingManual] = React.useState(null) // function to run after confirming manual
+  function requestPreset(key) {
+    // If same preset already active, do nothing
+    if (currentCompetency === key) return
+    setPendingPreset(key)
+  }
+  function applyPresetNow(key) {
     const preset = LEVEL_PRESETS[key]
     if (!preset) return
-    // Apply active modules
     const na = { ...(activeMods || {}) }
     Object.entries(preset.active).forEach(([lvKey, active]) => { na[lvKey] = active })
     setActiveMods && setActiveMods(na)
     saveData('active_mods', na)
-    // Apply levels
     Object.entries(preset.levels).forEach(([lvKey, lvs]) => { setModuleLv(lvKey, lvs) })
     saveData('competency_level', key)
+    setCurrentCompetency(key)
+    setManualConfirmAsked(false) // reset: next manual change will ask
+    setPendingPreset(null)
   }
-  const currentCompetency = loadData('competency_level', null)
+  // Interceptor for manual changes to modules/levels
+  // Call guardManualChange(actionFn) before any manual modification.
+  // If a preset is active and confirmation not yet asked, shows modal first.
+  function guardManualChange(actionFn) {
+    if (currentCompetency && !manualConfirmAsked) {
+      setPendingManual(() => actionFn)
+    } else {
+      actionFn()
+    }
+  }
+  function confirmManualChange() {
+    if (pendingManual) {
+      pendingManual()
+    }
+    saveData('competency_level', null)
+    setCurrentCompetency(null)
+    setManualConfirmAsked(true)
+    setPendingManual(null)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Competency level selector — ORDER 5 (justo antes de módulos) */}
-      <Card style={{ order: 5 }}>
+      {/* Competency level selector — ORDER 1 (LO PRIMERO que ve un supervisor nuevo) */}
+      <Card style={{ order: 1 }}>
         <div style={{ color: GOLD, fontWeight: 800, fontSize: 18, marginBottom: 8 }}>Nivel de competencia</div>
         <p style={{ color: DIM, fontSize: 13, margin: '0 0 12px' }}>Configura todos los módulos de una vez según el nivel del alumno</p>
         <div style={{ display: 'grid', gap: 8 }}>
           {Object.entries(LEVEL_PRESETS).map(([key, preset]) => {
             const active = currentCompetency === key
-            return <button key={key} onClick={() => applyPreset(key)} style={{
+            return <button key={key} onClick={() => requestPreset(key)} style={{
               padding: '14px 16px', borderRadius: 14, border: active ? `2px solid ${GOLD}` : `2px solid ${BORDER}`,
               background: active ? GOLD + '15' : CARD, cursor: 'pointer', textAlign: 'left',
               display: 'flex', alignItems: 'center', gap: 12, fontFamily: "'Fredoka'", transition: 'all .2s',
@@ -684,11 +712,11 @@ export default function SettingsConfigTab(props) {
                       return (
                         <div key={m.lvKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                           <div style={{ fontWeight: 700 }}>{m.l}</div>
-                          <Button variant={active ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => {
+                          <Button variant={active ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => guardManualChange(() => {
                             const na = { ...(activeMods || {}), [m.lvKey]: !active }
                             setActiveMods && setActiveMods(na)
                             saveData('active_mods', na)
-                          }}>
+                          })}>
                             {active ? 'Activo' : 'Oculto'}
                           </Button>
                         </div>
@@ -716,11 +744,11 @@ export default function SettingsConfigTab(props) {
                         <div key={m.lvKey} style={{ background: CARD, borderRadius: 12, border: `1px solid ${BORDER}`, padding: 10 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: levels.length > 0 && active ? 8 : 0 }}>
                             <div style={{ fontWeight: 700 }}>{m.l}</div>
-                            <Button variant={active ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => {
+                            <Button variant={active ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => guardManualChange(() => {
                               const na = { ...(activeMods || {}), [m.lvKey]: !active }
                               setActiveMods && setActiveMods(na)
                               saveData('active_mods', na)
-                            }}>
+                            })}>
                               {active ? 'Activo' : 'Oculto'}
                             </Button>
                           </div>
@@ -730,7 +758,7 @@ export default function SettingsConfigTab(props) {
                                 const curLvs = getModuleLvOrDef(m.lvKey, m.defLv)
                                 const selected = curLvs.includes(lv.n)
                                 return (
-                                  <Button key={lv.n} variant={selected ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => {
+                                  <Button key={lv.n} variant={selected ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => guardManualChange(() => {
                                     const freshLvs = getModuleLvOrDef(m.lvKey, m.defLv)
                                     const wasOn = freshLvs.includes(lv.n)
                                     let newLvs
@@ -740,7 +768,7 @@ export default function SettingsConfigTab(props) {
                                     const na = { ...activeMods, [m.lvKey]: newLvs.length > 0 }
                                     setActiveMods(na)
                                     saveData('active_mods', na)
-                                  }}>
+                                  })}>
                                     {lv.l}
                                   </Button>
                                 )
@@ -765,6 +793,36 @@ export default function SettingsConfigTab(props) {
         </a>
         <PublicVoiceManager fbUser={props.fbUser} />
       </div>
+
+      {/* Modal: Confirmar aplicar preset */}
+      {pendingPreset && (() => {
+        const preset = LEVEL_PRESETS[pendingPreset]
+        return <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={()=>setPendingPreset(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:BG2,border:`2px solid ${GOLD}`,borderRadius:20,padding:28,maxWidth:420,textAlign:'center',fontFamily:"'Fredoka'"}}>
+            <div style={{fontSize:64,marginBottom:12}}>{preset.label.split(' ')[0]}</div>
+            <h2 style={{color:GOLD,fontSize:22,margin:'0 0 8px'}}>¿Pasar a itinerario por defecto?</h2>
+            <p style={{color:TXT,fontSize:15,margin:'0 0 6px',fontWeight:600}}>{preset.label.split(' ').slice(1).join(' ')}</p>
+            <p style={{color:DIM,fontSize:13,margin:'0 0 20px',lineHeight:1.4}}>Esto configurará automáticamente todos los módulos según este nivel. Podrás personalizar después.</p>
+            <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+              <Button variant="ghost" fullWidth={false} onClick={()=>setPendingPreset(null)}>Cancelar</Button>
+              <Button variant="gold" fullWidth={false} onClick={()=>applyPresetNow(pendingPreset)}>Sí, aplicar</Button>
+            </div>
+          </div>
+        </div>
+      })()}
+
+      {/* Modal: Confirmar pasar a manual */}
+      {pendingManual && <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={()=>setPendingManual(null)}>
+        <div onClick={e=>e.stopPropagation()} style={{background:BG2,border:`2px solid ${GOLD}`,borderRadius:20,padding:28,maxWidth:420,textAlign:'center',fontFamily:"'Fredoka'"}}>
+          <div style={{fontSize:56,marginBottom:12}}>🔧</div>
+          <h2 style={{color:GOLD,fontSize:22,margin:'0 0 8px'}}>¿Pasar a itinerario manual?</h2>
+          <p style={{color:DIM,fontSize:14,margin:'0 0 20px',lineHeight:1.4}}>Estás modificando un módulo. Si continúas, ya no estarás en el itinerario <b style={{color:TXT}}>{LEVEL_PRESETS[currentCompetency]?.label.split(' ').slice(1).join(' ')}</b> por defecto. Podrás volver a aplicarlo cuando quieras.</p>
+          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+            <Button variant="ghost" fullWidth={false} onClick={()=>setPendingManual(null)}>Cancelar</Button>
+            <Button variant="gold" fullWidth={false} onClick={confirmManualChange}>Sí, continuar</Button>
+          </div>
+        </div>
+      </div>}
     </div>
   )
 }
