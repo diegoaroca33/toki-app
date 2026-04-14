@@ -113,19 +113,65 @@ const LEE_READ_DO=[
   {instruction:'TOCA DOS ANIMALES',opts:[{l:'🐶',correct:true},{l:'🐱',correct:true},{l:'🏠'},{l:'📚'}]},
 ];
 
+// Preposiciones data: sentence with blanks, correct prepositions
+const PREPS=['en','de','con','al','del','para','por','sin','a','sobre'];
+const LEE_PREPOSICIONES=[
+  // Nivel 1: 1 hueco
+  {sentence:['Voy','_','colegio'],blanks:[{pos:1,ans:'al'}],full:'Voy al colegio',lv:1},
+  {sentence:['Estoy','_','casa'],blanks:[{pos:1,ans:'en'}],full:'Estoy en casa',lv:1},
+  {sentence:['Juego','_','amigos'],blanks:[{pos:1,ans:'con'}],full:'Juego con amigos',lv:1},
+  {sentence:['Vengo','_','parque'],blanks:[{pos:1,ans:'del'}],full:'Vengo del parque',lv:1},
+  {sentence:['Esto es','_','ti'],blanks:[{pos:1,ans:'para'}],full:'Esto es para ti',lv:1},
+  {sentence:['Paso','_','la calle'],blanks:[{pos:1,ans:'por'}],full:'Paso por la calle',lv:1},
+  {sentence:['Salgo','_','clase'],blanks:[{pos:1,ans:'de'}],full:'Salgo de clase',lv:1},
+  {sentence:['Voy','_','autobús'],blanks:[{pos:1,ans:'en'}],full:'Voy en autobús',lv:1},
+  {sentence:['El libro está','_','la mesa'],blanks:[{pos:1,ans:'sobre'}],full:'El libro está sobre la mesa',lv:1},
+  {sentence:['Voy','_','la piscina'],blanks:[{pos:1,ans:'a'}],full:'Voy a la piscina',lv:1},
+  {sentence:['Como','_','tenedor'],blanks:[{pos:1,ans:'con'}],full:'Como con tenedor',lv:1},
+  {sentence:['El regalo es','_','mamá'],blanks:[{pos:1,ans:'para'}],full:'El regalo es para mamá',lv:1},
+  {sentence:['Café','_','leche'],blanks:[{pos:1,ans:'con'}],full:'Café con leche',lv:1},
+  {sentence:['Estoy','_','el jardín'],blanks:[{pos:1,ans:'en'}],full:'Estoy en el jardín',lv:1},
+  {sentence:['Helado','_','chocolate'],blanks:[{pos:1,ans:'de'}],full:'Helado de chocolate',lv:1},
+  // Nivel 2: 2 huecos
+  {sentence:['Voy','_','colegio','_','autobús'],blanks:[{pos:1,ans:'al'},{pos:3,ans:'en'}],full:'Voy al colegio en autobús',lv:2},
+  {sentence:['Juego','_','mis amigos','_','fútbol'],blanks:[{pos:1,ans:'con'},{pos:3,ans:'al'}],full:'Juego con mis amigos al fútbol',lv:2},
+  {sentence:['Vengo','_','parque','_','mi hermano'],blanks:[{pos:1,ans:'del'},{pos:3,ans:'con'}],full:'Vengo del parque con mi hermano',lv:2},
+  {sentence:['Salgo','_','casa','_','la mañana'],blanks:[{pos:1,ans:'de'},{pos:3,ans:'por'}],full:'Salgo de casa por la mañana',lv:2},
+  {sentence:['Voy','_','comprar','_','mi padre'],blanks:[{pos:1,ans:'a'},{pos:3,ans:'con'}],full:'Voy a comprar con mi padre',lv:2},
+  {sentence:['El libro está','_','la mochila','_','mamá'],blanks:[{pos:1,ans:'en'},{pos:3,ans:'de'}],full:'El libro está en la mochila de mamá',lv:2},
+  {sentence:['Paso','_','la tienda','_','pan'],blanks:[{pos:1,ans:'por'},{pos:3,ans:'del'}],full:'Paso por la tienda del pan',lv:2},
+  {sentence:['Esto es','_','mi profesor','_','clase'],blanks:[{pos:1,ans:'para'},{pos:3,ans:'de'}],full:'Esto es para mi profesor de clase',lv:2},
+  // Nivel 3: 3 huecos
+  {sentence:['Voy','_','cine','_','mis amigos','_','autobús'],blanks:[{pos:1,ans:'al'},{pos:3,ans:'con'},{pos:5,ans:'en'}],full:'Voy al cine con mis amigos en autobús',lv:3},
+  {sentence:['Mi hermano viene','_','parque','_','el perro','_','la tarde'],blanks:[{pos:1,ans:'del'},{pos:3,ans:'con'},{pos:5,ans:'por'}],full:'Mi hermano viene del parque con el perro por la tarde',lv:3},
+  {sentence:['El regalo es','_','mi madre','_','su cumpleaños','_','parte','_','todos'],blanks:[{pos:1,ans:'para'},{pos:3,ans:'por'},{pos:5,ans:'de'}],full:'El regalo es para mi madre por su cumpleaños de parte de todos',lv:3},
+];
+
 export function genLee(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1)return sh(LEE_INTRUSO).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_'+i}));
   if(lv===2)return sh(LEE_WORD_IMG).map((d,i)=>({ty:'lee',mode:'word_img',data:d,id:'lee_wi_'+i}));
   if(lv===3)return sh(LEE_COMPLETE).map((d,i)=>({ty:'lee',mode:'complete',data:d,id:'lee_cmp_'+i}));
   if(lv===4)return sh(LEE_SYLLABLES).map((d,i)=>({ty:'lee',mode:'syllables',data:d,id:'lee_syl_'+i}));
+  if(lv===5)return sh(LEE_READ_DO).map((d,i)=>({ty:'lee',mode:'read_do',data:d,id:'lee_rd_'+i}));
+  if(lv===6)return sh(LEE_PREPOSICIONES.filter(d=>d.lv<=1)).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
+  if(lv===7)return sh(LEE_PREPOSICIONES.filter(d=>d.lv<=2)).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
+  if(lv===8)return sh(LEE_PREPOSICIONES).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
   return sh(LEE_READ_DO).map((d,i)=>({ty:'lee',mode:'read_do',data:d,id:'lee_rd_'+i}))}
 
 export function ExLee({ex,onOk,onSkip,name,uid,vids}){
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState([]);const[avail,setAvail]=useState([]);const[filledLetter,setFilledLetter]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced([]);setFilledLetter(null);resetOral();
+  const[prepFilled,setPrepFilled]=useState({});
+  const[prepAvail,setPrepAvail]=useState([]);
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced([]);setFilledLetter(null);setPrepFilled({});resetOral();
     if(ex.mode==='syllables'){setAvail([...ex.data.syllables].sort(()=>Math.random()-.5))}
+    if(ex.mode==='preposiciones'){
+      const blanks=ex.data.blanks||[];
+      const correct=blanks.map(b=>b.ans);
+      const wrong=PREPS.filter(p=>!correct.includes(p)).sort(()=>Math.random()-.5).slice(0,Math.max(3,6-correct.length));
+      setPrepAvail([...correct,...wrong].sort(()=>Math.random()-.5));
+    }
     stopVoice();return()=>stopVoice()},[ex]);
   function getOralPhrase(){
     if(ex.mode==='intruso')return ex.data.ans;
@@ -133,6 +179,7 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='complete')return ex.data.word;
     if(ex.mode==='syllables')return ex.data.word;
     if(ex.mode==='read_do')return ex.data.instruction;
+    if(ex.mode==='preposiciones')return ex.data.full;
     return '';
   }
   function pick(ans){poke();
@@ -188,6 +235,47 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
         {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||56,padding:20,minHeight:90}}>{o.l}</button>)}
       </div>
+    </div>}
+    {/* Preposiciones: drag preposition chips into blanks */}
+    {ex.mode==='preposiciones'&&<div>
+      <p style={{fontSize:18,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>Completa con la preposicion correcta</p>
+      <div className="card" style={{padding:20,marginBottom:14,background:'rgba(255,255,255,.06)'}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',alignItems:'center',fontSize:24,fontWeight:700,lineHeight:2}}>
+          {ex.data.sentence.map((word,i)=>{
+            const blankInfo=ex.data.blanks.find(b=>b.pos===i);
+            if(blankInfo){
+              const filled=prepFilled[i];
+              return <span key={i} onClick={()=>{if(filled&&!fb){const np={...prepFilled};delete np[i];setPrepFilled(np)}}} style={{
+                display:'inline-flex',alignItems:'center',justifyContent:'center',
+                minWidth:70,padding:'4px 12px',borderRadius:10,
+                background:filled?(fb==='ok'?GREEN+'33':fb==='no'&&filled!==blankInfo.ans?RED+'33':GOLD+'22'):'rgba(255,255,255,.08)',
+                border:filled?`2px solid ${fb==='ok'?GREEN:fb==='no'&&filled!==blankInfo.ans?RED:GOLD}`:`2px dashed ${GOLD}`,
+                color:filled?'#fff':GOLD,cursor:filled&&!fb?'pointer':'default',
+                transition:'all .2s'
+              }}>{filled||'___'}</span>
+            }
+            return <span key={i}>{word}</span>
+          })}
+        </div>
+      </div>
+      {/* Available preposition chips */}
+      {!fb&&<div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:14}}>
+        {prepAvail.filter(p=>!Object.values(prepFilled).includes(p)).map(p=><button key={p} className="btn btn-b" onClick={()=>{
+          poke();
+          const nextBlank=ex.data.blanks.find(b=>prepFilled[b.pos]===undefined);
+          if(!nextBlank)return;
+          const np={...prepFilled,[nextBlank.pos]:p};setPrepFilled(np);
+          // Check if all filled
+          if(ex.data.blanks.every(b=>np[b.pos]!==undefined)){
+            const allCorrect=ex.data.blanks.every(b=>np[b.pos]===b.ans);
+            if(allCorrect){setFb('ok');starBeep(4);say(ex.data.full).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
+            else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
+              if(na>=2){sayFB('La frase es: '+ex.data.full);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+              else{sayFB('Casi, prueba otra vez');setTimeout(()=>{setFb(null);setPrepFilled({})},1500)}}
+          }
+        }} style={{fontSize:18,padding:'8px 16px',fontWeight:700}}>{p}</button>)}
+      </div>}
+      {fb==='ok'&&<p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'8px 0'}}>{ex.data.full}</p>}
     </div>}
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}

@@ -47,17 +47,48 @@ const RAZONA_INTRUSO=[
   {cat:'deporte',words:['FÚTBOL','TENIS','NATACIÓN','SOPA'],ans:'SOPA',q:'¿Cuál NO es un deporte?'},
 ];
 const RAZONA_CLASSIFY=[
-  {groups:['Frutas','Animales'],items:[{w:'Manzana',g:0},{w:'Perro',g:1},{w:'Pera',g:0},{w:'Gato',g:1},{w:'Plátano',g:0},{w:'Pez',g:1}]},
-  {groups:['Ropa','Comida'],items:[{w:'Camisa',g:0},{w:'Pan',g:1},{w:'Zapato',g:0},{w:'Queso',g:1},{w:'Gorro',g:0},{w:'Leche',g:1}]},
-  {groups:['Animales','Muebles'],items:[{w:'León',g:0},{w:'Mesa',g:1},{w:'Oso',g:0},{w:'Silla',g:1},{w:'Pájaro',g:0},{w:'Cama',g:1}]},
+  {groups:['Frutas','Animales'],items:[{w:'🍎 Manzana',g:0},{w:'🐕 Perro',g:1},{w:'🍐 Pera',g:0},{w:'🐱 Gato',g:1},{w:'🍌 Plátano',g:0},{w:'🐟 Pez',g:1}]},
+  {groups:['Ropa','Comida'],items:[{w:'👕 Camisa',g:0},{w:'🍞 Pan',g:1},{w:'👟 Zapato',g:0},{w:'🧀 Queso',g:1},{w:'🧢 Gorro',g:0},{w:'🥛 Leche',g:1}]},
+  {groups:['Animales','Muebles'],items:[{w:'🦁 León',g:0},{w:'🪑 Mesa',g:1},{w:'🐻 Oso',g:0},{w:'💺 Silla',g:1},{w:'🐦 Pájaro',g:0},{w:'🛏️ Cama',g:1}]},
+  // Naturales/Sociales — Pictociencia
+  {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🌾 Trigo',g:0},{w:'🍞 Pan',g:1},{w:'🥛 Leche',g:0},{w:'🧀 Queso',g:1},{w:'🌳 Madera',g:0},{w:'🪑 Mesa',g:1}]},
+  {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🫒 Aceituna',g:0},{w:'🫒 Aceite',g:1},{w:'🐑 Lana',g:0},{w:'🧣 Bufanda',g:1},{w:'🍇 Uva',g:0},{w:'🍷 Zumo',g:1}]},
+  {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🥚 Huevo',g:0},{w:'🍰 Pastel',g:1},{w:'🌻 Girasol',g:0},{w:'🛢️ Aceite',g:1},{w:'🐄 Vaca',g:0},{w:'👞 Zapatos',g:1}]},
+  {groups:['❄️ Invierno','☀️ Verano'],items:[{w:'🧥 Abrigo',g:0},{w:'👙 Bañador',g:1},{w:'🧣 Bufanda',g:0},{w:'🩴 Chanclas',g:1},{w:'🧤 Guantes',g:0},{w:'🕶️ Gafas sol',g:1}]},
+  {groups:['❄️ Invierno','☀️ Verano'],items:[{w:'🧶 Jersey',g:0},{w:'👕 Camiseta',g:1},{w:'🥾 Botas',g:0},{w:'🩱 Bermudas',g:1},{w:'☂️ Paraguas',g:0},{w:'🧴 Crema sol',g:1}]},
+  {groups:['🏡 Pueblo','🏙️ Ciudad'],items:[{w:'🌾 Campos',g:0},{w:'🏢 Edificios',g:1},{w:'🐄 Vacas',g:0},{w:'🚌 Autobuses',g:1},{w:'🌳 Bosque',g:0},{w:'🏥 Hospital',g:1}]},
+  {groups:['🏠 Dentro casa','🌳 Fuera casa'],items:[{w:'🛋️ Sofá',g:0},{w:'🌳 Árbol',g:1},{w:'🍳 Cocina',g:0},{w:'🏊 Piscina',g:1},{w:'🛁 Bañera',g:0},{w:'⛱️ Playa',g:1}]},
+  {groups:['🔊 Hace ruido','🤫 Silencioso'],items:[{w:'🥁 Tambor',g:0},{w:'📚 Libro',g:1},{w:'📱 Teléfono',g:0},{w:'🧸 Peluche',g:1},{w:'🐕 Perro',g:0},{w:'🐟 Pez',g:1}]},
+  {groups:['💧 Agua','🔥 Fuego'],items:[{w:'🏊 Nadar',g:0},{w:'🏕️ Hoguera',g:1},{w:'🚿 Ducha',g:0},{w:'🕯️ Vela',g:1},{w:'🌧️ Lluvia',g:0},{w:'☀️ Sol',g:1}]},
 ];
 const RAZONA_CAUSE=[
-  {q:'Si llueve... ¿qué cojo?',opts:['Paraguas','Gafas de sol'],ans:'Paraguas'},
-  {q:'Si tengo hambre... ¿qué hago?',opts:['Como','Duermo'],ans:'Como'},
-  {q:'Si hace frío... ¿qué me pongo?',opts:['Abrigo','Bañador'],ans:'Abrigo'},
-  {q:'Si está oscuro... ¿qué enciendo?',opts:['La luz','El grifo'],ans:'La luz'},
-  {q:'Si me duele la cabeza... ¿qué tomo?',opts:['Medicina','Refresco'],ans:'Medicina'},
-  {q:'Si quiero cruzar la calle... ¿qué miro?',opts:['El semáforo','El reloj'],ans:'El semáforo'},
+  {q:'Si llueve... ¿qué cojo?',opts:['☂️ Paraguas','🕶️ Gafas de sol'],ans:'☂️ Paraguas'},
+  {q:'Si tengo hambre... ¿qué hago?',opts:['🍽️ Como','😴 Duermo'],ans:'🍽️ Como'},
+  {q:'Si hace frío... ¿qué me pongo?',opts:['🧥 Abrigo','👙 Bañador'],ans:'🧥 Abrigo'},
+  {q:'Si está oscuro... ¿qué enciendo?',opts:['💡 La luz','🚰 El grifo'],ans:'💡 La luz'},
+  {q:'Si me duele la cabeza... ¿qué tomo?',opts:['💊 Medicina','🥤 Refresco'],ans:'💊 Medicina'},
+  {q:'Si quiero cruzar la calle... ¿qué miro?',opts:['🚦 El semáforo','🕐 El reloj'],ans:'🚦 El semáforo'},
+  // Nuevos — entorno cotidiano (Pictociencia)
+  {q:'Si tengo sed... ¿qué cojo?',opts:['💧 Un vaso de agua','🧥 Un abrigo'],ans:'💧 Un vaso de agua'},
+  {q:'Si es de noche... ¿qué hago?',opts:['💡 Enciendo la luz','🕶️ Me pongo gafas'],ans:'💡 Enciendo la luz'},
+  {q:'Si tengo sueño... ¿qué hago?',opts:['🛏️ Me voy a dormir','⚽ Juego al fútbol'],ans:'🛏️ Me voy a dormir'},
+  {q:'Si tengo calor... ¿qué hago?',opts:['🪟 Abro la ventana','🧥 Me pongo abrigo'],ans:'🪟 Abro la ventana'},
+  {q:'Si me he manchado... ¿qué hago?',opts:['🧼 Me lavo','📺 Veo la tele'],ans:'🧼 Me lavo'},
+  {q:'Si suena el timbre... ¿qué hago?',opts:['🚪 Voy a abrir','😴 Sigo durmiendo'],ans:'🚪 Voy a abrir'},
+  {q:'Si es mi cumpleaños... ¿qué digo?',opts:['🎂 ¡Gracias por venir!','😤 No quiero nada'],ans:'🎂 ¡Gracias por venir!'},
+  {q:'Si un amigo está triste... ¿qué hago?',opts:['🤗 Le doy un abrazo','🏃 Me voy corriendo'],ans:'🤗 Le doy un abrazo'},
+  {q:'Si hace sol... ¿qué me pongo?',opts:['🕶️ Gafas de sol','🧣 Bufanda'],ans:'🕶️ Gafas de sol'},
+  {q:'Si quiero comprar pan... ¿dónde voy?',opts:['🥖 A la panadería','🏥 Al hospital'],ans:'🥖 A la panadería'},
+  {q:'Si estoy enfermo... ¿dónde voy?',opts:['🏥 Al médico','🎬 Al cine'],ans:'🏥 Al médico'},
+  {q:'Si necesito un libro... ¿dónde voy?',opts:['📚 A la biblioteca','🍕 A la pizzería'],ans:'📚 A la biblioteca'},
+  {q:'Si quiero nadar... ¿dónde voy?',opts:['🏊 A la piscina','📚 A la biblioteca'],ans:'🏊 A la piscina'},
+  {q:'Si hay fuego... ¿a quién llamo?',opts:['🚒 A los bomberos','🍕 A la pizzería'],ans:'🚒 A los bomberos'},
+  {q:'Si estoy perdido... ¿qué hago?',opts:['👮 Busco un policía','🏃 Corro sin parar'],ans:'👮 Busco un policía'},
+  {q:'Si quiero cruzar... ¿por dónde paso?',opts:['🚶 Por el paso de cebra','🏃 Por donde sea'],ans:'🚶 Por el paso de cebra'},
+  {q:'Si me duele la muela... ¿dónde voy?',opts:['🦷 Al dentista','🎮 A jugar'],ans:'🦷 Al dentista'},
+  {q:'Si llueve y no tengo paraguas...',opts:['🏠 Espero bajo un techo','🏃 Corro bajo la lluvia'],ans:'🏠 Espero bajo un techo'},
+  {q:'Si alguien me da un regalo...',opts:['🙏 Doy las gracias','😤 No digo nada'],ans:'🙏 Doy las gracias'},
+  {q:'Si veo basura en el suelo...',opts:['🗑️ La tiro a la papelera','👟 La piso'],ans:'🗑️ La tiro a la papelera'},
 ];
 const RAZONA_EMOTIONS=[
   {emoji:'😊',emotion:'Contento',q:'¿Cómo se siente?',opts:['Contento','Triste','Enfadado','Asustado']},
@@ -81,6 +112,26 @@ export function genPatterns(difficulty){const sh=a=>[...a].sort(()=>Math.random(
   else if(difficulty==='medium'){for(let i=0;i<12;i++){const pool=sh([...SHAPES]).slice(0,3);items.push({ty:'razona',mode:'pattern',data:mkPattern(pool,pats[i%4]),id:'rz_pat_m'+i})}}
   else{for(let i=0;i<12;i++){const cs=sh([...COLORS]).slice(0,3);const ss2=sh([...SHAPES]).slice(0,3);const combined=cs.map((c,j)=>({em:c.em+ss2[j%ss2.length].em,n:c.n+' '+ss2[j%ss2.length].n}));items.push({ty:'razona',mode:'pattern',data:mkPattern(combined,pats[i%4]),id:'rz_pat_h'+i})}}
   return sh(items)}
+// Generate number series exercises
+function genNumberSeries(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  const steps=[1,2,5,10];
+  for(let s=0;s<steps.length;s++){const step=steps[s];
+    for(let r=0;r<3;r++){const start=step===1?Math.floor(Math.random()*10)+1:step===2?Math.floor(Math.random()*5)*2:step===5?Math.floor(Math.random()*4)*5:Math.floor(Math.random()*5)*10;
+      const seq=[];for(let i=0;i<6;i++)seq.push(start+step*i);
+      const hideIdx=2+Math.floor(Math.random()*3); // hide position 2,3, or 4
+      const ans=seq[hideIdx];const shown=seq.slice(0,5).map((n,i)=>i===hideIdx?'?':String(n));
+      const wrong=[ans+step,ans-step,ans+1].filter(w=>w!==ans&&w>=0);
+      const opts=sh([ans,...wrong.slice(0,3)]);
+      items.push({ty:'razona',mode:'number_series',data:{q:'¿Qué número falta?',seq:shown,ans:String(ans),step,opts:opts.map(String)},id:'rz_ns_'+s+'_'+r})}}
+  return sh(items)}
+// Generate compare quantities exercises
+function genCompare(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
+  const emojis=['🍎','🐥','🚗','⭐','🌸','🐟','🦋','🎈'];
+  for(let i=0;i<15;i++){const em=emojis[Math.floor(Math.random()*emojis.length)];
+    const a=1+Math.floor(Math.random()*9),b=1+Math.floor(Math.random()*9);
+    const ans=a>b?'>':a<b?'<':'=';
+    items.push({ty:'razona',mode:'compare',data:{a,b,emoji:em,ans,q:`¿${a} ${em} o ${b} ${em}?`},id:'rz_cmp_'+i})}
+  return sh(items)}
 export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
@@ -90,6 +141,8 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===6){return genPatterns('easy')}
   if(lv===7){return genPatterns('medium')}
   if(lv===8){return genPatterns('hard')}
+  if(lv===9){return genNumberSeries()}
+  if(lv===10){return genCompare()}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
@@ -350,6 +403,8 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
     if(ex.mode==='classify')return 'bien clasificado';
     if(ex.mode==='pattern')return ex.data.ansText||ex.data.ans;
+    if(ex.mode==='number_series')return ex.data.ans;
+    if(ex.mode==='compare')return ex.data.a>ex.data.b?ex.data.a+' es mayor':ex.data.a<ex.data.b?ex.data.b+' es mayor':'son iguales';
     return String(ans);
   }
   function pick(ans){poke();const correct=ex.data.ans||ex.data.emotion;
@@ -430,6 +485,36 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <div style={{flex:'0 0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:280}}>
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
+    </div>}
+    {/* Number series — visual number bubbles with gap */}
+    {ex.mode==='number_series'&&<div>
+      <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{ex.data.q}</p>
+        <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'center',flexWrap:'wrap'}}>
+          {ex.data.seq.map((s,i)=><div key={i} style={{width:56,height:56,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,background:s==='?'?GOLD+'22':'rgba(255,255,255,.1)',border:s==='?'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',color:s==='?'?GOLD:'#fff',animation:s==='?'?'pulse 1.5s infinite':'none'}}>{s}</div>)}
+        </div>
+        <p style={{fontSize:13,color:'rgba(255,255,255,.35)',margin:'8px 0 0'}}>De {ex.data.step} en {ex.data.step}</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:28,padding:16,minHeight:68,fontWeight:800}}>{o}</button>)}
+      </div>
+      {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta de {ex.data.step} en {ex.data.step} 🔢</p></div>}
+    </div>}
+    {/* Compare quantities — visual emoji groups */}
+    {ex.mode==='compare'&&<div>
+      <p style={{fontSize:22,fontWeight:700,margin:'0 0 14px',color:GOLD}}>¿Cual es mayor?</p>
+      <div style={{display:'flex',gap:16,justifyContent:'center',alignItems:'stretch',marginBottom:14}}>
+        {[{n:ex.data.a,side:'left'},{n:ex.data.b,side:'right'}].map((s,si)=><div key={si} style={{flex:1,background:si===0?BLUE+'15':GREEN+'15',border:`2px solid ${si===0?BLUE:GREEN}`,borderRadius:16,padding:12,textAlign:'center',maxWidth:180}}>
+          <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center',marginBottom:8,minHeight:40}}>
+            {Array.from({length:s.n}).map((_,i)=><span key={i} style={{fontSize:24}}>{ex.data.emoji}</span>)}
+          </div>
+          <div style={{fontSize:36,fontWeight:800,color:si===0?BLUE:GREEN}}>{s.n}</div>
+        </div>)}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10}}>
+        {['>','<','='].map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:36,padding:14,fontWeight:800,minHeight:60}}>{o}</button>)}
+      </div>
+      {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta los {ex.data.emoji} de cada lado 👆</p></div>}
     </div>}
     {fb==='ok'&&ex.mode!=='spatial'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}

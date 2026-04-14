@@ -171,10 +171,12 @@ export const LV_OPTS={
   razona_piensa:[{n:4,l:'Causa-efecto'}],
   razona_clasifica:[{n:3,l:'Clasifica'}],
   razona_emociones:[{n:5,l:'Emociones'}],
+  razona_numeros:[{n:9,l:'Series numéricas'}],
+  razona_compara:[{n:10,l:'Comparar cantidades'}],
   decir:[{n:1,l:'N1'},{n:2,l:'N2'},{n:3,l:'N3'},{n:4,l:'N4'},{n:5,l:'N5'}],
   frase:[{n:1,l:'3 pal'},{n:2,l:'4 pal'},{n:3,l:'5 pal'}],
   contar:[{n:1,l:'1-20'},{n:2,l:'20-50'},{n:3,l:'50-100'},{n:4,l:'1-100'}],
-  math:[{n:1,l:'Sumas fácil'},{n:2,l:'Sumas+'},{n:3,l:'Restas'},{n:4,l:'Mezcla'}],
+  math:[{n:5,l:'🐥 Contar objetos'},{n:6,l:'🍎 Sumas visual'},{n:1,l:'Sumas fácil'},{n:2,l:'Sumas+'},{n:3,l:'Restas'},{n:4,l:'Mezcla'}],
   multi:[{n:1,l:'x2/x3'},{n:2,l:'x5/x10'},{n:3,l:'Mezcla'}],
   frac:[{n:1,l:'Reconocer'},{n:2,l:'Notación'},{n:3,l:'Equivalencias'},{n:4,l:'Sumar'},{n:5,l:'Sumar/Restar'}],
   money:[{n:1,l:'Reconocer'},{n:2,l:'Sumar'},{n:3,l:'Pagar'},{n:4,l:'Cambio'}],
@@ -192,6 +194,9 @@ export const LV_OPTS={
   lee_complete:[{n:3,l:'Completa'}],
   lee_syllables:[{n:4,l:'Ordena sílabas'}],
   lee_read_do:[{n:5,l:'Lee y haz'}],
+  lee_prep1:[{n:6,l:'1 preposición'}],
+  lee_prep2:[{n:7,l:'2 preposiciones'}],
+  lee_prep3:[{n:8,l:'3 preposiciones'}],
 };
 
 export const GROUPS=[
@@ -212,6 +217,8 @@ export const GROUPS=[
     {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
     {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
     {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'razona',l:'Series numéricas',defLv:9,lvKey:'razona_numeros'},
+    {k:'razona',l:'Compara cantidades',defLv:10,lvKey:'razona_compara'},
     {k:'money',l:'Monedas y Billetes',defLv:1,lvKey:'money'},
     {k:'clock',l:'La Hora',defLv:1,lvKey:'clock'},
     {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
@@ -223,5 +230,8 @@ export const GROUPS=[
     {k:'lee',l:'Palabra+Imagen',defLv:2,lvKey:'lee_word_img'},
     {k:'lee',l:'Completa',defLv:3,lvKey:'lee_complete'},
     {k:'lee',l:'Ordena sílabas',defLv:4,lvKey:'lee_syllables'},
-    {k:'lee',l:'Lee y haz',defLv:5,lvKey:'lee_read_do'}]},
+    {k:'lee',l:'Lee y haz',defLv:5,lvKey:'lee_read_do'},
+    {k:'lee',l:'Preposiciones 1',defLv:6,lvKey:'lee_prep1'},
+    {k:'lee',l:'Preposiciones 2',defLv:7,lvKey:'lee_prep2'},
+    {k:'lee',l:'Preposiciones 3',defLv:8,lvKey:'lee_prep3'}]},
 ];

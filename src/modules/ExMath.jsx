@@ -5,7 +5,23 @@ import { beep, mkPerfect } from '../utils.js'
 import { NumPad, useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
 
+const COUNT_EMOJIS=['🐥','🍎','🚗','🌸','🐟','🦋','🎈','🐕','🐱','🍊','⭐','🌻','🐸','🍓','🐧'];
+// Generate "count objects" exercises (visual, pre-abstract)
+export function genCountObjects(){const sh=a=>[...a].sort(()=>Math.random()-.5);const ops=[];
+  for(let i=0;i<20;i++){const n=2+Math.floor(Math.random()*8); // 2-9 objects
+    const em=COUNT_EMOJIS[Math.floor(Math.random()*COUNT_EMOJIS.length)];
+    ops.push({q:'¿Cuántos hay?',ans:n,emoji:em,mode:'count_objects'})}
+  return sh(ops)}
+// Generate "add with objects" exercises (visual addition)
+export function genAddObjects(){const sh=a=>[...a].sort(()=>Math.random()-.5);const ops=[];
+  for(let i=0;i<20;i++){const a=1+Math.floor(Math.random()*5),b=1+Math.floor(Math.random()*4);
+    const em=COUNT_EMOJIS[Math.floor(Math.random()*COUNT_EMOJIS.length)];
+    ops.push({q:`${a} + ${b}`,ans:a+b,a,b,emoji:em,mode:'add_objects'})}
+  return sh(ops)}
+
 export function genMath(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const ops=[];const rng=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  if(lv===5){return genCountObjects()} // Nivel visual: contar objetos
+  if(lv===6){return genAddObjects()} // Nivel visual: sumas con objetos
   if(lv===1){for(let i=0;i<30;i++){const a=rng(1,10),b=rng(1,2);ops.push({q:`${a} + ${b}`,ans:a+b})}}
   else if(lv===2){for(let i=0;i<30;i++){const a=rng(5,20),b=Math.random()>.5?5:10;ops.push({q:`${a} + ${b}`,ans:a+b})}}
   else if(lv===3){for(let i=0;i<30;i++){const a=rng(3,15),b=rng(1,2);ops.push({q:`${a} - ${b}`,ans:a-b})}}
@@ -41,7 +57,62 @@ function SubtractVisual({a,b,ans}){
     <div style={{fontSize:56,fontWeight:700,color:phase>=2?GREEN:GOLD,transition:'all .3s',minHeight:68}}>{phase>=2?ans:a}</div>
   </div>}
 
+// Visual mode: Count objects
+function ExCountObjects({ex,onOk,onSkip,name,uid,vids}){
+  const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say('¿Cuántos '+ex.emoji+' hay?'),400);return()=>stopVoice()},[ex]);
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
+    say('Hay '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=(NUMS_1_100[ex.ans-1]||''+ex.ans).toLowerCase();triggerOral('hay '+nw,4,1)})}
+    else{setFb('no');stopVoice();sayFB('Cuenta bien, hay '+ex.ans);setTimeout(()=>setFb(null),2000)}}
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+    <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¿Cuántos hay?</p>
+    <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',padding:16,background:'rgba(255,255,255,.06)',borderRadius:20,border:'2px solid rgba(255,255,255,.1)',marginBottom:16,minHeight:80}}>
+      {Array.from({length:ex.ans}).map((_,i)=><span key={i} style={{fontSize:40,animation:`bounceIn ${0.2+i*0.08}s ease-out`}}>{ex.emoji}</span>)}
+    </div>
+    {!fb&&<NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={2}/>}
+    {fb==='ok'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:28,color:GREEN,fontWeight:800,margin:'8px 0 0'}}>{ex.ans} {ex.emoji}</p></div>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
+    {fb==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:14,padding:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>Cuenta otra vez 👆</p></div>}
+    {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+  </div>}
+
+// Visual mode: Add with objects
+function ExAddObjects({ex,onOk,onSkip,name,uid,vids}){
+  const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const{idleMsg,poke}=useIdle(name,!fb);
+  const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
+  useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say(ex.a+' más '+ex.b+' es igual a...'),400);return()=>stopVoice()},[ex]);
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
+    say(ex.a+' más '+ex.b+' son '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();triggerOral(nw(ex.a)+' más '+nw(ex.b)+' son '+nw(ex.ans),4,1)})}
+    else{setFb('no');stopVoice();sayFB('Cuenta todos: son '+ex.ans);setTimeout(()=>setFb(null),2000)}}
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>
+    <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¿Cuántos hay en total?</p>
+    <div style={{display:'flex',gap:16,justifyContent:'center',alignItems:'center',marginBottom:16}}>
+      <div style={{background:'rgba(230,126,34,.12)',border:'2px solid rgba(230,126,34,.3)',borderRadius:16,padding:12,minWidth:80}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>{Array.from({length:ex.a}).map((_,i)=><span key={i} style={{fontSize:32}}>{ex.emoji}</span>)}</div>
+        <p style={{fontSize:18,fontWeight:700,color:'#E67E22',margin:'6px 0 0'}}>{ex.a}</p>
+      </div>
+      <span style={{fontSize:36,fontWeight:800,color:GREEN}}>+</span>
+      <div style={{background:'rgba(52,152,219,.12)',border:'2px solid rgba(52,152,219,.3)',borderRadius:16,padding:12,minWidth:80}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>{Array.from({length:ex.b}).map((_,i)=><span key={i} style={{fontSize:32}}>{ex.emoji}</span>)}</div>
+        <p style={{fontSize:18,fontWeight:700,color:BLUE,margin:'6px 0 0'}}>{ex.b}</p>
+      </div>
+      <span style={{fontSize:28,fontWeight:800,color:DIM}}>=</span>
+      <span style={{fontSize:36,fontWeight:800,color:GOLD}}>?</span>
+    </div>
+    {!fb&&<NumPad value={ans} onChange={setAns} onSubmit={check} maxLen={2}/>}
+    {fb==='ok'&&!oralPhrase&&<div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18}}><Stars n={4} sz={36}/><p style={{fontSize:28,color:GREEN,fontWeight:800,margin:'8px 0 0'}}>{ex.a} + {ex.b} = {ex.ans}</p></div>}
+    {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
+    {fb==='no'&&<div className="as" style={{background:GOLD+'22',borderRadius:14,padding:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>Cuenta todos los {ex.emoji} juntos 👆</p></div>}
+    {idleMsg&&!fb&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
+    <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:12}}>⏭️ Saltar</button>
+  </div>}
+
 export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
+  // Route to visual modes
+  if(ex.mode==='count_objects')return <ExCountObjects ex={ex} onOk={onOk} onSkip={onSkip} name={name} uid={uid} vids={vids}/>
+  if(ex.mode==='add_objects')return <ExAddObjects ex={ex} onOk={onOk} onSkip={onSkip} name={name} uid={uid} vids={vids}/>
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[showHelp,setShowHelp]=useState(false);const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
