@@ -1,5 +1,5 @@
-# TOKI — Checklist de Bugs y Mejoras (6 sesiones)
-**Fecha: 13 abril 2026** | Imprimir y marcar con boligrafo
+# TOKI — Checklist de Bugs y Mejoras (6 sesiones + sesion 6 completa)
+**Fecha: 14 abril 2026** | Imprimir y marcar con boligrafo
 
 ---
 
@@ -96,4 +96,33 @@
 
 ---
 
-**Total: 70 items** | Arreglados: ~50 | Por verificar: ~20 | Pendientes nuevos: ~15
+## SESION 6 — Nuevas mejoras implementadas
+
+- [ ] 71. PIN bypass fix (String comparison, sin !supPin bypass)
+- [ ] 72. Celebraciones pausan ejercicio + confetti para 100/200/300
+- [ ] 73. Badge evolucion diaria sobre avatar (estrella/corona/capa)
+- [ ] 74. Overlay podio mas grande con confetti y foto
+- [ ] 75. Contador: solo diario visible (timer sesion solo si modo tiempo)
+- [ ] 76. Ritmo random: modulo focal configurable + slider peso 1-5
+- [ ] 77. Modo guiada: seleccionar 1-4 modulos especificos
+- [ ] 78. Settings sync cloud: configuracion se sincroniza via Firebase
+- [ ] 79. Situaciones ampliadas: de 90 a 320 (8 rondas sin repetir)
+- [ ] 80. Escritura: canvas mas grande en tablet + Pointer Events para Active Stylus
+- [ ] 81. Grabacion voz: auto-selecciona si solo hay 1 voz registrada
+- [ ] 82. SVG realistas para objetos con color (coche, moto, bici, bus, camiseta)
+- [ ] 83. personalize() soporta {edad} y {cumple}
+
+## PENDIENTE PARA PROXIMAS SESIONES
+
+- [ ] P1. Preposiciones drag-and-drop en Lee (nuevo ejercicio)
+- [ ] P2. Dock micro/pausa consistente en todos los ejercicios
+- [ ] P3. Layout Settings: modulos arriba, tipo sesion abajo
+- [ ] P4. Mejorar reconocimiento vocal (investigar alternativas)
+- [ ] P5. Toki cruzando pantalla en celebraciones (animacion)
+- [ ] P6. Escribe: rediseno completo (May/Min toggle, guide, pauta)
+- [ ] P7. Perfil compartido con codigo 6 chars
+- [ ] P8. Hosting imagenes realistas (sustituir emojis)
+
+---
+
+**Total: 83 items implementados** | **8 pendientes proximas sesiones**

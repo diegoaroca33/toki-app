@@ -389,6 +389,9 @@ export default function SettingsConfigTab(props) {
     burstMode, setBurstMode,
     burstReps, setBurstReps,
     fraccionado, setFraccionado,
+    focalModule, setFocalModule,
+    focalWeight, setFocalWeight,
+    guidedTasks, setGuidedTasks,
   } = props
 
   const currentMode = useMemo(() => {
@@ -459,6 +462,43 @@ export default function SettingsConfigTab(props) {
           {currentMode === 'random' && 'Mezcla automatica de los modulos activos.'}
           {currentMode === 'guided' && 'El supervisor configura que se trabaja.'}
         </div>
+        {/* Guided: select 1-4 modules */}
+        {currentMode === 'guided' && <div style={{ marginTop: 14, borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: TXT, marginBottom: 8 }}>Modulos para esta sesion (max 4)</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {dynGroups.flatMap(g => g.modules).filter(m => activeMods[m.lvKey] !== false).map(m => {
+              const sel = (guidedTasks || []).includes(m.lvKey)
+              return <Button key={m.lvKey} variant={sel ? 'gold' : 'ghost'} fullWidth={false} size="sm" onClick={() => {
+                const cur = guidedTasks || []
+                let next
+                if (sel) { next = cur.filter(k => k !== m.lvKey) }
+                else if (cur.length < 4) { next = [...cur, m.lvKey] }
+                else return
+                setGuidedTasks && setGuidedTasks(next)
+                saveData('guided_tasks', next)
+              }}>{m.l}</Button>
+            })}
+          </div>
+          {(guidedTasks || []).length === 0 && <div style={{ color: RED, fontSize: 12, marginTop: 4 }}>Selecciona al menos 1 modulo</div>}
+        </div>}
+        {/* Focal module + weight — only for random/guided */}
+        {(currentMode === 'random' || currentMode === 'guided') && <>
+          <div style={{ marginTop: 14, borderTop: `1px solid ${BORDER}`, paddingTop: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TXT, marginBottom: 8 }}>Modulo principal</div>
+            <select value={focalModule || 'decir'} onChange={e => setFocalModule && setFocalModule(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${BORDER}`, background: BG3, color: TXT, fontSize: 15, fontFamily: "'Fredoka'" }}>
+              {dynGroups.flatMap(g => g.modules).filter(m => activeMods[m.lvKey] !== false).map(m => <option key={m.lvKey} value={m.k}>{m.l}</option>)}
+            </select>
+            <div style={{ color: DIM, fontSize: 12, marginTop: 4 }}>Este modulo tendra mas peso en la sesion</div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TXT, marginBottom: 6 }}>Intensidad: <span style={{ color: GOLD }}>{focalWeight || 3}</span>/5</div>
+            <input type="range" min={1} max={5} step={1} value={focalWeight || 3} onChange={e => setFocalWeight && setFocalWeight(parseInt(e.target.value))} style={{ width: '100%', accentColor: GOLD }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: DIM }}>
+              <span>Equilibrado</span>
+              <span>Mas foco</span>
+            </div>
+          </div>
+        </>}
       </Card>
 
       <Card>

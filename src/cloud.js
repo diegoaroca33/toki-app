@@ -30,7 +30,9 @@ export function processImage(file){return new Promise((resolve,reject)=>{
 // ===== CLOUD SYNC — Firestore save/load profile data =====
 export async function cloudSaveProfile(uid,profileData){
   if(!hasConfig||!db||!uid)return;
-  try{await fbSaveProfile(uid,{profiles:profileData.profiles||[],personas:profileData.personas||[],email:profileData.email||''});
+  try{const data={profiles:profileData.profiles||[],personas:profileData.personas||[],email:profileData.email||''};
+    if(profileData.settings)data.settings=profileData.settings;
+    await fbSaveProfile(uid,data);
   }catch(e){console.warn('[Toki Cloud] Save error:',e)}}
 
 export async function cloudLoadProfile(uid){

@@ -600,32 +600,34 @@ export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
   const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '¡Sigue así!';
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.9)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div style={{ fontSize: 24, fontWeight: 800, color: '#FFD54F', marginBottom: 20 }}>Progreso del día: {dailyCount} ejercicios</div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 24 }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at center, rgba(15,25,50,.97) 0%, rgba(0,0,0,.98) 100%)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      {/* Confetti for phase 2+ */}
+      {phase>=2&&Array.from({length:phase*8}).map((_,i)=><div key={i} style={{position:'fixed',left:Math.random()*100+'%',top:-10,width:6+Math.random()*6,height:6+Math.random()*6,borderRadius:Math.random()>.5?'50%':'2px',background:['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96E6A1','#DDA0DD','#FF9800'][i%7],animation:`confetti-fall ${2.5+Math.random()*2}s linear ${Math.random()*2}s forwards`,zIndex:401}}/>)}
+      <style>{`@keyframes confetti-fall{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}`}</style>
+      {/* Photo */}
+      {photo&&<img src={photo} alt="" style={{width:80,height:80,borderRadius:'50%',border:'4px solid #FFD54F',objectFit:'cover',marginBottom:12,boxShadow:'0 0 20px rgba(255,215,0,.4)'}}/>}
+      <div style={{ fontSize: 28, fontWeight: 800, color: '#FFD54F', marginBottom: 20, textAlign:'center' }}>Hoy: {dailyCount} ejercicios</div>
+      <div style={{ display: 'flex', gap: 'clamp(12px, 4vw, 28px)', alignItems: 'flex-end', marginBottom: 28 }}>
         {phases.map(p => {
           const achieved = phase >= p.n;
           const active = phase === p.n;
-          const sz = 48 + p.n * 12;
+          const sz = 56 + p.n * 16;
           return (
-            <div key={p.n} style={{ textAlign: 'center', opacity: achieved ? 1 : 0.3, transition: 'all .3s' }}>
-              <div style={{ fontSize: sz * 0.6, marginBottom: 4, animation: active ? 'astro-dance .5s ease-in-out infinite alternate' : 'none' }}>
+            <div key={p.n} style={{ textAlign: 'center', opacity: achieved ? 1 : 0.25, transition: 'all .3s', transform: active ? 'scale(1.1)' : 'scale(1)' }}>
+              <div style={{ fontSize: sz * 0.65, marginBottom: 6, animation: active ? 'astro-dance .5s ease-in-out infinite alternate' : 'none', filter: active ? 'drop-shadow(0 0 12px rgba(255,215,0,.6))' : 'none' }}>
                 {p.emoji}
               </div>
-              {active && photo && (
-                <img src={photo} alt="" style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #FFD54F', marginBottom: 4 }} />
-              )}
-              {active && !photo && <div style={{ fontSize: 10, color: '#FFD54F', marginBottom: 4 }}>TÚ</div>}
-              <div style={{ fontSize: 11, fontWeight: 700, color: achieved ? '#fff' : '#666' }}>{p.title}</div>
-              <div style={{ fontSize: 10, color: achieved ? '#aaa' : '#444' }}>{p.label}</div>
+              {active && <div style={{ fontSize: 13, color: '#FFD54F', fontWeight: 800, marginBottom: 2 }}>TU</div>}
+              <div style={{ fontSize: 14, fontWeight: 700, color: achieved ? '#fff' : '#555' }}>{p.title}</div>
+              <div style={{ fontSize: 12, color: achieved ? '#aaa' : '#333' }}>{p.label}</div>
             </div>
           );
         })}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#FFD54F', textAlign: 'center', animation: 'astro-bounce 1s ease-in-out infinite alternate' }}>
+      <div style={{ fontSize: 26, fontWeight: 800, color: '#FFD54F', textAlign: 'center', animation: 'astro-bounce 1s ease-in-out infinite alternate', maxWidth: 340 }}>
         {cheer}
       </div>
-      <div style={{ marginTop: 16, fontSize: 13, color: 'rgba(255,255,255,.4)' }}>Toca para cerrar</div>
+      <div style={{ marginTop: 20, fontSize: 14, color: 'rgba(255,255,255,.35)' }}>Toca para cerrar</div>
       <style>{`
         @keyframes astro-dance{0%{transform:translateY(0) rotate(-5deg)}100%{transform:translateY(-8px) rotate(5deg)}}
         @keyframes astro-bounce{0%{transform:scale(1)}100%{transform:scale(1.05)}}

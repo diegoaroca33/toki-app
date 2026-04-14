@@ -91,9 +91,10 @@ export function ExWriting({ex,onOk,onSkip,name}){
   const oralEnabled=()=>{try{const v=localStorage.getItem('toki_oral_all_planets');if(v===null)return true;return v==='true'}catch(e){return true}};
   const[ghostAnimating,setGhostAnimating]=useState(false);const ghostTimers=useRef([]);
   const isWide=ex.mode==='word'||ex.mode==='phrase';
-  // Auto-size based on mode: letters=big pauta, words=medium, phrases=small
-  const cW=ex.mode==='phrase'?800:isWide?700:400;
-  const cH=ex.mode==='letter'?400:ex.mode==='word'?300:240;
+  // Auto-size based on mode + device: bigger canvas for tablets
+  const isTablet=typeof window!=='undefined'&&window.innerWidth>=768;
+  const cW=ex.mode==='phrase'?(isTablet?1000:800):isWide?(isTablet?900:700):(isTablet?500:400);
+  const cH=ex.mode==='letter'?(isTablet?500:400):ex.mode==='word'?(isTablet?380:300):(isTablet?300:240);
   const baseY=ex.mode==='letter'?300:ex.mode==='word'?210:170;
   const upperY=ex.mode==='letter'?60:ex.mode==='word'?50:40;
   const ascY=ex.mode==='letter'?30:ex.mode==='word'?25:20;
@@ -239,12 +240,20 @@ export function ExWriting({ex,onOk,onSkip,name}){
     return()=>{cancelled=true;sr.stop()}
   },[speakPhase]);
   const lastDraw=useRef({x:0,y:0});const isStylus=useRef(false);
-  function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
-  function detectStylus(e){if(e.touches&&e.touches[0]){const t=e.touches[0];if(t.touchType==='stylus'||t.radiusX<5)return true}return false}
+  function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();
+    // Pointer events: use clientX/Y directly; Touch events: use touches[0]; Mouse: use event
+    const t=e.touches?e.touches[0]:e;
+    return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
+  function detectStylus(e){
+    // Pointer Events (Samsung Active Stylus, Apple Pencil, etc.)
+    if(e.pointerType==='pen')return true;
+    // Touch Events fallback
+    if(e.touches&&e.touches[0]){const t=e.touches[0];if(t.touchType==='stylus'||t.radiusX<5)return true}
+    return false}
   function getLineWidth(e){return detectStylus(e)?2:4}
   function start(e){e.preventDefault();if(ghostAnimating)return;poke();drawing.current=true;isStylus.current=detectStylus(e);const p=getPos(e);lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const ctx=canvasRef.current.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.strokeStyle='#2E75B6';ctx.lineWidth=getLineWidth(e);ctx.lineCap='round';ctx.lineJoin='round'}
   function move(e){e.preventDefault();if(!drawing.current)return;const p=getPos(e);const dx=p.x-lastDraw.current.x,dy=p.y-lastDraw.current.y;if(Math.sqrt(dx*dx+dy*dy)<2)return;lastDraw.current={x:p.x,y:p.y};strokePts.current.push(p);const lw=isStylus.current?2:4;const ctx=canvasRef.current.getContext('2d');ctx.strokeStyle='#2E75B6';ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke()}
-  function end(e){e.preventDefault();drawing.current=false}
+  function end(e){if(e&&e.preventDefault)e.preventDefault();drawing.current=false}
   function clear(){strokePts.current=[];const c=canvasRef.current;const ctx=c.getContext('2d');drawPauta(ctx,cW,cH);drawGuide(ctx,cW,cH)}
   function playGhostHand(){
     if(ghostAnimating||!canvasRef.current)return;
@@ -322,6 +331,7 @@ export function ExWriting({ex,onOk,onSkip,name}){
       <div className="card" style={{padding:12,marginBottom:10,background:'#FAFAF5',borderColor:'#D4D4D4'}}>
         {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
         <canvas ref={canvasRef} width={cW} height={cH} style={{width:'100%',maxWidth:cW,height:'auto',aspectRatio:cW+'/'+cH,borderRadius:8,border:'2px solid #D4D4D4',touchAction:'none',cursor:'crosshair'}}
+          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           onMouseDown={start} onMouseMove={move} onMouseUp={end}/>
       </div>

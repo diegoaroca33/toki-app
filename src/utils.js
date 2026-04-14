@@ -12,6 +12,18 @@ export function adjScore(raw){return raw}// exigencia now only affects passThres
 export function cap(s){return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase()}
 export function saveData(key,val){try{const seen=new WeakSet();localStorage.setItem('toki_'+key,JSON.stringify(val,(k,v)=>{if(v instanceof HTMLElement||v instanceof Node)return undefined;if(typeof v==='object'&&v!==null&&v.$$typeof)return undefined;if(typeof v==='object'&&v!==null){if(seen.has(v))return undefined;seen.add(v)}return v}))}catch(e){console.warn('[Toki] saveData error:',key,e)}}
 export function loadData(key,def){try{const v=localStorage.getItem('toki_'+key);return v?JSON.parse(v):def}catch(e){return def}}
+// Gather all settings into one object for cloud sync
+export function gatherSettings(){
+  const s={burst_mode:loadData('burst_mode',true),burst_reps:loadData('burst_reps',2),session_time:loadData('session_time',30),session_goal:loadData('session_goal',100),session_type:loadData('session_type','time'),session_mode:loadData('session_mode','free'),active_mods:loadData('active_mods',{}),guided_tasks:loadData('guided_tasks',[]),theme:loadData('theme','space'),exigencia:loadData('exigencia',65),focal_module:loadData('focal_module','decir'),focal_weight:loadData('focal_weight',3),fraccionado:loadData('fraccionado',false),sup_pin:loadData('sup_pin',null),_ts:Date.now()};
+  // Collect module levels
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('toki_mod_lv_')){const short=k.replace('toki_','');s[short]=loadData(short,null)}}}catch(e){}
+  return s}
+// Apply settings from cloud
+export function applySettings(s){if(!s||typeof s!=='object')return;
+  const keys=['burst_mode','burst_reps','session_time','session_goal','session_type','session_mode','active_mods','guided_tasks','theme','exigencia','focal_module','focal_weight','fraccionado','sup_pin'];
+  keys.forEach(k=>{if(s[k]!==undefined)saveData(k,s[k])});
+  // Apply module levels
+  Object.keys(s).filter(k=>k.startsWith('mod_lv_')).forEach(k=>{if(s[k]!==undefined)saveData(k,s[k])})}
 export function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
 export function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);const edad=u.age||(u.birthdate?Math.max(1,Math.floor((Date.now()-new Date(u.birthdate).getTime())/31557600000)):'');const cumple=u.birthdate?new Date(u.birthdate).toLocaleDateString('es-ES',{day:'numeric',month:'long'}):'';const r=text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole').replace(/\{edad\}/g,String(edad)).replace(/\{cumple\}/g,cumple);return r.charAt(0).toUpperCase()+r.slice(1)}
 export function srsUp(id,ok,u,stars,attempts){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();
