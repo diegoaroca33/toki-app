@@ -444,7 +444,7 @@ export default function App(){
       for(let i=0;i<batches.length-1;i++){if(batches[i].length<5){batches[i+1]=[...batches[i],...batches[i+1]];batches.splice(i,1);i--}}
       if(batches.length>1&&batches[batches.length-1].length<5){batches[batches.length-2]=[...batches[batches.length-2],...batches[batches.length-1]];batches.pop()}
       return batches.map((b,i)=>({ty:'count',nums:b,id:'cnt_batch_'+i}))}
-    if(section==='math'){return genMath(slv).slice(0,30).map((m,i)=>({ty:'math',q:m.q,ans:m.ans,id:'math_'+i}))}
+    if(section==='math'){return genMath(slv).slice(0,30).map((m,i)=>({ty:'math',...m,id:'math_'+i}))}
     if(section==='frac'){return genFractions(slv).slice(0,20).map(f=>({ty:'frac',...f}))}
     if(section==='multi'){return genMulti(slv).slice(0,20).map((m,i)=>({ty:'multi',...m,id:'multi_'+i}))}
     if(section==='money'){return genMoney(slv)}
