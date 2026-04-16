@@ -11,8 +11,19 @@ const _activeAudios=new Set();
 function _trackAudio(a){_activeAudios.add(a);const cleanup=()=>_activeAudios.delete(a);a.addEventListener('ended',cleanup);a.addEventListener('error',cleanup);a.addEventListener('pause',cleanup);return a}
 function stopAllAudio(){_activeAudios.forEach(a=>{try{a.pause();a.currentTime=0}catch(e){}});_activeAudios.clear()}
 function setVoiceProfile(a,s){voiceProfile={age:a||12,sex:s||'m'};cachedVoice=null;pickVoice()}
-function getVP(){const a=voiceProfile.age,s=voiceProfile.sex;if(a<=9)return{rate:.6,pitch:s==='f'?1.35:1.2};if(a<=13)return{rate:.65,pitch:s==='f'?1.15:.92};if(a<=17)return{rate:.7,pitch:s==='f'?1.05:.82};return{rate:.75,pitch:s==='f'?1.0:.78}}
-function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;const esES=es.filter(x=>x.lang==='es-ES');const esOther=es.filter(x=>x.lang!=='es-ES');const pool=esES.length?esES:esOther.length?esOther:es;const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena/i,m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre/i;cachedVoice=voiceProfile.sex==='f'?pool.find(x=>f.test(x.name))||pool[0]:pool.find(x=>m.test(x.name))||pool[0]}
+// Speech rates: slower than normal (1.0) for DI users. These are the MODEL rates.
+// The child listens at this speed, so it must be clear and natural — not rushed.
+function getVP(){const a=voiceProfile.age,s=voiceProfile.sex;if(a<=9)return{rate:.55,pitch:s==='f'?1.3:1.15};if(a<=13)return{rate:.6,pitch:s==='f'?1.1:.9};if(a<=17)return{rate:.65,pitch:s==='f'?1.0:.82};return{rate:.7,pitch:s==='f'?1.0:.78}}
+function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVoices():[];const es=v.filter(x=>x.lang&&x.lang.startsWith('es'));if(!es.length)return;
+  // STRONGLY prefer es-ES (Spain). Only fall back to Latin if no es-ES at all.
+  const esES=es.filter(x=>x.lang==='es-ES');
+  // Also accept es-ES variants like "es-ES-*" or voices with "spain" in name
+  const esSpain=es.filter(x=>x.lang==='es-ES'||/spain|espa[ñn]/i.test(x.name));
+  const pool=esSpain.length?esSpain:esES.length?esES:es;
+  const f=/elena|conchita|lucia|miren|monica|paulina|female|femenin|mujer|helena|ines/i;
+  const m=/jorge|enrique|pablo|andres|diego|male|masculin|hombre|alvaro/i;
+  cachedVoice=voiceProfile.sex==='f'?pool.find(x=>f.test(x.name))||pool[0]:pool.find(x=>m.test(x.name))||pool[0];
+  if(import.meta.env.DEV)console.log('[Toki Voice] Selected:',cachedVoice?.name,cachedVoice?.lang,'from',pool.length,'Spanish voices')}
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,100);setTimeout(pickVoice,500);setTimeout(pickVoice,1500)}
 // iOS Safari fix: cancel + resume before every speak to prevent frozen queue
 // Added delay between cancel and speak to prevent first word being cut off
@@ -24,7 +35,12 @@ let _ttsKeepAlive=null;
 function startTTSKeepAlive(){stopTTSKeepAlive();_ttsKeepAlive=setInterval(()=>{try{if(window.speechSynthesis){if(typeof window.speechSynthesis.resume==='function')window.speechSynthesis.resume();if(window.speechSynthesis.paused)window.speechSynthesis.resume()}}catch(e){}},2000)}
 function stopTTSKeepAlive(){if(_ttsKeepAlive){clearInterval(_ttsKeepAlive);_ttsKeepAlive=null}}
 function say(text,rateOverride){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP(),u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=typeof rateOverride==='number'?rateOverride:p.rate;u.pitch=p.pitch;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(3000,text.length*250)+100)})}
-function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=Math.min(1.0,p.rate+0.15);u.pitch=voiceProfile.sex==='m'?Math.min(1.5,p.pitch+0.4):Math.max(0.6,p.pitch-0.3);u.volume=1.0;const voices=window.speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith('es'));u.voice=voices.find(v=>v!==cachedVoice)||cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(2500,text.length*200)+100)})}
+function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=Math.min(1.0,p.rate+0.15);u.pitch=voiceProfile.sex==='m'?Math.min(1.5,p.pitch+0.4):Math.max(0.6,p.pitch-0.3);u.volume=1.0;
+  // Use a DIFFERENT es-ES voice for feedback (so it sounds distinct from model)
+  // But ONLY from es-ES pool — never fall back to Latin American voice
+  const esESVoices=window.speechSynthesis.getVoices().filter(v=>v.lang==='es-ES');
+  u.voice=esESVoices.find(v=>v!==cachedVoice)||cachedVoice;
+  let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(2500,text.length*200)+100)})}
 // Quick TTS at faster rate for counting
 function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=1.1;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(1200,text.length*120))})}
 function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel();stopAllAudio()}
