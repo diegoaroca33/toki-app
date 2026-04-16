@@ -27,7 +27,9 @@ function pickVoice(){const v=window.speechSynthesis?window.speechSynthesis.getVo
 if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=pickVoice;setTimeout(pickVoice,100);setTimeout(pickVoice,500);setTimeout(pickVoice,1500)}
 // iOS Safari fix: cancel + resume before every speak to prevent frozen queue
 // Added delay between cancel and speak to prevent first word being cut off
-function _iosSpeak(u){const ss=window.speechSynthesis;ss.cancel();if(typeof ss.resume==='function')ss.resume();setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},100)},50)}
+// Delay between cancel and speak prevents first word being cut off.
+// 80ms needed for Samsung tablets (50ms was too fast for some Android TTS engines)
+function _iosSpeak(u){const ss=window.speechSynthesis;ss.cancel();if(typeof ss.resume==='function')ss.resume();setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},120)},80)}
 // iOS Safari: unlock + keep-alive for speechSynthesis
 // Call warmUpTTS from user gesture to unlock, then startTTSKeepAlive during game
 function warmUpTTS(){try{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('.');u.volume=0.01;u.rate=10;u.lang='es-ES';window.speechSynthesis.speak(u)}catch(e){}}

@@ -320,7 +320,8 @@ export default function App(){
   const[paused,setPaused]=useState(false);const pauseTimerRef=useRef(null);const snoozeTimerRef=useRef(null);const[showSnooze,setShowSnooze]=useState(false);const pausedRef=useRef(false);
   useEffect(()=>{pausedRef.current=paused},[paused]);
   function playBark(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(350,c.currentTime);o.frequency.exponentialRampToValueAtTime(150,c.currentTime+0.2);g.gain.setValueAtTime(0.7,c.currentTime);g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+0.25);o.start();o.stop(c.currentTime+0.25);setTimeout(()=>c.close(),400)}catch(e){}}
-  function pauseSession(){stopVoice();window.dispatchEvent(new Event('toki-pause'));setPaused(true);pauseTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},60000)}
+  // Pausa = hibernacion total. Sin ladridos, sin snooze. Silencio completo.
+  function pauseSession(){stopVoice();window.dispatchEvent(new Event('toki-pause'));setPaused(true)}
   const[resumeKey,setResumeKey]=useState(0);
   function resumeSession(){stopVoice();setPaused(false);setShowSnooze(false);setResumeKey(k=>k+1);if(pauseTimerRef.current)clearTimeout(pauseTimerRef.current);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current)}
   function snoozeSession(){setShowSnooze(false);if(snoozeTimerRef.current)clearTimeout(snoozeTimerRef.current);snoozeTimerRef.current=setTimeout(()=>{playBark();setShowSnooze(true)},240000)}
@@ -631,7 +632,8 @@ export default function App(){
     if(user?.id){const newDaily=addDailyCount(user.id,repsCount);setDailyCount(newDaily);}
     // Streak & milestone tracking
     const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+repsCount);
-    const totalOk=nextSt.ok;const MS=[{n:10,emoji:'🌟',text:'¡Vas genial!',sub:'10 ejercicios'},{n:25,emoji:'🔥',text:'¡Imparable!',sub:'25 ejercicios'},{n:50,emoji:'💪',text:'¡Medio centenar!',sub:'50 ejercicios'},{n:75,emoji:'⭐',text:'¡Casi!',sub:'75 ejercicios'},{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Increíble esfuerzo!'},{n:150,emoji:'🚀',text:'¡Superestrella!',sub:'150 ejercicios'},{n:200,emoji:'👑',text:'¡Leyenda!',sub:'200 ejercicios'},{n:300,emoji:'🌈',text:'¡Récord absoluto!',sub:'300 ejercicios'}];
+    // Milestones ONLY at 100, 200, 300 (daily goals, not session noise)
+    const totalOk=nextSt.ok;const MS=[{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Primer objetivo cumplido!'},{n:200,emoji:'👑',text:'¡Doscientos!',sub:'¡Eres un campeón!'},{n:300,emoji:'🌈',text:'¡Trescientos!',sub:'¡Récord absoluto!'}];
     const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
     if(hit){milestoneShown.current.add(hit.n);stopVoice();window.dispatchEvent(new Event('toki-pause'));const isHuge=hit.n>=100;setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub,huge:isHuge});setTimeout(()=>{setMilestone(null);setResumeKey(k=>k+1)},isHuge?4000:2500)},300)}
     // M7a: Dynamic DILO tracking on success

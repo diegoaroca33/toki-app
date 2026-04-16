@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, TXT, BUILD_OK, GOOD_MSG } from '../constants.js'
-import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay } from '../voice.js'
+import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay, cachedVoice } from '../voice.js'
 import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
 import { track } from '../firebase.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
@@ -176,10 +176,35 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     return undefined; // use default
   }
   async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
-    for(let i=0;i<flatSyls.length;i++){if(!alive.current)return;setSylIdx(i);
-      await new Promise(r=>{const u=new SpeechSynthesisUtterance(flatSyls[i]);u.lang='es-ES';u.rate=0.45;u.pitch=1.0;u.volume=1.0;let done=false;const fin=()=>{if(!done){done=true;r()}};u.onend=fin;u.onerror=fin;const ss=window.speechSynthesis;ss.cancel();if(typeof ss.resume==='function')ss.resume();setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},100)},50);setTimeout(fin,1500)});
-      await new Promise(r=>setTimeout(r,300))}
-    ttsPlaying.current=false;setSylIdx(-1);await new Promise(r=>setTimeout(r,300));
+    // Use syllables (array of word arrays) to add EXTRA pause between words
+    let flatIdx=0;
+    for(let wi=0;wi<syllables.length;wi++){
+      if(!alive.current)return;
+      // Extra pause between WORDS (not first word)
+      if(wi>0)await new Promise(r=>setTimeout(r,600));
+      for(let si=0;si<syllables[wi].length;si++){
+        if(!alive.current)return;
+        const syl=syllables[wi][si];
+        setSylIdx(flatIdx);flatIdx++;
+        await new Promise(r=>{
+          const u=new SpeechSynthesisUtterance(syl);
+          u.lang='es-ES';
+          u.rate=0.35; // slower than before (was 0.45)
+          u.pitch=1.0;u.volume=1.0;
+          // FORCE es-ES voice to prevent English pronunciation of syllables
+          if(cachedVoice)u.voice=cachedVoice;
+          let done=false;const fin=()=>{if(!done){done=true;r()}};
+          u.onend=fin;u.onerror=fin;
+          const ss=window.speechSynthesis;ss.cancel();
+          if(typeof ss.resume==='function')ss.resume();
+          setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},120)},80);
+          setTimeout(fin,2000) // more time per syllable (was 1500)
+        });
+        // Pause between syllables of the SAME word
+        await new Promise(r=>setTimeout(r,400)); // was 300
+      }
+    }
+    ttsPlaying.current=false;setSylIdx(-1);await new Promise(r=>setTimeout(r,500));
     if(!alive.current)return;sr.go();setMic(true)}
   async function doSlowPlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
     const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.35;u.pitch=1.0;u.volume=1.0;
@@ -234,8 +259,8 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
     }}
   const sr=useSR(handleSR);
   async function doPlay(){if(!alive.current)return;stopVoice();sr.stop();sMsg('');setMic(false);setStars(0);setBurstFade(false);
-    try{const ms=await navigator.mediaDevices.getUserMedia({audio:true});ms.getTracks().forEach(t=>t.stop())}catch(e){track('mic_failed',{reason:e?.name||'unknown'})}
-    // Play TTS first, mark as playing so SR ignores Toki's voice
+    // Mic permission already requested in useEffect — don't call getUserMedia here
+    // (it was interfering with TTS on Samsung tablets, causing the model to be silent)
     ttsPlaying.current=true;
     const rate=getAdaptiveRate();
     const played=await playRec(uid,vids,textKey(text));if(!played)await say(text,rate);
@@ -246,7 +271,9 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   useEffect(()=>{alive.current=true;gen.current++;sSf(null);sAtt(0);sMsg('');setMic(false);setStars(0);setSylShow(false);setSylIdx(-1);setBurstFade(false);setBurstRepsDone(0);setBurstStars(0);stopVoice();sr.stop();
     // Proactively reactivate mic permission on exercise entry
     if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});
-    const t=setTimeout(()=>{if(alive.current){stopVoice();doPlay()}},burstMode?300:1200);
+    // doPlay() already calls stopVoice() internally — don't double-cancel here
+    // (triple cancel was eating the first word on Samsung tablets)
+    const t=setTimeout(()=>{if(alive.current){doPlay()}},burstMode?300:1200);
     const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop()};
     window.addEventListener('toki-sos',sosKill);window.addEventListener('toki-pause',sosKill);
     return()=>{alive.current=false;clearTimeout(t);stopVoice();sr.stop();window.removeEventListener('toki-sos',sosKill);window.removeEventListener('toki-pause',sosKill)}},[key]);
