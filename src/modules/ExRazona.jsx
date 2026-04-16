@@ -219,7 +219,9 @@ function genTemperature(){const sh=a=>[...a].sort(()=>Math.random()-.5);const it
     const wrongPool=temps.filter(t=>t.cat!==tmp.cat).map(t=>t.desc);
     const wrong=sh(wrongPool).slice(0,3);
     const opts=sh([correct,...wrong]).slice(0,4);
-    items.push({ty:'razona',mode:'temperature',data:{temp:tmp.t,desc:tmp.desc,emoji:tmp.emoji,q,ans:correct,opts,oral:`Hace ${tmp.t} grados, ${tmp.desc.toLowerCase()}`},id:'rz_temp_'+i});
+    // Short oral phrase for child to repeat (functional, not long description)
+    const shortOral=tmp.t<0?'Hace mucho frío':tmp.t<=5?'Hace frío':tmp.t<=15?'Está fresquito':tmp.t<=25?'Hace buen tiempo':'Hace calor';
+    items.push({ty:'razona',mode:'temperature',data:{temp:tmp.t,desc:tmp.desc,emoji:tmp.emoji,q,ans:correct,opts,oral:shortOral},id:'rz_temp_'+i});
   });
   return sh(items)}
 export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];const sh=a=>[...a].sort(()=>Math.random()-.5);
@@ -483,6 +485,8 @@ export function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
     {snapAnim&&<div style={{position:'fixed',left:snapAnim.x-28,top:snapAnim.y-28,fontSize:56,pointerEvents:'none',zIndex:9999,filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.4))',transform:'scale(1)',transition:'all 200ms ease-out'}}>{objEm}</div>}
   </div>}
 
+// Strip emojis from text before TTS (Web Speech API reads emojis as words: 💧="gota", 🧥="abrigo")
+function stripEmoji(t){return t?t.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{FE00}-\u{FEFF}]|[\u200D\uFE0F]/gu,'').trim():''}
 export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
   const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
@@ -491,12 +495,12 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();
     // Voice instruction — fallback for modes without ex.data.q
     const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?'Ordena los pasos de '+(ex.data.title||'la rutina'):ex.mode==='anterior_posterior'?ex.data.q:'');
-    setTimeout(()=>say(intro),400);
+    setTimeout(()=>say(stripEmoji(intro)),400);
     return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
     if(ex.mode==='emotion')return ex.data.emotion;
     if(ex.mode==='spatial'||ex.mode==='spatial_drag')return ex.data.ans||ex.data.pos;
-    if(ex.mode==='cause')return ex.data.ans;
+    if(ex.mode==='cause')return stripEmoji(ex.data.ans);
     if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
     if(ex.mode==='classify')return 'bien clasificado';
     if(ex.mode==='pattern')return ex.data.ansText||ex.data.ans;
@@ -522,8 +526,8 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     const celebTime=ex.mode==='spatial'?1800:300;
     if(ans===correct){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=getOralPhrase(ans);setTimeout(()=>triggerOral(phrase,a===1?4:a===2?2:1,a),celebTime)})}
     else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
-      if(na>=2){stopVoice();sayFB('La respuesta es: '+correct);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
-      else{const hint=getFirstHint();stopVoice();sayFB(hint);setTimeout(()=>setFb(null),2000)}}}
+      if(na>=2){stopVoice();sayFB('La respuesta es: '+stripEmoji(correct));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
+      else{const hint=getFirstHint();stopVoice();sayFB(stripEmoji(hint));setTimeout(()=>setFb(null),2000)}}}
   const[classifyAtt,setClassifyAtt]=useState(0);
   function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
@@ -534,7 +538,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
           // 2nd fail: show correct classification
           const correctPlacement={};ex.data.items.forEach(it=>{correctPlacement[it.w]=it.g});
           setPlaced(correctPlacement);
-          sayFB('Mira cómo va: '+ex.data.items.map(it=>it.w+' va en '+ex.data.groups[it.g]).join(', '));
+          sayFB('Mira cómo va: '+ex.data.items.map(it=>stripEmoji(it.w)+' va en '+stripEmoji(ex.data.groups[it.g])).join(', '));
           setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,ca),300)},3500)
         }else{
           sayFB('Casi, fíjate bien en cada uno');
@@ -567,19 +571,33 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
     </div>}
     {ex.mode==='classify'&&<div>
-      <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
-      <div style={{display:'flex',gap:12,justifyContent:'center',marginBottom:12}}>
-        {ex.data.groups.map((g,gi)=><div key={gi} style={{flex:1,background:gi===0?BLUE+'22':GREEN+'22',border:`2px solid ${gi===0?BLUE:GREEN}`,borderRadius:12,padding:10,minHeight:80}}>
-          <p style={{fontSize:16,fontWeight:600,color:gi===0?BLUE:GREEN,margin:'0 0 8px'}}>{g}</p>
-          <div style={{display:'flex',flexWrap:'wrap',gap:4,justifyContent:'center'}}>
-            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'44':GREEN+'44',borderRadius:6,padding:'4px 8px',fontSize:14,fontWeight:600}}>{it.w}</span>)}
+      <p style={{fontSize:22,fontWeight:700,margin:'0 0 14px',color:GOLD}}>Arrastra cada cosa a su grupo</p>
+      {/* Drop zones: two group boxes */}
+      <div style={{display:'flex',gap:14,justifyContent:'center',marginBottom:16}}>
+        {ex.data.groups.map((g,gi)=><div key={gi}
+          onDragOver={e=>e.preventDefault()}
+          onDrop={e=>{e.preventDefault();const w=e.dataTransfer.getData('text/plain');const item=ex.data.items.find(it=>it.w===w);if(item&&placed[item.w]===undefined)classifyPick(item,gi)}}
+          style={{flex:1,background:gi===0?BLUE+'15':GREEN+'15',border:`3px dashed ${gi===0?BLUE:GREEN}`,borderRadius:16,padding:14,minHeight:100,textAlign:'center',transition:'all .2s'}}>
+          <p style={{fontSize:20,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 10px'}}>{stripEmoji(g)}</p>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
+            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'33':GREEN+'33',borderRadius:10,padding:'6px 12px',fontSize:18,fontWeight:600,animation:'bounceIn .3s'}}>{it.w}</span>)}
           </div>
         </div>)}
       </div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>
-        {ex.data.items.filter(it=>placed[it.w]===undefined).map(it=><div key={it.w} style={{display:'flex',flexDirection:'column',gap:4}}>
-          {ex.data.groups.map((g,gi)=><button key={gi} className="btn btn-b btn-word" onClick={()=>classifyPick(it,gi)} style={{fontSize:14,padding:'6px 12px'}}>{it.w}→{g}</button>)}
-        </div>)}
+      {/* Draggable items */}
+      <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center'}}>
+        {ex.data.items.filter(it=>placed[it.w]===undefined).map(it=>
+          <button key={it.w} draggable="true"
+            onDragStart={e=>{e.dataTransfer.setData('text/plain',it.w);e.dataTransfer.effectAllowed='move'}}
+            onClick={()=>{
+              // Tap fallback: alternates between groups 0 and 1
+              const count0=ex.data.items.filter(x=>placed[x.w]===0).length;
+              const count1=ex.data.items.filter(x=>placed[x.w]===1).length;
+              classifyPick(it,count0<=count1?0:1)
+            }}
+            style={{fontSize:20,padding:'10px 18px',fontWeight:700,borderRadius:14,border:`2px solid rgba(255,255,255,.2)`,background:'rgba(255,255,255,.08)',color:'#fff',cursor:'grab',touchAction:'none',fontFamily:"'Fredoka'"}}>
+            {it.w}
+          </button>)}
       </div>
     </div>}
     {ex.mode==='cause'&&<div>
@@ -695,7 +713,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:16,padding:14,fontWeight:600}}>{o}</button>)}
+        {ex.data.opts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.ans?'btn-g':fb==='no'&&o===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,fontWeight:700}}>{o}</button>)}
       </div>
     </div>}
     {/* Anterior/Posterior */}
