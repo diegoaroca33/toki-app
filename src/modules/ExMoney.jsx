@@ -24,8 +24,30 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),400);
     else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
     return()=>stopVoice()},[ex]);
-  function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='recognize'?ex.coin.v:ex.mode==='sum'?ex.total:ex.mode==='change'?ex.change:ex.price;
-    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='recognize'?ex.coin.l:'son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
+  // Generate wrong options for multiple choice (close but wrong values)
+  const[opts]=useState(()=>{
+    if(ex.mode==='recognize'||ex.mode==='sum'){
+      const target=ex.mode==='recognize'?ex.coin.v:ex.total;
+      const fmt=v=>v>=1?(v+'€'):(Math.round(v*100)+'c');
+      const wrongs=new Set();
+      // Generate plausible wrong answers
+      [target*2,target*10,target/2,target+0.5,target-0.5,target+1,target+2,target*5,0.01,0.02,0.05,0.10,0.20,0.50,1,2,5,10,20].forEach(w=>{
+        if(w>0&&w!==target&&Math.abs(w-target)>0.001)wrongs.add(Math.round(w*100)/100)});
+      const wrongArr=[...wrongs].sort(()=>Math.random()-.5).slice(0,3);
+      const all=[target,...wrongArr].sort(()=>Math.random()-.5);
+      return all.map(v=>({v,label:v>=1?v.toFixed(0)+'€':Math.round(v*100)+' céntimos'}));
+    }
+    return null;
+  });
+  const[att2,setAtt2]=useState(0);
+  function pickOpt(v){poke();
+    const target=ex.mode==='recognize'?ex.coin.v:ex.total;
+    if(Math.abs(v-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='recognize'?ex.coin.l:'son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
+    else{const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+      if(na>=2){sayFB('Vale '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+      else{sayFB('Fíjate bien en la moneda');setTimeout(()=>setFb(null),1500)}}}
+  function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='change'?ex.change:ex.price;
+    if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
     else{setFb('no');stopVoice();sayFB('La respuesta es '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setAns('')},2500)}}
   function addCoin(c){poke();const ns=[...sel,c];setSel(ns);const total=ns.reduce((s,x)=>s+x.v,0);beep(400+total*50,80);if(Math.abs(total-ex.price)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='son '+ex.price.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}}
   const CoinSVG=({c,sz})=>{const copper=c.v<=0.05;const gold=c.v>=0.10&&c.v<=0.50;const bi=c.bi;
@@ -75,15 +97,29 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:<BillSVG b={b} w={bw} h={bh}/>}
     </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    {ex.mode==='recognize'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,maxWidth:700,margin:'0 auto'}}>
-      <div className="card" style={{padding:24,flex:'1 1 0',display:'flex',flexDirection:'column',alignItems:'center',minHeight:180}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
-        {ex.coin.v>=5?<Bill b={ex.coin}/>:<Coin c={ex.coin} size={140}/>}</div>
-      <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
+    {ex.mode==='recognize'&&<div style={{maxWidth:500,margin:'0 auto'}}>
+      <div className="card" style={{padding:24,display:'flex',flexDirection:'column',alignItems:'center',marginBottom:16}}>
+        <p style={{fontSize:24,fontWeight:700,margin:'0 0 16px',color:GOLD}}>¿Cuánto vale?</p>
+        {ex.coin.v>=5?<Bill b={ex.coin}/>:<Coin c={ex.coin} size={140}/>}
+      </div>
+      {/* Multiple choice — NO numpad */}
+      {opts&&!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {opts.map(o=><button key={o.v} className="btn btn-b" onClick={()=>pickOpt(o.v)}
+          style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o.label}</button>)}
+      </div>}
     </div>}
-    {ex.mode==='sum'&&<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,maxWidth:700,margin:'0 auto'}}>
-      <div className="card" style={{padding:20,flex:'1 1 0'}}><p style={{fontSize:20,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Cuánto hay?</p>
-        <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>{ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}</div></div>
-      <div style={{flex:'0 0 auto'}}><NumPad value={ans} onChange={setAns} onSubmit={checkAns} maxLen={5} decimal={true}/></div>
+    {ex.mode==='sum'&&<div style={{maxWidth:500,margin:'0 auto'}}>
+      <div className="card" style={{padding:20,marginBottom:16}}>
+        <p style={{fontSize:24,fontWeight:700,margin:'0 0 12px',color:GOLD}}>¿Cuánto hay en total?</p>
+        <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center'}}>
+          {ex.coins.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}
+        </div>
+      </div>
+      {/* Multiple choice — NO numpad */}
+      {opts&&!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {opts.map(o=><button key={o.v} className="btn btn-b" onClick={()=>pickOpt(o.v)}
+          style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o.label}</button>)}
+      </div>}
     </div>}
     {ex.mode==='pay'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Paga: {ex.price.toFixed(2).replace('.',',')} €</p>
