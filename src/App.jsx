@@ -274,7 +274,7 @@ export default function App(){
   const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
   const[escribeCase,setEscribeCase]=useState(()=>loadData('escribe_case','upper'));
   const[escribeTypes,setEscribeTypes]=useState(()=>loadData('escribe_types',['letras']));
-  const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
+  const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true,misfrases:true}));
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);
   // M4: Burst mode state
@@ -370,6 +370,14 @@ export default function App(){
   }catch(e){}},[profs]);
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
   useEffect(()=>{saveData('session_mode',sessionMode)},[sessionMode]);
+  // Persistencia de preferencias de Escribe — antes solo se guardaban en estado
+  // de React, así que al cerrar Settings y entrar al juego buildQ leía los
+  // defaults ('upper' + ['letras']) y al niño le salían siempre letras
+  // mayúsculas con guía, ignorando lo que había configurado el supervisor.
+  useEffect(()=>{saveData('escribe_case',escribeCase)},[escribeCase]);
+  useEffect(()=>{saveData('escribe_types',escribeTypes)},[escribeTypes]);
+  useEffect(()=>{saveData('escribe_guide',escribeGuide)},[escribeGuide]);
+  useEffect(()=>{saveData('escribe_pauta_size',escribePauta)},[escribePauta]);
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){if(sessionType==='goal')return false;const mins=sessionTime||sm||30;return ss&&mins>0&&activeMs.current>=(mins*60000)}
