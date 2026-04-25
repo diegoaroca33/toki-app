@@ -51,9 +51,9 @@ function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text|
   const esESVoices=window.speechSynthesis.getVoices().filter(v=>v.lang==='es-ES');
   u.voice=esESVoices.find(v=>v!==cachedVoice)||cachedVoice;
   let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(2500,text.length*200)+100)})}
-// TTS para contar (uno tras otro). Cap 0.92 — el niño con DI no puede seguir
-// velocidades altas aunque la lista sea monotema. 1.0+ se come sílabas.
-function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.92;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(1500,text.length*160))})}
+// TTS para contar (uno tras otro). Cap 0.9 — el niño con DI no puede seguir
+// velocidades altas aunque la lista sea monotema. >0.9 se come sílabas.
+function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.9;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(1500,text.length*160))})}
 function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel();stopAllAudio()}
 const _publicVoiceCache={};
 
