@@ -338,6 +338,19 @@ export function ExWriting({ex,onOk,onSkip,name}){
     drawFrame()
   }
   useEffect(()=>()=>{ghostTimers.current.forEach(clearTimeout)},[]);
+  // Precarga de la fuente Escolar al primer mount. Si esperamos a que
+  // se necesite (drawGuide / paintAcceptOverlay), el navegador la pide
+  // bajo demanda y mientras tanto pinta con el fallback (Caveat). Tras
+  // la primera pulsación de "Listo" se mezclan ambas tipografías en el
+  // canvas (la guía gris en una, el overlay verde en otra). Forzando
+  // load() al mount tenemos la fuente lista antes de cualquier pintado.
+  useEffect(()=>{
+    if(!document.fonts||!document.fonts.load)return;
+    try{
+      document.fonts.load("400 24px 'Escolar'");
+      document.fonts.load("700 24px 'Escolar'");
+    }catch(e){}
+  },[]);
   function evaluate(){const pts=strokePts.current;if(pts.length<5){setStars(1);return 1;}
     const mask=getModelMask();let insideCount=0;
     for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&mask[py*cW+px])insideCount++;}
@@ -347,19 +360,30 @@ export function ExWriting({ex,onOk,onSkip,name}){
     let s=4;if(insideRatio<=0.4)s=1;else if(insideRatio<=0.6)s=2;else if(insideRatio<=0.8)s=3;
     if(!goodSize&&s>2)s=2;if(pts.length<10&&s>2)s=2;
     setStars(s);return s;}
-  function accept(){const s=evaluate();setDone(true);setShowModel(true);starBeep(s);
-    // Overlay model in green
-    const c=canvasRef.current;if(c){const ctx=c.getContext('2d');const mask=modelRef.current||getModelMask();
-      ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle='rgba(0,180,0,1)';
-      if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      else{const zoneH=baseY-upperY;let fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7):Math.floor(zoneH*0.85);ctx.font=getModelFont(fSz);const mt=ctx.measureText(ex.letter);const ah=(mt.actualBoundingBoxAscent||fSz*0.7)+(mt.actualBoundingBoxDescent||fSz*0.1);if(ah>0){const r=zoneH/ah;fSz=Math.floor(fSz*Math.min(r*0.92,1.5))}ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
-      ctx.restore();
-      const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}}
+  // Pintar el overlay verde+rojo del modelo y los pixeles fuera del trazo.
+  // Esperamos a document.fonts.ready antes de pintar para evitar que el
+  // overlay use una tipografía distinta a la guía (race condition: si la
+  // fuente Escolar aún no se ha cargado, getModelFont cae al fallback
+  // Caveat y se ven dos tipografías superpuestas, una en cada capa).
+  function paintAcceptOverlay(){
+    const c=canvasRef.current;if(!c)return;
+    const ctx=c.getContext('2d');const mask=modelRef.current||getModelMask();
+    ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle='rgba(0,180,0,1)';
+    if(ex.mode==='letter'){const zoneH=ex.isUpper?(baseY-upperY):(baseY-midY);const fSz=Math.floor(zoneH/0.72);ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+    else{const zoneH=baseY-upperY;let fSz=ex.mode==='phrase'?Math.floor(zoneH*0.7):Math.floor(zoneH*0.85);ctx.font=getModelFont(fSz);const mt=ctx.measureText(ex.letter);const ah=(mt.actualBoundingBoxAscent||fSz*0.7)+(mt.actualBoundingBoxDescent||fSz*0.1);if(ah>0){const r=zoneH/ah;fSz=Math.floor(fSz*Math.min(r*0.92,1.5))}ctx.font=getModelFont(fSz);ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(ex.letter,cW/2,baseY)}
+    ctx.restore();
+    const pts=strokePts.current;if(pts.length>0){ctx.save();ctx.globalAlpha=0.2;ctx.fillStyle='rgba(255,0,0,1)';for(let i=0;i<pts.length;i++){const px=Math.round(pts[i].x),py=Math.round(pts[i].y);if(px>=0&&px<cW&&py>=0&&py<cH&&!mask[py*cW+px]){ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill()}}ctx.restore()}
+  }
+  function accept(){
+    const s=evaluate();setDone(true);setShowModel(true);starBeep(s);
+    const fontsReady=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    fontsReady.then(paintAcceptOverlay);
     const msgs=['¡Buen intento! Sigue el modelo','¡Intenta no salirte!','¡Muy bien!','¡Perfecto!'];
     const isWordOrPhrase=ex.mode==='word'||ex.mode==='phrase';
     cheerOrSay(s>=3?mkPerfect(name):msgs[s-1],null,[],'perfect').then(()=>{
       if(isWordOrPhrase&&oralEnabled()){speakDone.current=false;setSpeakPhase(true)}
-      else setTimeout(onOk,400)})}
+      else setTimeout(onOk,400)})
+  }
   const needsLandscape=isWide;
   return <div style={{textAlign:'center',padding:isWide?10:18}} onClick={poke}>
     {needsLandscape&&<style>{`@media (orientation:portrait) and (max-width:700px){.wr-landscape-warn{display:flex!important}.wr-canvas-wrap{display:none!important}}@media (orientation:landscape),(min-width:701px){.wr-landscape-warn{display:none!important}.wr-canvas-wrap{display:block!important}}`}</style>}
