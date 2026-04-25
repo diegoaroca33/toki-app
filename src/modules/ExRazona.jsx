@@ -167,74 +167,55 @@ function genCompare(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=
     const ans=a>b?'>':a<b?'<':'=';
     items.push({ty:'razona',mode:'compare',data:{a,b,emoji:em,ans,q:`¿${a} ${em} o ${b} ${em}?`},id:'rz_cmp_'+i})}
   return sh(items)}
-// Rutinas en 3 niveles. Formato narrativo "Ayuda a tu amigo a…": el niño no
-// necesariamente hace estas cosas, pero aprende la secuencia lógica leyendo
-// frases completas. Ese es el doble objetivo: lógica + lectura fluida.
+// Rutinas en 3 niveles. Reescritura del 26/04 según criterios revisados:
+// frases cortas en primera persona del singular, vocabulario indudable,
+// pasos en orden lógico real (el shuffle visual lo hace useMemo en runtime).
+// `title` es la cabecera tipo pregunta directa ("¿Qué haces para...?")
+// y `oral` es la frase corta que el niño repite por micro al acertar.
 const ROUTINES_BASICO = [
-  {title:'Ayuda a tu amigo a ducharse',steps:['🚿 Métete en la ducha y abre el grifo del agua','🧴 Échate gel en las manos y frótate el cuerpo','💦 Aclárate con agua hasta que no quede jabón','🧻 Sécate bien con la toalla'],oral:'Para ducharse, tu amigo se mete en la ducha, se enjabona, se aclara y se seca'},
-  {title:'Ayuda a tu amigo a lavarse las manos',steps:['🚰 Abre el grifo y moja tus manos','🧼 Echa jabón en las manos mojadas','🤲 Frota las manos por delante y por detrás','🧻 Aclara con agua y sécate con la toalla'],oral:'Tu amigo abre el grifo, se enjabona, se aclara y se seca las manos'},
-  {title:'Ayuda a tu amigo a cepillarse los dientes',steps:['🪥 Coge el cepillo de dientes','🧴 Échale un poquito de pasta encima','😁 Cepilla los dientes arriba y abajo','💧 Enjuaga la boca con un vaso de agua'],oral:'Tu amigo coge el cepillo, le echa pasta, cepilla y se enjuaga'},
-  {title:'Ayuda a tu amigo a vestirse',steps:['👕 Primero ponte la camiseta por la cabeza','👖 Después ponte los pantalones','🧦 Ponte los calcetines','👟 Por último, ponte las zapatillas'],oral:'Tu amigo se pone la camiseta, el pantalón, los calcetines y las zapatillas'},
-  {title:'Ayuda a tu amigo a desayunar',steps:['🥣 Coge un bol grande de la cocina','🥛 Echa leche dentro del bol','🥣 Añade los cereales y mezcla con la cuchara','🥄 Cómete el desayuno sin prisa'],oral:'Tu amigo coge el bol, echa leche, añade cereales y desayuna'},
-  {title:'Ayuda a tu amigo a comer en la mesa',steps:['🪑 Siéntate en la silla bien recto','🍴 Coge el tenedor y el cuchillo','🍽️ Come despacio y tranquilo','🧻 Límpiate la boca con la servilleta'],oral:'Tu amigo se sienta, coge los cubiertos, come despacio y se limpia la boca'},
-  {title:'Ayuda a tu amigo a irse a dormir',steps:['🪥 Lávate bien los dientes','👕 Ponte el pijama','🛏️ Métete en la cama y tápate','😴 Cierra los ojos y duérmete'],oral:'Tu amigo se lava los dientes, se pone el pijama, se acuesta y se duerme'},
-  {title:'Ayuda a tu amigo a salir al colegio',steps:['👕 Vístete con la ropa del cole','🥣 Desayuna bien antes de salir','🎒 Coge la mochila con todas tus cosas','🚌 Sal de casa para llegar puntual'],oral:'Tu amigo se viste, desayuna, coge la mochila y va al cole'},
-  {title:'Ayuda a tu amigo al volver del colegio',steps:['🚌 Bájate del autobús con cuidado','🏠 Entra en casa y saluda','🍎 Merienda algo rico','📚 Haz los deberes que te han mandado'],oral:'Tu amigo baja del bus, saluda en casa, merienda y hace los deberes'},
-  {title:'Ayuda a tu amigo a usar el baño',steps:['🚽 Entra en el baño y cierra la puerta','👖 Bájate el pantalón y siéntate','🧻 Cuando termines, límpiate con papel','🚰 Sal y lávate las manos con jabón'],oral:'Tu amigo entra al baño, se limpia con papel y se lava las manos'},
-  {title:'Ayuda a tu amigo a beber un vaso de agua',steps:['🥛 Coge un vaso limpio del armario','🚰 Lléna el vaso con agua del grifo','😋 Bébete el agua poco a poco','🧽 Lava el vaso cuando termines'],oral:'Tu amigo coge un vaso, lo llena, bebe y lo lava'},
-  {title:'Ayuda a tu amigo a ponerse el abrigo',steps:['🧥 Coge el abrigo del perchero','💪 Mete un brazo por la primera manga','💪 Mete el otro brazo por la otra manga','🔘 Abrocha los botones para no pasar frío'],oral:'Tu amigo coge el abrigo, mete los brazos y abrocha los botones'},
-  {title:'Ayuda a tu amigo a recoger los juguetes',steps:['🧸 Recoge los juguetes del suelo','📦 Mételos todos dentro de la caja','🚪 Cierra la tapa de la caja','✅ La habitación queda ordenada'],oral:'Tu amigo recoge, guarda en la caja y todo queda ordenado'},
-  {title:'Ayuda a tu amigo a hacer la cama',steps:['🛏️ Estira bien la sábana','🛌 Pon la manta por encima','🪶 Coloca la almohada en su sitio','✨ La cama queda preparada'],oral:'Tu amigo estira la sábana, pone la manta y la almohada'},
-  {title:'Ayuda a tu amigo a cruzar la calle',steps:['🚦 Mira el semáforo de los peatones','🔴 Si está en rojo, espera quieto','🟢 Cuando se ponga en verde, cruza','🚶 Llega al otro lado sin correr'],oral:'Tu amigo mira el semáforo, espera al verde y cruza sin correr'},
-  {title:'Ayuda a tu amigo a encender la luz',steps:['🚪 Entra en la habitación','👀 Busca el interruptor junto a la puerta','👆 Pulsa el interruptor hacia arriba','💡 La luz se enciende'],oral:'Tu amigo entra, busca el interruptor, lo pulsa y se hace la luz'},
-  {title:'Ayuda a tu amigo a usar el móvil',steps:['📱 Coge el móvil de la mesa','🔓 Desbloquéalo con tu clave','🏠 Busca la aplicación que quieres abrir','👆 Toca el icono para entrar'],oral:'Tu amigo coge el móvil, pone la clave, busca la app y la abre'},
-  {title:'Ayuda a tu amigo a lavarse la cara',steps:['🚰 Abre el grifo del agua','💧 Mójate las manos y la cara','🫧 Frótate la cara suavemente con agua','🧻 Sécate con una toalla limpia'],oral:'Tu amigo se moja la cara, se la frota y se seca con la toalla'},
-  {title:'Ayuda a tu amigo a preparar la mochila',steps:['📚 Mete los libros del cole','✏️ Guarda el estuche con los lápices','🍎 Añade la merienda para el recreo','🎒 Cierra bien la mochila'],oral:'Tu amigo mete los libros, el estuche, la merienda y cierra la mochila'},
-  {title:'Ayuda a tu amigo al llegar a un sitio',steps:['🚪 Abre la puerta y entra despacio','🙋 Saluda a las personas que haya','🪑 Busca un sitio y siéntate','👂 Escucha lo que te digan'],oral:'Tu amigo entra, saluda, se sienta y escucha con atención'},
+  {title:'¿Qué haces para lavarte las manos?',steps:['Abro el grifo','Me lavo','Me seco'],oral:'Me lavo las manos'},
+  {title:'¿Qué haces para lavarte los dientes?',steps:['Pongo pasta','Me cepillo','Me enjuago'],oral:'Me lavo los dientes'},
+  {title:'¿Cómo te comes un plátano?',steps:['Cojo el plátano','Lo pelo','Me lo como'],oral:'Me como un plátano'},
+  {title:'¿Cómo abres la puerta?',steps:['Saco la llave','La giro','Abro la puerta'],oral:'Abro la puerta'},
+  {title:'¿Cómo cruzas la calle?',steps:['Miro a un lado','Miro al otro','Cruzo'],oral:'Cruzo con cuidado'},
+  {title:'¿Qué haces para vestirte?',steps:['Quito el pijama','Pongo la ropa','Pongo los zapatos'],oral:'Me visto solo'},
+  {title:'¿Qué haces al salir del cole?',steps:['Espero a papá','Volvemos juntos','Llegamos a casa'],oral:'Vuelvo del cole con papá'},
+  {title:'¿Cómo te tomas un yogur?',steps:['Cojo un yogur','Lo abro','Me lo como'],oral:'Me como un yogur'},
+  {title:'¿Qué haces para acostarte?',steps:['Pongo el pijama','Apago la luz','Me duermo'],oral:'Me voy a dormir'},
+  {title:'¿Qué haces para desayunar?',steps:['Pongo la mesa','Como','Recojo'],oral:'He desayunado'},
+  {title:'¿Qué haces cuando llueve?',steps:['Cojo el paraguas','Lo abro','Me protejo'],oral:'Me protejo de la lluvia'},
+  {title:'¿Cómo te bebes un vaso de agua?',steps:['Cojo un vaso','Lleno de agua','Me lo bebo'],oral:'Me bebo un vaso de agua'},
+  {title:'¿Qué haces si tienes frío?',steps:['Cojo el abrigo','Me lo pongo','Estoy calentito'],oral:'Me he abrigado'},
+  {title:'¿Cómo recoges tu cuarto?',steps:['Cojo los juguetes','Los guardo','Cierro el cajón'],oral:'He recogido'},
+  {title:'¿Qué haces si te pica algo?',steps:['Se lo digo a papá','Me pone crema','Estoy mejor'],oral:'Papá me ha curado'},
 ];
 const ROUTINES_AVANZADO = [
-  {title:'Ayuda a tu amigo con la rutina de la mañana',steps:['⏰ Al sonar el despertador, sal de la cama','🚿 Dúchate y aséate bien','👕 Vístete con la ropa del día','🥣 Desayuna sentado en la mesa','🎒 Coge la mochila y sal para el cole'],oral:'Tu amigo se despierta, se ducha, se viste, desayuna y va al cole'},
-  {title:'Ayuda a tu amigo con la rutina de antes de dormir',steps:['🍽️ Cena con tranquilidad','🪥 Lávate bien los dientes','👕 Ponte el pijama limpio','📖 Lee un cuento un rato','🛏️ Métete en la cama y apaga la luz'],oral:'Tu amigo cena, se lava los dientes, se pone el pijama, lee y se acuesta'},
-  {title:'Ayuda a tu amigo a preparar un bocadillo',steps:['🍞 Coge una barra de pan de la panera','🔪 Córtala por la mitad con un cuchillo','🧀 Pon queso dentro del pan','🥬 Añade lechuga si te gusta','🍴 Cierra el bocadillo y cómelo'],oral:'Tu amigo coge pan, lo corta, pone queso y lechuga y se lo come'},
-  {title:'Ayuda a tu amigo a poner la mesa para cenar',steps:['🧻 Pon el mantel sobre la mesa','🍽️ Coloca un plato en cada sitio','🍴 Pon un tenedor y un cuchillo al lado de cada plato','🥛 Coloca los vasos para el agua','🪑 Avisa a todos para cenar'],oral:'Tu amigo pone el mantel, los platos, los cubiertos, los vasos y avisa'},
-  {title:'Ayuda a tu amigo a ir al parque',steps:['👟 Ponte las zapatillas cómodas','🧴 Échate crema del sol','🚶 Ve al parque andando con cuidado','⚽ Juega con tus amigos un rato','🏠 Vuelve a casa antes de que oscurezca'],oral:'Tu amigo se calza, se pone crema, va al parque, juega y vuelve a casa'},
-  {title:'Ayuda a tu amigo a coger el autobús',steps:['🚏 Ve a la parada del autobús','⏳ Espera en la cola tranquilo','🚌 Cuando llegue, súbete al autobús','💳 Paga con tu tarjeta o con dinero','💺 Siéntate en un asiento libre'],oral:'Tu amigo va a la parada, espera, sube, paga y se sienta'},
-  {title:'Ayuda a tu amigo a comprar el pan',steps:['💰 Coge dinero suficiente de casa','🚶 Ve andando hasta la panadería','🙋 Pide amablemente una barra de pan','💶 Paga lo que cueste','🏠 Vuelve a casa con el pan'],oral:'Tu amigo coge dinero, va a la panadería, pide el pan, paga y vuelve'},
-  {title:'Ayuda a tu amigo a hacer los deberes',steps:['📚 Saca los libros y cuadernos','✏️ Prepara el estuche con los lápices','🪑 Siéntate en un sitio tranquilo','✍️ Haz los ejercicios con calma','✅ Al terminar, guarda todo en la mochila'],oral:'Tu amigo saca los libros, se sienta, hace los ejercicios y guarda todo'},
-  {title:'Ayuda a tu amigo a preparar unos huevos fritos',steps:['🥚 Saca los huevos de la nevera','🍳 Pon aceite en la sartén','🔥 Enciende el fuego a media potencia','🥚 Echa el huevo con cuidado en la sartén','🍽️ Sírvelo en un plato cuando esté hecho'],oral:'Tu amigo pone aceite, enciende el fuego, echa el huevo y lo sirve'},
-  {title:'Ayuda a tu amigo a lavar los platos',steps:['💧 Abre el grifo con agua caliente','🧴 Echa lavavajillas en la esponja','🧽 Frota bien cada plato','💦 Aclara con agua para quitar el jabón','🧻 Deja los platos en el escurridor'],oral:'Tu amigo enjabona, frota, aclara y deja secar los platos'},
-  {title:'Ayuda a tu amigo a ordenar su habitación',steps:['🛏️ Primero haz la cama','🧸 Recoge los juguetes del suelo','👕 Guarda la ropa en el armario','🗑️ Tira la basura a la papelera','✨ La habitación queda limpia y ordenada'],oral:'Tu amigo hace la cama, recoge juguetes, guarda ropa y tira basura'},
-  {title:'Ayuda a tu amigo a poner una lavadora',steps:['🧺 Mete la ropa sucia en el tambor','🧴 Echa detergente en su compartimento','🔘 Elige el programa adecuado','▶️ Pulsa el botón de empezar','⏳ Espera hasta que la lavadora termine'],oral:'Tu amigo mete ropa, echa jabón, elige programa y pulsa empezar'},
-  {title:'Ayuda a tu amigo a regar las plantas',steps:['🪣 Coge la regadera','🚰 Llénala de agua en el grifo','🌿 Llévala hasta las plantas','💧 Echa agua en la tierra sin mojar las hojas','✅ Deja la regadera en su sitio'],oral:'Tu amigo coge la regadera, la llena, riega la tierra y la guarda'},
-  {title:'Ayuda a tu amigo a sacar al perro de paseo',steps:['🦮 Coge la correa del colgador','🐕 Pon la correa en el collar del perro','🚪 Sal de casa con cuidado','🚶 Pasea por la acera un rato','🏠 Vuelve a casa cuando el perro haya hecho sus cosas'],oral:'Tu amigo coge la correa, la pone al perro, sale, pasea y vuelve'},
-  {title:'Ayuda a tu amigo a curarse un corte pequeño',steps:['👀 Mira la herida con calma','🚰 Lávala con agua del grifo','🧴 Pon desinfectante con un algodón','🩹 Cubre la herida con una tirita','✅ Avisa a un adulto por si acaso'],oral:'Tu amigo mira, lava, desinfecta, pone tirita y avisa a un adulto'},
-  {title:'Ayuda a tu amigo a reciclar la basura',steps:['🗑️ Junta toda la basura de casa','🟨 Separa los envases de plástico','🟦 Separa el papel y el cartón','🟩 Separa los botes de vidrio','🚮 Tira cada cosa al contenedor correcto'],oral:'Tu amigo separa plástico, papel y vidrio, y los tira a cada contenedor'},
-  {title:'Ayuda a tu amigo a montar en bici',steps:['🪖 Ponte el casco y ajústalo bien','🚲 Saca la bici del trastero','🚴 Súbete con cuidado','🛣️ Pedalea mirando hacia delante','🅿️ Aparca la bici al llegar'],oral:'Tu amigo se pone el casco, coge la bici, pedalea y la aparca'},
-  {title:'Ayuda a tu amigo a atender en clase',steps:['🪑 Siéntate en tu sitio','🤫 Guarda silencio cuando el profesor habla','👂 Escucha con atención','✋ Levanta la mano si quieres preguntar','✍️ Copia lo que diga el profesor en tu cuaderno'],oral:'Tu amigo se sienta, escucha, levanta la mano y copia en el cuaderno'},
-  {title:'Ayuda a tu amigo a comer en un restaurante',steps:['🚶 Entra y saluda al camarero','🪑 Siéntate en la mesa que te indiquen','📋 Lee la carta con calma','🍽️ Elige tu plato y pídelo','💰 Al terminar, pide la cuenta y paga'],oral:'Tu amigo entra, se sienta, lee la carta, pide y paga la cuenta'},
-  {title:'Ayuda a tu amigo a ir al cumpleaños de un amigo',steps:['🎁 Prepara un regalo envuelto','🎂 Llega puntual a la fiesta','🎈 Felicita al cumpleañero con un abrazo','🎵 Canta el cumpleaños feliz con todos','🍰 Come tarta y disfruta de la fiesta'],oral:'Tu amigo lleva regalo, felicita, canta cumpleaños feliz y come tarta'},
+  {title:'¿Qué haces antes de dormir?',steps:['Ceno con mi familia','Me lavo los dientes','Me pongo el pijama','Me acuesto en la cama'],oral:'Me preparo para dormir'},
+  {title:'¿Qué haces por la mañana?',steps:['Me despierto','Me visto','Desayuno','Voy al cole'],oral:'Empiezo el día'},
+  {title:'¿Cómo te duchas?',steps:['Me mojo','Me echo gel','Me aclaro','Me seco'],oral:'Me he duchado'},
+  {title:'¿Cómo haces zumo de naranja?',steps:['Cojo las naranjas','Las parto','Las exprimo','Me bebo el zumo'],oral:'Me bebo un zumo'},
+  {title:'¿Cómo se va a comprar?',steps:['Cojo el carro','Pongo la compra','Pago en la caja','Vuelvo a casa'],oral:'He hecho la compra'},
+  {title:'¿Qué pasa al ir al médico?',steps:['Voy al centro de salud','Espero mi turno','Veo al médico','Vuelvo a casa'],oral:'He ido al médico'},
+  {title:'¿Cómo se guarda la ropa limpia?',steps:['Cojo la ropa','La doblo','Abro el cajón','La guardo'],oral:'Guardo mi ropa'},
+  {title:'¿Cómo se pone la lavadora?',steps:['Meto la ropa sucia','Echo el detergente','Cierro la puerta','Pulso el botón'],oral:'He puesto la lavadora'},
+  {title:'¿Cómo se cruza una calle con semáforo?',steps:['Espero al semáforo','Miro que estén parados','Cruzo andando','Llego al otro lado'],oral:'He cruzado la calle'},
+  {title:'¿Cómo preparas la mochila para el cole?',steps:['Pongo los libros','Pongo el estuche','Pongo el almuerzo','Cierro la mochila'],oral:'Tengo lista la mochila'},
+  {title:'¿Qué haces si te haces una herida pequeña?',steps:['Lavo la herida con agua','Me pongo una tirita','La aprieto bien','Sigo con cuidado'],oral:'Me he curado solo'},
+  {title:'¿Cómo se calienta comida en el microondas?',steps:['Pongo la comida en un plato','Lo meto en el microondas','Pongo el tiempo','Saco el plato'],oral:'He calentado la comida'},
+  {title:'¿Cómo se hace la cama?',steps:['Estiro la sábana','Pongo la manta','Coloco la almohada','La cama está hecha'],oral:'He hecho la cama'},
+  {title:'¿Qué haces antes de salir de casa?',steps:['Me visto','Cojo las llaves','Cojo el móvil','Cierro la puerta'],oral:'Salgo de casa'},
+  {title:'¿Cómo se hace una merienda?',steps:['Lavo una manzana','Cojo unas galletas','Sirvo un vaso de leche','Me lo como'],oral:'He merendado'},
 ];
 const ROUTINES_MASTER = [
-  {title:'Ayuda a tu amigo a ir al médico',steps:['📞 Llama para pedir cita','🚗 El día de la cita, ve al centro de salud','🪑 Espera tu turno en la sala','👨‍⚕️ Cuando te llamen, entra a la consulta','💊 Escucha lo que te dice el médico','🏠 Recoge la receta y vuelve a casa'],oral:'Tu amigo pide cita, espera, entra al médico, recoge la receta y vuelve'},
-  {title:'Ayuda a tu amigo a ir al supermercado',steps:['📝 Haz una lista con lo que necesitas','🚶 Ve hasta el supermercado','🛒 Coge un carro en la entrada','🛍️ Busca cada producto de la lista','💰 Pasa por caja y paga','🏠 Lleva la compra a casa'],oral:'Tu amigo hace la lista, busca los productos, paga y lleva la compra a casa'},
-  {title:'Ayuda a tu amigo a ir al cine',steps:['🎟️ Compra la entrada en taquilla o por internet','🍿 Si quieres, compra palomitas','🪑 Busca tu número de asiento','🎬 Disfruta de la película en silencio','🧹 Tira la basura al salir','🏠 Vuelve a casa'],oral:'Tu amigo compra entrada, busca asiento, ve la película y vuelve a casa'},
-  {title:'Ayuda a tu amigo a coger un tren',steps:['🎫 Compra el billete en la estación','🚉 Mira en qué andén sale tu tren','⏳ Espera en el andén sin pasar la línea amarilla','🚆 Cuando llegue, sube por una puerta','💺 Busca tu asiento por el número','🛬 Bájate en la parada que te toca'],oral:'Tu amigo compra billete, espera en el andén, sube al tren y se baja'},
-  {title:'Ayuda a tu amigo a ir a la biblioteca',steps:['🎒 Coge una bolsa o mochila','📚 Busca el libro que quieras en las estanterías','🪪 Llévalo al mostrador con tu carnet','📖 Léelo en casa con calma','📚 Devuélvelo antes de la fecha','🏠 Puedes coger otro en la próxima visita'],oral:'Tu amigo busca libro, lo pide con carnet, lo lee y lo devuelve'},
-  {title:'Ayuda a tu amigo si se pierde en la calle',steps:['😌 Si te pierdes, no te pongas nervioso','👀 Busca a alguien de confianza cerca','🙋 Acércate con educación','🗣️ Explica qué te pasa y quién es tu familia','👂 Escucha lo que te digan','🙏 Da las gracias cuando te ayuden'],oral:'Tu amigo se calma, busca ayuda, explica qué pasa y da las gracias'},
-  {title:'Ayuda a tu amigo a organizar una quedada',steps:['📱 Coge el móvil y abre el grupo de amigos','💬 Propón un plan divertido','📅 Poneros de acuerdo en el día y la hora','✅ Confirma con todos antes','⏰ Llega puntual al sitio','🤗 Disfruta del rato juntos'],oral:'Tu amigo propone plan, queda con amigos, llega puntual y disfruta'},
-  {title:'Ayuda a tu amigo a viajar en avión',steps:['🧳 Prepara la maleta con lo necesario','🛂 Ve al aeropuerto con tiempo','🎫 Enseña el billete y el DNI en el mostrador','🎒 Pasa el control de seguridad','✈️ Embarca cuando te llamen','🛬 Al llegar, recoge la maleta'],oral:'Tu amigo hace la maleta, va al aeropuerto, embarca y recoge la maleta'},
-  {title:'Ayuda a tu amigo a pagar con tarjeta',steps:['🛒 Coge lo que quieres comprar','💳 Saca tu tarjeta al llegar a caja','📟 Acércala al datáfono','🔢 Marca el pin si te lo pide','✅ Espera a que salga pago aceptado','🧾 Guarda el recibo por si acaso'],oral:'Tu amigo saca la tarjeta, la acerca al datáfono, pone el pin y coge el recibo'},
-  {title:'Ayuda a tu amigo a hacer un trámite en el banco',steps:['🏦 Entra en el banco','🎫 Coge número en la máquina','🪑 Espera a que te llamen','🙋 Explica al empleado lo que necesitas','✍️ Firma los papeles con calma','👋 Despídete y sal'],oral:'Tu amigo entra al banco, coge número, explica, firma y se despide'},
-  {title:'Ayuda a tu amigo a buscar trabajo',steps:['📝 Prepara bien tu currículum','🔍 Busca ofertas en internet','📧 Envía tu currículum a cada oferta','📞 Si te llaman, apunta la hora de la entrevista','🤝 Ve a la entrevista bien arreglado','⏳ Espera unos días a tener respuesta'],oral:'Tu amigo prepara currículum, busca ofertas, lo envía y va a la entrevista'},
-  {title:'Ayuda a tu amigo a organizar una fiesta',steps:['📅 Elige el día y la hora','📋 Haz la lista de invitados','📱 Manda las invitaciones por móvil','🛒 Compra comida y bebida','🎈 Decora la casa','🤗 Recibe a los invitados con una sonrisa'],oral:'Tu amigo elige día, invita, compra comida, decora y recibe a los invitados'},
-  {title:'Ayuda a tu amigo a ir a un concierto',steps:['🎫 Compra la entrada con tiempo','🚆 Llega al recinto una hora antes','🔒 Deja la mochila en la taquilla si hace falta','🎤 Disfruta de la música','👏 Aplaude al final de cada canción','🚆 Vuelve a casa con cuidado'],oral:'Tu amigo compra entrada, llega con tiempo, escucha y aplaude'},
-  {title:'Ayuda a tu amigo a mudarse de casa',steps:['📦 Guarda tus cosas en cajas etiquetadas','🚛 Espera a que llegue la mudanza','🚚 Ayuda a cargar las cajas en el camión','🏠 Ve a la casa nueva','📦 Baja las cajas con cuidado','🛋️ Coloca cada cosa en su sitio'],oral:'Tu amigo prepara cajas, carga, llega a la casa nueva y coloca todo'},
-  {title:'Ayuda a tu amigo a ir al gimnasio',steps:['🎒 Prepara la bolsa con ropa de deporte','🚶 Ve caminando o en autobús al gimnasio','🪪 Enseña la tarjeta de socio en recepción','💪 Haz los ejercicios que toquen','🚿 Dúchate al terminar','🏠 Vuelve a casa a descansar'],oral:'Tu amigo prepara bolsa, hace ejercicio, se ducha y vuelve a casa'},
-  {title:'Ayuda a tu amigo a cocinar una comida',steps:['📋 Elige una receta que te guste','🛒 Compra los ingredientes que necesites','🧺 Prepara cada cosa en la encimera','🔥 Cocina siguiendo los pasos de la receta','🍽️ Sirve la comida en un plato','🧽 Friega los cacharros al terminar'],oral:'Tu amigo elige receta, compra, cocina, sirve y friega al final'},
-  {title:'Ayuda a tu amigo a votar en unas elecciones',steps:['💌 Espera la carta del censo en tu buzón','🪪 El día de las elecciones, coge tu DNI','🚶 Ve al colegio electoral que te toca','📄 Elige la papeleta del partido que prefieras','📮 Métela en el sobre y ciérralo','🗳️ Entrega el sobre en la urna'],oral:'Tu amigo va con su DNI, elige papeleta, la mete en el sobre y la entrega'},
-  {title:'Ayuda a tu amigo a cuidar a alguien enfermo',steps:['🌡️ Tómale la temperatura','💊 Dale la medicación que le haya dicho el médico','🥣 Prepárale algo ligero de comer','💧 Ofrécele agua a menudo','🛏️ Ayúdale a descansar tranquilo','📞 Llama al médico si ves que empeora'],oral:'Tu amigo le toma temperatura, le da medicación y agua, le ayuda a descansar'},
-  {title:'Ayuda a tu amigo a ir de vacaciones',steps:['📅 Elige las fechas con antelación','🏨 Reserva el hotel o apartamento','🧳 Haz la maleta unos días antes','🚗 Viaja con tranquilidad al destino','🏖️ Disfruta cada día de las vacaciones','🏠 Vuelve a casa descansado'],oral:'Tu amigo elige fechas, reserva, hace la maleta, disfruta y vuelve descansado'},
-  {title:'Ayuda a tu amigo a ir a una entrevista de trabajo',steps:['🧥 Ponte ropa adecuada','📄 Lleva una copia de tu currículum','🚶 Llega al sitio diez minutos antes','🤝 Saluda con educación al entrevistador','🗣️ Responde a las preguntas con calma','👋 Despídete dando las gracias'],oral:'Tu amigo se viste bien, llega puntual, saluda, responde y se despide'},
+  {title:'¿Cómo se coge un autobús?',steps:['Voy a la parada del autobús','Espero a que llegue','Subo y pago el billete','Me siento en mi sitio','Pulso el botón para bajar'],oral:'He cogido el autobús'},
+  {title:'¿Cómo se hace una tortilla francesa?',steps:['Cojo dos huevos','Los bato en un bol','Echo aceite en la sartén','Echo los huevos batidos','Le doy la vuelta'],oral:'He hecho una tortilla'},
+  {title:'¿Cómo se prepara un sándwich?',steps:['Cojo dos rebanadas de pan','Pongo el jamón y el queso','Cierro el sándwich','Me lo como'],oral:'Me he comido un sándwich'},
+  {title:'¿Cómo se va al médico con cita?',steps:['Llego al centro de salud','Doy mi nombre en recepción','Espero en la sala','Entro cuando me llaman','Hablo con el médico'],oral:'He ido al médico'},
+  {title:'¿Cómo se pide algo en una cafetería?',steps:['Entro en la cafetería','Voy a la barra','Pido lo que quiero','Pago al camarero','Cojo mi pedido'],oral:'He pedido en la cafetería'},
+  {title:'¿Qué haces si pierdes algo en la calle?',steps:['Pienso dónde lo he tenido','Vuelvo por mis pasos','Pregunto a la gente','Si no aparece, llamo a casa'],oral:'He buscado lo perdido'},
+  {title:'¿Cómo se coge un metro o un tren?',steps:['Compro el billete','Paso por la barrera','Espero en el andén','Subo cuando llega','Bajo en mi parada'],oral:'He viajado en metro'},
+  {title:'¿Cómo se hace una compra pequeña en una tienda?',steps:['Entro en la tienda','Cojo lo que quiero','Voy a la caja','Pago el precio','Cojo el ticket'],oral:'He comprado en la tienda'},
+  {title:'¿Qué haces si te encuentras mal?',steps:['Aviso a un adulto','Me siento o me tumbo','Bebo agua','Espero a estar mejor'],oral:'He pedido ayuda'},
 ];
 function genSequences(tier){
   const sh=a=>[...a].sort(()=>Math.random()-.5);
@@ -674,7 +655,9 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setFb(null);setAtt(0);setPlaced({});setClassifyOrder([]);setSelectedItem(null);setHintStep(null);resetOral();stopVoice();
     // Voice instruction — fallback for modes without ex.data.q
-    const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?'Ordena los pasos de '+(ex.data.title||'la rutina'):ex.mode==='anterior_posterior'?ex.data.q:'');
+    // Para 'sequence' el title ya es la pregunta directa ("¿Cómo te duchas?")
+    // por lo que la usamos como intro tal cual, sin prefijo "Ordena los pasos de".
+    const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?(ex.data.title||'Ordena los pasos'):ex.mode==='anterior_posterior'?ex.data.q:'');
     setTimeout(()=>say(stripEmoji(intro)),400);
     return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
@@ -892,7 +875,9 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
           const correct = ex.data.steps.every((s,i) => np[i] === s);
           if (correct) {
             setFb('ok'); starBeep(4);
-            say('¡Perfecto! ' + ex.data.title)
+            // Tras acertar, decimos la frase final ("Me lavo las manos") en
+            // vez del título-pregunta, que sonaría extraño leído por TTS.
+            say('¡Perfecto! ' + (ex.data.oral||ex.data.title))
               .then(()=>cheerOrSay(mkPerfect(name), uid, vids, 'perfect'))
               .then(()=>setTimeout(()=>triggerOral(ex.data.oral, 4, 1), 300));
           } else {
