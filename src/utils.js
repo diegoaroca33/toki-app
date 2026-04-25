@@ -43,7 +43,54 @@ export function applySettings(s){if(!s||typeof s!=='object')return;
   // Apply module levels
   Object.keys(s).filter(k=>k.startsWith('mod_lv_')).forEach(k=>{if(s[k]!==undefined)saveData(k,s[k])})}
 export function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
-export function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);const bdValid=u.birthdate&&!isNaN(new Date(u.birthdate).getTime());const edad=u.age||(bdValid?Math.max(1,Math.floor((Date.now()-new Date(u.birthdate).getTime())/31557600000)):'');const cumple=bdValid?new Date(u.birthdate).toLocaleDateString('es-ES',{day:'numeric',month:'long'}):'';const r=text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole').replace(/\{edad\}/g,String(edad)).replace(/\{cumple\}/g,cumple);return r.charAt(0).toUpperCase()+r.slice(1)}
+// Nombres inventados para cuando aún no hay amigos configurados en Mis Personas
+const FAKE_FRIENDS=['Luis','Marta','Sara','Pablo','Carlos','Ana','Clara','Diego','Elena','Hugo'];
+// Normaliza un nombre propio: primera letra de cada palabra en mayúscula,
+// el resto en minúscula. "diego aroca" → "Diego Aroca", "DIEGO" → "Diego".
+function capName(n){
+  if(!n||typeof n!=='string')return n;
+  return n.trim().split(/\s+/).map(w=>{
+    if(!w)return w;
+    // Conectores se quedan en minúscula (excepto inicio de todo)
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+}
+function pickFriendName(u){
+  try{
+    const personas=loadData('personas',[])||[];
+    const amigos=personas.filter(p=>p&&p.name&&(p.relation==='Amigo'||p.relation==='Amiga'));
+    if(amigos.length)return capName(amigos[Math.floor(Math.random()*amigos.length)].name);
+  }catch(e){}
+  const legacy=(u&&u.amigos||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(legacy.length)return capName(legacy[Math.floor(Math.random()*legacy.length)]);
+  return FAKE_FRIENDS[Math.floor(Math.random()*FAKE_FRIENDS.length)];
+}
+export function personalize(text,u){
+  if(!text||!u)return text||'';
+  const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const bdValid=u.birthdate&&!isNaN(new Date(u.birthdate).getTime());
+  const edad=u.age||(bdValid?Math.max(1,Math.floor((Date.now()-new Date(u.birthdate).getTime())/31557600000)):'');
+  const cumple=bdValid?new Date(u.birthdate).toLocaleDateString('es-ES',{day:'numeric',month:'long'}):'';
+  let r=text
+    .replace(/\{nombre\}/g,capName(u.name)||'Nico')
+    .replace(/\{apellidos\}/g,capName(u.apellidos)||'')
+    .replace(/\{padre\}/g,capName(u.padre)||'Paco')
+    .replace(/\{madre\}/g,capName(u.madre)||'Ana')
+    .replace(/\{hermano1\}/g,capName(h[0])||'Miguel')
+    .replace(/\{hermana1\}/g,capName(h[0])||'Sofía')
+    .replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0')
+    .replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0')
+    .replace(/\{direccion\}/g,u.direccion||'mi casa')
+    .replace(/\{colegio\}/g,u.colegio||'el cole')
+    .replace(/\{edad\}/g,String(edad))
+    .replace(/\{cumple\}/g,cumple)
+    .replace(/\{nombre_amigo\}/g,pickFriendName(u))
+    .replace(/\{amigo\}/g,pickFriendName(u))
+    .replace(/\{amiga\}/g,pickFriendName(u));
+  // Red de seguridad para placeholders restantes
+  r=r.replace(/\{[^}]+\}|\[[^\]]+\]/g,()=>pickFriendName(u));
+  return r.charAt(0).toUpperCase()+r.slice(1);
+}
 export function srsUp(id,ok,u,stars,attempts){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();
   if(!ok){d.srs[id].lv=Math.max(d.srs[id].lv-1,0)}
   else if(stars!==undefined&&attempts!==undefined){
@@ -205,19 +252,29 @@ export function updateRepCount(userId, phraseKey, stars) {
 }
 
 // M5: Adaptive TTS speed per phrase
+// MAX 0.92 — never faster than pausado-claro. If el niño acierta, sube de NIVEL
+// (más palabras), no de velocidad. Modelos más rápidos harían que se comiera sílabas.
+export const PHRASE_SPEEDS = [0.75, 0.85, 0.92];
+export const PHRASE_SPEED_MAX = 0.92;
+export const PHRASE_SPEED_DEFAULT = 0.85;
 export function getPhraseSpeed(userId, phraseKey) {
-  return loadData(`speed_${userId}_${phraseKey}`, 0.85);
+  const v = loadData(`speed_${userId}_${phraseKey}`, PHRASE_SPEED_DEFAULT);
+  // Clamp legacy stored values (pre-cap they could be 1.0 / 1.1)
+  if (typeof v !== 'number') return PHRASE_SPEED_DEFAULT;
+  if (v > PHRASE_SPEED_MAX) { saveData(`speed_${userId}_${phraseKey}`, PHRASE_SPEED_MAX); return PHRASE_SPEED_MAX; }
+  if (v < PHRASE_SPEEDS[0]) { saveData(`speed_${userId}_${phraseKey}`, PHRASE_SPEEDS[0]); return PHRASE_SPEEDS[0]; }
+  return v;
 }
 export function updatePhraseSpeed(userId, phraseKey, succeeded) {
-  const speeds = [0.7, 0.85, 1.0, 1.1];
+  const speeds = PHRASE_SPEEDS;
   const current = getPhraseSpeed(userId, phraseKey);
   const consecutiveKey = `speedstreak_${userId}_${phraseKey}`;
   let streak = loadData(consecutiveKey, {ok:0, fail:0});
   if (succeeded) { streak.ok++; streak.fail=0; }
   else { streak.fail++; streak.ok=0; }
   saveData(consecutiveKey, streak);
-  let idx = speeds.indexOf(current);
-  if (idx === -1) idx = 1;
+  // Find closest speed index (legacy values may not match exactly)
+  let idx = speeds.reduce((best,s,i)=>Math.abs(s-current)<Math.abs(speeds[best]-current)?i:best, 1);
   if (streak.ok >= 3) { idx = Math.min(idx + 1, speeds.length - 1); streak.ok = 0; saveData(consecutiveKey, streak); }
   if (streak.fail >= 2) { idx = Math.max(idx - 1, 0); streak.fail = 0; saveData(consecutiveKey, streak); }
   const newSpeed = speeds[idx];
@@ -292,6 +349,48 @@ export function canFeedDog(userId) {
   const today = new Date().toISOString().slice(0, 10);
   return last !== today;
 }
+// ── Milestones diarios: 100 / 200 / 300 ejercicios ──
+// Se guardan por día para que cuando el niño entre a Toki, éste pueda
+// recordarle su logro ("te mereces un descanso" al llegar a 300).
+const MILESTONE_TIERS = [100, 200, 300];
+export function getMilestoneReached(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const d = loadData(`milestone_${userId}`, { date: null, tier: 0 });
+  if (d.date !== today) return 0; // se resetea cada día
+  return d.tier;
+}
+export function setMilestoneReached(userId, tier) {
+  const today = new Date().toISOString().slice(0, 10);
+  saveData(`milestone_${userId}`, { date: today, tier });
+}
+export function checkMilestoneHit(userId, totalOkToday) {
+  const current = getMilestoneReached(userId);
+  for (const t of MILESTONE_TIERS) {
+    if (totalOkToday >= t && current < t) {
+      setMilestoneReached(userId, t);
+      return t;
+    }
+  }
+  return null;
+}
+
+// ── Comida de Toki: 1 ración por cada 100 ejercicios del día ──
+// Antes: 1 al día. Ahora: se gana una ración cada 100 ejercicios (hasta 3/día),
+// así el niño ve que su trabajo alimenta a Toki directamente.
+export function getDogFoodBalance(userId, totalOkToday) {
+  const today = new Date().toISOString().slice(0, 10);
+  const earned = Math.min(3, Math.floor((totalOkToday || 0) / 100));
+  const d = loadData(`dog_feeds_${userId}`, { date: null, used: 0 });
+  const used = d.date === today ? d.used : 0;
+  return { earned, used, available: Math.max(0, earned - used) };
+}
+export function consumeDogFood(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const d = loadData(`dog_feeds_${userId}`, { date: null, used: 0 });
+  const used = d.date === today ? d.used + 1 : 1;
+  saveData(`dog_feeds_${userId}`, { date: today, used });
+}
+
 export function feedDog(userId) {
   const today = new Date().toISOString().slice(0, 10);
   setDogLastFed(userId, today);

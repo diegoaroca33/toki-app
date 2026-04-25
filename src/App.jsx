@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } fr
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings } from './utils.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings, getDogFoodBalance, consumeDogFood, getMilestoneReached, checkMilestoneHit } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, startTTSKeepAlive, stopTTSKeepAlive, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
@@ -279,7 +279,7 @@ export default function App(){
   const[freeChoice,setFreeChoice]=useState(true);
   // M4: Burst mode state
   const[burstMode,setBurstMode]=useState(()=>loadData('burst_mode',true));
-  const[burstSpeed,setBurstSpeed]=useState(()=>loadData('burst_speed',1.0));
+  const[burstSpeed,setBurstSpeed]=useState(()=>Math.min(0.92,loadData('burst_speed',0.85)));
   const[burstReps,setBurstReps]=useState(()=>loadData('burst_reps',2));
   function toggleBurst(){const nv=!burstMode;setBurstMode(nv);saveData('burst_mode',nv)}
   function setBurstSpeedVal(v){setBurstSpeed(v);saveData('burst_speed',v)}
@@ -617,12 +617,8 @@ export default function App(){
     if(u){const already=(u.hist||[]).some(h=>h.dt===ps.data.dt&&h.ok===ps.data.ok&&h.min===ps.data.min);
     if(!already){u.hist=[...(u.hist||[]),{ok:ps.data.ok,sk:ps.data.sk,dt:ps.data.dt,min:ps.data.min}];saveData('profiles',profs2.map(p=>p.id===u.id?u:p))}}
     saveData('partial_session',null)}}catch(e){}},[]);
-  // TokiBreak every 15 min for time mode
-  const lastBreakMin=useRef(0);
-  useEffect(()=>{if(scr!=='game'||!ss||sessionType!=='time')return;
-    const mins=Math.floor(elapsedSt/60);
-    if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;stopVoice();window.dispatchEvent(new Event('toki-pause'));setShowTokiBreak(true)}
-  },[elapsedSt,scr,ss,sessionType]);
+  // Eliminado: auto-break cada 15 min. Toki solo aparece cuando el niño lo pulsa
+  // en el mini-mascota. Las pausas son decisión del niño/supervisor, no del reloj.
   function saveP(u){const c={...u};const uLv=c.maxLv||c.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>c.srs&&c.srs[e.id]&&c.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)c.maxLv=uLv+1;c.level=c.maxLv||c.level||1;setProfs(p=>p.map(x=>x.id===c.id?c:x))}
   function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;const repsCount=(burstMode&&burstReps>1)?burstReps:1;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+repsCount;setUser(up);saveP(up);const nextSt={ok:st.ok+repsCount,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
     track('exercise_completed',{module:sec,stars:s,attempts,burst:burstMode,reps:repsCount})
@@ -632,10 +628,27 @@ export default function App(){
     if(user?.id){const newDaily=addDailyCount(user.id,repsCount);setDailyCount(newDaily);}
     // Streak & milestone tracking
     const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+repsCount);
-    // Milestones ONLY at 100, 200, 300 (daily goals, not session noise)
-    const totalOk=nextSt.ok;const MS=[{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Primer objetivo cumplido!'},{n:200,emoji:'👑',text:'¡Doscientos!',sub:'¡Eres un campeón!'},{n:300,emoji:'🌈',text:'¡Trescientos!',sub:'¡Récord absoluto!'}];
-    const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
-    if(hit){milestoneShown.current.add(hit.n);stopVoice();window.dispatchEvent(new Event('toki-pause'));const isHuge=hit.n>=100;setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub,huge:isHuge});setTimeout(()=>{setMilestone(null);setResumeKey(k=>k+1)},isHuge?4000:2500)},300)}
+    // Milestones diarios 100/200/300 — Toki felicita con voz + persistimos para
+    // que al entrar al playground siga recordando el logro del día.
+    const totalOkDay = user?.id ? getDailyCount(user.id) : nextSt.ok;
+    const MS=[
+      {n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Hoy trabajas mucho, eres un campeón!',voice:'¡Qué bien! Hoy trabajas mucho. Eres un campeón.'},
+      {n:200,emoji:'👑',text:'¡Doscientos!',sub:'¡Estás que te sale todo!',voice:'¡Doscientos ejercicios! Estás que te sale todo.'},
+      {n:300,emoji:'🌈',text:'¡Trescientos!',sub:'¡Ahora te mereces un descanso bien merecido!',voice:'¡Trescientos! Ahora te mereces un descanso bien merecido.'}
+    ];
+    const hit=MS.find(m=>totalOkDay>=m.n&&!milestoneShown.current.has(m.n));
+    if(hit){
+      milestoneShown.current.add(hit.n);
+      if(user?.id)checkMilestoneHit(user.id,totalOkDay);
+      stopVoice();window.dispatchEvent(new Event('toki-pause'));
+      const isHuge=hit.n>=100;
+      setTimeout(()=>{
+        setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub,huge:isHuge});
+        // Toki lo dice en voz alta con una pequeña pausa para no pisar animación
+        setTimeout(()=>sayFB(hit.voice),600);
+        setTimeout(()=>{setMilestone(null);setResumeKey(k=>k+1)},isHuge?5500:3500);
+      },300);
+    }
     // M7a: Dynamic DILO tracking on success
     if(sec==='decir'&&user&&getDynamicDilo(user.id)){
       diloExCount.current++;
@@ -987,8 +1000,24 @@ export default function App(){
       <div style={{padding:'4px 4px 2px'}}>
         {/* Row 1: Dog | Avatar | Greeting | Stars counter + streak */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-          <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Compañía">
-            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
+          <div style={{flexShrink:0,cursor:'pointer',position:'relative'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Toki">
+            {(()=>{
+              const food=getDogFoodBalance(user.id,dailyCount);
+              const milestone=getMilestoneReached(user.id);
+              const hasNotification=food.available>0||milestone>=300;
+              const dogMood=food.available>0?'hungry':mascotMood;
+              return <>
+                <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>
+                {hasNotification&&<span style={{
+                  position:'absolute',top:-2,right:-2,
+                  minWidth:18,height:18,padding:'0 5px',
+                  borderRadius:999,background:RED,color:'#fff',
+                  fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',
+                  border:'2px solid '+BG,fontFamily:"'Fredoka'",pointerEvents:'none',
+                  boxShadow:'0 0 8px '+RED+'aa',
+                }}>{food.available>0?food.available:'!'}</span>}
+              </>;
+            })()}
           </div>
           <div style={{flexShrink:0,position:'relative'}}>
             <SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/>
@@ -1203,11 +1232,11 @@ export default function App(){
     </div>}
     {/* TokiBreak overlay */}
     {showTokiBreak&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} name={user?.name||''} userId={user?.id||''} feedMode={user&&getDogFoodBalance(user.id,dailyCount).available>0} milestone={user?getMilestoneReached(user.id):0} onContinue={()=>{setShowTokiBreak(false);setResumeKey(k=>k+1);if(user&&getDogFoodBalance(user.id,dailyCount).available>0){consumeDogFood(user.id);feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {/* Companion screen - accessible from goals */}
     {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground name={user?.name||''} userId={user?.id||''} feedMode={user&&getDogFoodBalance(user.id,dailyCount).available>0} milestone={user?getMilestoneReached(user.id):0} onContinue={()=>{setShowCompanion(false);setResumeKey(k=>k+1);if(user&&getDogFoodBalance(user.id,dailyCount).available>0){consumeDogFood(user.id);feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={gameShellStyle}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:isPhone?8:12,marginBottom:isPhone?6:8,flexWrap:'wrap'}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:isPhone?15:16,padding:'10px 8px',minHeight:48,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={isPhone?34:isTabletLandscape?42:36}/>}{/* Avatar del niño con badge de evolución diaria */}
         <div style={{position:'relative',cursor:'pointer'}} onClick={()=>setShowAstroOverlay(true)}>
