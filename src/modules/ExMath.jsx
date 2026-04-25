@@ -19,7 +19,7 @@ export function genAddObjects(){const sh=a=>[...a].sort(()=>Math.random()-.5);co
     ops.push({q:`${a} + ${b}`,ans:a+b,a,b,emoji:em,mode:'add_objects'})}
   return sh(ops)}
 
-// Generate word problems with context (Pictociencia-inspired)
+// Generate word problems with context (problemas verbales curriculares)
 const WORD_PROB_TEMPLATES=[
   {t:'{N} tiene {a} {E} y le dan {b} más. ¿Cuántas tiene?',op:'+',oral:'{N} tiene {ans} {E} en total'},
   {t:'{N} tiene {a} {E} y pierde {b}. ¿Cuántas le quedan?',op:'-',oral:'Le quedan {ans} {E}'},

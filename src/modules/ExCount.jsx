@@ -44,9 +44,9 @@ export function ExCount({ex,onOk,onSkip,sex,name,uid,vids}){
   useEffect(()=>{
     alive.current=true;setCi(-1);setPhase('ready');setRevealed(new Set());resetOral();stopVoice();
     const t=setTimeout(()=>{if(alive.current)runSequence()},500);
-    const sosKill=()=>{alive.current=false;clearTimeout(t);stopVoice()};
-    window.addEventListener('toki-sos',sosKill);
-    return()=>{alive.current=false;clearTimeout(t);stopVoice();window.removeEventListener('toki-sos',sosKill)}},[ex]);
+    const kill=()=>{alive.current=false;clearTimeout(t);stopVoice()};
+    window.addEventListener('toki-sos',kill);window.addEventListener('toki-pause',kill);
+    return()=>{alive.current=false;clearTimeout(t);stopVoice();window.removeEventListener('toki-sos',kill);window.removeEventListener('toki-pause',kill)}},[ex]);
   async function runSequence(){
     for(let i=0;i<nums.length;i++){
       if(!alive.current)return;
