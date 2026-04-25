@@ -10,12 +10,19 @@ export const COINS=[{v:0.01,l:'1c',c:'#B87333',c2:'#8B5E3C',sz:36},{v:0.02,l:'2c
 export const BILLS=[{v:5,l:'5€',c:'#7B7B7B',c2:'#9E9E9E'},{v:10,l:'10€',c:'#C0392B',c2:'#E74C3C'},{v:20,l:'20€',c:'#2471A3',c2:'#3498DB'},{v:50,l:'50€',c:'#D35400',c2:'#E67E22'}];
 
 // Devuelve el valor en español hablado/escrito con plural correcto.
-// 0.01 → "1 céntimo"; 0.05 → "5 céntimos"; 1 → "1 euro"; 2 → "2 euros".
-// Usado para el label del botón (visual) Y para la frase del TTS,
-// para que Toki no diga "uno c" leyendo el label compacto "1c".
-export function moneyLabel(v){
-  if(v>=1){const n=Math.round(v);return n===1?'1 euro':n+' euros'}
-  const c=Math.round(v*100);return c===1?'1 céntimo':c+' céntimos';
+// Visual:  0.01 → "1 céntimo", 0.05 → "5 céntimos", 1 → "1 euro", 2 → "2 euros".
+// Hablado: 0.01 → "un céntimo", 1 → "un euro" (en español decimos "un",
+//          no "uno", delante de masculino: "un céntimo", "un euro").
+// El TTS lee mejor el formato hablado; el visual usa el número.
+export function moneyLabel(v, spoken=false){
+  if(v>=1){
+    const n=Math.round(v);
+    if(n===1) return spoken?'un euro':'1 euro';
+    return n+' euros';
+  }
+  const c=Math.round(v*100);
+  if(c===1) return spoken?'un céntimo':'1 céntimo';
+  return c+' céntimos';
 }
 
 export function genMoney(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
@@ -28,22 +35,38 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[sel,setSel]=useState([]);const{idleMsg,poke}=useIdle(name,!fb);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setAns('');setFb(null);setSel([]);resetOral();stopVoice();
-    if(ex.mode==='recognize')setTimeout(()=>say('¿Cuánto vale esta moneda?'),400);
-    else if(ex.mode==='sum')setTimeout(()=>say('¿Cuánto hay en total?'),400);
-    else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),400);
-    else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
+    // Delay 1500ms (antes 400) para no solapar con TTS/cohete previo cuando
+    // la sesión arranca tras una transición de cohete (que dura ~1.2-1.5s).
+    if(ex.mode==='recognize')setTimeout(()=>say('¿Cuánto vale?'),1500); // genérico — vale para moneda y billete
+    else if(ex.mode==='sum')setTimeout(()=>say('¿Cuánto hay en total?'),1500);
+    else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),1500);
+    else setTimeout(()=>say('¿Cuánto cambio te dan?'),1500);
     return()=>stopVoice()},[ex]);
   // Opciones para reconocer/sumar — useMemo con [ex] para recalcular en cada
-  // ejercicio nuevo (antes useState con initializer dejaba stale las opciones
-  // del primer ejercicio en toda la sesión).
+  // ejercicio nuevo. Deduplicamos por label (no solo por valor) para evitar
+  // que aparezcan dos botones con el mismo texto cuando dos valores wrong
+  // distintos producen el mismo label tras Math.round (ej: target=10,
+  // wrong=9.5, ambos muestran "10 euros" porque round(9.5)=10).
   const opts=useMemo(()=>{
     if(ex.mode==='recognize'||ex.mode==='sum'){
       const target=ex.mode==='recognize'?ex.coin.v:ex.total;
+      const targetLabel=moneyLabel(target);
       const wrongs=new Set();
       // Distractores plausibles (x2, x10, /2, ±0.5, ±1, x5, valores cercanos)
       [target*2,target*10,target/2,target+0.5,target-0.5,target+1,target+2,target*5,0.01,0.02,0.05,0.10,0.20,0.50,1,2,5,10,20].forEach(w=>{
         if(w>0&&w!==target&&Math.abs(w-target)>0.001)wrongs.add(Math.round(w*100)/100)});
-      const wrongArr=[...wrongs].sort(()=>Math.random()-.5).slice(0,3);
+      // Filtrar wrongs cuyo label coincide con la respuesta correcta
+      const wrongClean=[...wrongs].filter(w=>moneyLabel(w)!==targetLabel);
+      // De-duplicar por label entre los wrongs
+      const seenLbl=new Set([targetLabel]);
+      const wrongArr=[];
+      for(const w of wrongClean.sort(()=>Math.random()-.5)){
+        const lbl=moneyLabel(w);
+        if(seenLbl.has(lbl)) continue;
+        seenLbl.add(lbl);
+        wrongArr.push(w);
+        if(wrongArr.length>=3) break;
+      }
       const all=[target,...wrongArr].sort(()=>Math.random()-.5);
       return all.map(v=>({v,label:moneyLabel(v)}));
     }
@@ -53,14 +76,16 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   function pickOpt(v){poke();
     const target=ex.mode==='recognize'?ex.coin.v:ex.total;
     if(Math.abs(v-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{
-      // Frase a repetir hablada con plurales correctos. recognize → "1 céntimo" / "1 euro" /
-      // "5 céntimos" / "10 euros". sum → "son X céntimos" o "son X euros" según sea entero.
-      const phrase=ex.mode==='recognize'?moneyLabel(target):'son '+moneyLabel(target);
+      // Frase a repetir hablada con concordancia "un/una" correcta:
+      // recognize → "un céntimo" / "un euro" / "5 céntimos" / "10 euros".
+      // sum → "son X céntimos" o "son X euros".
+      const phrase=ex.mode==='recognize'?moneyLabel(target,true):'son '+moneyLabel(target,true);
       setTimeout(()=>triggerOral(phrase,4,1),300);
     })}
     else{const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
-      if(na>=2){sayFB('Vale '+moneyLabel(target));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
-      else{sayFB('Fíjate bien en la moneda');setTimeout(()=>setFb(null),1500)}}}
+      if(na>=2){sayFB('Vale '+moneyLabel(target,true));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+      // "Fíjate bien" sin "en la moneda" porque puede ser un billete; queda genérico
+      else{sayFB('Fíjate bien');setTimeout(()=>setFb(null),1500)}}}
   function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='change'?ex.change:ex.price;
     if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
     else{setFb('no');stopVoice();sayFB('La respuesta es '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setAns('')},2500)}}
