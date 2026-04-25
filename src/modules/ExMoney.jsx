@@ -9,6 +9,15 @@ import { Stars } from '../components/CelebrationOverlay.jsx'
 export const COINS=[{v:0.01,l:'1c',c:'#B87333',c2:'#8B5E3C',sz:36},{v:0.02,l:'2c',c:'#B87333',c2:'#8B5E3C',sz:38},{v:0.05,l:'5c',c:'#B87333',c2:'#8B5E3C',sz:40},{v:0.10,l:'10c',c:'#DAA520',c2:'#B8860B',sz:38},{v:0.20,l:'20c',c:'#DAA520',c2:'#B8860B',sz:40},{v:0.50,l:'50c',c:'#DAA520',c2:'#B8860B',sz:44},{v:1,l:'1€',c:'#C0C0C0',c2:'#DAA520',sz:48,bi:true},{v:2,l:'2€',c:'#DAA520',c2:'#C0C0C0',sz:50,bi:true}];
 export const BILLS=[{v:5,l:'5€',c:'#7B7B7B',c2:'#9E9E9E'},{v:10,l:'10€',c:'#C0392B',c2:'#E74C3C'},{v:20,l:'20€',c:'#2471A3',c2:'#3498DB'},{v:50,l:'50€',c:'#D35400',c2:'#E67E22'}];
 
+// Devuelve el valor en español hablado/escrito con plural correcto.
+// 0.01 → "1 céntimo"; 0.05 → "5 céntimos"; 1 → "1 euro"; 2 → "2 euros".
+// Usado para el label del botón (visual) Y para la frase del TTS,
+// para que Toki no diga "uno c" leyendo el label compacto "1c".
+export function moneyLabel(v){
+  if(v>=1){const n=Math.round(v);return n===1?'1 euro':n+' euros'}
+  const c=Math.round(v*100);return c===1?'1 céntimo':c+' céntimos';
+}
+
 export function genMoney(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
   if(lv===1){COINS.concat(BILLS.slice(0,2)).forEach(c=>{items.push({ty:'money',mode:'recognize',coin:c,id:'mon_'+c.l})});return items.sort(()=>Math.random()-.5).slice(0,15)}
   if(lv===2){for(let i=0;i<15;i++){const n=2+Math.floor(Math.random()*3);const pool=COINS.filter(c=>c.v>=0.10).concat(BILLS.slice(0,2));const sel=Array.from({length:n},()=>pool[Math.floor(Math.random()*pool.length)]);const total=sel.reduce((s,c)=>s+c.v,0);items.push({ty:'money',mode:'sum',coins:sel,total:Math.round(total*100)/100,id:'mon_sum_'+i})}return items}
@@ -24,13 +33,6 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),400);
     else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
     return()=>stopVoice()},[ex]);
-  // Precarga de imágenes de monedas/billetes al primer mount. Sin esto, el
-  // <img> espera a la red en el primer render y deja un parpadeo visible
-  // hasta que cae el SVG fallback o llega la imagen real.
-  useEffect(()=>{
-    COINS.forEach(c=>{const im=new Image();im.src='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png'});
-    BILLS.forEach(b=>{const im=new Image();im.src='/img/money/bill_'+b.v+'.png'});
-  },[]);
   // Opciones para reconocer/sumar — useMemo con [ex] para recalcular en cada
   // ejercicio nuevo (antes useState con initializer dejaba stale las opciones
   // del primer ejercicio en toda la sesión).
@@ -43,16 +45,21 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
         if(w>0&&w!==target&&Math.abs(w-target)>0.001)wrongs.add(Math.round(w*100)/100)});
       const wrongArr=[...wrongs].sort(()=>Math.random()-.5).slice(0,3);
       const all=[target,...wrongArr].sort(()=>Math.random()-.5);
-      return all.map(v=>({v,label:v>=1?v.toFixed(0)+'€':Math.round(v*100)+' céntimos'}));
+      return all.map(v=>({v,label:moneyLabel(v)}));
     }
     return null;
   },[ex]);
   const[att2,setAtt2]=useState(0);
   function pickOpt(v){poke();
     const target=ex.mode==='recognize'?ex.coin.v:ex.total;
-    if(Math.abs(v-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.mode==='recognize'?ex.coin.l:'son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
+    if(Math.abs(v-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{
+      // Frase a repetir hablada con plurales correctos. recognize → "1 céntimo" / "1 euro" /
+      // "5 céntimos" / "10 euros". sum → "son X céntimos" o "son X euros" según sea entero.
+      const phrase=ex.mode==='recognize'?moneyLabel(target):'son '+moneyLabel(target);
+      setTimeout(()=>triggerOral(phrase,4,1),300);
+    })}
     else{const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
-      if(na>=2){sayFB('Vale '+target.toFixed(2).replace('.',',')+' euros');setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+      if(na>=2){sayFB('Vale '+moneyLabel(target));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
       else{sayFB('Fíjate bien en la moneda');setTimeout(()=>setFb(null),1500)}}}
   function checkAns(){poke();const n=parseFloat(ans.replace(',','.'));const target=ex.mode==='change'?ex.change:ex.price;
     if(Math.abs(n-target)<0.005){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase='son '+target.toFixed(2).replace('.',',')+' euros';setTimeout(()=>triggerOral(phrase,4,1),300)})}
@@ -77,9 +84,12 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <circle cx={sz/2} cy={sz/2} r={sz/2-3} fill={`url(#${gid}sh)`}/>
       <text x={sz/2} y={sz/2+1} textAnchor="middle" dominantBaseline="central" fill={txtC} fontSize={sz>=80?24:sz>=60?20:sz>=50?17:14} fontWeight="800" fontFamily="Fredoka" style={{textShadow:'0 1px 0 rgba(255,255,255,.4)'}}>{c.l}</text>
     </svg>};
-  const Coin=({c,onClick,size})=>{const sz=size||Math.min(100,Math.max(70,c.sz?Math.round(c.sz*2):70));const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png';
+  // Coin: SVG siempre. Antes intentaba cargar <img src="/img/money/coin_*.png">
+  // y caía al SVG con onError, lo que producía un parpadeo visible mientras
+  // resolvía el 404 (los PNGs no están en el bundle).
+  const Coin=({c,onClick,size})=>{const sz=size||Math.min(100,Math.max(70,c.sz?Math.round(c.sz*2):70));
     return <button onClick={onClick} style={{width:sz,height:sz,borderRadius:'50%',border:'none',background:'none',padding:0,cursor:'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',filter:'drop-shadow(2px 3px 5px rgba(0,0,0,.45))',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.93)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-      {imgOk?<img src={imgSrc} alt={c.l} style={{width:sz,height:sz,borderRadius:'50%',objectFit:'cover'}} onError={()=>setImgOk(false)}/>:<CoinSVG c={c} sz={sz}/>}
+      <CoinSVG c={c} sz={sz}/>
     </button>};
   const BillSVG=({b,w,h})=>{const bgC=b.v===5?'#A0A0A0':b.v===10?'#E74C3C':b.v===20?'#3498DB':'#E67E22';
     const bgLight=b.v===5?'#BFBFBF':b.v===10?'#F1948A':b.v===20?'#7FB3D8':'#F0B27A';
@@ -100,9 +110,10 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <text x={12} y={16} textAnchor="start" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
       <text x={w-12} y={h-14} textAnchor="end" dominantBaseline="central" fill="rgba(255,255,255,.5)" fontSize="11" fontWeight="700" fontFamily="Fredoka">{b.l}</text>
     </svg>};
-  const Bill=({b,onClick})=>{const[imgOk,setImgOk]=useState(true);const imgSrc='/img/money/bill_'+b.v+'.png';const bw=200;const bh=105;
+  // Bill: SVG siempre, sin <img> (ver comentario en Coin para razón).
+  const Bill=({b,onClick})=>{const bw=200;const bh=105;
     return <button onClick={onClick} style={{width:bw,height:bh,borderRadius:10,border:'none',padding:0,cursor:'pointer',overflow:'hidden',boxShadow:'3px 3px 8px rgba(0,0,0,.5)',position:'relative',transition:'transform .1s',WebkitTapHighlightColor:'transparent'}} onPointerDown={e=>e.currentTarget.style.transform='scale(.95)'} onPointerUp={e=>e.currentTarget.style.transform='scale(1)'} onPointerLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-      {imgOk?<img src={imgSrc} alt={b.l} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} onError={()=>setImgOk(false)}/>:<BillSVG b={b} w={bw} h={bh}/>}
+      <BillSVG b={b} w={bw} h={bh}/>
     </button>};
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     {ex.mode==='recognize'&&<div style={{maxWidth:500,margin:'0 auto'}}>
