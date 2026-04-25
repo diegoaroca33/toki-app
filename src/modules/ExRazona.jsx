@@ -184,7 +184,7 @@ const ROUTINES_BASICO = [
   {title:'¿Qué haces para acostarte?',steps:['Pongo el pijama','Apago la luz','Me duermo'],oral:'Me voy a dormir'},
   {title:'¿Qué haces para desayunar?',steps:['Pongo la mesa','Como','Recojo'],oral:'He desayunado'},
   {title:'¿Qué haces cuando llueve?',steps:['Cojo el paraguas','Lo abro','Me protejo'],oral:'Me protejo de la lluvia'},
-  {title:'¿Cómo te bebes un vaso de agua?',steps:['Cojo un vaso','Lleno de agua','Me lo bebo'],oral:'Me bebo un vaso de agua'},
+  {title:'¿Cómo te bebes un vaso de agua?',steps:['Cojo un vaso','Lo lleno de agua','Lo bebo'],oral:'Bebo un vaso de agua'},
   {title:'¿Qué haces si tienes frío?',steps:['Cojo el abrigo','Me lo pongo','Estoy calentito'],oral:'Me he abrigado'},
   {title:'¿Cómo recoges tu cuarto?',steps:['Cojo los juguetes','Los guardo','Cierro el cajón'],oral:'He recogido'},
   {title:'¿Qué haces si te pica algo?',steps:['Se lo digo a papá','Me pone crema','Estoy mejor'],oral:'Papá me ha curado'},
@@ -193,7 +193,7 @@ const ROUTINES_AVANZADO = [
   {title:'¿Qué haces antes de dormir?',steps:['Ceno con mi familia','Me lavo los dientes','Me pongo el pijama','Me acuesto en la cama'],oral:'Me preparo para dormir'},
   {title:'¿Qué haces por la mañana?',steps:['Me despierto','Me visto','Desayuno','Voy al cole'],oral:'Empiezo el día'},
   {title:'¿Cómo te duchas?',steps:['Me mojo','Me echo gel','Me aclaro','Me seco'],oral:'Me he duchado'},
-  {title:'¿Cómo haces zumo de naranja?',steps:['Cojo las naranjas','Las parto','Las exprimo','Me bebo el zumo'],oral:'Me bebo un zumo'},
+  {title:'¿Cómo haces zumo de naranja?',steps:['Cojo las naranjas','Las parto','Las exprimo','Bebo el zumo'],oral:'Bebo un zumo'},
   {title:'¿Cómo se va a comprar?',steps:['Cojo el carro','Pongo la compra','Pago en la caja','Vuelvo a casa'],oral:'He hecho la compra'},
   {title:'¿Qué pasa al ir al médico?',steps:['Voy al centro de salud','Espero mi turno','Veo al médico','Vuelvo a casa'],oral:'He ido al médico'},
   {title:'¿Cómo se guarda la ropa limpia?',steps:['Cojo la ropa','La doblo','Abro el cajón','La guardo'],oral:'Guardo mi ropa'},
@@ -658,7 +658,9 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     // Para 'sequence' el title ya es la pregunta directa ("¿Cómo te duchas?")
     // por lo que la usamos como intro tal cual, sin prefijo "Ordena los pasos de".
     const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?(ex.data.title||'Ordena los pasos'):ex.mode==='anterior_posterior'?ex.data.q:'');
-    setTimeout(()=>say(stripEmoji(intro)),400);
+    // Delay 1500ms (antes 400) para no solapar con TTS/cohete previo cuando
+    // la sesión arranca tras una transición de cohete o tras "Otra ronda".
+    setTimeout(()=>say(stripEmoji(intro)),1500);
     return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
     if(ex.mode==='emotion')return ex.data.emotion;
@@ -875,10 +877,12 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
           const correct = ex.data.steps.every((s,i) => np[i] === s);
           if (correct) {
             setFb('ok'); starBeep(4);
-            // Tras acertar, decimos la frase final ("Me lavo las manos") en
-            // vez del título-pregunta, que sonaría extraño leído por TTS.
-            say('¡Perfecto! ' + (ex.data.oral||ex.data.title))
-              .then(()=>cheerOrSay(mkPerfect(name), uid, vids, 'perfect'))
+            // UN solo ánimo + UN modelo+micro. Antes encadenábamos
+            // say('¡Perfecto! oral') + cheerOrSay + triggerOral, lo que
+            // hacía decir la frase oral DOS veces seguidas (una en el say
+            // de Toki, otra como modelo del micro) — feedback redundante
+            // y se sentía atascado.
+            cheerOrSay(mkPerfect(name), uid, vids, 'perfect')
               .then(()=>setTimeout(()=>triggerOral(ex.data.oral, 4, 1), 300));
           } else {
             const na = att + 1; setAtt(na); setFb('no'); beep(200, 200);
