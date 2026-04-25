@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { GOLD, GREEN, DIM } from '../constants.js'
 import { say, stopVoice, starBeep, cheerOrSay, useSR } from '../voice.js'
-import { beep, mkPerfect, personalize } from '../utils.js'
+import { beep, mkPerfect, personalize, capName } from '../utils.js'
 import { useIdle } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
 
@@ -11,24 +11,35 @@ const LETTERS_LOWER='abcdefghijklmnñopqrstuvwxyz'.split('');
 const STROKE_GUIDES={A:[{d:'↗',n:1,x:.3,y:.8,ex:.5,ey:.1},{d:'↘',n:2,x:.5,y:.1,ex:.7,ey:.8},{d:'→',n:3,x:.35,y:.55,ex:.65,ey:.55}],B:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'↷',n:2,x:.35,y:.1,ex:.35,ey:.5},{d:'↷',n:3,x:.35,y:.5,ex:.35,ey:.9}],C:[{d:'↶',n:1,x:.7,y:.15,ex:.7,ey:.85}],D:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'↷',n:2,x:.35,y:.1,ex:.35,ey:.9}],E:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'→',n:2,x:.35,y:.1,ex:.7,ey:.1},{d:'→',n:3,x:.35,y:.5,ex:.65,ey:.5},{d:'→',n:4,x:.35,y:.9,ex:.7,ey:.9}],F:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'→',n:2,x:.35,y:.1,ex:.7,ey:.1},{d:'→',n:3,x:.35,y:.5,ex:.65,ey:.5}],G:[{d:'↶',n:1,x:.7,y:.15,ex:.7,ey:.85},{d:'←',n:2,x:.7,y:.5,ex:.5,ey:.5}],H:[{d:'↓',n:1,x:.3,y:.1,ex:.3,ey:.9},{d:'↓',n:2,x:.7,y:.1,ex:.7,ey:.9},{d:'→',n:3,x:.3,y:.5,ex:.7,ey:.5}],I:[{d:'↓',n:1,x:.5,y:.1,ex:.5,ey:.9}],J:[{d:'↓',n:1,x:.6,y:.1,ex:.6,ey:.75},{d:'↶',n:2,x:.6,y:.75,ex:.35,ey:.9}],K:[{d:'↓',n:1,x:.3,y:.1,ex:.3,ey:.9},{d:'↙',n:2,x:.7,y:.1,ex:.3,ey:.5},{d:'↘',n:3,x:.3,y:.5,ex:.7,ey:.9}],L:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'→',n:2,x:.35,y:.9,ex:.7,ey:.9}],M:[{d:'↓',n:1,x:.2,y:.9,ex:.2,ey:.1},{d:'↘',n:2,x:.2,y:.1,ex:.5,ey:.5},{d:'↗',n:3,x:.5,y:.5,ex:.8,ey:.1},{d:'↓',n:4,x:.8,y:.1,ex:.8,ey:.9}],N:[{d:'↓',n:1,x:.3,y:.9,ex:.3,ey:.1},{d:'↘',n:2,x:.3,y:.1,ex:.7,ey:.9},{d:'↑',n:3,x:.7,y:.9,ex:.7,ey:.1}],O:[{d:'↶',n:1,x:.5,y:.1,ex:.5,ey:.1}],P:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'↷',n:2,x:.35,y:.1,ex:.35,ey:.5}],Q:[{d:'↶',n:1,x:.5,y:.1,ex:.5,ey:.1},{d:'↘',n:2,x:.55,y:.7,ex:.75,ey:.95}],R:[{d:'↓',n:1,x:.35,y:.1,ex:.35,ey:.9},{d:'↷',n:2,x:.35,y:.1,ex:.35,ey:.5},{d:'↘',n:3,x:.5,y:.5,ex:.7,ey:.9}],S:[{d:'↶↷',n:1,x:.65,y:.15,ex:.35,ey:.85}],T:[{d:'→',n:1,x:.25,y:.1,ex:.75,ey:.1},{d:'↓',n:2,x:.5,y:.1,ex:.5,ey:.9}],U:[{d:'↓↷',n:1,x:.3,y:.1,ex:.7,ey:.1}],V:[{d:'↘',n:1,x:.25,y:.1,ex:.5,ey:.9},{d:'↗',n:2,x:.5,y:.9,ex:.75,ey:.1}],W:[{d:'↘',n:1,x:.15,y:.1,ex:.35,ey:.9},{d:'↗',n:2,x:.35,y:.9,ex:.5,ey:.4},{d:'↘',n:3,x:.5,y:.4,ex:.65,ey:.9},{d:'↗',n:4,x:.65,y:.9,ex:.85,ey:.1}],X:[{d:'↘',n:1,x:.25,y:.1,ex:.75,ey:.9},{d:'↗',n:2,x:.25,y:.9,ex:.75,ey:.1}],Y:[{d:'↘',n:1,x:.25,y:.1,ex:.5,ey:.5},{d:'↙',n:2,x:.75,y:.1,ex:.5,ey:.5},{d:'↓',n:3,x:.5,y:.5,ex:.5,ey:.9}],Z:[{d:'→',n:1,x:.25,y:.1,ex:.75,ey:.1},{d:'↙',n:2,x:.75,y:.1,ex:.25,ey:.9},{d:'→',n:3,x:.25,y:.9,ex:.75,ey:.9}]};
 STROKE_GUIDES['Ñ']=STROKE_GUIDES.N;
 const WRITE_WORDS=['CASA','MESA','SOL','PAN','LUZ','OJO','UNO','DOS','MAR','PIE','OSO','AVE','RÍO','DÍA','REY','MIS','TUS','SUS','HOY','AGUA','LECHE','MAMÁ','PAPÁ','COLE','AMIGO','PERRO','GATO','COCHE','PELOTA','PARQUE','CALLE','TIENDA','MÓVIL','MÚSICA','SILLA','LIBRO','ZAPATO','COCINA','BAÑO','TOALLA','JABÓN','RELOJ','LLAVE'];
-const WRITE_PHRASES=['ME LLAMO GUILLERMO','HOY ES LUNES','QUIERO AGUA','TENGO HAMBRE','MI CASA ES','SOL Y LUNA','PAN CON QUESO','QUIERO AGUA POR FAVOR','VOY AL PARQUE','ES MI AMIGO','ESTOY CONTENTO','NO ME GUSTA','TENGO MUCHO HAMBRE','HOY HACE MUCHO FRÍO','MAÑANA ES SÁBADO','ME GUSTA LA MÚSICA','JUEGO CON MIS AMIGOS','VOY AL COLE EN AUTOBÚS','MI PADRE SE LLAMA {padre}','QUIERO IR A LA PISCINA'];
+// Frase con {nombre} en lugar de "GUILLERMO" hardcoded para que cualquier
+// perfil tenga su propio nombre. genWriting aplica toUpperCase tras
+// personalize() en niveles UPPER, para que el nombre quede en mayúsculas.
+const WRITE_PHRASES=['ME LLAMO {nombre}','HOY ES LUNES','QUIERO AGUA','TENGO HAMBRE','MI CASA ES','SOL Y LUNA','PAN CON QUESO','QUIERO AGUA POR FAVOR','VOY AL PARQUE','ES MI AMIGO','ESTOY CONTENTO','NO ME GUSTA','TENGO MUCHO HAMBRE','HOY HACE MUCHO FRÍO','MAÑANA ES SÁBADO','ME GUSTA LA MÚSICA','JUEGO CON MIS AMIGOS','VOY AL COLE EN AUTOBÚS','MI PADRE SE LLAMA {padre}','QUIERO IR A LA PISCINA'];
 const DESCENDERS='gjpqy'.split('');const ASCENDERS='bdfhklt'.split('');
 
 const WRITE_WORDS_LOWER=['casa','mesa','sol','pan','luz','ojo','uno','dos','mar','pie','oso','ave','río','día','rey','mis','tus','sus','hoy','agua','leche','mamá','papá','cole','amigo','perro','gato','coche','pelota','parque','calle','tienda','móvil','música','silla','libro','zapato','cocina','baño','toalla','jabón','reloj','llave'];
-const WRITE_PHRASES_LOWER=['me llamo guillermo','hoy es lunes','quiero agua','tengo hambre','mi casa es','sol y luna','pan con queso','quiero agua por favor','voy al parque','es mi amigo','estoy contento','no me gusta','tengo mucho hambre','hoy hace mucho frío','mañana es sábado','me gusta la música','juego con mis amigos','voy al cole en autobús','mi padre se llama {padre}','quiero ir a la piscina'];
+// Frases en minúsculas usan {nombre} (placeholder personalizable) en lugar de
+// "guillermo" hardcoded. personalize() lo sustituye con capName(user.name)
+// que devuelve "Guillermo" (mayúscula inicial), respetando la regla de los
+// nombres propios.
+const WRITE_PHRASES_LOWER=['me llamo {nombre}','hoy es lunes','quiero agua','tengo hambre','mi casa es','sol y luna','pan con queso','quiero agua por favor','voy al parque','es mi amigo','estoy contento','no me gusta','tengo mucho hambre','hoy hace mucho frío','mañana es sábado','me gusta la música','juego con mis amigos','voy al cole en autobús','mi padre se llama {padre}','quiero ir a la piscina'];
 // Auto-generate phrases from user profile (always fresh, updates with profile changes)
+// Devolvemos en TITLE CASE (primera letra mayúscula + nombres propios capitalizados
+// con capName). El consumidor (genWriting) decide si las pasa a UPPER o las deja
+// como están según el nivel — así la versión minúsculas conserva "Guillermo" con
+// G mayúscula, en vez de "guillermo" todo en minúsculas.
 export function getAutoPhrasesFromProfile(user){
   const frases=[];
-  if(user?.name)frases.push('ME LLAMO '+user.name.toUpperCase());
-  if(user?.direccion)frases.push('VIVO EN '+user.direccion.toUpperCase());
-  if(user?.telefono)frases.push('LLAMA AL '+user.telefono);
+  if(user?.name)frases.push('Me llamo '+capName(user.name));
+  if(user?.direccion)frases.push('Vivo en '+user.direccion);
+  if(user?.telefono)frases.push('Llama al '+user.telefono);
   try{const ps=JSON.parse(localStorage.getItem('toki_personas')||'[]');
     const padre=ps.find(p=>p.relation==='Padre'&&p.name);
     const madre=ps.find(p=>p.relation==='Madre'&&p.name);
-    if(padre)frases.push('MI PAPÁ SE LLAMA '+padre.name.toUpperCase());
-    if(madre)frases.push('MI MAMÁ SE LLAMA '+madre.name.toUpperCase());
+    if(padre)frases.push('Mi papá se llama '+capName(padre.name));
+    if(madre)frases.push('Mi mamá se llama '+capName(madre.name));
   }catch(e){}
-  if(user?.colegio)frases.push('VOY AL COLE '+user.colegio.toUpperCase());
+  if(user?.colegio)frases.push('Voy al cole '+user.colegio);
   return frases;
 }
 
@@ -65,23 +76,31 @@ const MAX_PHRASE_LEN=40; // max characters per custom phrase
 export { MAX_PHRASE_LEN }
 
 export function genWriting(rawLv,user){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
+  // pz personaliza ({nombre}, {padre}, ...) y devuelve el texto con nombres
+  // propios capitalizados (capName, p.ej. "Guillermo"). pzU añade un
+  // toUpperCase final para niveles MAYÚSCULAS, así "ME LLAMO {nombre}"
+  // termina como "ME LLAMO GUILLERMO" en lugar de "ME LLAMO Guillermo".
   const pz=t=>user?personalize(t,user):t;
+  const pzU=t=>pz(t).toUpperCase();
   if(lv<=2){const letters=LETTERS_UPPER;const guide=lv===1;letters.forEach(l=>{items.push({ty:'writing',letter:l,guide,isUpper:true,mode:'letter',id:'wr_'+lv+'_'+l})});return items.sort(()=>Math.random()-.5).slice(0,20)}
   if(lv===3||lv===4){const letters=LETTERS_LOWER;const guide=lv===3;letters.forEach(l=>{items.push({ty:'writing',letter:l,guide,isUpper:false,mode:'letter',id:'wr_'+lv+'_'+l})});return items.sort(()=>Math.random()-.5).slice(0,20)}
-  if(lv===5){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pz(w),guide:true,isUpper:true,mode:'word',id:'wr_w_'+w}))}
-  if(lv===51){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pz(w),guide:false,isUpper:true,mode:'word',id:'wr_wf_'+w}))}
+  if(lv===5){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pzU(w),guide:true,isUpper:true,mode:'word',id:'wr_w_'+w}))}
+  if(lv===51){return[...WRITE_WORDS].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pzU(w),guide:false,isUpper:true,mode:'word',id:'wr_wf_'+w}))}
   if(lv===52){return[...WRITE_WORDS_LOWER].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pz(w),guide:true,isUpper:false,mode:'word',id:'wr_wl_'+w}))}
   if(lv===53){return[...WRITE_WORDS_LOWER].sort(()=>Math.random()-.5).slice(0,12).map(w=>({ty:'writing',letter:pz(w),guide:false,isUpper:false,mode:'word',id:'wr_wlf_'+w}))}
-  if(lv===6){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}))}
-  if(lv===61){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:false,isUpper:true,mode:'phrase',id:'wr_pf_'+p.replace(/\s/g,'_')}))}
+  if(lv===6){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pzU(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}))}
+  if(lv===61){return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pzU(p),guide:false,isUpper:true,mode:'phrase',id:'wr_pf_'+p.replace(/\s/g,'_')}))}
   if(lv===62){return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:false,mode:'phrase',id:'wr_pl_'+p.replace(/\s/g,'_')}))}
   if(lv===63){return[...WRITE_PHRASES_LOWER].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:false,isUpper:false,mode:'phrase',id:'wr_plf_'+p.replace(/\s/g,'_')}))}
   // Custom phrases levels: 7=upper+guide, 71=upper-guide, 72=lower+guide, 73=lower-guide
   const customRaw=getCustomPhrases(user);
-  if(customRaw.length===0)return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pz(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}));
+  if(customRaw.length===0)return[...WRITE_PHRASES].sort(()=>Math.random()-.5).slice(0,8).map(p=>({ty:'writing',letter:pzU(p),guide:true,isUpper:true,mode:'phrase',id:'wr_p_'+p.replace(/\s/g,'_')}));
   const isUp=lv===7||lv===71;
   const guide=lv===7||lv===72;
-  const pool=isUp?customRaw.map(f=>f.toUpperCase()):customRaw.map(f=>f.toLowerCase());
+  // Para UPPER, toUpperCase. Para LOWER, dejamos el TitleCase tal cual
+  // (con nombres propios capitalizados — antes hacíamos toLowerCase ciego
+  // y "Guillermo" se convertía en "guillermo", incorrecto).
+  const pool=isUp?customRaw.map(f=>f.toUpperCase()):customRaw;
   return pool.sort(()=>Math.random()-.5).slice(0,Math.min(pool.length,10)).map(p=>({ty:'writing',letter:pz(p),guide,isUpper:isUp,mode:'phrase',id:'wr_cp_'+p.replace(/\s/g,'_')}));}
 
 export function ExWriting({ex,onOk,onSkip,name}){
@@ -100,10 +119,12 @@ export function ExWriting({ex,onOk,onSkip,name}){
   const ascY=ex.mode==='letter'?30:ex.mode==='word'?25:20;
   const descY=ex.mode==='letter'?360:ex.mode==='word'?260:210;
   const midY=ex.mode==='letter'?175:ex.mode==='word'?130:105;
-  // 6.7 Lowercase: school-style Caveat font; Uppercase: bold Fredoka
+  // 6.7 Lowercase: caligrafía escolar española (Escolar) — fuente local en
+  // /public/fonts/escolar*.ttf que sustituye a Caveat (cursiva inglesa).
+  // Uppercase: bold Fredoka como antes.
   function getModelFont(fSz){
     if(ex.isUpper) return `bold ${fSz}px Fredoka`;
-    return `${Math.floor(fSz*1.1)}px 'Caveat','Segoe Script','Comic Sans MS',cursive`;
+    return `${Math.floor(fSz*1.1)}px 'Escolar','Caveat','Segoe Script','Comic Sans MS',cursive`;
   }
   // 6.1 FRENCH CALLIGRAPHY GUIDELINES (Pauta francesa)
   function drawPauta(ctx,w,h){
@@ -240,10 +261,27 @@ export function ExWriting({ex,onOk,onSkip,name}){
     return()=>{cancelled=true;sr.stop()}
   },[speakPhase]);
   const lastDraw=useRef({x:0,y:0});const isStylus=useRef(false);
-  function getPos(e){const c=canvasRef.current;const r=c.getBoundingClientRect();
-    // Pointer events: use clientX/Y directly; Touch events: use touches[0]; Mouse: use event
+  function getPos(e){
+    const c=canvasRef.current;
+    const r=c.getBoundingClientRect();
+    // El canvas tiene border:2px sólido — getBoundingClientRect incluye ese
+    // border pero c.width/c.height son el área dibujable interior. Antes la
+    // fórmula no descontaba el border y los trazos salían desplazados ~2px
+    // hacia abajo-derecha. Descontamos border (y padding por seguridad) para
+    // que el píxel donde el lápiz toca sea el píxel donde se pinta.
+    const cs=window.getComputedStyle(c);
+    const bL=parseFloat(cs.borderLeftWidth)||0,bR=parseFloat(cs.borderRightWidth)||0;
+    const bT=parseFloat(cs.borderTopWidth)||0,bB=parseFloat(cs.borderBottomWidth)||0;
+    const pL=parseFloat(cs.paddingLeft)||0,pR=parseFloat(cs.paddingRight)||0;
+    const pT=parseFloat(cs.paddingTop)||0,pB=parseFloat(cs.paddingBottom)||0;
+    const innerW=Math.max(1,r.width-bL-bR-pL-pR);
+    const innerH=Math.max(1,r.height-bT-bB-pT-pB);
     const t=e.touches?e.touches[0]:e;
-    return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)}}
+    return{
+      x:(t.clientX-r.left-bL-pL)*(c.width/innerW),
+      y:(t.clientY-r.top-bT-pT)*(c.height/innerH)
+    };
+  }
   function detectStylus(e){
     // Pointer Events (Samsung Active Stylus, Apple Pencil, etc.)
     if(e.pointerType==='pen')return true;
@@ -329,7 +367,7 @@ export function ExWriting({ex,onOk,onSkip,name}){
     <div className={needsLandscape?'wr-canvas-wrap':''}>
       {ex.mode!=='letter'&&<div style={{background:GOLD+'15',borderRadius:10,padding:'8px 16px',marginBottom:10}}><p style={{fontSize:22,fontWeight:700,color:GOLD,margin:0}}>{ex.letter}</p></div>}
       <div className="card" style={{padding:12,marginBottom:10,background:'#FAFAF5',borderColor:'#D4D4D4'}}>
-        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Caveat',cursive"}}>{ex.letter}</span></p>}
+        {ex.mode==='letter'&&<p style={{fontSize:18,fontWeight:600,margin:'0 0 8px',color:'#1A1A2E'}}>Escribe: <span style={{fontSize:32,color:'#2E75B6',fontFamily:ex.isUpper?'Fredoka':"'Escolar','Caveat',cursive"}}>{ex.letter}</span></p>}
         <canvas ref={canvasRef} width={cW} height={cH} style={{width:'100%',maxWidth:cW,height:'auto',aspectRatio:cW+'/'+cH,borderRadius:8,border:'2px solid #D4D4D4',touchAction:'none',cursor:'crosshair'}}
           onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={end}/>
       </div>
