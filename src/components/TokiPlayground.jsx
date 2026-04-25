@@ -108,7 +108,7 @@ const VOICE_COMMANDS=[
   // ── Juegos ───────────────────────────────────────────────
   {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge','atrapa'],response:'¡Sí! ¡Vamos a jugar!'},
   {id:'play_with_me',patterns:['quieres jugar conmigo','juguemos','vamos a jugar','quieres jugar','jugamos'],response:'¡Sí! ¡Me encanta jugar contigo, {nombre}!'},
-  {id:'play_hide',patterns:['escondidas','escondite','jugamos al escondite','juguemos al escondite','juega al escondite'],response:null},
+  {id:'play_hide',patterns:['jugamos al escondite','vamos al escondite','al escondite','escondidas','escondite','escóndete','escondete','cuento yo','te busco','búscame','buscame','juguemos al escondite','juega al escondite'],response:null},
 
   // ── Motivación / Elogios ─────────────────────────────────
   {id:'brave',patterns:['valiente','fuerte','héroe','heroe','súper','super','campeón','campeon','crack','fuerza','eres un campeón'],response:'¡Soy Súper Toki!'},
@@ -428,7 +428,16 @@ export default function TokiPlayground({
   };
 
   // ── Voice command execution ───────────────────────────────
+  // Debounce por comando: evita el bucle en el que Toki se oye a sí mismo
+  // por el micrófono y vuelve a disparar el mismo comando ("hola Gui →
+  // hola Gui → hola Gui..."). Mismo cmd.id no se reactiva en 4 segundos.
+  const lastCmdAt = useRef({});
+  const ttsBusyUntil = useRef(0);
   const execCommand = (cmd) => {
+    const now = Date.now();
+    if (now - (lastCmdAt.current[cmd.id] || 0) < 4000) return; // debounce
+    lastCmdAt.current[cmd.id] = now;
+
     resetIdleTimer();
     if (actionTimer.current) clearTimeout(actionTimer.current);
 
@@ -437,6 +446,9 @@ export default function TokiPlayground({
       const resp = personalizeResponse(cmd.response, name);
       setSpeechBubble(resp);
       sayFB(resp);
+      // Marca cuándo termina el TTS aproximadamente para que startListening
+      // ignore lo que oiga durante ese tiempo (evita que el SR se oiga a sí mismo).
+      ttsBusyUntil.current = now + Math.max(2500, resp.length * 70);
       setTimeout(() => setSpeechBubble(null), 2800);
     }
 
@@ -638,6 +650,15 @@ export default function TokiPlayground({
       let handled = false;
       r.onresult = (e) => {
         handled = true;
+        // Si Toki está hablando, ignoramos lo que oye el SR (evita bucle de
+        // que se oiga a sí mismo). Reiniciamos el listener tras el TTS.
+        if (Date.now() < ttsBusyUntil.current) {
+          if (voiceTimeout.current) clearTimeout(voiceTimeout.current);
+          voiceTimeout.current = setTimeout(() => {
+            if (mountedRef.current && startListeningRef.current) startListeningRef.current();
+          }, Math.max(500, ttsBusyUntil.current - Date.now() + 200));
+          return;
+        }
         const alts = [];
         for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript.toLowerCase().trim());
         const text = alts.join(' ');
@@ -1046,7 +1067,25 @@ export default function TokiPlayground({
           </svg>
         </div>;
       })()}
-      {showContinue&&!hsPhase&&(<button onClick={()=>{stopListening();hsClearAll();onContinue&&onContinue()}} style={{position:"absolute",right:18,bottom:typeof countdown==="number"&&countdown>0?34:18,border:"none",borderRadius:999,padding:"10px 14px",background:"rgba(255,255,255,.12)",color:"#ECF0F1",backdropFilter:"blur(4px)",fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:"pointer"}}>¡Seguimos!</button>)}
+      {/* Botón "Volver al juego" — siempre visible cuando hay onContinue
+          (antes solo aparecía con showContinue tras un timer y el niño podía
+          quedar bloqueado sin poder salir). hsPhase oculta el botón solo
+          durante el mini-juego del escondite para no distraer. */}
+      {onContinue&&!hsPhase&&(
+        <button
+          onClick={()=>{stopListening();hsClearAll();onContinue()}}
+          style={{
+            position:'absolute',top:14,left:14,
+            border:'2px solid rgba(255,255,255,.25)',
+            borderRadius:999,padding:'8px 14px',
+            background:'rgba(0,0,0,.35)',color:'#fff',
+            backdropFilter:'blur(6px)',
+            fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,
+            cursor:'pointer',zIndex:10,
+            boxShadow:'0 2px 8px rgba(0,0,0,.3)',
+          }}
+        >← Volver al juego</button>
+      )}
     </div>
   );
 }
