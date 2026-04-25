@@ -47,7 +47,7 @@ export function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záé
 const FAKE_FRIENDS=['Luis','Marta','Sara','Pablo','Carlos','Ana','Clara','Diego','Elena','Hugo'];
 // Normaliza un nombre propio: primera letra de cada palabra en mayúscula,
 // el resto en minúscula. "diego aroca" → "Diego Aroca", "DIEGO" → "Diego".
-function capName(n){
+export function capName(n){
   if(!n||typeof n!=='string')return n;
   return n.trim().split(/\s+/).map(w=>{
     if(!w)return w;
