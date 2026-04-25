@@ -1039,9 +1039,11 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{ex.data.q}</p>
         <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'center'}}>
-          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='anterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='anterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='anterior'?GOLD:'#fff'}}>?</div>
+          {/* Slot anterior: ? si se pregunta, n-1 como contexto si no */}
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='anterior'?GOLD+'22':'rgba(255,255,255,.15)',border:ex.data.questionMode==='anterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='anterior'?GOLD:'#fff'}}>{ex.data.questionMode==='anterior'?'?':ex.data.n-1}</div>
           <div style={{width:56,height:56,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'#fff'}}>{ex.data.n}</div>
-          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='posterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='posterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='posterior'?GOLD:'#fff'}}>?</div>
+          {/* Slot posterior: ? si se pregunta, n+1 como contexto si no */}
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='posterior'?GOLD+'22':'rgba(255,255,255,.15)',border:ex.data.questionMode==='posterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='posterior'?GOLD:'#fff'}}>{ex.data.questionMode==='posterior'?'?':ex.data.n+1}</div>
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
