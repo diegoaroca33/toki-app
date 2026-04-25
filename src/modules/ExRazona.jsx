@@ -50,7 +50,7 @@ const RAZONA_CLASSIFY=[
   {groups:['Frutas','Animales'],items:[{w:'🍎 Manzana',g:0},{w:'🐕 Perro',g:1},{w:'🍐 Pera',g:0},{w:'🐱 Gato',g:1},{w:'🍌 Plátano',g:0},{w:'🐟 Pez',g:1}]},
   {groups:['Ropa','Comida'],items:[{w:'👕 Camisa',g:0},{w:'🍞 Pan',g:1},{w:'👟 Zapato',g:0},{w:'🧀 Queso',g:1},{w:'🧢 Gorro',g:0},{w:'🥛 Leche',g:1}]},
   {groups:['Animales','Muebles'],items:[{w:'🦁 León',g:0},{w:'🪑 Mesa',g:1},{w:'🐻 Oso',g:0},{w:'💺 Silla',g:1},{w:'🐦 Pájaro',g:0},{w:'🛏️ Cama',g:1}]},
-  // Naturales/Sociales — Pictociencia
+  // Naturales/Sociales — contenido curricular primaria
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🌾 Trigo',g:0},{w:'🍞 Pan',g:1},{w:'🥛 Leche',g:0},{w:'🧀 Queso',g:1},{w:'🌳 Madera',g:0},{w:'🪑 Mesa',g:1}]},
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🫒 Aceituna',g:0},{w:'🫒 Aceite',g:1},{w:'🐑 Lana',g:0},{w:'🧣 Bufanda',g:1},{w:'🍇 Uva',g:0},{w:'🍷 Zumo',g:1}]},
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🥚 Huevo',g:0},{w:'🍰 Pastel',g:1},{w:'🌻 Girasol',g:0},{w:'🛢️ Aceite',g:1},{w:'🐄 Vaca',g:0},{w:'👞 Zapatos',g:1}]},
@@ -60,14 +60,14 @@ const RAZONA_CLASSIFY=[
   {groups:['🏠 Dentro casa','🌳 Fuera casa'],items:[{w:'🛋️ Sofá',g:0},{w:'🌳 Árbol',g:1},{w:'🍳 Cocina',g:0},{w:'🏊 Piscina',g:1},{w:'🛁 Bañera',g:0},{w:'⛱️ Playa',g:1}]},
   {groups:['🔊 Hace ruido','🤫 Silencioso'],items:[{w:'🥁 Tambor',g:0},{w:'📚 Libro',g:1},{w:'📱 Teléfono',g:0},{w:'🧸 Peluche',g:1},{w:'🐕 Perro',g:0},{w:'🐟 Pez',g:1}]},
   {groups:['💧 Agua','🔥 Fuego'],items:[{w:'🏊 Nadar',g:0},{w:'🏕️ Hoguera',g:1},{w:'🚿 Ducha',g:0},{w:'🕯️ Vela',g:1},{w:'🌧️ Lluvia',g:0},{w:'☀️ Sol',g:1}]},
-  // Pictociencia: Origen alimentos
+  // Origen de los alimentos
   {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🥛 Leche',g:0},{w:'🍎 Manzana',g:1},{w:'🥚 Huevo',g:0},{w:'🥕 Zanahoria',g:1},{w:'🧀 Queso',g:0},{w:'🍌 Plátano',g:1}]},
   {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🍗 Pollo',g:0},{w:'🍅 Tomate',g:1},{w:'🐟 Pescado',g:0},{w:'🥦 Brócoli',g:1},{w:'🍖 Carne',g:0},{w:'🍇 Uvas',g:1}]},
-  // Pictociencia: Usos del agua
+  // Usos del agua
   {groups:['💧 Necesita agua','❌ No necesita agua'],items:[{w:'🧼 Lavarse',g:0},{w:'📺 Ver la tele',g:1},{w:'🍲 Cocinar',g:0},{w:'📖 Leer',g:1},{w:'🌱 Regar plantas',g:0},{w:'🎮 Jugar consola',g:1}]},
-  // Pictociencia: Profesiones que ayudan
+  // Profesiones que ayudan
   {groups:['👨‍⚕️ Salud','🛡️ Seguridad'],items:[{w:'👨‍⚕️ Médico',g:0},{w:'👮 Policía',g:1},{w:'🏥 Enfermera',g:0},{w:'🚒 Bombero',g:1},{w:'🦷 Dentista',g:0},{w:'🛡️ Guardia',g:1}]},
-  // Pictociencia: Sentidos y órganos
+  // Sentidos y órganos
   {groups:['👀 Veo con...','👂 Oigo con...'],items:[{w:'👀 Ojos',g:0},{w:'👂 Oídos',g:1},{w:'📺 Televisión',g:0},{w:'🎵 Música',g:1},{w:'📖 Libro',g:0},{w:'📱 Teléfono',g:1}]},
 ];
 const RAZONA_CAUSE=[
@@ -77,7 +77,7 @@ const RAZONA_CAUSE=[
   {q:'Si está oscuro... ¿qué enciendo?',opts:['💡 La luz','🚰 El grifo'],ans:'💡 La luz'},
   {q:'Si me duele la cabeza... ¿qué tomo?',opts:['💊 Medicina','🥤 Refresco'],ans:'💊 Medicina'},
   {q:'Si quiero cruzar la calle... ¿qué miro?',opts:['🚦 El semáforo','🕐 El reloj'],ans:'🚦 El semáforo'},
-  // Nuevos — entorno cotidiano (Pictociencia)
+  // Entorno cotidiano — causa/efecto
   {q:'Si tengo sed... ¿qué cojo?',opts:['💧 Un vaso de agua','🧥 Un abrigo'],ans:'💧 Un vaso de agua'},
   {q:'Si es de noche... ¿qué hago?',opts:['💡 Enciendo la luz','🕶️ Me pongo gafas'],ans:'💡 Enciendo la luz'},
   {q:'Si tengo sueño... ¿qué hago?',opts:['🛏️ Me voy a dormir','⚽ Juego al fútbol'],ans:'🛏️ Me voy a dormir'},
@@ -98,23 +98,23 @@ const RAZONA_CAUSE=[
   {q:'Si llueve y no tengo paraguas...',opts:['🏠 Espero bajo un techo','🏃 Corro bajo la lluvia'],ans:'🏠 Espero bajo un techo'},
   {q:'Si alguien me da un regalo...',opts:['🙏 Doy las gracias','😤 No digo nada'],ans:'🙏 Doy las gracias'},
   {q:'Si veo basura en el suelo...',opts:['🗑️ La tiro a la papelera','👟 La piso'],ans:'🗑️ La tiro a la papelera'},
-  // Pictociencia: Servicios municipales
+  // Servicios municipales
   {q:'Si hay un incendio... ¿a quién llamo?',opts:['🚒 A los bomberos','🌳 Al jardinero'],ans:'🚒 A los bomberos'},
   {q:'Si veo un ladrón... ¿a quién llamo?',opts:['👮 A la policía','📬 Al cartero'],ans:'👮 A la policía'},
   {q:'Si alguien se desmaya... ¿a quién llamo?',opts:['🚑 A la ambulancia','🧹 Al barrendero'],ans:'🚑 A la ambulancia'},
   {q:'Si la calle está sucia... ¿quién la limpia?',opts:['🧹 El barrendero','🚒 El bombero'],ans:'🧹 El barrendero'},
   {q:'Si se rompe una tubería... ¿a quién aviso?',opts:['🏛️ Al ayuntamiento','🚒 Al bombero'],ans:'🏛️ Al ayuntamiento'},
-  // Pictociencia: Medios de comunicación
+  // Medios de comunicación
   {q:'Si quiero hablar con mamá ahora...',opts:['📱 La llamo por teléfono','✉️ Le mando una carta'],ans:'📱 La llamo por teléfono'},
   {q:'Si quiero ver dibujos...',opts:['📺 Enciendo la tele','📱 Llamo por teléfono'],ans:'📺 Enciendo la tele'},
   {q:'Si quiero mandar un mensaje a mi amigo...',opts:['📱 Le mando un mensaje','📻 Pongo la radio'],ans:'📱 Le mando un mensaje'},
   {q:'Si quiero escuchar música en el coche...',opts:['📻 Pongo la radio','✉️ Mando una carta'],ans:'📻 Pongo la radio'},
-  // Pictociencia: Dónde voy a viajar
+  // Dónde voy para viajar
   {q:'Si voy en tren... ¿dónde voy?',opts:['🚉 A la estación','✈️ Al aeropuerto'],ans:'🚉 A la estación'},
   {q:'Si voy en avión... ¿dónde voy?',opts:['✈️ Al aeropuerto','⚓ Al puerto'],ans:'✈️ Al aeropuerto'},
   {q:'Si voy en barco... ¿dónde voy?',opts:['⚓ Al puerto','🚉 A la estación'],ans:'⚓ Al puerto'},
   {q:'Si cojo un autobús... ¿dónde espero?',opts:['🚏 En la parada','✈️ En el aeropuerto'],ans:'🚏 En la parada'},
-  // Pictociencia: Estaciones
+  // Estaciones del año
   {q:'Si las hojas se caen... ¿qué estación es?',opts:['🍂 Otoño','☀️ Verano'],ans:'🍂 Otoño'},
   {q:'Si hace mucho calor y vamos a la piscina...',opts:['☀️ Es verano','❄️ Es invierno'],ans:'☀️ Es verano'},
   {q:'Si nieva... ¿qué me pongo?',opts:['🧥 Abrigo y botas','👙 Bañador'],ans:'🧥 Abrigo y botas'},
@@ -167,26 +167,84 @@ function genCompare(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=
     const ans=a>b?'>':a<b?'<':'=';
     items.push({ty:'razona',mode:'compare',data:{a,b,emoji:em,ans,q:`¿${a} ${em} o ${b} ${em}?`},id:'rz_cmp_'+i})}
   return sh(items)}
-// Generate sequence ordering exercises (daily routines)
-function genSequences(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
-  const SEQUENCES=[
-    {title:'Por la mañana',steps:['⏰ Me despierto','🚿 Me ducho','👕 Me visto','🥣 Desayuno','🎒 Cojo la mochila','🚌 Voy al cole'],oral:'Por la mañana me despierto, me ducho, me visto y desayuno'},
-    {title:'Antes de dormir',steps:['🍽️ Ceno','📺 Veo un rato la tele','🪥 Me lavo los dientes','📖 Leo un cuento','🛏️ Me acuesto','😴 Me duermo'],oral:'Antes de dormir ceno, me lavo los dientes y me acuesto'},
-    {title:'Ir a comprar',steps:['📝 Hago la lista','🧥 Me pongo el abrigo','🚶 Voy a la tienda','🛒 Cojo lo que necesito','💰 Pago en la caja','🏠 Vuelvo a casa'],oral:'Para comprar hago la lista, voy a la tienda, pago y vuelvo'},
-    {title:'Ir al médico',steps:['📞 Pido cita','🚗 Voy al centro de salud','🪑 Espero mi turno','👨‍⚕️ Entro a consulta','💊 Me da la receta','🏠 Vuelvo a casa'],oral:'En el médico espero mi turno, entro y me da la receta'},
-    {title:'Coger el autobús',steps:['🚏 Voy a la parada','⏳ Espero el autobús','🚌 Subo al autobús','💳 Pago el billete','💺 Me siento','🔔 Pulso para bajar'],oral:'Para ir en bus, espero en la parada, subo y pago'},
-    {title:'Preparar un bocadillo',steps:['🍞 Cojo el pan','🔪 Lo corto por la mitad','🧀 Pongo el queso','🥬 Pongo la lechuga','🍞 Cierro el bocadillo','😋 Me lo como'],oral:'Para hacer un bocadillo corto el pan, pongo queso y lo cierro'},
-    {title:'Lavarse las manos',steps:['🚰 Abro el grifo','🧼 Echo jabón','🤲 Froto las manos','💦 Las enjuago con agua','🚰 Cierro el grifo','🧻 Me seco con la toalla'],oral:'Me lavo las manos con jabón y agua y me seco'},
-    {title:'Poner la mesa',steps:['🍽️ Pongo el mantel','🍽️ Pongo los platos','🍴 Pongo los cubiertos','🥛 Pongo los vasos','🧻 Pongo las servilletas','🪑 Me siento'],oral:'Pongo el mantel, los platos, los cubiertos y los vasos'},
-    {title:'Ir al parque',steps:['👟 Me pongo las zapatillas','🧴 Me echo crema','🚶 Voy andando','🌳 Llego al parque','⚽ Juego con amigos','🏠 Vuelvo a casa'],oral:'Voy al parque, juego con amigos y vuelvo a casa'},
-    {title:'Ducharse',steps:['🚿 Abro el agua','💧 Mojo el cuerpo','🧴 Echo gel','🤲 Me froto bien','💦 Me aclaro','🧻 Me seco con la toalla'],oral:'Para ducharme abro el agua, me enjabono y me seco'},
-  ];
-  SEQUENCES.forEach((seq,si)=>{
-    // Show 4 steps shuffled, child must order them
-    const shown=seq.steps.slice(0,4);
-    items.push({ty:'razona',mode:'sequence',data:{title:seq.title,steps:shown,oral:seq.oral},id:'rz_seq_'+si});
-  });
-  return sh(items)}
+// Rutinas en 3 niveles. Formato narrativo "Ayuda a tu amigo a…": el niño no
+// necesariamente hace estas cosas, pero aprende la secuencia lógica leyendo
+// frases completas. Ese es el doble objetivo: lógica + lectura fluida.
+const ROUTINES_BASICO = [
+  {title:'Ayuda a tu amigo a ducharse',steps:['🚿 Métete en la ducha y abre el grifo del agua','🧴 Échate gel en las manos y frótate el cuerpo','💦 Aclárate con agua hasta que no quede jabón','🧻 Sécate bien con la toalla'],oral:'Para ducharse, tu amigo se mete en la ducha, se enjabona, se aclara y se seca'},
+  {title:'Ayuda a tu amigo a lavarse las manos',steps:['🚰 Abre el grifo y moja tus manos','🧼 Echa jabón en las manos mojadas','🤲 Frota las manos por delante y por detrás','🧻 Aclara con agua y sécate con la toalla'],oral:'Tu amigo abre el grifo, se enjabona, se aclara y se seca las manos'},
+  {title:'Ayuda a tu amigo a cepillarse los dientes',steps:['🪥 Coge el cepillo de dientes','🧴 Échale un poquito de pasta encima','😁 Cepilla los dientes arriba y abajo','💧 Enjuaga la boca con un vaso de agua'],oral:'Tu amigo coge el cepillo, le echa pasta, cepilla y se enjuaga'},
+  {title:'Ayuda a tu amigo a vestirse',steps:['👕 Primero ponte la camiseta por la cabeza','👖 Después ponte los pantalones','🧦 Ponte los calcetines','👟 Por último, ponte las zapatillas'],oral:'Tu amigo se pone la camiseta, el pantalón, los calcetines y las zapatillas'},
+  {title:'Ayuda a tu amigo a desayunar',steps:['🥣 Coge un bol grande de la cocina','🥛 Echa leche dentro del bol','🥣 Añade los cereales y mezcla con la cuchara','🥄 Cómete el desayuno sin prisa'],oral:'Tu amigo coge el bol, echa leche, añade cereales y desayuna'},
+  {title:'Ayuda a tu amigo a comer en la mesa',steps:['🪑 Siéntate en la silla bien recto','🍴 Coge el tenedor y el cuchillo','🍽️ Come despacio y tranquilo','🧻 Límpiate la boca con la servilleta'],oral:'Tu amigo se sienta, coge los cubiertos, come despacio y se limpia la boca'},
+  {title:'Ayuda a tu amigo a irse a dormir',steps:['🪥 Lávate bien los dientes','👕 Ponte el pijama','🛏️ Métete en la cama y tápate','😴 Cierra los ojos y duérmete'],oral:'Tu amigo se lava los dientes, se pone el pijama, se acuesta y se duerme'},
+  {title:'Ayuda a tu amigo a salir al colegio',steps:['👕 Vístete con la ropa del cole','🥣 Desayuna bien antes de salir','🎒 Coge la mochila con todas tus cosas','🚌 Sal de casa para llegar puntual'],oral:'Tu amigo se viste, desayuna, coge la mochila y va al cole'},
+  {title:'Ayuda a tu amigo al volver del colegio',steps:['🚌 Bájate del autobús con cuidado','🏠 Entra en casa y saluda','🍎 Merienda algo rico','📚 Haz los deberes que te han mandado'],oral:'Tu amigo baja del bus, saluda en casa, merienda y hace los deberes'},
+  {title:'Ayuda a tu amigo a usar el baño',steps:['🚽 Entra en el baño y cierra la puerta','👖 Bájate el pantalón y siéntate','🧻 Cuando termines, límpiate con papel','🚰 Sal y lávate las manos con jabón'],oral:'Tu amigo entra al baño, se limpia con papel y se lava las manos'},
+  {title:'Ayuda a tu amigo a beber un vaso de agua',steps:['🥛 Coge un vaso limpio del armario','🚰 Lléna el vaso con agua del grifo','😋 Bébete el agua poco a poco','🧽 Lava el vaso cuando termines'],oral:'Tu amigo coge un vaso, lo llena, bebe y lo lava'},
+  {title:'Ayuda a tu amigo a ponerse el abrigo',steps:['🧥 Coge el abrigo del perchero','💪 Mete un brazo por la primera manga','💪 Mete el otro brazo por la otra manga','🔘 Abrocha los botones para no pasar frío'],oral:'Tu amigo coge el abrigo, mete los brazos y abrocha los botones'},
+  {title:'Ayuda a tu amigo a recoger los juguetes',steps:['🧸 Recoge los juguetes del suelo','📦 Mételos todos dentro de la caja','🚪 Cierra la tapa de la caja','✅ La habitación queda ordenada'],oral:'Tu amigo recoge, guarda en la caja y todo queda ordenado'},
+  {title:'Ayuda a tu amigo a hacer la cama',steps:['🛏️ Estira bien la sábana','🛌 Pon la manta por encima','🪶 Coloca la almohada en su sitio','✨ La cama queda preparada'],oral:'Tu amigo estira la sábana, pone la manta y la almohada'},
+  {title:'Ayuda a tu amigo a cruzar la calle',steps:['🚦 Mira el semáforo de los peatones','🔴 Si está en rojo, espera quieto','🟢 Cuando se ponga en verde, cruza','🚶 Llega al otro lado sin correr'],oral:'Tu amigo mira el semáforo, espera al verde y cruza sin correr'},
+  {title:'Ayuda a tu amigo a encender la luz',steps:['🚪 Entra en la habitación','👀 Busca el interruptor junto a la puerta','👆 Pulsa el interruptor hacia arriba','💡 La luz se enciende'],oral:'Tu amigo entra, busca el interruptor, lo pulsa y se hace la luz'},
+  {title:'Ayuda a tu amigo a usar el móvil',steps:['📱 Coge el móvil de la mesa','🔓 Desbloquéalo con tu clave','🏠 Busca la aplicación que quieres abrir','👆 Toca el icono para entrar'],oral:'Tu amigo coge el móvil, pone la clave, busca la app y la abre'},
+  {title:'Ayuda a tu amigo a lavarse la cara',steps:['🚰 Abre el grifo del agua','💧 Mójate las manos y la cara','🫧 Frótate la cara suavemente con agua','🧻 Sécate con una toalla limpia'],oral:'Tu amigo se moja la cara, se la frota y se seca con la toalla'},
+  {title:'Ayuda a tu amigo a preparar la mochila',steps:['📚 Mete los libros del cole','✏️ Guarda el estuche con los lápices','🍎 Añade la merienda para el recreo','🎒 Cierra bien la mochila'],oral:'Tu amigo mete los libros, el estuche, la merienda y cierra la mochila'},
+  {title:'Ayuda a tu amigo al llegar a un sitio',steps:['🚪 Abre la puerta y entra despacio','🙋 Saluda a las personas que haya','🪑 Busca un sitio y siéntate','👂 Escucha lo que te digan'],oral:'Tu amigo entra, saluda, se sienta y escucha con atención'},
+];
+const ROUTINES_AVANZADO = [
+  {title:'Ayuda a tu amigo con la rutina de la mañana',steps:['⏰ Al sonar el despertador, sal de la cama','🚿 Dúchate y aséate bien','👕 Vístete con la ropa del día','🥣 Desayuna sentado en la mesa','🎒 Coge la mochila y sal para el cole'],oral:'Tu amigo se despierta, se ducha, se viste, desayuna y va al cole'},
+  {title:'Ayuda a tu amigo con la rutina de antes de dormir',steps:['🍽️ Cena con tranquilidad','🪥 Lávate bien los dientes','👕 Ponte el pijama limpio','📖 Lee un cuento un rato','🛏️ Métete en la cama y apaga la luz'],oral:'Tu amigo cena, se lava los dientes, se pone el pijama, lee y se acuesta'},
+  {title:'Ayuda a tu amigo a preparar un bocadillo',steps:['🍞 Coge una barra de pan de la panera','🔪 Córtala por la mitad con un cuchillo','🧀 Pon queso dentro del pan','🥬 Añade lechuga si te gusta','🍴 Cierra el bocadillo y cómelo'],oral:'Tu amigo coge pan, lo corta, pone queso y lechuga y se lo come'},
+  {title:'Ayuda a tu amigo a poner la mesa para cenar',steps:['🧻 Pon el mantel sobre la mesa','🍽️ Coloca un plato en cada sitio','🍴 Pon un tenedor y un cuchillo al lado de cada plato','🥛 Coloca los vasos para el agua','🪑 Avisa a todos para cenar'],oral:'Tu amigo pone el mantel, los platos, los cubiertos, los vasos y avisa'},
+  {title:'Ayuda a tu amigo a ir al parque',steps:['👟 Ponte las zapatillas cómodas','🧴 Échate crema del sol','🚶 Ve al parque andando con cuidado','⚽ Juega con tus amigos un rato','🏠 Vuelve a casa antes de que oscurezca'],oral:'Tu amigo se calza, se pone crema, va al parque, juega y vuelve a casa'},
+  {title:'Ayuda a tu amigo a coger el autobús',steps:['🚏 Ve a la parada del autobús','⏳ Espera en la cola tranquilo','🚌 Cuando llegue, súbete al autobús','💳 Paga con tu tarjeta o con dinero','💺 Siéntate en un asiento libre'],oral:'Tu amigo va a la parada, espera, sube, paga y se sienta'},
+  {title:'Ayuda a tu amigo a comprar el pan',steps:['💰 Coge dinero suficiente de casa','🚶 Ve andando hasta la panadería','🙋 Pide amablemente una barra de pan','💶 Paga lo que cueste','🏠 Vuelve a casa con el pan'],oral:'Tu amigo coge dinero, va a la panadería, pide el pan, paga y vuelve'},
+  {title:'Ayuda a tu amigo a hacer los deberes',steps:['📚 Saca los libros y cuadernos','✏️ Prepara el estuche con los lápices','🪑 Siéntate en un sitio tranquilo','✍️ Haz los ejercicios con calma','✅ Al terminar, guarda todo en la mochila'],oral:'Tu amigo saca los libros, se sienta, hace los ejercicios y guarda todo'},
+  {title:'Ayuda a tu amigo a preparar unos huevos fritos',steps:['🥚 Saca los huevos de la nevera','🍳 Pon aceite en la sartén','🔥 Enciende el fuego a media potencia','🥚 Echa el huevo con cuidado en la sartén','🍽️ Sírvelo en un plato cuando esté hecho'],oral:'Tu amigo pone aceite, enciende el fuego, echa el huevo y lo sirve'},
+  {title:'Ayuda a tu amigo a lavar los platos',steps:['💧 Abre el grifo con agua caliente','🧴 Echa lavavajillas en la esponja','🧽 Frota bien cada plato','💦 Aclara con agua para quitar el jabón','🧻 Deja los platos en el escurridor'],oral:'Tu amigo enjabona, frota, aclara y deja secar los platos'},
+  {title:'Ayuda a tu amigo a ordenar su habitación',steps:['🛏️ Primero haz la cama','🧸 Recoge los juguetes del suelo','👕 Guarda la ropa en el armario','🗑️ Tira la basura a la papelera','✨ La habitación queda limpia y ordenada'],oral:'Tu amigo hace la cama, recoge juguetes, guarda ropa y tira basura'},
+  {title:'Ayuda a tu amigo a poner una lavadora',steps:['🧺 Mete la ropa sucia en el tambor','🧴 Echa detergente en su compartimento','🔘 Elige el programa adecuado','▶️ Pulsa el botón de empezar','⏳ Espera hasta que la lavadora termine'],oral:'Tu amigo mete ropa, echa jabón, elige programa y pulsa empezar'},
+  {title:'Ayuda a tu amigo a regar las plantas',steps:['🪣 Coge la regadera','🚰 Llénala de agua en el grifo','🌿 Llévala hasta las plantas','💧 Echa agua en la tierra sin mojar las hojas','✅ Deja la regadera en su sitio'],oral:'Tu amigo coge la regadera, la llena, riega la tierra y la guarda'},
+  {title:'Ayuda a tu amigo a sacar al perro de paseo',steps:['🦮 Coge la correa del colgador','🐕 Pon la correa en el collar del perro','🚪 Sal de casa con cuidado','🚶 Pasea por la acera un rato','🏠 Vuelve a casa cuando el perro haya hecho sus cosas'],oral:'Tu amigo coge la correa, la pone al perro, sale, pasea y vuelve'},
+  {title:'Ayuda a tu amigo a curarse un corte pequeño',steps:['👀 Mira la herida con calma','🚰 Lávala con agua del grifo','🧴 Pon desinfectante con un algodón','🩹 Cubre la herida con una tirita','✅ Avisa a un adulto por si acaso'],oral:'Tu amigo mira, lava, desinfecta, pone tirita y avisa a un adulto'},
+  {title:'Ayuda a tu amigo a reciclar la basura',steps:['🗑️ Junta toda la basura de casa','🟨 Separa los envases de plástico','🟦 Separa el papel y el cartón','🟩 Separa los botes de vidrio','🚮 Tira cada cosa al contenedor correcto'],oral:'Tu amigo separa plástico, papel y vidrio, y los tira a cada contenedor'},
+  {title:'Ayuda a tu amigo a montar en bici',steps:['🪖 Ponte el casco y ajústalo bien','🚲 Saca la bici del trastero','🚴 Súbete con cuidado','🛣️ Pedalea mirando hacia delante','🅿️ Aparca la bici al llegar'],oral:'Tu amigo se pone el casco, coge la bici, pedalea y la aparca'},
+  {title:'Ayuda a tu amigo a atender en clase',steps:['🪑 Siéntate en tu sitio','🤫 Guarda silencio cuando el profesor habla','👂 Escucha con atención','✋ Levanta la mano si quieres preguntar','✍️ Copia lo que diga el profesor en tu cuaderno'],oral:'Tu amigo se sienta, escucha, levanta la mano y copia en el cuaderno'},
+  {title:'Ayuda a tu amigo a comer en un restaurante',steps:['🚶 Entra y saluda al camarero','🪑 Siéntate en la mesa que te indiquen','📋 Lee la carta con calma','🍽️ Elige tu plato y pídelo','💰 Al terminar, pide la cuenta y paga'],oral:'Tu amigo entra, se sienta, lee la carta, pide y paga la cuenta'},
+  {title:'Ayuda a tu amigo a ir al cumpleaños de un amigo',steps:['🎁 Prepara un regalo envuelto','🎂 Llega puntual a la fiesta','🎈 Felicita al cumpleañero con un abrazo','🎵 Canta el cumpleaños feliz con todos','🍰 Come tarta y disfruta de la fiesta'],oral:'Tu amigo lleva regalo, felicita, canta cumpleaños feliz y come tarta'},
+];
+const ROUTINES_MASTER = [
+  {title:'Ayuda a tu amigo a ir al médico',steps:['📞 Llama para pedir cita','🚗 El día de la cita, ve al centro de salud','🪑 Espera tu turno en la sala','👨‍⚕️ Cuando te llamen, entra a la consulta','💊 Escucha lo que te dice el médico','🏠 Recoge la receta y vuelve a casa'],oral:'Tu amigo pide cita, espera, entra al médico, recoge la receta y vuelve'},
+  {title:'Ayuda a tu amigo a ir al supermercado',steps:['📝 Haz una lista con lo que necesitas','🚶 Ve hasta el supermercado','🛒 Coge un carro en la entrada','🛍️ Busca cada producto de la lista','💰 Pasa por caja y paga','🏠 Lleva la compra a casa'],oral:'Tu amigo hace la lista, busca los productos, paga y lleva la compra a casa'},
+  {title:'Ayuda a tu amigo a ir al cine',steps:['🎟️ Compra la entrada en taquilla o por internet','🍿 Si quieres, compra palomitas','🪑 Busca tu número de asiento','🎬 Disfruta de la película en silencio','🧹 Tira la basura al salir','🏠 Vuelve a casa'],oral:'Tu amigo compra entrada, busca asiento, ve la película y vuelve a casa'},
+  {title:'Ayuda a tu amigo a coger un tren',steps:['🎫 Compra el billete en la estación','🚉 Mira en qué andén sale tu tren','⏳ Espera en el andén sin pasar la línea amarilla','🚆 Cuando llegue, sube por una puerta','💺 Busca tu asiento por el número','🛬 Bájate en la parada que te toca'],oral:'Tu amigo compra billete, espera en el andén, sube al tren y se baja'},
+  {title:'Ayuda a tu amigo a ir a la biblioteca',steps:['🎒 Coge una bolsa o mochila','📚 Busca el libro que quieras en las estanterías','🪪 Llévalo al mostrador con tu carnet','📖 Léelo en casa con calma','📚 Devuélvelo antes de la fecha','🏠 Puedes coger otro en la próxima visita'],oral:'Tu amigo busca libro, lo pide con carnet, lo lee y lo devuelve'},
+  {title:'Ayuda a tu amigo si se pierde en la calle',steps:['😌 Si te pierdes, no te pongas nervioso','👀 Busca a alguien de confianza cerca','🙋 Acércate con educación','🗣️ Explica qué te pasa y quién es tu familia','👂 Escucha lo que te digan','🙏 Da las gracias cuando te ayuden'],oral:'Tu amigo se calma, busca ayuda, explica qué pasa y da las gracias'},
+  {title:'Ayuda a tu amigo a organizar una quedada',steps:['📱 Coge el móvil y abre el grupo de amigos','💬 Propón un plan divertido','📅 Poneros de acuerdo en el día y la hora','✅ Confirma con todos antes','⏰ Llega puntual al sitio','🤗 Disfruta del rato juntos'],oral:'Tu amigo propone plan, queda con amigos, llega puntual y disfruta'},
+  {title:'Ayuda a tu amigo a viajar en avión',steps:['🧳 Prepara la maleta con lo necesario','🛂 Ve al aeropuerto con tiempo','🎫 Enseña el billete y el DNI en el mostrador','🎒 Pasa el control de seguridad','✈️ Embarca cuando te llamen','🛬 Al llegar, recoge la maleta'],oral:'Tu amigo hace la maleta, va al aeropuerto, embarca y recoge la maleta'},
+  {title:'Ayuda a tu amigo a pagar con tarjeta',steps:['🛒 Coge lo que quieres comprar','💳 Saca tu tarjeta al llegar a caja','📟 Acércala al datáfono','🔢 Marca el pin si te lo pide','✅ Espera a que salga pago aceptado','🧾 Guarda el recibo por si acaso'],oral:'Tu amigo saca la tarjeta, la acerca al datáfono, pone el pin y coge el recibo'},
+  {title:'Ayuda a tu amigo a hacer un trámite en el banco',steps:['🏦 Entra en el banco','🎫 Coge número en la máquina','🪑 Espera a que te llamen','🙋 Explica al empleado lo que necesitas','✍️ Firma los papeles con calma','👋 Despídete y sal'],oral:'Tu amigo entra al banco, coge número, explica, firma y se despide'},
+  {title:'Ayuda a tu amigo a buscar trabajo',steps:['📝 Prepara bien tu currículum','🔍 Busca ofertas en internet','📧 Envía tu currículum a cada oferta','📞 Si te llaman, apunta la hora de la entrevista','🤝 Ve a la entrevista bien arreglado','⏳ Espera unos días a tener respuesta'],oral:'Tu amigo prepara currículum, busca ofertas, lo envía y va a la entrevista'},
+  {title:'Ayuda a tu amigo a organizar una fiesta',steps:['📅 Elige el día y la hora','📋 Haz la lista de invitados','📱 Manda las invitaciones por móvil','🛒 Compra comida y bebida','🎈 Decora la casa','🤗 Recibe a los invitados con una sonrisa'],oral:'Tu amigo elige día, invita, compra comida, decora y recibe a los invitados'},
+  {title:'Ayuda a tu amigo a ir a un concierto',steps:['🎫 Compra la entrada con tiempo','🚆 Llega al recinto una hora antes','🔒 Deja la mochila en la taquilla si hace falta','🎤 Disfruta de la música','👏 Aplaude al final de cada canción','🚆 Vuelve a casa con cuidado'],oral:'Tu amigo compra entrada, llega con tiempo, escucha y aplaude'},
+  {title:'Ayuda a tu amigo a mudarse de casa',steps:['📦 Guarda tus cosas en cajas etiquetadas','🚛 Espera a que llegue la mudanza','🚚 Ayuda a cargar las cajas en el camión','🏠 Ve a la casa nueva','📦 Baja las cajas con cuidado','🛋️ Coloca cada cosa en su sitio'],oral:'Tu amigo prepara cajas, carga, llega a la casa nueva y coloca todo'},
+  {title:'Ayuda a tu amigo a ir al gimnasio',steps:['🎒 Prepara la bolsa con ropa de deporte','🚶 Ve caminando o en autobús al gimnasio','🪪 Enseña la tarjeta de socio en recepción','💪 Haz los ejercicios que toquen','🚿 Dúchate al terminar','🏠 Vuelve a casa a descansar'],oral:'Tu amigo prepara bolsa, hace ejercicio, se ducha y vuelve a casa'},
+  {title:'Ayuda a tu amigo a cocinar una comida',steps:['📋 Elige una receta que te guste','🛒 Compra los ingredientes que necesites','🧺 Prepara cada cosa en la encimera','🔥 Cocina siguiendo los pasos de la receta','🍽️ Sirve la comida en un plato','🧽 Friega los cacharros al terminar'],oral:'Tu amigo elige receta, compra, cocina, sirve y friega al final'},
+  {title:'Ayuda a tu amigo a votar en unas elecciones',steps:['💌 Espera la carta del censo en tu buzón','🪪 El día de las elecciones, coge tu DNI','🚶 Ve al colegio electoral que te toca','📄 Elige la papeleta del partido que prefieras','📮 Métela en el sobre y ciérralo','🗳️ Entrega el sobre en la urna'],oral:'Tu amigo va con su DNI, elige papeleta, la mete en el sobre y la entrega'},
+  {title:'Ayuda a tu amigo a cuidar a alguien enfermo',steps:['🌡️ Tómale la temperatura','💊 Dale la medicación que le haya dicho el médico','🥣 Prepárale algo ligero de comer','💧 Ofrécele agua a menudo','🛏️ Ayúdale a descansar tranquilo','📞 Llama al médico si ves que empeora'],oral:'Tu amigo le toma temperatura, le da medicación y agua, le ayuda a descansar'},
+  {title:'Ayuda a tu amigo a ir de vacaciones',steps:['📅 Elige las fechas con antelación','🏨 Reserva el hotel o apartamento','🧳 Haz la maleta unos días antes','🚗 Viaja con tranquilidad al destino','🏖️ Disfruta cada día de las vacaciones','🏠 Vuelve a casa descansado'],oral:'Tu amigo elige fechas, reserva, hace la maleta, disfruta y vuelve descansado'},
+  {title:'Ayuda a tu amigo a ir a una entrevista de trabajo',steps:['🧥 Ponte ropa adecuada','📄 Lleva una copia de tu currículum','🚶 Llega al sitio diez minutos antes','🤝 Saluda con educación al entrevistador','🗣️ Responde a las preguntas con calma','👋 Despídete dando las gracias'],oral:'Tu amigo se viste bien, llega puntual, saluda, responde y se despide'},
+];
+function genSequences(tier){
+  const sh=a=>[...a].sort(()=>Math.random()-.5);
+  const pool = tier==='master' ? ROUTINES_MASTER : tier==='avanzado' ? ROUTINES_AVANZADO : ROUTINES_BASICO;
+  return sh(pool.map((seq,si)=>({
+    ty:'razona', mode:'sequence',
+    data:{title:seq.title, steps:[...seq.steps], oral:seq.oral},
+    id:'rz_seq_'+tier+'_'+si,
+  })));
+}
 // Generate anterior/posterior exercises
 function genAnteriorPosterior(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
   for(let i=0;i<15;i++){const n=2+Math.floor(Math.random()*18); // 2-19
@@ -235,7 +293,9 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===8){return genPatterns('hard')}
   if(lv===9){return genNumberSeries()}
   if(lv===10){return genCompare()}
-  if(lv===11){return genSequences()}
+  if(lv===11){return genSequences('basico')}
+  if(lv===14){return genSequences('avanzado')}
+  if(lv===15){return genSequences('master')}
   if(lv===12){return genAnteriorPosterior()}
   if(lv===13){return genTemperature()}
   RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
@@ -487,12 +547,132 @@ export function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
 
 // Strip emojis from text before TTS (Web Speech API reads emojis as words: 💧="gota", 🧥="abrigo")
 function stripEmoji(t){return t?t.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{FE00}-\u{FEFF}]|[\u200D\uFE0F]/gu,'').trim():''}
+
+// ── Clasificar: construcción de la frase final ────────────────
+// En vez de "bien clasificado" aburrido, generamos una frase con los ÚLTIMOS
+// items colocados en cada grupo (los que más dudaba el niño). Ej:
+// "la pera es una fruta y el gato es un animal".
+// Grupos que admiten "X es un {sg} / X son unos {pl}" (sustantivos concretos).
+const CLASSIFY_SINGULAR = {
+  animales: { sg:'animal',   pl:'animales'   },
+  muebles:  { sg:'mueble',   pl:'muebles'    },
+  frutas:   { sg:'fruta',    pl:'frutas'     },
+  verduras: { sg:'verdura',  pl:'verduras'   },
+  comida:   { sg:'comida',   pl:'comidas'    },
+  ropa:     { sg:'prenda de ropa', pl:'prendas de ropa' },
+  colores:  { sg:'color',    pl:'colores'    },
+};
+// Plantillas verbales por grupo (en minúsculas normalizadas, sin emojis).
+// es = predicado en singular · son = predicado en plural.
+// Diego pidió frases como "el dentista se ocupa de la salud" y "los guantes
+// se usan en invierno" en vez de "va en salud" o "van en invierno".
+const GROUP_VERB = {
+  'salud':        { es:'se ocupa de la salud',      son:'se ocupan de la salud' },
+  'seguridad':    { es:'se ocupa de la seguridad',  son:'se ocupan de la seguridad' },
+  'invierno':     { es:'se usa en invierno',        son:'se usan en invierno' },
+  'verano':       { es:'se usa en verano',          son:'se usan en verano' },
+  'pueblo':       { es:'está en el pueblo',         son:'están en el pueblo' },
+  'ciudad':       { es:'está en la ciudad',         son:'están en la ciudad' },
+  'dentro casa':  { es:'está dentro de casa',       son:'están dentro de casa' },
+  'fuera casa':   { es:'está fuera de casa',        son:'están fuera de casa' },
+  'hace ruido':   { es:'hace ruido',                son:'hacen ruido' },
+  'silencioso':   { es:'es silencioso',             son:'son silenciosos' },
+  'agua':         { es:'es cosa de agua',           son:'son cosas de agua' },
+  'fuego':        { es:'es cosa de fuego',          son:'son cosas de fuego' },
+  'natural':      { es:'es natural',                son:'son naturales' },
+  'elaborado':    { es:'es elaborado',              son:'son elaborados' },
+  'animal':       { es:'viene del animal',          son:'vienen del animal' },
+  'vegetal':      { es:'es vegetal',                son:'son vegetales' },
+  'necesita agua':     { es:'necesita agua',        son:'necesitan agua' },
+  'no necesita agua':  { es:'no necesita agua',     son:'no necesitan agua' },
+  'veo con':      { es:'se ve con los ojos',        son:'se ven con los ojos' },
+  'oigo con':     { es:'se oye con los oídos',      son:'se oyen con los oídos' },
+};
+// Masculinos que acaban en 'a' (excepciones). Incluye profesiones ambiguas.
+const MASC_EXC_A = new Set([
+  'dia','día','mapa','drama','problema','sistema','tema','idioma','programa','poema',
+  'clima','fantasma','planeta','pijama','sofa','sofá','papa','papá',
+  'guardia','policía','policia','dentista','periodista','artista','atleta','tenista',
+]);
+// Femeninos irregulares (no acaban en 'a')
+const FEM_IRREG = new Set([
+  'leche','carne','sangre','gente','nieve','llave','tarde','fiebre','noche','mente',
+  'muerte','clase','foto','moto','mano','radio','cruz','luz','flor','sal','miel',
+  'piel','nariz','pared','red','sed','vez','voz','edad','ciudad','verdad','salud',
+  'seguridad','mujer',
+]);
+// Singulares terminados en 's' (no son plurales)
+const SING_S = new Set([
+  'lunes','martes','miércoles','miercoles','jueves','viernes','crisis','tesis',
+  'análisis','analisis','virus','atlas','autobús','autobus','mes','país','pais',
+  'arroz','gas','mas','tres','dos','seis',
+]);
+function classifyCleanName(s){ return stripEmoji(s||'').trim(); }
+function classifyIsPlural(w){
+  const first = classifyCleanName(w).split(/\s+/)[0].toLowerCase();
+  if(SING_S.has(first)) return false;
+  return /s$/.test(first) && first.length > 2;
+}
+// Devuelve 'la'/'el' — ignora plurales (se manejan arriba)
+function classifyArtDef(w){
+  const first = classifyCleanName(w).split(/\s+/)[0].toLowerCase();
+  // Si es plural quita la 's' para detectar género de la raíz
+  const base = classifyIsPlural(w) ? first.replace(/s$/, '').replace(/es$/, '') : first;
+  if(FEM_IRREG.has(base)) return 'la';
+  if(MASC_EXC_A.has(base)) return 'el';
+  if(/a$/.test(base)) return 'la';
+  return 'el';
+}
+function classifyArtIndef(w){
+  return classifyArtDef(w) === 'la' ? 'una' : 'un';
+}
+function buildClassifyPhrase(order, groups){
+  if(!order || !order.length || !groups) return 'bien clasificado';
+  const picks = groups.map((g, gi) => {
+    const last = [...order].reverse().find(x => x.g === gi);
+    return last ? { item: last.w, group: g } : null;
+  }).filter(Boolean);
+  if (!picks.length) return 'bien clasificado';
+  const parts = picks.map(p => {
+    const item = classifyCleanName(p.item).toLowerCase();
+    const gClean = classifyCleanName(p.group).toLowerCase();
+    const plural = classifyIsPlural(item);
+    const defArt = classifyArtDef(item);
+    const art = plural ? (defArt === 'la' ? 'las' : 'los') : defArt;
+    // 1) Grupo concreto → "X es/son un/unos {singular|plural}"
+    const sing = CLASSIFY_SINGULAR[gClean];
+    if (sing) {
+      if (plural) {
+        // "los pájaros son animales" / "las peras son frutas"
+        return `${art} ${item} son ${sing.pl}`;
+      }
+      const artIndef = classifyArtIndef(sing.sg);
+      return `${art} ${item} es ${artIndef} ${sing.sg}`;
+    }
+    // 2) Plantilla verbal específica → "X se ocupa de la salud" / "X se usa en invierno"
+    const verb = GROUP_VERB[gClean];
+    if (verb) {
+      return `${art} ${item} ${plural ? verb.son : verb.es}`;
+    }
+    // 3) Fallback → "está en el grupo {g}"
+    return `${art} ${item} ${plural ? 'están' : 'está'} en ${gClean}`;
+  });
+  return parts.join(' y ');
+}
 export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
   const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
+  // Ordena rutinas: shuffle ESTABLE. Antes se mezclaba en cada render y las
+  // opciones se movían sin parar — imposible leer/elegir.
+  const shuffledSteps=useMemo(()=>ex.mode==='sequence'?[...ex.data.steps].sort(()=>Math.random()-.5):null,[ex]);
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
+  // Clasificar: orden de colocación (para frase final contextual) + item seleccionado por tap
+  const[classifyOrder,setClassifyOrder]=useState([]);
+  const[selectedItem,setSelectedItem]=useState(null);
+  // Ordena rutinas: pista (resalta el siguiente paso correcto 1.5s)
+  const[hintStep,setHintStep]=useState(null);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});setClassifyOrder([]);setSelectedItem(null);setHintStep(null);resetOral();stopVoice();
     // Voice instruction — fallback for modes without ex.data.q
     const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?'Ordena los pasos de '+(ex.data.title||'la rutina'):ex.mode==='anterior_posterior'?ex.data.q:'');
     setTimeout(()=>say(stripEmoji(intro)),400);
@@ -529,10 +709,20 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       if(na>=2){stopVoice();sayFB('La respuesta es: '+stripEmoji(correct));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
       else{const hint=getFirstHint();stopVoice();sayFB(stripEmoji(hint));setTimeout(()=>setFb(null),2000)}}}
   const[classifyAtt,setClassifyAtt]=useState(0);
-  function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
+  function classifyPick(item,groupIdx){
+    poke();
+    setSelectedItem(null);
+    const np={...placed,[item.w]:groupIdx};setPlaced(np);
+    // Registrar orden de colocación para la frase final contextual
+    const newOrder=[...classifyOrder.filter(x=>x.w!==item.w),{w:item.w,g:groupIdx}];
+    setClassifyOrder(newOrder);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
-      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado',4,1),300))}
+      if(allCorrect){
+        setFb('ok');starBeep(4);
+        const phrase=buildClassifyPhrase(newOrder,ex.data.groups);
+        cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(phrase,4,1),300));
+      }
       else{const ca=classifyAtt+1;setClassifyAtt(ca);setFb('no');beep(200,200);
         if(ca>=2){
           // 2nd fail: show correct classification
@@ -542,7 +732,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
           setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,ca),300)},3500)
         }else{
           sayFB('Casi, fíjate bien en cada uno');
-          setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}}
+          setTimeout(()=>{setFb(null);setPlaced({});setClassifyOrder([]);setSelectedItem(null)},2000)}}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
       {/* Left side — celebration zone (symmetry with buttons) */}
@@ -570,36 +760,86 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {shuffledWords.map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
       </div>
     </div>}
-    {ex.mode==='classify'&&<div>
-      <p style={{fontSize:22,fontWeight:700,margin:'0 0 14px',color:GOLD}}>Arrastra cada cosa a su grupo</p>
-      {/* Drop zones: two group boxes */}
-      <div style={{display:'flex',gap:14,justifyContent:'center',marginBottom:16}}>
-        {ex.data.groups.map((g,gi)=><div key={gi}
-          onDragOver={e=>e.preventDefault()}
-          onDrop={e=>{e.preventDefault();const w=e.dataTransfer.getData('text/plain');const item=ex.data.items.find(it=>it.w===w);if(item&&placed[item.w]===undefined)classifyPick(item,gi)}}
-          style={{flex:1,background:gi===0?BLUE+'15':GREEN+'15',border:`3px dashed ${gi===0?BLUE:GREEN}`,borderRadius:16,padding:14,minHeight:100,textAlign:'center',transition:'all .2s'}}>
-          <p style={{fontSize:20,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 10px'}}>{stripEmoji(g)}</p>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
-            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'33':GREEN+'33',borderRadius:10,padding:'6px 12px',fontSize:18,fontWeight:600,animation:'bounceIn .3s'}}>{it.w}</span>)}
-          </div>
-        </div>)}
-      </div>
-      {/* Draggable items */}
-      <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center'}}>
-        {ex.data.items.filter(it=>placed[it.w]===undefined).map(it=>
-          <button key={it.w} draggable="true"
-            onDragStart={e=>{e.dataTransfer.setData('text/plain',it.w);e.dataTransfer.effectAllowed='move'}}
-            onClick={()=>{
-              // Tap fallback: alternates between groups 0 and 1
-              const count0=ex.data.items.filter(x=>placed[x.w]===0).length;
-              const count1=ex.data.items.filter(x=>placed[x.w]===1).length;
-              classifyPick(it,count0<=count1?0:1)
-            }}
-            style={{fontSize:20,padding:'10px 18px',fontWeight:700,borderRadius:14,border:`2px solid rgba(255,255,255,.2)`,background:'rgba(255,255,255,.08)',color:'#fff',cursor:'grab',touchAction:'none',fontFamily:"'Fredoka'"}}>
-            {it.w}
-          </button>)}
-      </div>
-    </div>}
+    {ex.mode==='classify'&&(()=>{
+      // UX: tap-tap. Tocas una etiqueta → se marca (borde dorado). Tocas un grupo → se coloca.
+      // Esto elimina el menú contextual del navegador que aparecía con long-press de drag HTML5,
+      // y mantiene las etiquetas en su sitio durante todo el ejercicio.
+      const noSelect={userSelect:'none',WebkitUserSelect:'none',WebkitTouchCallout:'none',WebkitUserDrag:'none',msUserSelect:'none'};
+      const onGroupTap=(gi)=>{
+        if(fb==='ok')return;
+        if(!selectedItem){poke();sayFB('Primero toca una etiqueta');return}
+        const item=ex.data.items.find(it=>it.w===selectedItem);
+        if(item&&placed[item.w]===undefined)classifyPick(item,gi);
+      };
+      return <div>
+        <p style={{fontSize:28,fontWeight:700,margin:'0 0 16px',color:GOLD,lineHeight:1.3}}>
+          {selectedItem?'Ahora toca el grupo':'Toca una etiqueta y llévala a su grupo'}
+        </p>
+        {/* Grupos apilados verticalmente para máxima separación y claridad */}
+        <div style={{display:'flex',flexDirection:'column',gap:20,marginBottom:24,maxWidth:720,margin:'0 auto 24px'}}>
+          {ex.data.groups.map((g,gi)=>{
+            const color=gi===0?BLUE:GREEN;
+            return <div key={gi}
+              onClick={()=>onGroupTap(gi)}
+              onContextMenu={e=>e.preventDefault()}
+              style={{
+                background:color+'1a',
+                border:`4px dashed ${color}${selectedItem?'cc':'55'}`,
+                borderRadius:20,padding:'18px 20px',minHeight:140,
+                textAlign:'center',transition:'all .2s',
+                cursor:selectedItem?'pointer':'default',
+                boxShadow:selectedItem?`0 0 0 2px ${color}33, 0 4px 16px ${color}44`:'none',
+                ...noSelect,
+              }}>
+              <p style={{fontSize:26,fontWeight:800,color,margin:'0 0 12px',letterSpacing:.5}}>{g}</p>
+              <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',minHeight:44}}>
+                {ex.data.items.filter(it=>placed[it.w]===gi).map(it=>
+                  <span key={it.w} style={{
+                    background:color+'33',border:`2px solid ${color}77`,
+                    borderRadius:12,padding:'10px 16px',fontSize:22,fontWeight:700,color:'#fff',
+                    animation:'bounceIn .3s',
+                  }}>{it.w}</span>)}
+              </div>
+            </div>;
+          })}
+        </div>
+        {/* Etiquetas: grid 3 columnas con SLOTS FIJOS. Una etiqueta colocada
+            se oculta pero su hueco queda, así el resto no se reorganiza. */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:14,maxWidth:720,margin:'0 auto'}}>
+          {ex.data.items.map(it=>{
+            const used=placed[it.w]!==undefined;
+            const isSelected=selectedItem===it.w&&!used;
+            if(used){
+              // Hueco invisible con mismo tamaño: mantiene la posición de los vecinos
+              return <div key={it.w} aria-hidden="true" style={{visibility:'hidden',minHeight:64}}/>;
+            }
+            return <button key={it.w}
+              onClick={()=>{
+                if(fb==='ok')return;
+                poke();
+                setSelectedItem(isSelected?null:it.w);
+              }}
+              onContextMenu={e=>e.preventDefault()}
+              style={{
+                fontSize:24,padding:'16px 14px',fontWeight:700,borderRadius:16,
+                border:isSelected?`3px solid ${GOLD}`:`2px solid rgba(255,255,255,.25)`,
+                background:isSelected?GOLD+'22':'rgba(255,255,255,.10)',
+                color:'#fff',
+                cursor:'pointer',
+                transition:'all .15s',
+                boxShadow:isSelected?`0 0 0 3px ${GOLD}55, 0 4px 14px ${GOLD}44`:'none',
+                transform:isSelected?'scale(1.03)':'scale(1)',
+                fontFamily:"'Fredoka'",
+                minHeight:64,
+                touchAction:'manipulation',
+                ...noSelect,
+              }}>
+              {it.w}
+            </button>;
+          })}
+        </div>
+      </div>;
+    })()}
     {ex.mode==='cause'&&<div>
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -628,38 +868,116 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
-    {/* Sequences — order daily routine steps */}
-    {ex.mode==='sequence'&&<div>
-      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.title}</p>
-      <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Ordena los pasos</p>
-      {/* Placed steps */}
-      <div style={{display:'grid',gap:6,marginBottom:12,minHeight:60}}>
-        {Object.keys(placed).sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>{
-          const step=placed[k];
-          return <div key={k} style={{display:'flex',gap:8,alignItems:'center',padding:'8px 12px',background:GREEN+'15',borderRadius:10,border:`1px solid ${GREEN}33`}}>
-            <span style={{fontSize:16,fontWeight:800,color:GREEN,minWidth:24}}>{parseInt(k)+1}.</span>
-            <span style={{fontSize:16}}>{step}</span>
-          </div>
-        })}
-      </div>
-      {/* Available steps to pick */}
-      {!fb&&<div style={{display:'grid',gap:6}}>
-        {ex.data.steps.filter(s=>!Object.values(placed).includes(s)).sort(()=>0.5-Math.random()).map(step=>
-          <button key={step} className="btn btn-b" onClick={()=>{
-            poke();const nextIdx=Object.keys(placed).length;
-            const np={...placed,[nextIdx]:step};setPlaced(np);
-            if(Object.keys(np).length===ex.data.steps.length){
-              const correct=ex.data.steps.every((s,i)=>np[i]===s);
-              if(correct){setFb('ok');starBeep(4);say('¡Perfecto! '+ex.data.title).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(ex.data.oral,4,1),300))}
-              else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
-                if(na>=2){sayFB('El orden correcto es...');setTimeout(()=>{setFb(null);const cp={};ex.data.steps.forEach((s,i)=>{cp[i]=s});setPlaced(cp);setTimeout(()=>onOk(1,na),2500)},1500)}
-                else{sayFB('¡Casi! Fíjate en el orden');setTimeout(()=>{setFb(null);setPlaced({})},1500)}}
+    {/* Ordena rutinas — 2 columnas: pool izquierda, orden derecha numerado */}
+    {ex.mode==='sequence'&&(()=>{
+      const totalSteps = ex.data.steps.length;
+      const placedKeys = Object.keys(placed).map(Number).sort((a,b)=>a-b);
+      const nextIdx = placedKeys.length;
+      const usedSet = new Set(placedKeys.map(k=>placed[k]));
+      const poolList = shuffledSteps ? shuffledSteps.filter(s=>!usedSet.has(s)) : [];
+      // Quitar un paso ya colocado (en posición idx) y compactar numeración
+      function removeStep(idx){
+        poke();
+        const newPlaced = {};
+        let ni = 0;
+        placedKeys.forEach(k => { if (k !== idx) newPlaced[ni++] = placed[k]; });
+        setPlaced(newPlaced);
+      }
+      function pickStep(step){
+        poke();
+        const ni = Object.keys(placed).length;
+        const np = {...placed, [ni]: step};
+        setPlaced(np);
+        if (Object.keys(np).length === totalSteps) {
+          const correct = ex.data.steps.every((s,i) => np[i] === s);
+          if (correct) {
+            setFb('ok'); starBeep(4);
+            say('¡Perfecto! ' + ex.data.title)
+              .then(()=>cheerOrSay(mkPerfect(name), uid, vids, 'perfect'))
+              .then(()=>setTimeout(()=>triggerOral(ex.data.oral, 4, 1), 300));
+          } else {
+            const na = att + 1; setAtt(na); setFb('no'); beep(200, 200);
+            if (na >= 2) {
+              sayFB('El orden correcto es...');
+              setTimeout(()=>{ setFb(null); const cp={}; ex.data.steps.forEach((s,i)=>{cp[i]=s}); setPlaced(cp); setTimeout(()=>onOk(1,na), 2500)}, 1500);
+            } else {
+              sayFB('¡Casi! Fíjate en el orden');
+              setTimeout(()=>{ setFb(null); setPlaced({}) }, 1500);
             }
-          }} style={{fontSize:16,padding:'10px 14px',textAlign:'left'}}>{step}</button>
-        )}
-      </div>}
-      {Object.keys(placed).length>0&&!fb&&<button className="btn btn-ghost" onClick={()=>setPlaced({})} style={{marginTop:8,fontSize:14}}>↩️ Empezar de nuevo</button>}
-    </div>}
+          }
+        }
+      }
+      function showHint(){
+        if (fb || nextIdx >= totalSteps) return;
+        poke();
+        const correctNext = ex.data.steps[nextIdx];
+        setHintStep(correctNext);
+        sayFB('Este va ahora');
+        setTimeout(()=>setHintStep(null), 2000);
+      }
+      // Escala unificada Razona: título 30, instrucción 28, etiquetas 24,
+      // colocados 22, labels de grupo/número 26 (igual que classify).
+      return <div>
+        <p style={{fontSize:30,fontWeight:700,color:GOLD,margin:'0 0 6px',letterSpacing:.3}}>{ex.data.title}</p>
+        <p style={{fontSize:20,color:DIM,margin:'0 0 18px'}}>Toca cada paso en el orden correcto</p>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,maxWidth:840,margin:'0 auto'}}>
+          {/* Columna izquierda: pool de pasos sin colocar */}
+          <div style={{display:'flex',flexDirection:'column',gap:12,minHeight:300}}>
+            {poolList.length === 0 && !fb && <p style={{fontSize:20,color:DIM,textAlign:'center',fontStyle:'italic',margin:'40px 0'}}>Ya has usado todos</p>}
+            {poolList.map(step => {
+              const isHinted = hintStep === step;
+              return <button key={step}
+                onClick={()=>!fb&&pickStep(step)}
+                onContextMenu={e=>e.preventDefault()}
+                style={{
+                  fontSize:24,padding:'16px 14px',fontWeight:700,borderRadius:16,
+                  border: isHinted ? `3px solid ${GOLD}` : '2px solid rgba(255,255,255,.20)',
+                  background: isHinted ? GOLD+'33' : 'rgba(255,255,255,.10)',
+                  color:'#fff', cursor:'pointer', textAlign:'left',
+                  transition:'all .15s',
+                  boxShadow: isHinted ? `0 0 0 3px ${GOLD}55, 0 4px 16px ${GOLD}66` : 'none',
+                  transform: isHinted ? 'scale(1.03)' : 'scale(1)',
+                  fontFamily:"'Fredoka'",
+                  minHeight:64,
+                  userSelect:'none', WebkitUserSelect:'none',
+                  WebkitTouchCallout:'none', WebkitUserDrag:'none',
+                  touchAction:'manipulation',
+                }}>{step}</button>;
+            })}
+          </div>
+          {/* Columna derecha: orden construido, con numeración y botón ✕ */}
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            {Array.from({length: totalSteps}).map((_, i) => {
+              const step = placed[i];
+              const isNextSlot = i === nextIdx && !step;
+              return <div key={i} style={{
+                display:'flex',alignItems:'center',gap:12,
+                padding:'14px 14px',minHeight:64,
+                borderRadius:16,
+                background: step ? GREEN+'15' : isNextSlot ? GOLD+'10' : 'rgba(255,255,255,.04)',
+                border: step ? `2px solid ${GREEN}44` : isNextSlot ? `2px dashed ${GOLD}88` : '2px dashed rgba(255,255,255,.12)',
+                transition:'all .2s',
+              }}>
+                <span style={{fontSize:26,fontWeight:800,color: step ? GREEN : isNextSlot ? GOLD : 'rgba(255,255,255,.35)',minWidth:32,textAlign:'center'}}>{i+1}</span>
+                <span style={{fontSize:22,fontWeight:600,color:step?'#fff':'rgba(255,255,255,.3)',flex:1}}>
+                  {step || (isNextSlot ? '...' : '')}
+                </span>
+                {step && !fb && <button
+                  onClick={()=>removeStep(i)}
+                  onContextMenu={e=>e.preventDefault()}
+                  style={{background:'rgba(255,255,255,.1)',border:'none',borderRadius:10,width:40,height:40,color:'#fff',fontSize:20,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',justifyContent:'center'}}
+                  title="Quitar"
+                >✕</button>}
+              </div>;
+            })}
+          </div>
+        </div>
+        {!fb && <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:18}}>
+          {nextIdx < totalSteps && <button className="btn btn-gold" onClick={showHint} style={{fontSize:18,padding:'10px 20px',maxWidth:180}}>💡 Pista</button>}
+          {placedKeys.length > 0 && <button className="btn btn-ghost" onClick={()=>{setPlaced({});setHintStep(null)}} style={{fontSize:18,padding:'10px 20px',maxWidth:200}}>↩️ Empezar de nuevo</button>}
+        </div>}
+      </div>;
+    })()}
     {/* Number series — visual number bubbles with gap */}
     {ex.mode==='number_series'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
