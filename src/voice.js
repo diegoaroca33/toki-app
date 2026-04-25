@@ -36,15 +36,24 @@ function warmUpTTS(){try{if(!window.speechSynthesis)return;window.speechSynthesi
 let _ttsKeepAlive=null;
 function startTTSKeepAlive(){stopTTSKeepAlive();_ttsKeepAlive=setInterval(()=>{try{if(window.speechSynthesis){if(typeof window.speechSynthesis.resume==='function')window.speechSynthesis.resume();if(window.speechSynthesis.paused)window.speechSynthesis.resume()}}catch(e){}},2000)}
 function stopTTSKeepAlive(){if(_ttsKeepAlive){clearInterval(_ttsKeepAlive);_ttsKeepAlive=null}}
-function say(text,rateOverride){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP(),u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=typeof rateOverride==='number'?rateOverride:p.rate;u.pitch=p.pitch;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(3000,text.length*250)+100)})}
-function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=Math.min(1.0,p.rate+0.15);u.pitch=voiceProfile.sex==='m'?Math.min(1.5,p.pitch+0.4):Math.max(0.6,p.pitch-0.3);u.volume=1.0;
+// Preprocesa texto para TTS:
+// - Puntos entre dígitos (teléfonos tipo "6.2.6.8") → espacios, para que Toki
+//   diga "seis dos seis ocho" en vez de "seis punto dos punto…"
+// - Misma lógica aplicable a otros separadores visuales no verbalizables.
+function sanitizeForTTS(text){
+  if(!text)return text;
+  return text.replace(/(\d)\.(?=\d)/g,'$1 ');
+}
+function say(text,rateOverride){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP(),u=new SpeechSynthesisUtterance(sanitizeForTTS(text));u.lang='es-ES';u.rate=typeof rateOverride==='number'?rateOverride:p.rate;u.pitch=p.pitch;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(3000,text.length*250)+100)})}
+function sayFB(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const p=getVP();const u=new SpeechSynthesisUtterance(sanitizeForTTS(text));u.lang='es-ES';u.rate=Math.min(1.0,p.rate+0.15);u.pitch=voiceProfile.sex==='m'?Math.min(1.5,p.pitch+0.4):Math.max(0.6,p.pitch-0.3);u.volume=1.0;
   // Use a DIFFERENT es-ES voice for feedback (so it sounds distinct from model)
   // But ONLY from es-ES pool — never fall back to Latin American voice
   const esESVoices=window.speechSynthesis.getVoices().filter(v=>v.lang==='es-ES');
   u.voice=esESVoices.find(v=>v!==cachedVoice)||cachedVoice;
   let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(2500,text.length*200)+100)})}
-// Quick TTS at faster rate for counting
-function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=1.1;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(1200,text.length*120))})}
+// TTS para contar (uno tras otro). Cap 0.92 — el niño con DI no puede seguir
+// velocidades altas aunque la lista sea monotema. 1.0+ se come sílabas.
+function sayFast(text){return new Promise(res=>{if(!window.speechSynthesis||!text||!text.trim()){res();return}if(!cachedVoice)pickVoice();const u=new SpeechSynthesisUtterance(text);u.lang='es-ES';u.rate=0.92;u.pitch=1.0;u.volume=1.0;if(cachedVoice)u.voice=cachedVoice;let done=false;const finish=()=>{if(!done){done=true;res()}};u.onend=finish;u.onerror=finish;_iosSpeak(u);setTimeout(finish,Math.max(1500,text.length*160))})}
 function stopVoice(){if(window.speechSynthesis)window.speechSynthesis.cancel();stopAllAudio()}
 const _publicVoiceCache={};
 
