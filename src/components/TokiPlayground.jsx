@@ -951,6 +951,12 @@ export default function TokiPlayground({
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="Toki playground"
+        style={{
+          // Durante 'toki_hide' Toki ya no está en el centro: solo se ve el
+          // hocico asomando por un lateral. Ocultamos el SVG principal para
+          // que no aparezcan los dos a la vez (Toki en azul + hocico al lado).
+          visibility: hsPhase==='toki_hide' ? 'hidden' : 'visible',
+        }}
       >
         <style>{`
           .tp-bob{animation:tpBob 2.2s ease-in-out infinite;transform-origin:150px 180px}
