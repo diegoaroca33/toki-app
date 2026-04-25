@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { GOLD, BLUE, GREEN, RED, BG3, DIM, TXT, BORDER } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { beep, mkPerfect } from '../utils.js'
@@ -24,13 +24,21 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
     else if(ex.mode==='pay')setTimeout(()=>say('Paga '+ex.price.toFixed(2).replace('.',',')+' euros'),400);
     else setTimeout(()=>say('¿Cuánto cambio te dan?'),400);
     return()=>stopVoice()},[ex]);
-  // Generate wrong options for multiple choice (close but wrong values)
-  const[opts]=useState(()=>{
+  // Precarga de imágenes de monedas/billetes al primer mount. Sin esto, el
+  // <img> espera a la red en el primer render y deja un parpadeo visible
+  // hasta que cae el SVG fallback o llega la imagen real.
+  useEffect(()=>{
+    COINS.forEach(c=>{const im=new Image();im.src='/img/money/coin_'+c.l.replace('€','e').replace('c','')+'.png'});
+    BILLS.forEach(b=>{const im=new Image();im.src='/img/money/bill_'+b.v+'.png'});
+  },[]);
+  // Opciones para reconocer/sumar — useMemo con [ex] para recalcular en cada
+  // ejercicio nuevo (antes useState con initializer dejaba stale las opciones
+  // del primer ejercicio en toda la sesión).
+  const opts=useMemo(()=>{
     if(ex.mode==='recognize'||ex.mode==='sum'){
       const target=ex.mode==='recognize'?ex.coin.v:ex.total;
-      const fmt=v=>v>=1?(v+'€'):(Math.round(v*100)+'c');
       const wrongs=new Set();
-      // Generate plausible wrong answers
+      // Distractores plausibles (x2, x10, /2, ±0.5, ±1, x5, valores cercanos)
       [target*2,target*10,target/2,target+0.5,target-0.5,target+1,target+2,target*5,0.01,0.02,0.05,0.10,0.20,0.50,1,2,5,10,20].forEach(w=>{
         if(w>0&&w!==target&&Math.abs(w-target)>0.001)wrongs.add(Math.round(w*100)/100)});
       const wrongArr=[...wrongs].sort(()=>Math.random()-.5).slice(0,3);
@@ -38,7 +46,7 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       return all.map(v=>({v,label:v>=1?v.toFixed(0)+'€':Math.round(v*100)+' céntimos'}));
     }
     return null;
-  });
+  },[ex]);
   const[att2,setAtt2]=useState(0);
   function pickOpt(v){poke();
     const target=ex.mode==='recognize'?ex.coin.v:ex.total;
@@ -125,7 +133,8 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Paga: {ex.price.toFixed(2).replace('.',',')} €</p>
         <p style={{fontSize:14,color:DIM,margin:0}}>Toca las monedas para pagar</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:12}}>
-        {sel.map((c,i)=><Coin key={i} c={c}/>)}{sel.length===0&&<p style={{color:DIM,fontSize:14}}>Arrastra aquí</p>}</div>
+        {/* Distinguir billete vs moneda — antes los billetes salian como circulo dorado */}
+        {sel.map((c,i)=>c.v>=5?<Bill key={i} b={c}/>:<Coin key={i} c={c}/>)}{sel.length===0&&<p style={{color:DIM,fontSize:14}}>Arrastra aquí</p>}</div>
       <p style={{fontSize:18,color:sel.reduce((s,c)=>s+c.v,0)>=ex.price?GREEN:BLUE,fontWeight:700}}>{sel.reduce((s,c)=>s+c.v,0).toFixed(2).replace('.',',')} €</p>
       <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center',marginBottom:12,padding:10,background:BG3,borderRadius:12}}>
         {COINS.filter(c=>c.v>=0.10).map((c,i)=><Coin key={i} c={c} onClick={()=>addCoin(c)}/>)}
