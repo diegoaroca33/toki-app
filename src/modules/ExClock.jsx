@@ -14,7 +14,10 @@ export function genClock(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:
   else{for(let h=1;h<=12;h++){items.push({ty:'clock',h,m:15,text:clockText(h,15),id:'clk_'+h+'_15'});items.push({ty:'clock',h,m:45,text:clockText(h,45),id:'clk_'+h+'_45'})}}
   return items.sort(()=>Math.random()-.5)}
 
-export function ClockFace({h,m,size=160}){
+// Tamaño por defecto subido a 320 (Doc §3.8, antes 160). El reloj era
+// demasiado pequeño para discriminar la posición de las agujas; con DI se
+// necesita un tamaño claramente visible.
+export function ClockFace({h,m,size=320}){
   const cx=size/2,cy=size/2,r=size/2-8;
   const mAngle=(m/60)*360-90,hAngle=((h%12)/12)*360+(m/60)*30-90;
   const mr=r*0.7,hr=r*0.5;

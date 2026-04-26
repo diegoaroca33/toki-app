@@ -43,7 +43,7 @@ export function ExMulti({ex,onOk,onSkip,name,uid,vids}){
       <p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¡Vamos a contarlos!</p>
       <p style={{fontSize:20,color:TXT,margin:'0 0 8px'}}>{Array(ex.b).fill(ex.a).join(' + ')} = <span style={{color:GREEN,fontWeight:700}}>{ex.ans}</span></p>
       <button className="btn" onClick={()=>{setAns('');setFb(null);setShowHelp(false);setCountIdx(-1);if(countTimer.current){clearInterval(countTimer.current);countTimer.current=null}}} style={{marginTop:12,fontSize:16,padding:'10px 28px',borderRadius:14,background:GREEN,color:'#FFF',fontWeight:600}}>🔄 Intentar</button>
-      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Saltar</button>
     </div>}
     {idleMsg&&!fb&&!showHelp&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}

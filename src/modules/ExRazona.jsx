@@ -997,21 +997,20 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
       {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta los {ex.data.emoji} de cada lado 👆</p></div>}
     </div>}
-    {/* Temperature / Thermometer */}
+    {/* Temperature / Thermometer — tamaño 90×320 (Doc §3.8, antes 60×200) */}
     {ex.mode==='temperature'&&<div>
-      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.q}</p>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,marginBottom:16}}>
-        {/* SVG Thermometer */}
-        <svg width={60} height={200} viewBox="0 0 60 200">
-          <rect x={20} y={10} width={20} height={150} rx={10} fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+      <p style={{fontSize:26,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.q}</p>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,marginBottom:16}}>
+        <svg width={90} height={320} viewBox="0 0 90 320">
+          <rect x={32} y={16} width={26} height={240} rx={13} fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
           {/* Mercury fill — height based on temperature (-10 to 45 range) */}
-          <rect x={22} y={10+150-Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))} width={16} rx={8}
-            height={Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))}
+          <rect x={34} y={16+240-Math.max(8,Math.min(238,((ex.data.temp+10)/55)*238))} width={22} rx={11}
+            height={Math.max(8,Math.min(238,((ex.data.temp+10)/55)*238))}
             fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'}/>
           {/* Bulb */}
-          <circle cx={30} cy={175} r={18} fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'} stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
-          {/* Scale marks */}
-          {[-10,0,10,20,30,40].map(t=>{const y=10+150-((t+10)/55)*148;return <g key={t}><line x1={42} y1={y} x2={50} y2={y} stroke="rgba(255,255,255,.4)" strokeWidth={1}/><text x={54} y={y+4} fill="rgba(255,255,255,.5)" fontSize={9}>{t}°</text></g>})}
+          <circle cx={45} cy={284} r={26} fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'} stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+          {/* Scale marks — labels más grandes y separados (Doc §3.8: antes 9px, ahora 18px bold) */}
+          {[-10,0,10,20,30,40].map(t=>{const y=16+240-((t+10)/55)*238;return <g key={t}><line x1={60} y1={y} x2={70} y2={y} stroke="rgba(255,255,255,.5)" strokeWidth={1.5}/><text x={76} y={y+5} fill="rgba(255,255,255,.75)" fontSize={14} fontWeight="700">{t}°</text></g>})}
         </svg>
         <div style={{textAlign:'center'}}>
           <div style={{fontSize:48,marginBottom:8}}>{ex.data.emoji}</div>
