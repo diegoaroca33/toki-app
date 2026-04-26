@@ -25,11 +25,147 @@ export function moneyLabel(v, spoken=false){
   return c+' céntimos';
 }
 
-export function genMoney(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const items=[];
-  if(lv===1){COINS.concat(BILLS.slice(0,2)).forEach(c=>{items.push({ty:'money',mode:'recognize',coin:c,id:'mon_'+c.l})});return items.sort(()=>Math.random()-.5).slice(0,15)}
-  if(lv===2){for(let i=0;i<15;i++){const n=2+Math.floor(Math.random()*3);const pool=COINS.filter(c=>c.v>=0.10).concat(BILLS.slice(0,2));const sel=Array.from({length:n},()=>pool[Math.floor(Math.random()*pool.length)]);const total=sel.reduce((s,c)=>s+c.v,0);items.push({ty:'money',mode:'sum',coins:sel,total:Math.round(total*100)/100,id:'mon_sum_'+i})}return items}
-  if(lv===3){for(let i=0;i<12;i++){const price=Math.round((Math.random()*9+1)*100)/100;const available=COINS.filter(c=>c.v>=0.10).concat(BILLS.slice(0,3));items.push({ty:'money',mode:'pay',price,available,id:'mon_pay_'+i})}return items}
-  for(let i=0;i<12;i++){const price=Math.round((Math.random()*15+2)*100)/100;const paid=Math.ceil(price/5)*5;items.push({ty:'money',mode:'change',price,paid,change:Math.round((paid-price)*100)/100,id:'mon_chg_'+i})}return items}
+// Productos cotidianos con precio indudable (Doc §4.10 — corpus mínimo).
+// El módulo no es matemática: es reconocer y comprender el dinero.
+const PRODUCTS_CENT=[
+  {l:'Chicle',e:'🍬',cents:5},
+  {l:'Pegatina',e:'⭐',cents:10},
+  {l:'Chupachups',e:'🍭',cents:20},
+  {l:'Caramelo',e:'🍬',cents:20},
+  {l:'Cromo',e:'🃏',cents:50},
+  {l:'Pan pequeño',e:'🥖',cents:50},
+];
+const PRODUCTS_EUR=[
+  {l:'Helado',e:'🍦',euros:1},
+  {l:'Periódico',e:'📰',euros:1},
+  {l:'Bocadillo',e:'🥪',euros:2},
+  {l:'Cuaderno',e:'📓',euros:2},
+  {l:'Libro pequeño',e:'📖',euros:5},
+  {l:'Camiseta',e:'👕',euros:10},
+  {l:'Mochila',e:'🎒',euros:20},
+  {l:'Bicicleta',e:'🚲',euros:50},
+];
+
+export function genMoney(rawLv){
+  const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;
+  const items=[];
+  const sh=a=>[...a].sort(()=>Math.random()-.5);
+  const pickN=(arr,n)=>sh([...arr]).slice(0,n);
+
+  // BÁSICO (lv=1) — 3 tipos rotando: ¿Cuánto vale?, ¿Cuánto cuesta?, ¿Cuál vale más?
+  if(lv===1){
+    // recognize: 5 monedas/billetes sueltos
+    const items1=COINS.concat(BILLS.slice(0,2)).map(c=>({ty:'money',mode:'recognize',coin:c,id:'mon_b_r_'+c.l}));
+    // cost: 5 productos con 3 precios (uno realista, otros absurdos)
+    const items2=[];
+    for(let i=0;i<5;i++){
+      const useCent=Math.random()<0.5;
+      const p=pickN(useCent?PRODUCTS_CENT:PRODUCTS_EUR,1)[0];
+      // Distractor absurdo: si es céntimos, pongo un valor en €; si es €, pongo cents grandes
+      const correctLabel=useCent?p.cents+' céntimos':p.euros+' euro'+(p.euros===1?'':'s');
+      const absurd1=useCent?'50 euros':'1 céntimo';
+      const absurd2=useCent?'100 euros':'500 céntimos';
+      const opts=sh([correctLabel,absurd1,absurd2]);
+      items2.push({ty:'money',mode:'cost',product:p,price:correctLabel,opts,id:'mon_b_c_'+i});
+    }
+    // compare_money: comparar dos del mismo tipo
+    const items3=[];
+    const coinPairsCent=[[0.10,0.20],[0.20,0.50],[0.05,0.10],[0.10,0.50]];
+    const coinPairsEuro=[[1,2],[5,10],[10,20],[20,50]];
+    for(let i=0;i<5;i++){
+      const useCent=i%2===0;
+      const pair=useCent?coinPairsCent[i%coinPairsCent.length]:coinPairsEuro[i%coinPairsEuro.length];
+      const a=pair[0],b=pair[1];
+      const aLabel=useCent?Math.round(a*100)+' céntimos':a+' euro'+(a===1?'':'s');
+      const bLabel=useCent?Math.round(b*100)+' céntimos':b+' euro'+(b===1?'':'s');
+      // ans: el que vale más (siempre b, pero mostramos el orden mezclado)
+      const order=Math.random()<0.5?[a,b]:[b,a];
+      items3.push({ty:'money',mode:'compare_money',values:order,labels:[useCent?Math.round(order[0]*100)+' céntimos':order[0]+' euro'+(order[0]===1?'':'s'),useCent?Math.round(order[1]*100)+' céntimos':order[1]+' euro'+(order[1]===1?'':'s')],ans:b,id:'mon_b_cmp_'+i});
+    }
+    return sh([...items1.slice(0,5),...items2,...items3]);
+  }
+
+  // AVANZADO (lv=2) — Comparar mezcla, pagar exacto con UNA moneda, ¿Te llega?
+  if(lv===2){
+    const items1=[];
+    // compare_money mezcla cent vs euro
+    for(let i=0;i<5;i++){
+      const a=Math.random()<0.5?0.50:0.20;const b=[1,2][i%2];
+      const aLabel=Math.round(a*100)+' céntimos';const bLabel=b+' euro'+(b===1?'':'s');
+      const order=Math.random()<0.5?[a,b]:[b,a];
+      items1.push({ty:'money',mode:'compare_money',values:order,labels:order.map(v=>v<1?Math.round(v*100)+' céntimos':v+' euro'+(v===1?'':'s')),ans:b,id:'mon_a_cmp_'+i});
+    }
+    // pay_exact: producto con precio en céntimos, 4 monedas, una sirve
+    const items2=[];
+    PRODUCTS_CENT.slice(0,5).forEach((p,i)=>{
+      const correctCoin=COINS.find(c=>Math.round(c.v*100)===p.cents);
+      if(!correctCoin)return;
+      const wrongCoins=COINS.filter(c=>c.v!==correctCoin.v).sort(()=>Math.random()-.5).slice(0,3);
+      const opts=sh([correctCoin,...wrongCoins]);
+      items2.push({ty:'money',mode:'pay_exact',product:p,coin:correctCoin,opts,id:'mon_a_pe_'+i});
+    });
+    // enough: tienes X céntimos en monedero, ¿te llega para Y?
+    const items3=[];
+    for(let i=0;i<5;i++){
+      const wallet=[20,50,100,200][i%4]; // céntimos en monedero
+      const useCent=wallet<100;
+      const productPool=useCent?PRODUCTS_CENT:PRODUCTS_EUR;
+      const p=productPool[Math.floor(Math.random()*productPool.length)];
+      const productCents=p.cents||(p.euros*100);
+      const enough=wallet>=productCents;
+      items3.push({ty:'money',mode:'enough',wallet,product:p,enough,id:'mon_a_en_'+i});
+    }
+    return sh([...items1,...items2,...items3]);
+  }
+
+  // MASTER (lv=3) — Equivalencia €/cts, ¿devuelven?, ¿cuánto?, pagar combinando billetes
+  if(lv===3){
+    // equiv: ¿Cuántos céntimos hay en un euro?
+    const equivQs=[
+      {q:'¿Cuántos céntimos hay en 1 euro?',ans:'100 céntimos',opts:['100 céntimos','10 céntimos','1000 céntimos','50 céntimos']},
+      {q:'50 céntimos y 50 céntimos, ¿cuánto es?',ans:'1 euro',opts:['1 euro','50 céntimos','100 euros','2 euros']},
+      {q:'¿Cuántos céntimos hay en medio euro?',ans:'50 céntimos',opts:['50 céntimos','100 céntimos','5 céntimos','500 céntimos']},
+      {q:'¿Cuánto vale más, 1 euro o 50 céntimos?',ans:'1 euro',opts:['1 euro','50 céntimos','Lo mismo','Ninguno']},
+    ];
+    const items1=equivQs.map((e,i)=>({ty:'money',mode:'equiv',data:e,id:'mon_m_eq_'+i}));
+    // change_round: pago con 1€/2€ y producto céntimos. ¿cuánto me devuelven?
+    const items2=[];
+    PRODUCTS_CENT.slice(0,4).forEach((p,i)=>{
+      const paidEur=p.cents<100?1:2;
+      const changeCents=paidEur*100-p.cents;
+      const changeLabel=changeCents>=100?Math.floor(changeCents/100)+' euro'+(changeCents===100?'':'s'):changeCents+' céntimos';
+      const distractors=[
+        (changeCents+10)+' céntimos',
+        (changeCents-5)+' céntimos',
+        '0 céntimos',
+      ].filter(x=>x!==changeLabel);
+      items2.push({ty:'money',mode:'change_round',product:p,paid:paidEur,change:changeLabel,opts:sh([changeLabel,...distractors.slice(0,3)]),id:'mon_m_ch_'+i});
+    });
+    // pay_combine: producto en €, combinar 2 billetes (5+10 = 15, etc.)
+    const items3=[];
+    const combos=[
+      {price:15,bills:[5,10],label:'15 euros'},
+      {price:30,bills:[10,20],label:'30 euros'},
+      {price:25,bills:[5,20],label:'25 euros'},
+      {price:60,bills:[10,50],label:'60 euros'},
+    ];
+    combos.forEach((c,i)=>{
+      // 4 opciones: la combinación correcta y 3 distractores
+      const opts=[
+        c.bills.join('€ + ')+'€',
+        (c.bills[0]+1)+'€ + '+(c.bills[1])+'€',
+        (c.bills[0])+'€ + '+(c.bills[1]+5)+'€',
+        '50€ + 50€',
+      ];
+      items3.push({ty:'money',mode:'pay_combine',price:c.price,priceLabel:c.label,bills:c.bills,opts:sh(opts),ans:c.bills.join('€ + ')+'€',id:'mon_m_co_'+i});
+    });
+    return sh([...items1,...items2,...items3]);
+  }
+
+  // lv>=4: legacy (mantenemos los modos antiguos por compatibilidad)
+  for(let i=0;i<12;i++){const price=Math.round((Math.random()*15+2)*100)/100;const paid=Math.ceil(price/5)*5;items.push({ty:'money',mode:'change',price,paid,change:Math.round((paid-price)*100)/100,id:'mon_chg_'+i})}
+  return items;
+}
 
 export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[sel,setSel]=useState([]);const{idleMsg,poke}=useIdle(name,!fb);
@@ -150,6 +286,158 @@ export function ExMoney({ex,onOk,onSkip,name,uid,vids}){
       {opts&&!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
         {opts.map(o=><button key={o.v} className="btn btn-b" onClick={()=>pickOpt(o.v)}
           style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o.label}</button>)}
+      </div>}
+    </div>}
+    {/* COST — ¿Cuánto cuesta el producto? (Básico) */}
+    {ex.mode==='cost'&&<div style={{maxWidth:500,margin:'0 auto'}}>
+      <div className="card" style={{padding:20,marginBottom:16}}>
+        <p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>¿Cuánto cuesta?</p>
+        <div style={{fontSize:80,marginBottom:8}}>{ex.product.e}</div>
+        <p style={{fontSize:22,fontWeight:600,color:'#fff',margin:0}}>{ex.product.l}</p>
+      </div>
+      {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr',gap:10}}>
+        {ex.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+          poke();
+          if(o===ex.price){setFb('ok');starBeep(4);
+            cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('Cuesta '+ex.price,4,1),300));
+          } else {
+            const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('Cuesta '+ex.price);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+            else{sayFB('Piensa: ¿es algo barato o caro?');setTimeout(()=>setFb(null),1800)}
+          }
+        }} style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o}</button>)}
+      </div>}
+    </div>}
+    {/* COMPARE_MONEY — ¿Cuál vale más? (Básico/Avanzado) */}
+    {ex.mode==='compare_money'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="card" style={{padding:18,marginBottom:14}}>
+        <p style={{fontSize:22,fontWeight:700,margin:0,color:GOLD}}>¿Cuál vale más?</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        {ex.values.map((v,i)=>{
+          const isBill=v>=5;const coin=COINS.find(c=>c.v===v)||{v,l:isBill?v+'€':Math.round(v*100)+'c'};
+          const bill=BILLS.find(b=>b.v===v);
+          return <button key={i} className={'btn '+(fb==='ok'&&v===ex.ans?'btn-g':fb==='no'&&v===ex.ans?'btn-gold':'btn-b')} onClick={()=>{
+            if(fb)return;poke();
+            if(v===ex.ans){setFb('ok');starBeep(4);
+              cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(ex.labels[i]+' vale más',4,1),300));
+            } else {
+              const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+              if(na>=2){sayFB(ex.labels[ex.values.indexOf(ex.ans)]+' vale más');setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+              else{sayFB('Mira los dos con calma');setTimeout(()=>setFb(null),1800)}
+            }
+          }} style={{padding:20,minHeight:160,display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+            {bill?<BillSVG b={bill} w={150} h={80}/>:<CoinSVG c={coin} sz={80}/>}
+            <span style={{fontSize:18,fontWeight:700}}>{ex.labels[i]}</span>
+          </button>;
+        })}
+      </div>
+    </div>}
+    {/* PAY_EXACT — Pagar con UNA moneda exacta (Avanzado) */}
+    {ex.mode==='pay_exact'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="card" style={{padding:18,marginBottom:14}}>
+        <p style={{fontSize:20,fontWeight:700,margin:'0 0 6px',color:GOLD}}>Paga con UNA sola moneda</p>
+        <div style={{fontSize:60,marginBottom:6}}>{ex.product.e}</div>
+        <p style={{fontSize:20,fontWeight:600,color:'#fff',margin:0}}>{ex.product.l}: {ex.product.cents} céntimos</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        {ex.opts.map((c,i)=><button key={i} className={'btn '+(fb==='ok'&&c.v===ex.coin.v?'btn-g':fb==='no'&&c.v===ex.coin.v?'btn-gold':'btn-b')} onClick={()=>{
+          if(fb)return;poke();
+          if(c.v===ex.coin.v){setFb('ok');starBeep(4);
+            cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('Pago con '+moneyLabel(c.v,true),4,1),300));
+          } else {
+            const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('La moneda es '+moneyLabel(ex.coin.v,true));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+            else{sayFB('Mira el precio y busca esa moneda');setTimeout(()=>setFb(null),2000)}
+          }
+        }} style={{padding:18,minHeight:120,display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+          <CoinSVG c={c} sz={70}/>
+          <span style={{fontSize:14,fontWeight:600}}>{moneyLabel(c.v)}</span>
+        </button>)}
+      </div>
+    </div>}
+    {/* ENOUGH — ¿Te llega? (Avanzado, sí/no) */}
+    {ex.mode==='enough'&&(()=>{
+      const productCents=ex.product.cents||(ex.product.euros*100);
+      const walletLabel=ex.wallet>=100?(ex.wallet/100)+' euro'+(ex.wallet===100?'':'s'):ex.wallet+' céntimos';
+      const productLabel=ex.product.cents?ex.product.cents+' céntimos':ex.product.euros+' euro'+(ex.product.euros===1?'':'s');
+      return <div style={{maxWidth:500,margin:'0 auto'}}>
+        <div className="card" style={{padding:18,marginBottom:14}}>
+          <p style={{fontSize:20,fontWeight:700,margin:'0 0 8px',color:GOLD}}>Tienes {walletLabel} en el monedero</p>
+          <div style={{fontSize:60,marginBottom:8}}>{ex.product.e}</div>
+          <p style={{fontSize:20,margin:0}}>{ex.product.l}: <strong style={{color:GOLD}}>{productLabel}</strong></p>
+          <p style={{fontSize:22,fontWeight:700,marginTop:12,color:'#fff'}}>¿Te llega para comprarlo?</p>
+        </div>
+        {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          {[true,false].map(v=><button key={String(v)} className={'btn '+(fb==='ok'&&v===ex.enough?'btn-g':'btn-b')} onClick={()=>{
+            poke();
+            if(v===ex.enough){setFb('ok');starBeep(4);
+              cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(ex.enough?'Sí me llega':'No me llega',4,1),300));
+            } else {
+              const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+              if(na>=2){sayFB(ex.enough?'Sí te llega':'No te llega');setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+              else{sayFB('Compara las dos cantidades con calma');setTimeout(()=>setFb(null),2000)}
+            }
+          }} style={{fontSize:26,padding:24,fontWeight:700,minHeight:80}}>{v?'✅ Sí':'❌ No'}</button>)}
+        </div>}
+      </div>;
+    })()}
+    {/* EQUIV — Equivalencia €/cts (Master) */}
+    {ex.mode==='equiv'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="card" style={{padding:20,marginBottom:14}}>
+        <p style={{fontSize:24,fontWeight:700,margin:0,color:GOLD,lineHeight:1.3}}>{ex.data.q}</p>
+      </div>
+      {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {ex.data.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+          poke();
+          if(o===ex.data.ans){setFb('ok');starBeep(4);
+            cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(ex.data.ans,4,1),300));
+          } else {
+            const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('La respuesta es: '+ex.data.ans);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+            else{sayFB('Recuerda: un euro son cien céntimos');setTimeout(()=>setFb(null),2000)}
+          }
+        }} style={{fontSize:22,padding:18,fontWeight:700,minHeight:68}}>{o}</button>)}
+      </div>}
+    </div>}
+    {/* CHANGE_ROUND — ¿Cuánto me devuelven? (Master, cantidades redondas) */}
+    {ex.mode==='change_round'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="card" style={{padding:18,marginBottom:14}}>
+        <div style={{fontSize:60,marginBottom:6}}>{ex.product.e}</div>
+        <p style={{fontSize:18,margin:'0 0 6px'}}>{ex.product.l} cuesta <strong style={{color:GOLD}}>{ex.product.cents} céntimos</strong></p>
+        <p style={{fontSize:18,margin:'0 0 8px'}}>Pagas con <strong style={{color:GOLD}}>{ex.paid} euro{ex.paid===1?'':'s'}</strong></p>
+        <p style={{fontSize:22,fontWeight:700,color:'#fff',margin:0}}>¿Cuánto te devuelven?</p>
+      </div>
+      {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        {ex.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+          poke();
+          if(o===ex.change){setFb('ok');starBeep(4);
+            cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('Me devuelven '+ex.change,4,1),300));
+          } else {
+            const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('Te devuelven '+ex.change);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+            else{sayFB('Piensa: pagas más de lo que cuesta, te devuelven la diferencia');setTimeout(()=>setFb(null),2500)}
+          }
+        }} style={{fontSize:20,padding:16,fontWeight:700,minHeight:64}}>{o}</button>)}
+      </div>}
+    </div>}
+    {/* PAY_COMBINE — Combinar 2 billetes para pagar (Master) */}
+    {ex.mode==='pay_combine'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <div className="card" style={{padding:18,marginBottom:14}}>
+        <p style={{fontSize:22,fontWeight:700,margin:'0 0 8px',color:GOLD}}>¿Cómo pagas?</p>
+        <p style={{fontSize:24,fontWeight:600,color:'#fff',margin:0}}>{ex.priceLabel}</p>
+      </div>
+      {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr',gap:10}}>
+        {ex.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+          poke();
+          if(o===ex.ans){setFb('ok');starBeep(4);
+            cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('Pago con '+ex.ans.replace(/€/g,' euros').replace(/\+/g,' y '),4,1),300));
+          } else {
+            const na=att2+1;setAtt2(na);setFb('no');beep(200,200);
+            if(na>=2){sayFB('Se paga con '+ex.ans);setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,na),400)},2500)}
+            else{sayFB('Suma los dos billetes y mira si dan el precio');setTimeout(()=>setFb(null),2500)}
+          }
+        }} style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o}</button>)}
       </div>}
     </div>}
     {ex.mode==='sum'&&<div style={{maxWidth:500,margin:'0 auto'}}>

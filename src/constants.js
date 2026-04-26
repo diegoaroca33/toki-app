@@ -244,7 +244,11 @@ export const LV_OPTS={
   math:[{n:5,l:'🐥 Contar objetos'},{n:6,l:'🍎 Sumas visual'},{n:7,l:'📖 Problemas'},{n:1,l:'Sumas fácil'},{n:2,l:'Sumas+'},{n:3,l:'Restas'},{n:4,l:'Mezcla'}],
   multi:[{n:1,l:'x2/x3'},{n:2,l:'x5/x10'},{n:3,l:'Mezcla'}],
   frac:[{n:1,l:'Reconocer'},{n:2,l:'Notación'},{n:3,l:'Equivalencias'},{n:4,l:'Sumar'},{n:5,l:'Sumar/Restar'}],
-  money:[{n:1,l:'Reconocer'},{n:2,l:'Sumar'},{n:3,l:'Pagar'},{n:4,l:'Cambio'}],
+  // Monedas reestructurado en 3 niveles pedagógicos (Doc §4.10).
+  // Básico: ¿Cuánto vale? + ¿Cuánto cuesta? + ¿Cuál vale más?
+  // Avanzado: ¿Cuál vale más? mezclado + Pagar exacto + ¿Te llega?
+  // Master: Equivalencia €/cts + ¿Cuánto devuelven? + Pagar combinando.
+  money:[{n:1,l:'Básico'},{n:2,l:'Avanzado'},{n:3,l:'Master'},{n:4,l:'Cambio (legacy)'}],
   clock:[{n:1,l:'En punto'},{n:2,l:'Media'},{n:3,l:'Cuarto'}],
   // Calendario rediseñado en 3 niveles (Doc §4.11.2). Antes/después
   // (Básico), 3 huecos consecutivos (Avanzado), ordenar completo (Master).
