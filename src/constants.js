@@ -246,7 +246,9 @@ export const LV_OPTS={
   frac:[{n:1,l:'Reconocer'},{n:2,l:'Notación'},{n:3,l:'Equivalencias'},{n:4,l:'Sumar'},{n:5,l:'Sumar/Restar'}],
   money:[{n:1,l:'Reconocer'},{n:2,l:'Sumar'},{n:3,l:'Pagar'},{n:4,l:'Cambio'}],
   clock:[{n:1,l:'En punto'},{n:2,l:'Media'},{n:3,l:'Cuarto'}],
-  calendar:[{n:1,l:'Días'},{n:2,l:'Meses'},{n:3,l:'Antes/Desp.'},{n:4,l:'Ayer/Mañ.'}],
+  // Calendario rediseñado en 3 niveles (Doc §4.11.2). Antes/después
+  // (Básico), 3 huecos consecutivos (Avanzado), ordenar completo (Master).
+  calendar:[{n:1,l:'Básico'},{n:2,l:'Avanzado'},{n:3,l:'Master'}],
   distribute:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}],
   writing_1:[{n:1,l:'Con guía'},{n:2,l:'Libre'}],
   writing_3:[{n:3,l:'Con guía'},{n:4,l:'Libre'}],
