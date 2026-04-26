@@ -235,14 +235,19 @@ export const LV_OPTS={
   writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
   writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
   writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
-  lee_intruso:[{n:1,l:'Intruso'}],
+  // Niveles legacy 1-8 (Intruso simple, Palabra+Imagen, Completa palabra, etc.)
+  lee_intruso:[{n:1,l:'Básico (legacy)'},{n:21,l:'Básico'},{n:22,l:'Avanzado'},{n:23,l:'Master'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
-  lee_complete:[{n:3,l:'Completa'}],
+  lee_complete:[{n:3,l:'Letra que falta (legacy)'}],
   lee_syllables:[{n:4,l:'Ordena sílabas'}],
   lee_read_do:[{n:5,l:'Lee y haz'}],
   lee_prep1:[{n:6,l:'1 preposición'}],
   lee_prep2:[{n:7,l:'2 preposiciones'}],
   lee_prep3:[{n:8,l:'3 preposiciones'}],
+  // Nuevos lvKeys del Bloque 5 — Lee y entiende + COMPLETA con conectores
+  // (corpus en src/data/leeYEntiende.js y completa.js, doc §4.12.1/§4.12.3).
+  lee_completa:[{n:24,l:'Básico'},{n:25,l:'Avanzado'},{n:26,l:'Master'}],
+  lee_y_entiende:[{n:27,l:'Master'}],
 };
 
 export const GROUPS=[
