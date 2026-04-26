@@ -13,6 +13,11 @@ body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min
 :root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--dock-h:104px;--game-topbar-h:112px;--game-feedback-h:84px;--root-pad-x:clamp(12px,3vw,28px);--root-pad-y:clamp(10px,2.4vw,22px);--planet-size:82px;--tap-target:48px}
 body.sky-morning{background:linear-gradient(180deg,#1a3a6a 0%,#2e6bb5 40%,#5ba3d9 100%)}
 body.sky-afternoon{background:linear-gradient(180deg,#1a2744 0%,#c0392b 30%,#e67e22 60%,#f39c12 100%)}
+/* Contraste WCAG sobre fondo naranja del atardecer (Doc §3.5):
+   añadimos sombra fina oscura a los textos directos del body para que
+   el contraste suba a 7:1+ aunque sean amarillos/dorados (antes ~2:1).
+   No afecta morning (azul) ni night (oscuro), donde ya hay contraste. */
+body.sky-afternoon h1,body.sky-afternoon h2,body.sky-afternoon h3,body.sky-afternoon h4,body.sky-afternoon p,body.sky-afternoon span{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 body.sky-night{background:${BG}}
 body.sky-night::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(1px 1px at 10% 20%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 30% 50%,#fff6 0,transparent 100%),radial-gradient(1.5px 1.5px at 50% 10%,#fff9 0,transparent 100%),radial-gradient(1px 1px at 70% 40%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 90% 70%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 15% 80%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 45% 65%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 80% 15%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 60% 85%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 25% 35%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 85% 55%,#fff4 0,transparent 100%),radial-gradient(1.5px 1.5px at 5% 60%,#fff7 0,transparent 100%),radial-gradient(1px 1px at 95% 25%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 40% 90%,#fff6 0,transparent 100%);animation:twinkle 8s ease-in-out infinite alternate}
 @keyframes twinkle{0%{opacity:.7}100%{opacity:1}}
@@ -29,6 +34,37 @@ input::placeholder{color:${DIM}}
 .btn-o{background:#E67E22;border-color:#d35400;box-shadow:4px 4px 0 #a04000}
 .btn-gold{background:${GOLD};border-color:#d4ac0d;box-shadow:4px 4px 0 #b7950b;color:#1a1a2e}
 .btn-ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:none;color:${DIM};font-size:16px}
+/* Botón Saltar — flotante junto al de Pausa, abajo izquierda. Antes era
+   un botón ancho de lado a lado con icono diminuto que descolocaba el
+   layout. Ahora siempre en el mismo sitio, redondo y reconocible.
+   Doc §3 (feedback Diego 26/04). El !important sobrescribe los estilos
+   inline marginTop/fontSize/maxWidth que tenían los botones individuales
+   en cada módulo, sin tener que tocar los 14 sitios donde aparece. */
+.skip-btn{
+  position:fixed!important;
+  left:calc(var(--safe-left) + 84px)!important;
+  bottom:calc(var(--safe-bottom) + 14px)!important;
+  width:60px!important;
+  height:60px!important;
+  min-height:60px!important;
+  max-width:60px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:50%!important;
+  font-size:24px!important;
+  font-weight:700!important;
+  background:rgba(0,0,0,.55)!important;
+  border:2px solid rgba(255,255,255,.25)!important;
+  color:#fff!important;
+  z-index:20!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  /* Texto "Saltar" oculto en móvil; solo el icono ⏭️ es legible. Ahorra
+     conflicto con el mensaje "lado a lado" del feedback. */
+  white-space:nowrap;overflow:hidden;
+}
+.skip-btn:active{transform:scale(.92)}
 .btn-half{display:inline-block;width:48%;font-size:18px;padding:12px 0}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
@@ -129,8 +165,12 @@ export const PERFECT_T=['¡Muy bien {N}!','¡Eres un crack {N}!','¡Genial {N}, 
 export const GOOD_MSG=['¡Bien!','¡Genial!','¡Muy bien!','¡Fenomenal!','¡Estupendo!','¡Olé!'];
 export const RETRY_MSG=['Otra vez','Venga, otra','Una más','Casi casi'];
 export const FAIL_MSG=['Poco a poco','No pasa nada','Seguimos','Ánimo'];
-export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Fenómeno!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!','¡Genial!','¡Muy bien!'];
-export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Vamos!','¡Tú puedes!'];
+// "Sigue" eliminado de las listas de cheers porque cuando aparece justo antes
+// del micrófono para repetir frase ("Sigue" → frase + 🎤) confunde: el niño
+// piensa "continúa al siguiente" cuando en realidad se le pide repetir.
+// Doc §3.6.
+export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Eso es!','¡Dale!','¡Fenómeno!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!','¡Genial!','¡Muy bien!'];
+export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Otra vez!','¡Dale!','¡Ánimo!','¡Vamos!','¡Tú puedes!'];
 export const MODULE_MSG={decir:['¡Dilo!','¡Dilo tú!','¡Dilo otra vez!','¡Venga, dilo!'],frase:['¡Dilo!','¡Dilo tú!','¡Venga, dilo!'],math:['¡Cuenta!','¡Cuenta conmigo!','¡Cuenta otra vez!'],multi:['¡Cuenta!','¡Cuenta conmigo!'],frac:['¡Cuenta!','¡Cuenta otra vez!'],contar:['¡Cuenta!','¡Cuenta conmigo!'],writing:['¡Escríbelo!','¡Escribe otra vez!'],calendar:['¡Piensa!','¡Tú puedes!','¡Razona!'],distribute:['¡Piensa!','¡Tú puedes!'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','¡Tú puedes!'],quiensoy:['¡Dilo!','¡Dilo tú!'],razona:['¡Piensa!','¡Tú puedes!','¡Razona!','¡Piensa bien!'],lee:['¡Léelo!','¡Lee otra vez!','¡Tú sabes leer!','¡Venga, lee!']};
 export const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK,...SHORT_OK];
 
