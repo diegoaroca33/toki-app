@@ -37,10 +37,13 @@ input::placeholder{color:${DIM}}
 /* Botón Saltar — flotante junto al de Pausa, abajo izquierda. Antes era
    un botón ancho de lado a lado con icono diminuto que descolocaba el
    layout. Ahora siempre en el mismo sitio, redondo y reconocible.
-   Doc §3 (feedback Diego 26/04). El !important sobrescribe los estilos
-   inline marginTop/fontSize/maxWidth que tenían los botones individuales
-   en cada módulo, sin tener que tocar los 14 sitios donde aparece. */
-.skip-btn{
+   Doc §3 (feedback Diego 26/04).
+
+   Selector .btn.skip-btn (mismo elemento, no descendiente): solo aplica
+   a los botones de módulo que tienen ambas clases. Los .skip-btn sueltos
+   del dock oral de SpeakPanel (al lado del micro) NO se reposicionan,
+   conservan su layout en la fila del micro. */
+.btn.skip-btn{
   position:fixed!important;
   left:calc(var(--safe-left) + 84px)!important;
   bottom:calc(var(--safe-bottom) + 14px)!important;
@@ -60,11 +63,11 @@ input::placeholder{color:${DIM}}
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
-  /* Texto "Saltar" oculto en móvil; solo el icono ⏭️ es legible. Ahorra
-     conflicto con el mensaje "lado a lado" del feedback. */
+  /* Texto "Saltar" se trunca, solo se ve el icono ⏭️ — el botón ya es
+     reconocible por posición y forma redonda. */
   white-space:nowrap;overflow:hidden;
 }
-.skip-btn:active{transform:scale(.92)}
+.btn.skip-btn:active{transform:scale(.92)}
 .btn-half{display:inline-block;width:48%;font-size:18px;padding:12px 0}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
