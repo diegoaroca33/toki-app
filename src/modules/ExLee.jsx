@@ -187,7 +187,9 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La respuesta es '+ex.data.ans+'. '+ex.data.ans+' no es '+ex.data.cat).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}else{sayFB('Piensa: todos los demás son '+ex.data.cat+'s');setTimeout(()=>setFb(null),2000)}}}
     if(ex.mode==='word_img'){if(ans===ex.data.ans){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},2800)}else{sayFB('Fíjate, empieza por '+ex.data.word.charAt(0));setTimeout(()=>setFb(null),1500)}}}
-    if(ex.mode==='complete'){if(ans===ex.data.missing){const a=att+1;setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),300))}
+    if(ex.mode==='complete'){if(ans===ex.data.missing){const a=att+1;setFb('ok');setFilledLetter(ans);starBeep(4);
+      // UN cheer + UN modelo+micro (antes say(word) + cheer + triggerOral(word))
+      cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setFilledLetter(ex.data.missing);setFb('show');say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setTimeout(()=>onOk(2,na),400)},2800)}else{const letterHints={A:'Avión',B:'Balón',C:'Casa',D:'Dado',E:'Elefante',F:'Foca',G:'Gato',H:'Huevo',I:'Iguana',J:'Jirafa',K:'Koala',L:'León',M:'Manzana',N:'Nube',O:'Oso',P:'Perro',Q:'Queso',R:'Rana',S:'Sol',T:'Tigre',U:'Uva',V:'Vaca',W:'Wafle',X:'Xilófono',Y:'Yate',Z:'Zapato'};const ltr=ex.data.missing.toUpperCase();const hintWord=letterHints[ltr]||ltr;sayFB('Es la primera letra de '+hintWord);setTimeout(()=>setFb(null),2000)}}}
     if(ex.mode==='read_do'){const isCorrect=ex.data.opts[ans]?.correct;
       if(isCorrect){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
@@ -195,7 +197,9 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
         if(na>=2){say(ex.data.instruction).then(()=>setTimeout(()=>triggerOral(ex.data.instruction,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
         else{sayFB('Escucha otra vez: '+ex.data.instruction);setTimeout(()=>setFb(null),2500)}}}}
   function placeSyl(s){poke();const np=[...placed,s];setPlaced(np);setAvail(a=>a.filter(x=>x!==s));
-    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){const a=att+1;setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
+    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){const a=att+1;setFb('ok');starBeep(4);
+      // UN cheer + UN modelo+micro (antes say(word) + cheer + triggerOral(word))
+      cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
         if(na>=2){say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},2800)}
         else{sayFB('La primera sílaba es '+ex.data.syllables[0]);setTimeout(()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5));setFb(null)},2000)}}}}
@@ -210,7 +214,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='word_img'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:36,fontWeight:700,margin:0,color:GOLD,letterSpacing:4}}>{ex.data.word}</p></div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-        {ex.data.imgs.map((img,i)=><button key={i} className={'btn '+(fb==='ok'&&i===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:56,padding:16,minHeight:90}}>{img}</button>)}
+        {/* Emojis a 72px (Doc §3.8: mín 48, mejor 64+ en básico) — palabras+imagen es básico */}
+        {ex.data.imgs.map((img,i)=><button key={i} className={'btn '+(fb==='ok'&&i===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:72,padding:18,minHeight:110}}>{img}</button>)}
       </div>
     </div>}
     {ex.mode==='complete'&&<div>
@@ -235,7 +240,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='read_do'&&<div>
       <div className="card" style={{padding:24,marginBottom:14,background:GOLD+'0C',borderColor:GOLD+'33'}}><p style={{fontSize:32,fontWeight:700,margin:0,color:GOLD,letterSpacing:2}}>{ex.data.instruction}</p></div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-        {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||56,padding:20,minHeight:90}}>{o.l}</button>)}
+        {/* Emojis Lee y haz a 72px (antes 56) para mejorar legibilidad */}
+        {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||72,padding:22,minHeight:110}}>{o.l}</button>)}
       </div>
     </div>}
     {/* Preposiciones: drag preposition chips into blanks */}
@@ -248,7 +254,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
         const np={...prepFilled,[targetPos]:p};setPrepFilled(np);
         if(ex.data.blanks.every(b=>np[b.pos]!==undefined)){
           const allCorrect=ex.data.blanks.every(b=>np[b.pos]===b.ans);
-          if(allCorrect){setFb('ok');starBeep(4);say(ex.data.full).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
+          // UN cheer + UN modelo+micro (antes say(full) + cheer + triggerOral(full))
+          if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
           else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
             if(na>=2){sayFB('La frase es: '+ex.data.full).then(()=>setTimeout(()=>triggerOral(ex.data.full,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
             else{sayFB('Casi, prueba otra vez');setTimeout(()=>{setFb(null);setPrepFilled({})},1500)}}
