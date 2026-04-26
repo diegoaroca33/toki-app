@@ -989,7 +989,11 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
             })}
           </div>
         </div>
-        {!fb && <div style={{display:'flex',gap:12,justifyContent:'center',marginTop:18}}>
+        {/* Pista + Empezar de nuevo en stack flotante centrado abajo (Doc §3.6
+            feedback Diego: "creo que ese boton se debería ir junto al centro
+            con las estrellas y el micro"). Desaparecen automáticamente
+            cuando hay feedback (estrellas/oral) para no competir con el micro. */}
+        {!fb && !oralPhrase && <div className="fab-center-stack" style={{display:'flex',gap:12,justifyContent:'center'}}>
           {nextIdx < totalSteps && <button className="btn btn-gold" onClick={showHint} style={{fontSize:18,padding:'10px 20px',maxWidth:180}}>💡 Pista</button>}
           {placedKeys.length > 0 && <button className="btn btn-ghost" onClick={()=>{setPlaced({});setHintStep(null)}} style={{fontSize:18,padding:'10px 20px',maxWidth:200}}>↩️ Empezar de nuevo</button>}
         </div>}

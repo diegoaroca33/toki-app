@@ -68,6 +68,25 @@ input::placeholder{color:${DIM}}
   white-space:nowrap;overflow:hidden;
 }
 .btn.skip-btn:active{transform:scale(.92)}
+/* Stack flotante centrado para acciones secundarias (Pista, Empezar de nuevo,
+   Borrar) — sigue al centro, debajo de la zona principal del ejercicio,
+   donde después aparecen las estrellas y el micro. Cuando aparece el
+   OralPrompt el módulo retira la clase para que no se solapen. Doc §3.6. */
+.fab-center-stack{
+  position:fixed!important;
+  left:50%!important;
+  bottom:calc(var(--safe-bottom) + 18px)!important;
+  transform:translateX(-50%)!important;
+  z-index:15!important;
+  display:flex!important;
+  gap:12px!important;
+  pointer-events:auto!important;
+  /* Fondo translúcido para no perder los botones encima del módulo */
+  background:rgba(0,0,0,.30)!important;
+  border-radius:16px!important;
+  padding:6px 8px!important;
+  backdrop-filter:blur(6px)!important;
+}
 .btn-half{display:inline-block;width:48%;font-size:18px;padding:12px 0}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
