@@ -273,6 +273,11 @@ export const LV_OPTS={
   // (corpus en src/data/leeYEntiende.js y completa.js, doc §4.12.1/§4.12.3).
   lee_completa:[{n:24,l:'Básico'},{n:25,l:'Avanzado'},{n:26,l:'Master'}],
   lee_y_entiende:[{n:27,l:'Master'}],
+  // Tiempo y medidas (GROUPS_V2): contenedor virtual que agrupa los lvs
+  // de clock/calendar/termometro. Cuando el supervisor activa este lvKey,
+  // App.jsx lo expande a los lvs reales {clock:[1..3], calendar:[1..3],
+  // razona_temperatura:[13]} en la sesión.
+  tiempo_medidas:[{n:1,l:'Hora'},{n:2,l:'Calendario'},{n:3,l:'Termómetro'}],
 };
 
 export const GROUPS=[
@@ -313,6 +318,75 @@ export const GROUPS=[
     {k:'lee',l:'Preposiciones 1',defLv:6,lvKey:'lee_prep1'},
     {k:'lee',l:'Preposiciones 2',defLv:7,lvKey:'lee_prep2'},
     {k:'lee',l:'Preposiciones 3',defLv:8,lvKey:'lee_prep3'}]},
+];
+
+// === GROUPS_V2 — capa 2 reorganizada (Doc §2) =============================
+// Activable con feature flag toki_layout_v2 = true en localStorage.
+// Si está activo, App.jsx usa GROUPS_V2 en lugar de GROUPS.
+//
+// Mapa final del doc consolidado del 25/04:
+//   DILO (4): Aprende a decirlo, Forma la frase, Mis frases, Cuenta conmigo
+//   APRENDE (4): Presentaciones, Ciencias Naturales, Ciencias Sociales,
+//                Tiempo y medidas (Hora + Calendario + Termómetro)
+//   CUENTA (5): Asociación numérica, Operaciones, Multi, Fracciones, Monedas
+//   RAZONA (4): ¿Dónde está?, Series lógicas, Piensa, Comparar y repartir
+//   LEE (3): LEE, INTRUSO, COMPLETA
+//   ESCRIBE (1): Escritura
+//
+// Movimientos respecto a GROUPS:
+//   - Hora/Calendario/Termómetro pasan de CUENTA a APRENDE (Tiempo y medidas)
+//   - Reparte y Cuenta vuelve a RAZONA fusionado con Compara cantidades
+//   - Series numéricas + Anterior/posterior fusionados en CUENTA "Asociación
+//     numérica" (apuntan al lvKey razona_numeros que ya soporta ambos)
+//   - LEE consolida 8 entradas en 3 (LEE, INTRUSO, COMPLETA)
+//   - Ciencias Naturales/Sociales son placeholders sin implementar (bloqueado
+//     por contenido de imágenes externo)
+export const GROUPS_V2 = [
+  {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones, ciencias y tiempo',dynamic:true,modules:[
+    {k:'quiensoy',l:'Presentaciones',defLv:[1,2],lvKey:'pres_0',presIdx:0},
+    // Ciencias placeholder — pendiente de carga de imágenes (Bloque pendiente)
+    {k:'ciencias_nat',l:'Ciencias Naturales',defLv:1,lvKey:'ciencias_nat',disabled:true},
+    {k:'ciencias_soc',l:'Ciencias Sociales',defLv:1,lvKey:'ciencias_soc',disabled:true},
+    // Tiempo y medidas: agrupa Hora + Calendario + Termómetro como sub-niveles
+    {k:'tiempo_medidas',l:'Tiempo y medidas',defLv:1,lvKey:'tiempo_medidas'},
+  ]},
+  {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
+    {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
+    {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
+    {k:'misfrases_dilo',l:'Mis frases',defLv:1,lvKey:'misfrases_dilo'},
+    {k:'contar',l:'Cuenta conmigo',defLv:1,lvKey:'contar'},
+  ]},
+  {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
+    // Asociación numérica fusiona Series numéricas + Anterior/posterior
+    {k:'razona',l:'Asociación numérica',defLv:9,lvKey:'razona_numeros'},
+    {k:'math',l:'Operaciones',defLv:5,lvKey:'math'},
+    {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
+    {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'},
+    {k:'money',l:'Monedas y dinero',defLv:1,lvKey:'money'},
+  ]},
+  {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
+    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
+    {k:'razona',l:'Series lógicas',defLv:6,lvKey:'razona_series'},
+    {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
+    // Comparar y repartir: agrupa Compara + Reparte y Ordena rutinas
+    // (lvKey razona_secuencias ya cubre rutinas en 3 niveles)
+    {k:'razona',l:'Comparar y repartir',defLv:10,lvKey:'razona_compara'},
+    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
+    {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'},
+    {k:'distribute',l:'Reparte y cuenta',defLv:1,lvKey:'distribute'},
+  ]},
+  {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
+    {k:'writing',l:'Escritura',defLv:1,lvKey:'writing_1'},
+  ]},
+  {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
+    // LEE agrupa Palabra+Imagen, Ordena sílabas, Lee y haz, Lee y entiende
+    // como sub-niveles. Por ahora apuntamos al primer lvKey y los demás
+    // siguen accesibles con sus lvs internos (2,4,5,27).
+    {k:'lee',l:'LEE',defLv:2,lvKey:'lee_word_img'},
+    {k:'lee',l:'INTRUSO',defLv:21,lvKey:'lee_intruso'},
+    {k:'lee',l:'COMPLETA',defLv:24,lvKey:'lee_completa'},
+  ]},
 ];
 
 // 🌱🌿🌳 Competency level presets — configure all modules at once

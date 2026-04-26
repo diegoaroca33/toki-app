@@ -430,6 +430,58 @@ export function getDailyPhase(count) {
   return 1;
 }
 
+// === LAYOUT V2 — feature flag para la reorganización capa 2 (Doc §2) ====
+// Si toki_layout_v2 es true, App.jsx pasa GROUPS_V2 en vez de GROUPS.
+// Por defecto es false para no romper perfiles activos sin aviso.
+export function isLayoutV2(){
+  try{return localStorage.getItem('toki_layout_v2')==='true'}catch(e){return false}
+}
+export function setLayoutV2(v){
+  try{
+    if(v) localStorage.setItem('toki_layout_v2','true');
+    else localStorage.removeItem('toki_layout_v2');
+  }catch(e){}
+}
+// Backup defensivo del estado pre-migración. Se guarda con timestamp único
+// para que el supervisor pueda restaurar si algo va mal. No se borra
+// automáticamente: queda como cápsula de tiempo.
+export function backupBeforeMigration(tag){
+  try{
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const snapshot={};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('toki_')&&!k.startsWith('toki_backup_'))snapshot[k]=localStorage.getItem(k);
+    }
+    localStorage.setItem('toki_backup_'+tag+'_'+stamp,JSON.stringify(snapshot));
+    return stamp;
+  }catch(e){return null}
+}
+// Migración v2: la mayoría de los lvKeys NO cambian (solo cambia GROUPS).
+// Solo hay que asegurar que los lvKeys nuevos (tiempo_medidas) existen
+// en active_mods si el supervisor activó alguno de sus componentes
+// originales (clock, calendar, razona_temperatura).
+export function migrateLayoutV2(){
+  // Solo migramos una vez por dispositivo
+  if(localStorage.getItem('toki_migration_v2_done')==='true')return false;
+  try{
+    backupBeforeMigration('pre_v2');
+    const active=loadData('active_mods',{});
+    let changed=false;
+    // Si tenían clock/calendar/razona_temperatura activos, activar también
+    // tiempo_medidas (el contenedor de capa 2 nuevo)
+    if(active.clock||active.calendar||active.razona_temperatura){
+      if(!active.tiempo_medidas){active.tiempo_medidas=true;changed=true}
+    }
+    if(changed)saveData('active_mods',active);
+    localStorage.setItem('toki_migration_v2_done','true');
+    return true;
+  }catch(e){
+    console.warn('[migrateLayoutV2] error',e);
+    return false;
+  }
+}
+
 // Build GROUPS with dynamic Aprende modules from user.presentations
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;
