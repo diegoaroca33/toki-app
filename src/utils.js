@@ -442,6 +442,18 @@ export function setLayoutV2(v){
     else localStorage.removeItem('toki_layout_v2');
   }catch(e){}
 }
+// === RANDOM V2 — feature flag para Random ponderado por contenido =======
+// Si toki_random_v2 es true, App.jsx usa el algoritmo de src/randomV2.js
+// para distribuir ejercicios. Por defecto false (usa el actual).
+export function isRandomV2(){
+  try{return localStorage.getItem('toki_random_v2')==='true'}catch(e){return false}
+}
+export function setRandomV2(v){
+  try{
+    if(v) localStorage.setItem('toki_random_v2','true');
+    else localStorage.removeItem('toki_random_v2');
+  }catch(e){}
+}
 // Backup defensivo del estado pre-migración. Se guarda con timestamp único
 // para que el supervisor pueda restaurar si algo va mal. No se borra
 // automáticamente: queda como cápsula de tiempo.
