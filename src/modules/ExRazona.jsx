@@ -4,6 +4,8 @@ import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
 import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
+import { PIENSA_BASICO, PIENSA_AVANZADO, PIENSA_MASTER } from '../data/piensa.js'
+import { EMOCIONES_BASICO, EMOCIONES_AVANZADO, EMOCIONES_MASTER } from '../data/emociones.js'
 
 // ===== RAZONA MODULE =====
 // Shared scene positions for SceneSVG and SpatialDrag
@@ -70,6 +72,10 @@ const RAZONA_CLASSIFY=[
   // Sentidos y órganos
   {groups:['👀 Veo con...','👂 Oigo con...'],items:[{w:'👀 Ojos',g:0},{w:'👂 Oídos',g:1},{w:'📺 Televisión',g:0},{w:'🎵 Música',g:1},{w:'📖 Libro',g:0},{w:'📱 Teléfono',g:1}]},
 ];
+// RAZONA_CAUSE — corpus migrado a src/data/piensa.js (PIENSA_BASICO/AVANZADO/
+// MASTER) en 3 niveles. Esta constante se conserva DEPRECADA solo como
+// referencia mínima por si algún consumidor externo la importa.
+// TODO: eliminar tras verificar que ningún caller usa este nombre directo.
 const RAZONA_CAUSE=[
   {q:'Si llueve... ¿qué cojo?',opts:['☂️ Paraguas','🕶️ Gafas de sol'],ans:'☂️ Paraguas'},
   {q:'Si tengo hambre... ¿qué hago?',opts:['🍽️ Como','😴 Duermo'],ans:'🍽️ Como'},
@@ -267,8 +273,16 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
   if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
-  if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
-  if(lv===5){RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+  // Piensa (causa-efecto) en 3 niveles. Doc §4.2.
+  // lv=4 Básico (50), lv=16 Avanzado (~50), lv=17 Master (~54).
+  if(lv===4){PIENSA_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_b_'+i}));return sh(items)}
+  if(lv===16){PIENSA_AVANZADO.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_a_'+i}));return sh(items)}
+  if(lv===17){PIENSA_MASTER.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_m_'+i}));return sh(items)}
+  // Emociones en 3 niveles. Doc §4.3.
+  // lv=5 Básico (cara→emoción), lv=18 Avanzado (situación), lv=19 Master (situación sutil → 2arias).
+  if(lv===5){EMOCIONES_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_b_'+i}));return sh(items)}
+  if(lv===18){EMOCIONES_AVANZADO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion_situation',data:{...s,ans:s.emotion},id:'rz_emo_a_'+i}));return sh(items)}
+  if(lv===19){EMOCIONES_MASTER.forEach((s,i)=>items.push({ty:'razona',mode:'emotion_situation',data:{...s,ans:s.emotion},id:'rz_emo_m_'+i}));return sh(items)}
   if(lv===6){return genPatterns('easy')}
   if(lv===7){return genPatterns('medium')}
   if(lv===8){return genPatterns('hard')}
@@ -279,7 +293,8 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===15){return genSequences('master')}
   if(lv===12){return genAnteriorPosterior()}
   if(lv===13){return genTemperature()}
-  RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+  // Default: emociones básico
+  EMOCIONES_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
@@ -642,7 +657,7 @@ function buildClassifyPhrase(order, groups){
 }
 export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
-  const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
+  const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='emotion_situation'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
   // Ordena rutinas: shuffle ESTABLE. Antes se mezclaba en cada render y las
   // opciones se movían sin parar — imposible leer/elegir.
   const shuffledSteps=useMemo(()=>ex.mode==='sequence'?[...ex.data.steps].sort(()=>Math.random()-.5):null,[ex]);
@@ -664,6 +679,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
     if(ex.mode==='emotion')return ex.data.emotion;
+    if(ex.mode==='emotion_situation')return 'Está '+ex.data.emotion.toLowerCase();
     if(ex.mode==='spatial'||ex.mode==='spatial_drag')return ex.data.ans||ex.data.pos;
     if(ex.mode==='cause')return stripEmoji(ex.data.ans);
     if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
@@ -681,6 +697,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='intruso'){const cat=ex.data.cat||'';return'Piensa: todos los demás son del mismo grupo'+(cat?' ('+cat+')':'')}
     if(ex.mode==='cause')return'Piensa: ¿qué harías tú en esa situación?';
     if(ex.mode==='emotion')return'Mira bien la cara: ¿está contenta, triste o enfadada?';
+    if(ex.mode==='emotion_situation')return'Piensa cómo te sentirías tú en esa situación';
     if(ex.mode==='pattern')return'Fíjate en el patrón que se repite';
     if(ex.mode==='anterior_posterior')return'Cuenta: ...'+Math.max(0,(ex.data.n||5)-2)+', '+(Math.max(0,(ex.data.n||5)-1))+', '+(ex.data.n||5)+', '+((ex.data.n||5)+1)+', '+((ex.data.n||5)+2)+'...';
     if(ex.mode==='temperature'){const t=ex.data.temp;return t<0?'Bajo cero: ¡hace mucho frío!':t<=10?'Pocos grados: hace frío':t<=20?'Temperatura agradable':t<=30?'Bastante calor':'¡Mucho calor!'}
@@ -851,6 +868,17 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
       <div style={{flex:'0 0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,width:280}}>
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
+      </div>
+    </div>}
+    {/* Emoción situacional (avanzado/master) — texto narrativo en lugar
+        de emoji. El niño lee la situación e infiere el sentimiento. */}
+    {ex.mode==='emotion_situation'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD,textAlign:'center'}}>{ex.data.q}</p>
+      <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:'#fff'}}>{ex.data.situation}</p>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':fb==='no'&&o===ex.data.emotion?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:64,fontWeight:700}}>{o}</button>)}
       </div>
     </div>}
     {/* Ordena rutinas — 2 columnas: pool izquierda, orden derecha numerado */}
