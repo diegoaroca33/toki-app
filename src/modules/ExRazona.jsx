@@ -4,6 +4,8 @@ import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
 import { useIdle, NumPad, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
+import { PIENSA_BASICO, PIENSA_AVANZADO, PIENSA_MASTER } from '../data/piensa.js'
+import { EMOCIONES_BASICO, EMOCIONES_AVANZADO, EMOCIONES_MASTER } from '../data/emociones.js'
 
 // ===== RAZONA MODULE =====
 // Shared scene positions for SceneSVG and SpatialDrag
@@ -50,7 +52,7 @@ const RAZONA_CLASSIFY=[
   {groups:['Frutas','Animales'],items:[{w:'🍎 Manzana',g:0},{w:'🐕 Perro',g:1},{w:'🍐 Pera',g:0},{w:'🐱 Gato',g:1},{w:'🍌 Plátano',g:0},{w:'🐟 Pez',g:1}]},
   {groups:['Ropa','Comida'],items:[{w:'👕 Camisa',g:0},{w:'🍞 Pan',g:1},{w:'👟 Zapato',g:0},{w:'🧀 Queso',g:1},{w:'🧢 Gorro',g:0},{w:'🥛 Leche',g:1}]},
   {groups:['Animales','Muebles'],items:[{w:'🦁 León',g:0},{w:'🪑 Mesa',g:1},{w:'🐻 Oso',g:0},{w:'💺 Silla',g:1},{w:'🐦 Pájaro',g:0},{w:'🛏️ Cama',g:1}]},
-  // Naturales/Sociales — Pictociencia
+  // Naturales/Sociales — contenido curricular primaria
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🌾 Trigo',g:0},{w:'🍞 Pan',g:1},{w:'🥛 Leche',g:0},{w:'🧀 Queso',g:1},{w:'🌳 Madera',g:0},{w:'🪑 Mesa',g:1}]},
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🫒 Aceituna',g:0},{w:'🫒 Aceite',g:1},{w:'🐑 Lana',g:0},{w:'🧣 Bufanda',g:1},{w:'🍇 Uva',g:0},{w:'🍷 Zumo',g:1}]},
   {groups:['🌾 Natural','🏭 Elaborado'],items:[{w:'🥚 Huevo',g:0},{w:'🍰 Pastel',g:1},{w:'🌻 Girasol',g:0},{w:'🛢️ Aceite',g:1},{w:'🐄 Vaca',g:0},{w:'👞 Zapatos',g:1}]},
@@ -60,16 +62,20 @@ const RAZONA_CLASSIFY=[
   {groups:['🏠 Dentro casa','🌳 Fuera casa'],items:[{w:'🛋️ Sofá',g:0},{w:'🌳 Árbol',g:1},{w:'🍳 Cocina',g:0},{w:'🏊 Piscina',g:1},{w:'🛁 Bañera',g:0},{w:'⛱️ Playa',g:1}]},
   {groups:['🔊 Hace ruido','🤫 Silencioso'],items:[{w:'🥁 Tambor',g:0},{w:'📚 Libro',g:1},{w:'📱 Teléfono',g:0},{w:'🧸 Peluche',g:1},{w:'🐕 Perro',g:0},{w:'🐟 Pez',g:1}]},
   {groups:['💧 Agua','🔥 Fuego'],items:[{w:'🏊 Nadar',g:0},{w:'🏕️ Hoguera',g:1},{w:'🚿 Ducha',g:0},{w:'🕯️ Vela',g:1},{w:'🌧️ Lluvia',g:0},{w:'☀️ Sol',g:1}]},
-  // Pictociencia: Origen alimentos
+  // Origen de los alimentos
   {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🥛 Leche',g:0},{w:'🍎 Manzana',g:1},{w:'🥚 Huevo',g:0},{w:'🥕 Zanahoria',g:1},{w:'🧀 Queso',g:0},{w:'🍌 Plátano',g:1}]},
   {groups:['🐄 Animal','🌱 Vegetal'],items:[{w:'🍗 Pollo',g:0},{w:'🍅 Tomate',g:1},{w:'🐟 Pescado',g:0},{w:'🥦 Brócoli',g:1},{w:'🍖 Carne',g:0},{w:'🍇 Uvas',g:1}]},
-  // Pictociencia: Usos del agua
+  // Usos del agua
   {groups:['💧 Necesita agua','❌ No necesita agua'],items:[{w:'🧼 Lavarse',g:0},{w:'📺 Ver la tele',g:1},{w:'🍲 Cocinar',g:0},{w:'📖 Leer',g:1},{w:'🌱 Regar plantas',g:0},{w:'🎮 Jugar consola',g:1}]},
-  // Pictociencia: Profesiones que ayudan
+  // Profesiones que ayudan
   {groups:['👨‍⚕️ Salud','🛡️ Seguridad'],items:[{w:'👨‍⚕️ Médico',g:0},{w:'👮 Policía',g:1},{w:'🏥 Enfermera',g:0},{w:'🚒 Bombero',g:1},{w:'🦷 Dentista',g:0},{w:'🛡️ Guardia',g:1}]},
-  // Pictociencia: Sentidos y órganos
+  // Sentidos y órganos
   {groups:['👀 Veo con...','👂 Oigo con...'],items:[{w:'👀 Ojos',g:0},{w:'👂 Oídos',g:1},{w:'📺 Televisión',g:0},{w:'🎵 Música',g:1},{w:'📖 Libro',g:0},{w:'📱 Teléfono',g:1}]},
 ];
+// RAZONA_CAUSE — corpus migrado a src/data/piensa.js (PIENSA_BASICO/AVANZADO/
+// MASTER) en 3 niveles. Esta constante se conserva DEPRECADA solo como
+// referencia mínima por si algún consumidor externo la importa.
+// TODO: eliminar tras verificar que ningún caller usa este nombre directo.
 const RAZONA_CAUSE=[
   {q:'Si llueve... ¿qué cojo?',opts:['☂️ Paraguas','🕶️ Gafas de sol'],ans:'☂️ Paraguas'},
   {q:'Si tengo hambre... ¿qué hago?',opts:['🍽️ Como','😴 Duermo'],ans:'🍽️ Como'},
@@ -77,7 +83,7 @@ const RAZONA_CAUSE=[
   {q:'Si está oscuro... ¿qué enciendo?',opts:['💡 La luz','🚰 El grifo'],ans:'💡 La luz'},
   {q:'Si me duele la cabeza... ¿qué tomo?',opts:['💊 Medicina','🥤 Refresco'],ans:'💊 Medicina'},
   {q:'Si quiero cruzar la calle... ¿qué miro?',opts:['🚦 El semáforo','🕐 El reloj'],ans:'🚦 El semáforo'},
-  // Nuevos — entorno cotidiano (Pictociencia)
+  // Entorno cotidiano — causa/efecto
   {q:'Si tengo sed... ¿qué cojo?',opts:['💧 Un vaso de agua','🧥 Un abrigo'],ans:'💧 Un vaso de agua'},
   {q:'Si es de noche... ¿qué hago?',opts:['💡 Enciendo la luz','🕶️ Me pongo gafas'],ans:'💡 Enciendo la luz'},
   {q:'Si tengo sueño... ¿qué hago?',opts:['🛏️ Me voy a dormir','⚽ Juego al fútbol'],ans:'🛏️ Me voy a dormir'},
@@ -98,23 +104,23 @@ const RAZONA_CAUSE=[
   {q:'Si llueve y no tengo paraguas...',opts:['🏠 Espero bajo un techo','🏃 Corro bajo la lluvia'],ans:'🏠 Espero bajo un techo'},
   {q:'Si alguien me da un regalo...',opts:['🙏 Doy las gracias','😤 No digo nada'],ans:'🙏 Doy las gracias'},
   {q:'Si veo basura en el suelo...',opts:['🗑️ La tiro a la papelera','👟 La piso'],ans:'🗑️ La tiro a la papelera'},
-  // Pictociencia: Servicios municipales
+  // Servicios municipales
   {q:'Si hay un incendio... ¿a quién llamo?',opts:['🚒 A los bomberos','🌳 Al jardinero'],ans:'🚒 A los bomberos'},
   {q:'Si veo un ladrón... ¿a quién llamo?',opts:['👮 A la policía','📬 Al cartero'],ans:'👮 A la policía'},
   {q:'Si alguien se desmaya... ¿a quién llamo?',opts:['🚑 A la ambulancia','🧹 Al barrendero'],ans:'🚑 A la ambulancia'},
   {q:'Si la calle está sucia... ¿quién la limpia?',opts:['🧹 El barrendero','🚒 El bombero'],ans:'🧹 El barrendero'},
   {q:'Si se rompe una tubería... ¿a quién aviso?',opts:['🏛️ Al ayuntamiento','🚒 Al bombero'],ans:'🏛️ Al ayuntamiento'},
-  // Pictociencia: Medios de comunicación
+  // Medios de comunicación
   {q:'Si quiero hablar con mamá ahora...',opts:['📱 La llamo por teléfono','✉️ Le mando una carta'],ans:'📱 La llamo por teléfono'},
   {q:'Si quiero ver dibujos...',opts:['📺 Enciendo la tele','📱 Llamo por teléfono'],ans:'📺 Enciendo la tele'},
   {q:'Si quiero mandar un mensaje a mi amigo...',opts:['📱 Le mando un mensaje','📻 Pongo la radio'],ans:'📱 Le mando un mensaje'},
   {q:'Si quiero escuchar música en el coche...',opts:['📻 Pongo la radio','✉️ Mando una carta'],ans:'📻 Pongo la radio'},
-  // Pictociencia: Dónde voy a viajar
+  // Dónde voy para viajar
   {q:'Si voy en tren... ¿dónde voy?',opts:['🚉 A la estación','✈️ Al aeropuerto'],ans:'🚉 A la estación'},
   {q:'Si voy en avión... ¿dónde voy?',opts:['✈️ Al aeropuerto','⚓ Al puerto'],ans:'✈️ Al aeropuerto'},
   {q:'Si voy en barco... ¿dónde voy?',opts:['⚓ Al puerto','🚉 A la estación'],ans:'⚓ Al puerto'},
   {q:'Si cojo un autobús... ¿dónde espero?',opts:['🚏 En la parada','✈️ En el aeropuerto'],ans:'🚏 En la parada'},
-  // Pictociencia: Estaciones
+  // Estaciones del año
   {q:'Si las hojas se caen... ¿qué estación es?',opts:['🍂 Otoño','☀️ Verano'],ans:'🍂 Otoño'},
   {q:'Si hace mucho calor y vamos a la piscina...',opts:['☀️ Es verano','❄️ Es invierno'],ans:'☀️ Es verano'},
   {q:'Si nieva... ¿qué me pongo?',opts:['🧥 Abrigo y botas','👙 Bañador'],ans:'🧥 Abrigo y botas'},
@@ -167,26 +173,65 @@ function genCompare(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=
     const ans=a>b?'>':a<b?'<':'=';
     items.push({ty:'razona',mode:'compare',data:{a,b,emoji:em,ans,q:`¿${a} ${em} o ${b} ${em}?`},id:'rz_cmp_'+i})}
   return sh(items)}
-// Generate sequence ordering exercises (daily routines)
-function genSequences(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
-  const SEQUENCES=[
-    {title:'Por la mañana',steps:['⏰ Me despierto','🚿 Me ducho','👕 Me visto','🥣 Desayuno','🎒 Cojo la mochila','🚌 Voy al cole'],oral:'Por la mañana me despierto, me ducho, me visto y desayuno'},
-    {title:'Antes de dormir',steps:['🍽️ Ceno','📺 Veo un rato la tele','🪥 Me lavo los dientes','📖 Leo un cuento','🛏️ Me acuesto','😴 Me duermo'],oral:'Antes de dormir ceno, me lavo los dientes y me acuesto'},
-    {title:'Ir a comprar',steps:['📝 Hago la lista','🧥 Me pongo el abrigo','🚶 Voy a la tienda','🛒 Cojo lo que necesito','💰 Pago en la caja','🏠 Vuelvo a casa'],oral:'Para comprar hago la lista, voy a la tienda, pago y vuelvo'},
-    {title:'Ir al médico',steps:['📞 Pido cita','🚗 Voy al centro de salud','🪑 Espero mi turno','👨‍⚕️ Entro a consulta','💊 Me da la receta','🏠 Vuelvo a casa'],oral:'En el médico espero mi turno, entro y me da la receta'},
-    {title:'Coger el autobús',steps:['🚏 Voy a la parada','⏳ Espero el autobús','🚌 Subo al autobús','💳 Pago el billete','💺 Me siento','🔔 Pulso para bajar'],oral:'Para ir en bus, espero en la parada, subo y pago'},
-    {title:'Preparar un bocadillo',steps:['🍞 Cojo el pan','🔪 Lo corto por la mitad','🧀 Pongo el queso','🥬 Pongo la lechuga','🍞 Cierro el bocadillo','😋 Me lo como'],oral:'Para hacer un bocadillo corto el pan, pongo queso y lo cierro'},
-    {title:'Lavarse las manos',steps:['🚰 Abro el grifo','🧼 Echo jabón','🤲 Froto las manos','💦 Las enjuago con agua','🚰 Cierro el grifo','🧻 Me seco con la toalla'],oral:'Me lavo las manos con jabón y agua y me seco'},
-    {title:'Poner la mesa',steps:['🍽️ Pongo el mantel','🍽️ Pongo los platos','🍴 Pongo los cubiertos','🥛 Pongo los vasos','🧻 Pongo las servilletas','🪑 Me siento'],oral:'Pongo el mantel, los platos, los cubiertos y los vasos'},
-    {title:'Ir al parque',steps:['👟 Me pongo las zapatillas','🧴 Me echo crema','🚶 Voy andando','🌳 Llego al parque','⚽ Juego con amigos','🏠 Vuelvo a casa'],oral:'Voy al parque, juego con amigos y vuelvo a casa'},
-    {title:'Ducharse',steps:['🚿 Abro el agua','💧 Mojo el cuerpo','🧴 Echo gel','🤲 Me froto bien','💦 Me aclaro','🧻 Me seco con la toalla'],oral:'Para ducharme abro el agua, me enjabono y me seco'},
-  ];
-  SEQUENCES.forEach((seq,si)=>{
-    // Show 4 steps shuffled, child must order them
-    const shown=seq.steps.slice(0,4);
-    items.push({ty:'razona',mode:'sequence',data:{title:seq.title,steps:shown,oral:seq.oral},id:'rz_seq_'+si});
-  });
-  return sh(items)}
+// Rutinas en 3 niveles. Reescritura del 26/04 según criterios revisados:
+// frases cortas en primera persona del singular, vocabulario indudable,
+// pasos en orden lógico real (el shuffle visual lo hace useMemo en runtime).
+// `title` es la cabecera tipo pregunta directa ("¿Qué haces para...?")
+// y `oral` es la frase corta que el niño repite por micro al acertar.
+const ROUTINES_BASICO = [
+  {title:'¿Qué haces para lavarte las manos?',steps:['Abro el grifo','Me lavo','Me seco'],oral:'Me lavo las manos'},
+  {title:'¿Qué haces para lavarte los dientes?',steps:['Pongo pasta','Me cepillo','Me enjuago'],oral:'Me lavo los dientes'},
+  {title:'¿Cómo te comes un plátano?',steps:['Cojo el plátano','Lo pelo','Me lo como'],oral:'Me como un plátano'},
+  {title:'¿Cómo abres la puerta?',steps:['Saco la llave','La giro','Abro la puerta'],oral:'Abro la puerta'},
+  {title:'¿Cómo cruzas la calle?',steps:['Miro a un lado','Miro al otro','Cruzo'],oral:'Cruzo con cuidado'},
+  {title:'¿Qué haces para vestirte?',steps:['Quito el pijama','Pongo la ropa','Pongo los zapatos'],oral:'Me visto solo'},
+  {title:'¿Qué haces al salir del cole?',steps:['Espero a papá','Volvemos juntos','Llegamos a casa'],oral:'Vuelvo del cole con papá'},
+  {title:'¿Cómo te tomas un yogur?',steps:['Cojo un yogur','Lo abro','Me lo como'],oral:'Me como un yogur'},
+  {title:'¿Qué haces para acostarte?',steps:['Pongo el pijama','Apago la luz','Me duermo'],oral:'Me voy a dormir'},
+  {title:'¿Qué haces para desayunar?',steps:['Pongo la mesa','Como','Recojo'],oral:'He desayunado'},
+  {title:'¿Qué haces cuando llueve?',steps:['Cojo el paraguas','Lo abro','Me protejo'],oral:'Me protejo de la lluvia'},
+  {title:'¿Cómo te bebes un vaso de agua?',steps:['Cojo un vaso','Lo lleno de agua','Lo bebo'],oral:'Bebo un vaso de agua'},
+  {title:'¿Qué haces si tienes frío?',steps:['Cojo el abrigo','Me lo pongo','Estoy calentito'],oral:'Me he abrigado'},
+  {title:'¿Cómo recoges tu cuarto?',steps:['Cojo los juguetes','Los guardo','Cierro el cajón'],oral:'He recogido'},
+  {title:'¿Qué haces si te pica algo?',steps:['Se lo digo a papá','Me pone crema','Estoy mejor'],oral:'Papá me ha curado'},
+];
+const ROUTINES_AVANZADO = [
+  {title:'¿Qué haces antes de dormir?',steps:['Ceno con mi familia','Me lavo los dientes','Me pongo el pijama','Me acuesto en la cama'],oral:'Me preparo para dormir'},
+  {title:'¿Qué haces por la mañana?',steps:['Me despierto','Me visto','Desayuno','Voy al cole'],oral:'Empiezo el día'},
+  {title:'¿Cómo te duchas?',steps:['Me mojo','Me echo gel','Me aclaro','Me seco'],oral:'Me he duchado'},
+  {title:'¿Cómo haces zumo de naranja?',steps:['Cojo las naranjas','Las parto','Las exprimo','Bebo el zumo'],oral:'Bebo un zumo'},
+  {title:'¿Cómo se va a comprar?',steps:['Cojo el carro','Pongo la compra','Pago en la caja','Vuelvo a casa'],oral:'He hecho la compra'},
+  {title:'¿Qué pasa al ir al médico?',steps:['Voy al centro de salud','Espero mi turno','Veo al médico','Vuelvo a casa'],oral:'He ido al médico'},
+  {title:'¿Cómo se guarda la ropa limpia?',steps:['Cojo la ropa','La doblo','Abro el cajón','La guardo'],oral:'Guardo mi ropa'},
+  {title:'¿Cómo se pone la lavadora?',steps:['Meto la ropa sucia','Echo el detergente','Cierro la puerta','Pulso el botón'],oral:'He puesto la lavadora'},
+  {title:'¿Cómo se cruza una calle con semáforo?',steps:['Espero al semáforo','Miro que estén parados','Cruzo andando','Llego al otro lado'],oral:'He cruzado la calle'},
+  {title:'¿Cómo preparas la mochila para el cole?',steps:['Pongo los libros','Pongo el estuche','Pongo el almuerzo','Cierro la mochila'],oral:'Tengo lista la mochila'},
+  {title:'¿Qué haces si te haces una herida pequeña?',steps:['Lavo la herida con agua','Me pongo una tirita','La aprieto bien','Sigo con cuidado'],oral:'Me he curado solo'},
+  {title:'¿Cómo se calienta comida en el microondas?',steps:['Pongo la comida en un plato','Lo meto en el microondas','Pongo el tiempo','Saco el plato'],oral:'He calentado la comida'},
+  {title:'¿Cómo se hace la cama?',steps:['Estiro la sábana','Pongo la manta','Coloco la almohada','La cama está hecha'],oral:'He hecho la cama'},
+  {title:'¿Qué haces antes de salir de casa?',steps:['Me visto','Cojo las llaves','Cojo el móvil','Cierro la puerta'],oral:'Salgo de casa'},
+  {title:'¿Cómo se hace una merienda?',steps:['Lavo una manzana','Cojo unas galletas','Sirvo un vaso de leche','Me lo como'],oral:'He merendado'},
+];
+const ROUTINES_MASTER = [
+  {title:'¿Cómo se coge un autobús?',steps:['Voy a la parada del autobús','Espero a que llegue','Subo y pago el billete','Me siento en mi sitio','Pulso el botón para bajar'],oral:'He cogido el autobús'},
+  {title:'¿Cómo se hace una tortilla francesa?',steps:['Cojo dos huevos','Los bato en un bol','Echo aceite en la sartén','Echo los huevos batidos','Le doy la vuelta'],oral:'He hecho una tortilla'},
+  {title:'¿Cómo se prepara un sándwich?',steps:['Cojo dos rebanadas de pan','Pongo el jamón y el queso','Cierro el sándwich','Me lo como'],oral:'Me he comido un sándwich'},
+  {title:'¿Cómo se va al médico con cita?',steps:['Llego al centro de salud','Doy mi nombre en recepción','Espero en la sala','Entro cuando me llaman','Hablo con el médico'],oral:'He ido al médico'},
+  {title:'¿Cómo se pide algo en una cafetería?',steps:['Entro en la cafetería','Voy a la barra','Pido lo que quiero','Pago al camarero','Cojo mi pedido'],oral:'He pedido en la cafetería'},
+  {title:'¿Qué haces si pierdes algo en la calle?',steps:['Pienso dónde lo he tenido','Vuelvo por mis pasos','Pregunto a la gente','Si no aparece, llamo a casa'],oral:'He buscado lo perdido'},
+  {title:'¿Cómo se coge un metro o un tren?',steps:['Compro el billete','Paso por la barrera','Espero en el andén','Subo cuando llega','Bajo en mi parada'],oral:'He viajado en metro'},
+  {title:'¿Cómo se hace una compra pequeña en una tienda?',steps:['Entro en la tienda','Cojo lo que quiero','Voy a la caja','Pago el precio','Cojo el ticket'],oral:'He comprado en la tienda'},
+  {title:'¿Qué haces si te encuentras mal?',steps:['Aviso a un adulto','Me siento o me tumbo','Bebo agua','Espero a estar mejor'],oral:'He pedido ayuda'},
+];
+function genSequences(tier){
+  const sh=a=>[...a].sort(()=>Math.random()-.5);
+  const pool = tier==='master' ? ROUTINES_MASTER : tier==='avanzado' ? ROUTINES_AVANZADO : ROUTINES_BASICO;
+  return sh(pool.map((seq,si)=>({
+    ty:'razona', mode:'sequence',
+    data:{title:seq.title, steps:[...seq.steps], oral:seq.oral},
+    id:'rz_seq_'+tier+'_'+si,
+  })));
+}
 // Generate anterior/posterior exercises
 function genAnteriorPosterior(){const sh=a=>[...a].sort(()=>Math.random()-.5);const items=[];
   for(let i=0;i<15;i++){const n=2+Math.floor(Math.random()*18); // 2-19
@@ -228,17 +273,28 @@ export function genRazona(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]
   if(lv===1){RAZONA_SPATIAL.forEach((s,i)=>items.push({ty:'razona',mode:'spatial',data:s,id:'rz_sp_'+i}));return sh(items)}
   if(lv===2){RAZONA_DRAG.forEach((s,i)=>items.push({ty:'razona',mode:'spatial_drag',data:s,id:'rz_drg_'+i}));return sh(items)}
   if(lv===3){RAZONA_CLASSIFY.forEach((s,i)=>items.push({ty:'razona',mode:'classify',data:s,id:'rz_cls_'+i}));return sh(items)}
-  if(lv===4){RAZONA_CAUSE.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_'+i}));return sh(items)}
-  if(lv===5){RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+  // Piensa (causa-efecto) en 3 niveles. Doc §4.2.
+  // lv=4 Básico (50), lv=16 Avanzado (~50), lv=17 Master (~54).
+  if(lv===4){PIENSA_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_b_'+i}));return sh(items)}
+  if(lv===16){PIENSA_AVANZADO.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_a_'+i}));return sh(items)}
+  if(lv===17){PIENSA_MASTER.forEach((s,i)=>items.push({ty:'razona',mode:'cause',data:s,id:'rz_cau_m_'+i}));return sh(items)}
+  // Emociones en 3 niveles. Doc §4.3.
+  // lv=5 Básico (cara→emoción), lv=18 Avanzado (situación), lv=19 Master (situación sutil → 2arias).
+  if(lv===5){EMOCIONES_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_b_'+i}));return sh(items)}
+  if(lv===18){EMOCIONES_AVANZADO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion_situation',data:{...s,ans:s.emotion},id:'rz_emo_a_'+i}));return sh(items)}
+  if(lv===19){EMOCIONES_MASTER.forEach((s,i)=>items.push({ty:'razona',mode:'emotion_situation',data:{...s,ans:s.emotion},id:'rz_emo_m_'+i}));return sh(items)}
   if(lv===6){return genPatterns('easy')}
   if(lv===7){return genPatterns('medium')}
   if(lv===8){return genPatterns('hard')}
   if(lv===9){return genNumberSeries()}
   if(lv===10){return genCompare()}
-  if(lv===11){return genSequences()}
+  if(lv===11){return genSequences('basico')}
+  if(lv===14){return genSequences('avanzado')}
+  if(lv===15){return genSequences('master')}
   if(lv===12){return genAnteriorPosterior()}
   if(lv===13){return genTemperature()}
-  RAZONA_EMOTIONS.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
+  // Default: emociones básico
+  EMOCIONES_BASICO.forEach((s,i)=>items.push({ty:'razona',mode:'emotion',data:s,id:'rz_emo_'+i}));return sh(items)}
 
 export function SceneSVG({scene,obj,pos,showObj=true,dropZones=null,highlightZone=null}){const w=360,h=280;
   const objEmojis={libro:'📕',mochila:'🎒',móvil:'📱',gafas:'👓',zapatillas:'👟',llaves:'🔑',estuche:'✏️',balón:'⚽'};
@@ -487,18 +543,143 @@ export function SpatialDrag({ex,fb,onCorrect,onWrong,poke}){
 
 // Strip emojis from text before TTS (Web Speech API reads emojis as words: 💧="gota", 🧥="abrigo")
 function stripEmoji(t){return t?t.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{FE00}-\u{FEFF}]|[\u200D\uFE0F]/gu,'').trim():''}
+
+// ── Clasificar: construcción de la frase final ────────────────
+// En vez de "bien clasificado" aburrido, generamos una frase con los ÚLTIMOS
+// items colocados en cada grupo (los que más dudaba el niño). Ej:
+// "la pera es una fruta y el gato es un animal".
+// Grupos que admiten "X es un {sg} / X son unos {pl}" (sustantivos concretos).
+const CLASSIFY_SINGULAR = {
+  animales: { sg:'animal',   pl:'animales'   },
+  muebles:  { sg:'mueble',   pl:'muebles'    },
+  frutas:   { sg:'fruta',    pl:'frutas'     },
+  verduras: { sg:'verdura',  pl:'verduras'   },
+  comida:   { sg:'comida',   pl:'comidas'    },
+  ropa:     { sg:'prenda de ropa', pl:'prendas de ropa' },
+  colores:  { sg:'color',    pl:'colores'    },
+};
+// Plantillas verbales por grupo (en minúsculas normalizadas, sin emojis).
+// es = predicado en singular · son = predicado en plural.
+// Diego pidió frases como "el dentista se ocupa de la salud" y "los guantes
+// se usan en invierno" en vez de "va en salud" o "van en invierno".
+const GROUP_VERB = {
+  'salud':        { es:'se ocupa de la salud',      son:'se ocupan de la salud' },
+  'seguridad':    { es:'se ocupa de la seguridad',  son:'se ocupan de la seguridad' },
+  'invierno':     { es:'se usa en invierno',        son:'se usan en invierno' },
+  'verano':       { es:'se usa en verano',          son:'se usan en verano' },
+  'pueblo':       { es:'está en el pueblo',         son:'están en el pueblo' },
+  'ciudad':       { es:'está en la ciudad',         son:'están en la ciudad' },
+  'dentro casa':  { es:'está dentro de casa',       son:'están dentro de casa' },
+  'fuera casa':   { es:'está fuera de casa',        son:'están fuera de casa' },
+  'hace ruido':   { es:'hace ruido',                son:'hacen ruido' },
+  'silencioso':   { es:'es silencioso',             son:'son silenciosos' },
+  'agua':         { es:'es cosa de agua',           son:'son cosas de agua' },
+  'fuego':        { es:'es cosa de fuego',          son:'son cosas de fuego' },
+  'natural':      { es:'es natural',                son:'son naturales' },
+  'elaborado':    { es:'es elaborado',              son:'son elaborados' },
+  'animal':       { es:'viene del animal',          son:'vienen del animal' },
+  'vegetal':      { es:'es vegetal',                son:'son vegetales' },
+  'necesita agua':     { es:'necesita agua',        son:'necesitan agua' },
+  'no necesita agua':  { es:'no necesita agua',     son:'no necesitan agua' },
+  'veo con':      { es:'se ve con los ojos',        son:'se ven con los ojos' },
+  'oigo con':     { es:'se oye con los oídos',      son:'se oyen con los oídos' },
+};
+// Masculinos que acaban en 'a' (excepciones). Incluye profesiones ambiguas.
+const MASC_EXC_A = new Set([
+  'dia','día','mapa','drama','problema','sistema','tema','idioma','programa','poema',
+  'clima','fantasma','planeta','pijama','sofa','sofá','papa','papá',
+  'guardia','policía','policia','dentista','periodista','artista','atleta','tenista',
+]);
+// Femeninos irregulares (no acaban en 'a')
+const FEM_IRREG = new Set([
+  'leche','carne','sangre','gente','nieve','llave','tarde','fiebre','noche','mente',
+  'muerte','clase','foto','moto','mano','radio','cruz','luz','flor','sal','miel',
+  'piel','nariz','pared','red','sed','vez','voz','edad','ciudad','verdad','salud',
+  'seguridad','mujer',
+]);
+// Singulares terminados en 's' (no son plurales)
+const SING_S = new Set([
+  'lunes','martes','miércoles','miercoles','jueves','viernes','crisis','tesis',
+  'análisis','analisis','virus','atlas','autobús','autobus','mes','país','pais',
+  'arroz','gas','mas','tres','dos','seis',
+]);
+function classifyCleanName(s){ return stripEmoji(s||'').trim(); }
+function classifyIsPlural(w){
+  const first = classifyCleanName(w).split(/\s+/)[0].toLowerCase();
+  if(SING_S.has(first)) return false;
+  return /s$/.test(first) && first.length > 2;
+}
+// Devuelve 'la'/'el' — ignora plurales (se manejan arriba)
+function classifyArtDef(w){
+  const first = classifyCleanName(w).split(/\s+/)[0].toLowerCase();
+  // Si es plural quita la 's' para detectar género de la raíz
+  const base = classifyIsPlural(w) ? first.replace(/s$/, '').replace(/es$/, '') : first;
+  if(FEM_IRREG.has(base)) return 'la';
+  if(MASC_EXC_A.has(base)) return 'el';
+  if(/a$/.test(base)) return 'la';
+  return 'el';
+}
+function classifyArtIndef(w){
+  return classifyArtDef(w) === 'la' ? 'una' : 'un';
+}
+function buildClassifyPhrase(order, groups){
+  if(!order || !order.length || !groups) return 'bien clasificado';
+  const picks = groups.map((g, gi) => {
+    const last = [...order].reverse().find(x => x.g === gi);
+    return last ? { item: last.w, group: g } : null;
+  }).filter(Boolean);
+  if (!picks.length) return 'bien clasificado';
+  const parts = picks.map(p => {
+    const item = classifyCleanName(p.item).toLowerCase();
+    const gClean = classifyCleanName(p.group).toLowerCase();
+    const plural = classifyIsPlural(item);
+    const defArt = classifyArtDef(item);
+    const art = plural ? (defArt === 'la' ? 'las' : 'los') : defArt;
+    // 1) Grupo concreto → "X es/son un/unos {singular|plural}"
+    const sing = CLASSIFY_SINGULAR[gClean];
+    if (sing) {
+      if (plural) {
+        // "los pájaros son animales" / "las peras son frutas"
+        return `${art} ${item} son ${sing.pl}`;
+      }
+      const artIndef = classifyArtIndef(sing.sg);
+      return `${art} ${item} es ${artIndef} ${sing.sg}`;
+    }
+    // 2) Plantilla verbal específica → "X se ocupa de la salud" / "X se usa en invierno"
+    const verb = GROUP_VERB[gClean];
+    if (verb) {
+      return `${art} ${item} ${plural ? verb.son : verb.es}`;
+    }
+    // 3) Fallback → "está en el grupo {g}"
+    return `${art} ${item} ${plural ? 'están' : 'está'} en ${gClean}`;
+  });
+  return parts.join(' y ');
+}
 export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
   const shuffledWords=useMemo(()=>ex.mode==='intruso'?[...ex.data.words].sort(()=>Math.random()-.5):null,[ex]);
-  const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
+  const shuffledOpts=useMemo(()=>(ex.mode==='emotion'||ex.mode==='emotion_situation'||ex.mode==='cause')?[...ex.data.opts].sort(()=>Math.random()-.5):null,[ex]);
+  // Ordena rutinas: shuffle ESTABLE. Antes se mezclaba en cada render y las
+  // opciones se movían sin parar — imposible leer/elegir.
+  const shuffledSteps=useMemo(()=>ex.mode==='sequence'?[...ex.data.steps].sort(()=>Math.random()-.5):null,[ex]);
   const[fb,setFb]=useState(null);const[att,setAtt]=useState(0);const[placed,setPlaced]=useState({});const{idleMsg,poke}=useIdle(name,!fb);
+  // Clasificar: orden de colocación (para frase final contextual) + item seleccionado por tap
+  const[classifyOrder,setClassifyOrder]=useState([]);
+  const[selectedItem,setSelectedItem]=useState(null);
+  // Ordena rutinas: pista (resalta el siguiente paso correcto 1.5s)
+  const[hintStep,setHintStep]=useState(null);
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
-  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});resetOral();stopVoice();
+  useEffect(()=>{setFb(null);setAtt(0);setPlaced({});setClassifyOrder([]);setSelectedItem(null);setHintStep(null);resetOral();stopVoice();
     // Voice instruction — fallback for modes without ex.data.q
-    const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?'Ordena los pasos de '+(ex.data.title||'la rutina'):ex.mode==='anterior_posterior'?ex.data.q:'');
-    setTimeout(()=>say(stripEmoji(intro)),400);
+    // Para 'sequence' el title ya es la pregunta directa ("¿Cómo te duchas?")
+    // por lo que la usamos como intro tal cual, sin prefijo "Ordena los pasos de".
+    const intro=ex.data.q||(ex.mode==='classify'?'Clasifica cada cosa en su grupo':ex.mode==='sequence'?(ex.data.title||'Ordena los pasos'):ex.mode==='anterior_posterior'?ex.data.q:'');
+    // Delay 1500ms (antes 400) para no solapar con TTS/cohete previo cuando
+    // la sesión arranca tras una transición de cohete o tras "Otra ronda".
+    setTimeout(()=>say(stripEmoji(intro)),1500);
     return()=>stopVoice()},[ex]);
   function getOralPhrase(ans){
     if(ex.mode==='emotion')return ex.data.emotion;
+    if(ex.mode==='emotion_situation')return 'Está '+ex.data.emotion.toLowerCase();
     if(ex.mode==='spatial'||ex.mode==='spatial_drag')return ex.data.ans||ex.data.pos;
     if(ex.mode==='cause')return stripEmoji(ex.data.ans);
     if(ex.mode==='intruso')return ex.data.ans+' no es un '+ex.data.cat;
@@ -516,6 +697,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
     if(ex.mode==='intruso'){const cat=ex.data.cat||'';return'Piensa: todos los demás son del mismo grupo'+(cat?' ('+cat+')':'')}
     if(ex.mode==='cause')return'Piensa: ¿qué harías tú en esa situación?';
     if(ex.mode==='emotion')return'Mira bien la cara: ¿está contenta, triste o enfadada?';
+    if(ex.mode==='emotion_situation')return'Piensa cómo te sentirías tú en esa situación';
     if(ex.mode==='pattern')return'Fíjate en el patrón que se repite';
     if(ex.mode==='anterior_posterior')return'Cuenta: ...'+Math.max(0,(ex.data.n||5)-2)+', '+(Math.max(0,(ex.data.n||5)-1))+', '+(ex.data.n||5)+', '+((ex.data.n||5)+1)+', '+((ex.data.n||5)+2)+'...';
     if(ex.mode==='temperature'){const t=ex.data.temp;return t<0?'Bajo cero: ¡hace mucho frío!':t<=10?'Pocos grados: hace frío':t<=20?'Temperatura agradable':t<=30?'Bastante calor':'¡Mucho calor!'}
@@ -529,10 +711,20 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       if(na>=2){stopVoice();sayFB('La respuesta es: '+stripEmoji(correct));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),250)},2500)}
       else{const hint=getFirstHint();stopVoice();sayFB(stripEmoji(hint));setTimeout(()=>setFb(null),2000)}}}
   const[classifyAtt,setClassifyAtt]=useState(0);
-  function classifyPick(item,groupIdx){poke();const np={...placed,[item.w]:groupIdx};setPlaced(np);
+  function classifyPick(item,groupIdx){
+    poke();
+    setSelectedItem(null);
+    const np={...placed,[item.w]:groupIdx};setPlaced(np);
+    // Registrar orden de colocación para la frase final contextual
+    const newOrder=[...classifyOrder.filter(x=>x.w!==item.w),{w:item.w,g:groupIdx}];
+    setClassifyOrder(newOrder);
     const allPlaced=ex.data.items.every(it=>np[it.w]!==undefined);
     if(allPlaced){const allCorrect=ex.data.items.every(it=>np[it.w]===it.g);
-      if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral('bien clasificado',4,1),300))}
+      if(allCorrect){
+        setFb('ok');starBeep(4);
+        const phrase=buildClassifyPhrase(newOrder,ex.data.groups);
+        cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(phrase,4,1),300));
+      }
       else{const ca=classifyAtt+1;setClassifyAtt(ca);setFb('no');beep(200,200);
         if(ca>=2){
           // 2nd fail: show correct classification
@@ -542,7 +734,7 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
           setTimeout(()=>{setFb(null);setTimeout(()=>onOk(1,ca),300)},3500)
         }else{
           sayFB('Casi, fíjate bien en cada uno');
-          setTimeout(()=>{setFb(null);setPlaced({})},2000)}}}}
+          setTimeout(()=>{setFb(null);setPlaced({});setClassifyOrder([]);setSelectedItem(null)},2000)}}}}
   return <div style={{textAlign:'center',padding:'10px 18px'}} onClick={poke}>
     {ex.mode==='spatial'&&<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,maxWidth:800,margin:'0 auto'}}>
       {/* Left side — celebration zone (symmetry with buttons) */}
@@ -570,36 +762,86 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {shuffledWords.map(w=><button key={w} className={'btn '+(fb==='ok'&&w===ex.data.ans?'btn-g':fb==='no'&&w===ex.data.ans?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(w)} style={{fontSize:24,padding:20,minHeight:72,fontWeight:700}}>{w}</button>)}
       </div>
     </div>}
-    {ex.mode==='classify'&&<div>
-      <p style={{fontSize:22,fontWeight:700,margin:'0 0 14px',color:GOLD}}>Arrastra cada cosa a su grupo</p>
-      {/* Drop zones: two group boxes */}
-      <div style={{display:'flex',gap:14,justifyContent:'center',marginBottom:16}}>
-        {ex.data.groups.map((g,gi)=><div key={gi}
-          onDragOver={e=>e.preventDefault()}
-          onDrop={e=>{e.preventDefault();const w=e.dataTransfer.getData('text/plain');const item=ex.data.items.find(it=>it.w===w);if(item&&placed[item.w]===undefined)classifyPick(item,gi)}}
-          style={{flex:1,background:gi===0?BLUE+'15':GREEN+'15',border:`3px dashed ${gi===0?BLUE:GREEN}`,borderRadius:16,padding:14,minHeight:100,textAlign:'center',transition:'all .2s'}}>
-          <p style={{fontSize:20,fontWeight:700,color:gi===0?BLUE:GREEN,margin:'0 0 10px'}}>{stripEmoji(g)}</p>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
-            {ex.data.items.filter(it=>placed[it.w]===gi).map(it=><span key={it.w} style={{background:gi===0?BLUE+'33':GREEN+'33',borderRadius:10,padding:'6px 12px',fontSize:18,fontWeight:600,animation:'bounceIn .3s'}}>{it.w}</span>)}
-          </div>
-        </div>)}
-      </div>
-      {/* Draggable items */}
-      <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center'}}>
-        {ex.data.items.filter(it=>placed[it.w]===undefined).map(it=>
-          <button key={it.w} draggable="true"
-            onDragStart={e=>{e.dataTransfer.setData('text/plain',it.w);e.dataTransfer.effectAllowed='move'}}
-            onClick={()=>{
-              // Tap fallback: alternates between groups 0 and 1
-              const count0=ex.data.items.filter(x=>placed[x.w]===0).length;
-              const count1=ex.data.items.filter(x=>placed[x.w]===1).length;
-              classifyPick(it,count0<=count1?0:1)
-            }}
-            style={{fontSize:20,padding:'10px 18px',fontWeight:700,borderRadius:14,border:`2px solid rgba(255,255,255,.2)`,background:'rgba(255,255,255,.08)',color:'#fff',cursor:'grab',touchAction:'none',fontFamily:"'Fredoka'"}}>
-            {it.w}
-          </button>)}
-      </div>
-    </div>}
+    {ex.mode==='classify'&&(()=>{
+      // UX: tap-tap. Tocas una etiqueta → se marca (borde dorado). Tocas un grupo → se coloca.
+      // Esto elimina el menú contextual del navegador que aparecía con long-press de drag HTML5,
+      // y mantiene las etiquetas en su sitio durante todo el ejercicio.
+      const noSelect={userSelect:'none',WebkitUserSelect:'none',WebkitTouchCallout:'none',WebkitUserDrag:'none',msUserSelect:'none'};
+      const onGroupTap=(gi)=>{
+        if(fb==='ok')return;
+        if(!selectedItem){poke();sayFB('Primero toca una etiqueta');return}
+        const item=ex.data.items.find(it=>it.w===selectedItem);
+        if(item&&placed[item.w]===undefined)classifyPick(item,gi);
+      };
+      return <div>
+        <p style={{fontSize:28,fontWeight:700,margin:'0 0 16px',color:GOLD,lineHeight:1.3}}>
+          {selectedItem?'Ahora toca el grupo':'Toca una etiqueta y llévala a su grupo'}
+        </p>
+        {/* Grupos apilados verticalmente para máxima separación y claridad */}
+        <div style={{display:'flex',flexDirection:'column',gap:20,marginBottom:24,maxWidth:720,margin:'0 auto 24px'}}>
+          {ex.data.groups.map((g,gi)=>{
+            const color=gi===0?BLUE:GREEN;
+            return <div key={gi}
+              onClick={()=>onGroupTap(gi)}
+              onContextMenu={e=>e.preventDefault()}
+              style={{
+                background:color+'1a',
+                border:`4px dashed ${color}${selectedItem?'cc':'55'}`,
+                borderRadius:20,padding:'18px 20px',minHeight:140,
+                textAlign:'center',transition:'all .2s',
+                cursor:selectedItem?'pointer':'default',
+                boxShadow:selectedItem?`0 0 0 2px ${color}33, 0 4px 16px ${color}44`:'none',
+                ...noSelect,
+              }}>
+              <p style={{fontSize:26,fontWeight:800,color,margin:'0 0 12px',letterSpacing:.5}}>{g}</p>
+              <div style={{display:'flex',flexWrap:'wrap',gap:10,justifyContent:'center',minHeight:44}}>
+                {ex.data.items.filter(it=>placed[it.w]===gi).map(it=>
+                  <span key={it.w} style={{
+                    background:color+'33',border:`2px solid ${color}77`,
+                    borderRadius:12,padding:'10px 16px',fontSize:22,fontWeight:700,color:'#fff',
+                    animation:'bounceIn .3s',
+                  }}>{it.w}</span>)}
+              </div>
+            </div>;
+          })}
+        </div>
+        {/* Etiquetas: grid 3 columnas con SLOTS FIJOS. Una etiqueta colocada
+            se oculta pero su hueco queda, así el resto no se reorganiza. */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:14,maxWidth:720,margin:'0 auto'}}>
+          {ex.data.items.map(it=>{
+            const used=placed[it.w]!==undefined;
+            const isSelected=selectedItem===it.w&&!used;
+            if(used){
+              // Hueco invisible con mismo tamaño: mantiene la posición de los vecinos
+              return <div key={it.w} aria-hidden="true" style={{visibility:'hidden',minHeight:64}}/>;
+            }
+            return <button key={it.w}
+              onClick={()=>{
+                if(fb==='ok')return;
+                poke();
+                setSelectedItem(isSelected?null:it.w);
+              }}
+              onContextMenu={e=>e.preventDefault()}
+              style={{
+                fontSize:24,padding:'16px 14px',fontWeight:700,borderRadius:16,
+                border:isSelected?`3px solid ${GOLD}`:`2px solid rgba(255,255,255,.25)`,
+                background:isSelected?GOLD+'22':'rgba(255,255,255,.10)',
+                color:'#fff',
+                cursor:'pointer',
+                transition:'all .15s',
+                boxShadow:isSelected?`0 0 0 3px ${GOLD}55, 0 4px 14px ${GOLD}44`:'none',
+                transform:isSelected?'scale(1.03)':'scale(1)',
+                fontFamily:"'Fredoka'",
+                minHeight:64,
+                touchAction:'manipulation',
+                ...noSelect,
+              }}>
+              {it.w}
+            </button>;
+          })}
+        </div>
+      </div>;
+    })()}
     {ex.mode==='cause'&&<div>
       <p style={{fontSize:20,fontWeight:700,margin:'0 0 10px',color:GOLD}}>{ex.data.q}</p>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -628,38 +870,135 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
         {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:60}}>{o}</button>)}
       </div>
     </div>}
-    {/* Sequences — order daily routine steps */}
-    {ex.mode==='sequence'&&<div>
-      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.title}</p>
-      <p style={{fontSize:16,color:DIM,margin:'0 0 10px'}}>Ordena los pasos</p>
-      {/* Placed steps */}
-      <div style={{display:'grid',gap:6,marginBottom:12,minHeight:60}}>
-        {Object.keys(placed).sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>{
-          const step=placed[k];
-          return <div key={k} style={{display:'flex',gap:8,alignItems:'center',padding:'8px 12px',background:GREEN+'15',borderRadius:10,border:`1px solid ${GREEN}33`}}>
-            <span style={{fontSize:16,fontWeight:800,color:GREEN,minWidth:24}}>{parseInt(k)+1}.</span>
-            <span style={{fontSize:16}}>{step}</span>
-          </div>
-        })}
+    {/* Emoción situacional (avanzado/master) — texto narrativo en lugar
+        de emoji. El niño lee la situación e infiere el sentimiento. */}
+    {ex.mode==='emotion_situation'&&<div style={{maxWidth:600,margin:'0 auto'}}>
+      <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD,textAlign:'center'}}>{ex.data.q}</p>
+      <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+        <p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:'#fff'}}>{ex.data.situation}</p>
       </div>
-      {/* Available steps to pick */}
-      {!fb&&<div style={{display:'grid',gap:6}}>
-        {ex.data.steps.filter(s=>!Object.values(placed).includes(s)).sort(()=>0.5-Math.random()).map(step=>
-          <button key={step} className="btn btn-b" onClick={()=>{
-            poke();const nextIdx=Object.keys(placed).length;
-            const np={...placed,[nextIdx]:step};setPlaced(np);
-            if(Object.keys(np).length===ex.data.steps.length){
-              const correct=ex.data.steps.every((s,i)=>np[i]===s);
-              if(correct){setFb('ok');starBeep(4);say('¡Perfecto! '+ex.data.title).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(ex.data.oral,4,1),300))}
-              else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
-                if(na>=2){sayFB('El orden correcto es...');setTimeout(()=>{setFb(null);const cp={};ex.data.steps.forEach((s,i)=>{cp[i]=s});setPlaced(cp);setTimeout(()=>onOk(1,na),2500)},1500)}
-                else{sayFB('¡Casi! Fíjate en el orden');setTimeout(()=>{setFb(null);setPlaced({})},1500)}}
-            }
-          }} style={{fontSize:16,padding:'10px 14px',textAlign:'left'}}>{step}</button>
-        )}
-      </div>}
-      {Object.keys(placed).length>0&&!fb&&<button className="btn btn-ghost" onClick={()=>setPlaced({})} style={{marginTop:8,fontSize:14}}>↩️ Empezar de nuevo</button>}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {shuffledOpts.map(o=><button key={o} className={'btn '+(fb==='ok'&&o===ex.data.emotion?'btn-g':fb==='no'&&o===ex.data.emotion?'btn-gold':'btn-b')} onClick={()=>!fb&&pick(o)} style={{fontSize:20,padding:16,minHeight:64,fontWeight:700}}>{o}</button>)}
+      </div>
     </div>}
+    {/* Ordena rutinas — 2 columnas: pool izquierda, orden derecha numerado */}
+    {ex.mode==='sequence'&&(()=>{
+      const totalSteps = ex.data.steps.length;
+      const placedKeys = Object.keys(placed).map(Number).sort((a,b)=>a-b);
+      const nextIdx = placedKeys.length;
+      const usedSet = new Set(placedKeys.map(k=>placed[k]));
+      const poolList = shuffledSteps ? shuffledSteps.filter(s=>!usedSet.has(s)) : [];
+      // Quitar un paso ya colocado (en posición idx) y compactar numeración
+      function removeStep(idx){
+        poke();
+        const newPlaced = {};
+        let ni = 0;
+        placedKeys.forEach(k => { if (k !== idx) newPlaced[ni++] = placed[k]; });
+        setPlaced(newPlaced);
+      }
+      function pickStep(step){
+        poke();
+        const ni = Object.keys(placed).length;
+        const np = {...placed, [ni]: step};
+        setPlaced(np);
+        if (Object.keys(np).length === totalSteps) {
+          const correct = ex.data.steps.every((s,i) => np[i] === s);
+          if (correct) {
+            setFb('ok'); starBeep(4);
+            // UN solo ánimo + UN modelo+micro. Antes encadenábamos
+            // say('¡Perfecto! oral') + cheerOrSay + triggerOral, lo que
+            // hacía decir la frase oral DOS veces seguidas (una en el say
+            // de Toki, otra como modelo del micro) — feedback redundante
+            // y se sentía atascado.
+            cheerOrSay(mkPerfect(name), uid, vids, 'perfect')
+              .then(()=>setTimeout(()=>triggerOral(ex.data.oral, 4, 1), 300));
+          } else {
+            const na = att + 1; setAtt(na); setFb('no'); beep(200, 200);
+            if (na >= 2) {
+              sayFB('El orden correcto es...');
+              setTimeout(()=>{ setFb(null); const cp={}; ex.data.steps.forEach((s,i)=>{cp[i]=s}); setPlaced(cp); setTimeout(()=>onOk(1,na), 2500)}, 1500);
+            } else {
+              sayFB('¡Casi! Fíjate en el orden');
+              setTimeout(()=>{ setFb(null); setPlaced({}) }, 1500);
+            }
+          }
+        }
+      }
+      function showHint(){
+        if (fb || nextIdx >= totalSteps) return;
+        poke();
+        const correctNext = ex.data.steps[nextIdx];
+        setHintStep(correctNext);
+        sayFB('Este va ahora');
+        setTimeout(()=>setHintStep(null), 2000);
+      }
+      // Escala unificada Razona: título 30, instrucción 28, etiquetas 24,
+      // colocados 22, labels de grupo/número 26 (igual que classify).
+      return <div>
+        <p style={{fontSize:30,fontWeight:700,color:GOLD,margin:'0 0 6px',letterSpacing:.3}}>{ex.data.title}</p>
+        <p style={{fontSize:20,color:DIM,margin:'0 0 18px'}}>Toca cada paso en el orden correcto</p>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:18,maxWidth:840,margin:'0 auto'}}>
+          {/* Columna izquierda: pool de pasos sin colocar */}
+          <div style={{display:'flex',flexDirection:'column',gap:12,minHeight:300}}>
+            {poolList.length === 0 && !fb && <p style={{fontSize:20,color:DIM,textAlign:'center',fontStyle:'italic',margin:'40px 0'}}>Ya has usado todos</p>}
+            {poolList.map(step => {
+              const isHinted = hintStep === step;
+              return <button key={step}
+                onClick={()=>!fb&&pickStep(step)}
+                onContextMenu={e=>e.preventDefault()}
+                style={{
+                  fontSize:24,padding:'16px 14px',fontWeight:700,borderRadius:16,
+                  border: isHinted ? `3px solid ${GOLD}` : '2px solid rgba(255,255,255,.20)',
+                  background: isHinted ? GOLD+'33' : 'rgba(255,255,255,.10)',
+                  color:'#fff', cursor:'pointer', textAlign:'left',
+                  transition:'all .15s',
+                  boxShadow: isHinted ? `0 0 0 3px ${GOLD}55, 0 4px 16px ${GOLD}66` : 'none',
+                  transform: isHinted ? 'scale(1.03)' : 'scale(1)',
+                  fontFamily:"'Fredoka'",
+                  minHeight:64,
+                  userSelect:'none', WebkitUserSelect:'none',
+                  WebkitTouchCallout:'none', WebkitUserDrag:'none',
+                  touchAction:'manipulation',
+                }}>{step}</button>;
+            })}
+          </div>
+          {/* Columna derecha: orden construido, con numeración y botón ✕ */}
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            {Array.from({length: totalSteps}).map((_, i) => {
+              const step = placed[i];
+              const isNextSlot = i === nextIdx && !step;
+              return <div key={i} style={{
+                display:'flex',alignItems:'center',gap:12,
+                padding:'14px 14px',minHeight:64,
+                borderRadius:16,
+                background: step ? GREEN+'15' : isNextSlot ? GOLD+'10' : 'rgba(255,255,255,.04)',
+                border: step ? `2px solid ${GREEN}44` : isNextSlot ? `2px dashed ${GOLD}88` : '2px dashed rgba(255,255,255,.12)',
+                transition:'all .2s',
+              }}>
+                <span style={{fontSize:26,fontWeight:800,color: step ? GREEN : isNextSlot ? GOLD : 'rgba(255,255,255,.35)',minWidth:32,textAlign:'center'}}>{i+1}</span>
+                <span style={{fontSize:22,fontWeight:600,color:step?'#fff':'rgba(255,255,255,.3)',flex:1}}>
+                  {step || (isNextSlot ? '...' : '')}
+                </span>
+                {step && !fb && <button
+                  onClick={()=>removeStep(i)}
+                  onContextMenu={e=>e.preventDefault()}
+                  style={{background:'rgba(255,255,255,.1)',border:'none',borderRadius:10,width:40,height:40,color:'#fff',fontSize:20,cursor:'pointer',fontFamily:"'Fredoka'",display:'flex',alignItems:'center',justifyContent:'center'}}
+                  title="Quitar"
+                >✕</button>}
+              </div>;
+            })}
+          </div>
+        </div>
+        {/* Pista + Empezar de nuevo en stack flotante centrado abajo (Doc §3.6
+            feedback Diego: "creo que ese boton se debería ir junto al centro
+            con las estrellas y el micro"). Desaparecen automáticamente
+            cuando hay feedback (estrellas/oral) para no competir con el micro. */}
+        {!fb && !oralPhrase && <div className="fab-center-stack" style={{display:'flex',gap:12,justifyContent:'center'}}>
+          {nextIdx < totalSteps && <button className="btn btn-gold" onClick={showHint} style={{fontSize:18,padding:'10px 20px',maxWidth:180}}>💡 Pista</button>}
+          {placedKeys.length > 0 && <button className="btn btn-ghost" onClick={()=>{setPlaced({});setHintStep(null)}} style={{fontSize:18,padding:'10px 20px',maxWidth:200}}>↩️ Empezar de nuevo</button>}
+        </div>}
+      </div>;
+    })()}
     {/* Number series — visual number bubbles with gap */}
     {ex.mode==='number_series'&&<div>
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
@@ -690,21 +1029,20 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       </div>
       {fb==='no'&&att<2&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginTop:10}}><p style={{fontSize:16,fontWeight:600,margin:0,color:GOLD}}>Cuenta los {ex.data.emoji} de cada lado 👆</p></div>}
     </div>}
-    {/* Temperature / Thermometer */}
+    {/* Temperature / Thermometer — tamaño 90×320 (Doc §3.8, antes 60×200) */}
     {ex.mode==='temperature'&&<div>
-      <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.q}</p>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20,marginBottom:16}}>
-        {/* SVG Thermometer */}
-        <svg width={60} height={200} viewBox="0 0 60 200">
-          <rect x={20} y={10} width={20} height={150} rx={10} fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+      <p style={{fontSize:26,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>{ex.data.q}</p>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24,marginBottom:16}}>
+        <svg width={90} height={320} viewBox="0 0 90 320">
+          <rect x={32} y={16} width={26} height={240} rx={13} fill="rgba(255,255,255,.1)" stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
           {/* Mercury fill — height based on temperature (-10 to 45 range) */}
-          <rect x={22} y={10+150-Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))} width={16} rx={8}
-            height={Math.max(5,Math.min(148,((ex.data.temp+10)/55)*148))}
+          <rect x={34} y={16+240-Math.max(8,Math.min(238,((ex.data.temp+10)/55)*238))} width={22} rx={11}
+            height={Math.max(8,Math.min(238,((ex.data.temp+10)/55)*238))}
             fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'}/>
           {/* Bulb */}
-          <circle cx={30} cy={175} r={18} fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'} stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
-          {/* Scale marks */}
-          {[-10,0,10,20,30,40].map(t=>{const y=10+150-((t+10)/55)*148;return <g key={t}><line x1={42} y1={y} x2={50} y2={y} stroke="rgba(255,255,255,.4)" strokeWidth={1}/><text x={54} y={y+4} fill="rgba(255,255,255,.5)" fontSize={9}>{t}°</text></g>})}
+          <circle cx={45} cy={284} r={26} fill={ex.data.temp<=0?'#42A5F5':ex.data.temp<=15?'#66BB6A':ex.data.temp<=25?'#FFA726':'#EF5350'} stroke="rgba(255,255,255,.3)" strokeWidth={2}/>
+          {/* Scale marks — labels más grandes y separados (Doc §3.8: antes 9px, ahora 18px bold) */}
+          {[-10,0,10,20,30,40].map(t=>{const y=16+240-((t+10)/55)*238;return <g key={t}><line x1={60} y1={y} x2={70} y2={y} stroke="rgba(255,255,255,.5)" strokeWidth={1.5}/><text x={76} y={y+5} fill="rgba(255,255,255,.75)" fontSize={14} fontWeight="700">{t}°</text></g>})}
         </svg>
         <div style={{textAlign:'center'}}>
           <div style={{fontSize:48,marginBottom:8}}>{ex.data.emoji}</div>
@@ -721,9 +1059,11 @@ export function ExRazona({ex,onOk,onSkip,name,uid,vids}){
       <div className="card" style={{padding:16,marginBottom:12,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:'0 0 12px',color:GOLD}}>{ex.data.q}</p>
         <div style={{display:'flex',gap:8,justifyContent:'center',alignItems:'center'}}>
-          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='anterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='anterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='anterior'?GOLD:'#fff'}}>?</div>
+          {/* Slot anterior: ? si se pregunta, n-1 como contexto si no */}
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='anterior'?GOLD+'22':'rgba(255,255,255,.15)',border:ex.data.questionMode==='anterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='anterior'?GOLD:'#fff'}}>{ex.data.questionMode==='anterior'?'?':ex.data.n-1}</div>
           <div style={{width:56,height:56,borderRadius:'50%',background:'rgba(255,255,255,.15)',border:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'#fff'}}>{ex.data.n}</div>
-          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='posterior'?GOLD+'22':'rgba(255,255,255,.1)',border:ex.data.questionMode==='posterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='posterior'?GOLD:'#fff'}}>?</div>
+          {/* Slot posterior: ? si se pregunta, n+1 como contexto si no */}
+          <div style={{width:56,height:56,borderRadius:'50%',background:ex.data.questionMode==='posterior'?GOLD+'22':'rgba(255,255,255,.15)',border:ex.data.questionMode==='posterior'?`3px dashed ${GOLD}`:'2px solid rgba(255,255,255,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:800,color:ex.data.questionMode==='posterior'?GOLD:'#fff'}}>{ex.data.questionMode==='posterior'?'?':ex.data.n+1}</div>
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>

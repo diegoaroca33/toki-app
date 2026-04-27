@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, DIM, GOOD_MSG, QUIEN_SOY } from '../constants.js'
 import { say, sayFB, stopVoice, starBeep, cheerOrSay, playRec, useSR } from '../voice.js'
-import { score, adjScore, rnd, beep, mkPerfect, textKey, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
+import { score, adjScore, rnd, beep, mkPerfect, textKey, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed, PHRASE_SPEED_MAX, PHRASE_SPEED_DEFAULT } from '../utils.js'
 import { victoryJingle } from '../voice.js'
 import { Stars } from '../components/CelebrationOverlay.jsx'
 
@@ -67,9 +67,9 @@ export function ExQuienSoyEstudio({ex,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   const phraseKey=useMemo(()=>textKey(ex.text),[ex.text]);
   const repsTarget=burstReps||1;
   function getAdaptiveRate(repIdx){
-    if(burstMode&&typeof burstSpeed==='number'){
-      // Each rep slightly faster when repsTarget>1
-      return repsTarget>1?burstSpeed+repIdx*0.05:burstSpeed;
+    if(burstMode){
+      const base=uid?getPhraseSpeed(uid,phraseKey):PHRASE_SPEED_DEFAULT;
+      return Math.min(PHRASE_SPEED_MAX, base + (repIdx||0)*0.035);
     }
     if(uid)return getPhraseSpeed(uid,phraseKey);
     return undefined;
@@ -187,7 +187,7 @@ export function ExQuienSoyPres({onOk,onSkip,sex,name,uid,vids,presentation,burst
     function trySpeak(){if(!alive.current)return;if(!cur.img||presImgLoaded.current||Date.now()-imgStart>5000){doSpeak()}else{const t=setTimeout(trySpeak,200);timers.current.push(t)}}
     function doSpeak(){
       // Toki reads phrase aloud as model — this is the ONLY TTS call per slide
-      const rate=burstMode&&typeof burstSpeed==='number'?burstSpeed:(uid?getPhraseSpeed(uid,textKey(cur.text)):undefined);
+      const rate=uid?getPhraseSpeed(uid,textKey(cur.text)):PHRASE_SPEED_DEFAULT;
       say(cur.text,rate).then(()=>{if(!alive.current)return;
         // Start silent mic listening + countdown bar
         setBarOn(true);sr.go();

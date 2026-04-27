@@ -1,25 +1,49 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { sayFB } from '../voice.js';
+import { sayFB, stopVoice } from '../voice.js';
 
-// Bark sound — simple square wave "woof woof", loud and clear on all devices
+// Bark sound — ladrido más orgánico: dos ladridos con cuerpo sonoro.
+// Cada ladrido combina un oscilador sawtooth (ataque) + un oscilador triangle
+// (armonico bajo) para dar "boca" al sonido, con filtro paso-banda y envolvente
+// rápida de volumen. Más parecido a un perro real que el cuadrado plano anterior.
 function playBark(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    function woof(delay,freq,dur,vol){
+    function woof(delay,f0,f1,dur,vol){
       const t=ctx.currentTime+delay;
-      const o=ctx.createOscillator();const g=ctx.createGain();
-      o.connect(g);g.connect(ctx.destination);
-      o.type='square';
-      o.frequency.setValueAtTime(freq,t);
-      o.frequency.exponentialRampToValueAtTime(freq*0.5,t+dur);
-      g.gain.setValueAtTime(vol,t);
-      g.gain.setValueAtTime(vol,t+dur*0.3);
-      g.gain.exponentialRampToValueAtTime(0.01,t+dur);
-      o.start(t);o.stop(t+dur);
+      // Filtro que modela la cavidad bucal del perro
+      const bp=ctx.createBiquadFilter();
+      bp.type='bandpass';
+      bp.frequency.setValueAtTime(600,t);
+      bp.frequency.exponentialRampToValueAtTime(300,t+dur);
+      bp.Q.value=2.2;
+      // Tono principal (saw — voz rasposa)
+      const o1=ctx.createOscillator();const g1=ctx.createGain();
+      o1.type='sawtooth';
+      o1.frequency.setValueAtTime(f0,t);
+      o1.frequency.exponentialRampToValueAtTime(f1,t+dur);
+      // Tono armónico (triangle — cuerpo grave)
+      const o2=ctx.createOscillator();const g2=ctx.createGain();
+      o2.type='triangle';
+      o2.frequency.setValueAtTime(f0*0.5,t);
+      o2.frequency.exponentialRampToValueAtTime(f1*0.5,t+dur);
+      // Envolvente: ataque rápido, decaimiento exponencial
+      g1.gain.setValueAtTime(0.001,t);
+      g1.gain.exponentialRampToValueAtTime(vol,t+0.015);
+      g1.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      g2.gain.setValueAtTime(0.001,t);
+      g2.gain.exponentialRampToValueAtTime(vol*0.6,t+0.02);
+      g2.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      // Conexiones
+      o1.connect(g1);g1.connect(bp);
+      o2.connect(g2);g2.connect(bp);
+      bp.connect(ctx.destination);
+      o1.start(t);o1.stop(t+dur+0.02);
+      o2.start(t);o2.stop(t+dur+0.02);
     }
-    woof(0,280,0.15,0.6);
-    woof(0.22,250,0.12,0.5);
-    setTimeout(()=>ctx.close(),500);
+    // Dos ladridos con pitch ligeramente distinto, como perro real
+    woof(0,   340, 180, 0.18, 0.55);
+    woof(0.28,320, 170, 0.16, 0.50);
+    setTimeout(()=>ctx.close(),700);
   }catch(e){}
 }
 
@@ -39,32 +63,65 @@ function playWhine(){
   }catch(e){}
 }
 
-// Voice command definitions: {patterns, action, response}
+// ============================================================
+// COMANDOS DE VOZ — Lista editable (ver scripts/extract-toki-commands.mjs
+// para exportar a JSON revisable por Diego y re-importar con apply-toki-commands.mjs)
+// ============================================================
+// Estructura: {id, patterns: [palabras/frases detonantes], response: texto que dice Toki}
+// Nota: response NO debe contener letras repetidas tipo "Zzzzz" o "mmmm" porque el TTS
+// las lee literalmente. Usa frases cortas naturales.
 const VOICE_COMMANDS=[
-  // Movimiento
-  {id:'dance',patterns:['baila','dance','bailar','mueve','bailando','baile'],response:'¡Mira cómo bailo!'},
-  {id:'jump',patterns:['salta','saltar','salto','jump','arriba','bota','brinco','brinca'],response:'¡Yuhuuu!'},
-  {id:'spin',patterns:['gira','girar','vuelta','spin','la cola','persigue','dar vuelta','da vuelta','giro'],response:'¡Voy a pillarla!'},
-  {id:'roll',patterns:['rueda','rolar','roll','voltea','voltereta','ruedas'],response:'¡Allá voy!'},
-  {id:'floss',patterns:['floss','fortnite','baile viral','moda'],response:'¡Floss!'},
-  // Trucos
-  {id:'sit',patterns:['sienta','sentado','sit','quieto','para','sientate','siéntate'],response:'¡Sentado!'},
-  {id:'paw',patterns:['pata','dame la pata','choca','shake','mano','dame','patita','cinco'],response:'¡Choca esos cinco!'},
-  {id:'down',patterns:['tumba','suelo','echate','tumbado','down','abajo','al suelo','tumbate','túmbate'],response:'¡Estoy cómodo!'},
-  {id:'sleep',patterns:['duerme','dormir','nana','sleep','a dormir','descansa','duermete','duérmete'],response:'Zzzzz...'},
-  // Sonidos
-  {id:'bark',patterns:['ladra','ladrar','guau','woof','habla','di algo','ladrido','bark','voz'],response:null},
-  // Afecto
-  {id:'love',patterns:['te quiero','love','cariño','guapo','bonito','bueno','precioso','lindo','mono','te amo'],response:'¡Y yo a ti!'},
-  {id:'hello',patterns:['hola','hello','hey','toki','buenos','saludar','buenas'],response:'¡Guau guau!'},
-  {id:'howru',patterns:['cómo estás','como estas','qué tal','que tal','estás bien','estas bien'],response:'¡Estoy genial!'},
-  // Comida
-  {id:'hungry',patterns:['hambre','comer','come','comida','galleta','premio','treat','ñam','croqueta'],response:'¡Ñam ñam!'},
-  // Diversión
-  {id:'brave',patterns:['valiente','fuerte','héroe','heroe','super','campeón','campeon','crack','fuerza'],response:'¡Soy Super Toki!'},
-  {id:'happy',patterns:['contento','feliz','alegre','happy','bien','genial'],response:'¡Estoy feliz!'},
-  {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge','atrapa'],response:'¡La tengo!'},
-  {id:'kiss',patterns:['beso','besito','kiss','muack','mua','muac'],response:'¡Muuuack!'},
+  // ── Identidad / Saludos ──────────────────────────────────
+  {id:'hello',patterns:['hola','hello','hey','toki','buenos dias','buenas tardes','buenas noches','buenas','saludar','saludo'],response:'¡Hola {nombre}! ¡Guau guau!'},
+  {id:'name',patterns:['cómo te llamas','como te llamas','tu nombre','cual es tu nombre','cuál es tu nombre','quién eres','quien eres','te llamas'],response:'Me llamo Toki. Me gusta que me hables, {nombre}.'},
+  {id:'age',patterns:['cuántos años','cuantos años','cuantos anos','que edad','qué edad','eres viejo','eres pequeño'],response:'Soy un cachorrito, siempre quiero aprender contigo.'},
+  {id:'howru',patterns:['cómo estás','como estas','qué tal','que tal','estás bien','estas bien','estás feliz','como te encuentras'],response:'¡Estoy genial porque estás contigo, {nombre}!'},
+  {id:'whatdoing',patterns:['qué haces','que haces','en qué piensas','que piensas','estás jugando'],response:'Te estoy esperando a ti, {nombre}.'},
+  {id:'who_friend',patterns:['eres mi amigo','somos amigos','mejor amigo','mi amiguito'],response:'¡Sí! Eres mi mejor amigo, {nombre}.'},
+  {id:'me_quieres',patterns:['me quieres','tú me quieres','tu me quieres','te gusto','me amas'],response:'¡Claro que te quiero, {nombre}! Muchísimo.'},
+  {id:'tired',patterns:['tienes sueño','estas cansado','estás cansado','tienes sueno','te aburres','estas aburrido'],response:'Un poquito. Pero contigo nunca me aburro, {nombre}.'},
+
+  // ── Afecto ───────────────────────────────────────────────
+  {id:'love',patterns:['te quiero','love','cariño','guapo','bonito','bueno','precioso','lindo','mono','te amo','eres bueno','eres el mejor'],response:'¡Y yo también te quiero, {nombre}!'},
+  {id:'kiss',patterns:['beso','besito','kiss','muack','mua','muac','dame un beso','besos'],response:'¡Muuuak! Un beso para ti.'},
+  {id:'hug',patterns:['abrazo','dame un abrazo','abracito','abrazame','abrázame','achuchon'],response:'¡Un abrazo muy fuerte, {nombre}!'},
+
+  // ── Movimiento / Trucos ──────────────────────────────────
+  {id:'dance',patterns:['baila','dance','bailar','bailando','baile','a bailar'],response:'¡Mira cómo bailo!'},
+  {id:'jump',patterns:['salta','saltar','salto','jump','arriba','bota','brinco','brinca','dale un salto'],response:'¡Allá voy!'},
+  {id:'spin',patterns:['gira','girar','vuelta','spin','la cola','persigue','dar vuelta','da vuelta','giro','date una vuelta'],response:'¡Voy a pillarla!'},
+  {id:'roll',patterns:['rueda','rolar','roll','voltea','voltereta','ruedas','hazme una voltereta'],response:'¡Mira qué bien ruedo!'},
+  {id:'floss',patterns:['floss','fortnite','baile viral','baile moderno'],response:'¡Floss! ¡Como en Fortnite!'},
+  {id:'sit',patterns:['sienta','sentado','siéntate','sientate','quieto','para','sit'],response:'¡Ya estoy sentado!'},
+  {id:'paw',patterns:['pata','dame la pata','choca','shake','mano','dame','patita','cinco','choca esos cinco'],response:'¡Choca esos cinco!'},
+  {id:'down',patterns:['túmbate','tumbate','tumba','tumbado','suelo','échate','echate','abajo','al suelo','down'],response:'¡Ya estoy tumbado!'},
+  {id:'sleep',patterns:['duerme','dormir','nana','sleep','a dormir','descansa','duérmete','duermete','buenas noches'],response:'Voy a dormir un ratito.'},
+  {id:'wake',patterns:['despierta','arriba','levanta','levántate','ya es de día','buenos dias'],response:'¡Guau! ¡Ya estoy despierto!'},
+
+  // ── Sonidos ──────────────────────────────────────────────
+  {id:'bark',patterns:['ladra','ladrar','guau','woof','habla','di algo','ladrido','bark','voz','haz ruido'],response:null},
+  {id:'quiet',patterns:['calla','silencio','callate','cállate','shhh','no ladres','no hables'],response:'Vale. Me callo.'},
+
+  // ── Comida ───────────────────────────────────────────────
+  {id:'hungry',patterns:['tienes hambre','hambre','comer','come','comida','galleta','premio','treat','ñam','croqueta','te doy de comer','a comer'],response:'¡Ñam ñam! ¡Gracias!'},
+
+  // ── Juegos ───────────────────────────────────────────────
+  {id:'fetch',patterns:['busca','trae','pelota','ball','fetch','coge','atrapa'],response:'¡Sí! ¡Vamos a jugar!'},
+  {id:'play_with_me',patterns:['quieres jugar conmigo','juguemos','vamos a jugar','quieres jugar','jugamos'],response:'¡Sí! ¡Me encanta jugar contigo, {nombre}!'},
+  {id:'play_hide',patterns:['jugamos al escondite','vamos al escondite','al escondite','escondidas','escondite','escóndete','escondete','cuento yo','te busco','búscame','buscame','juguemos al escondite','juega al escondite'],response:null},
+
+  // ── Motivación / Elogios ─────────────────────────────────
+  {id:'brave',patterns:['valiente','fuerte','héroe','heroe','súper','super','campeón','campeon','crack','fuerza','eres un campeón'],response:'¡Soy Súper Toki!'},
+  {id:'happy',patterns:['contento','feliz','alegre','happy','bien','genial','de maravilla'],response:'¡Yo también estoy feliz!'},
+  {id:'toki_praise',patterns:['eres bonito','eres guapo','qué listo','que listo','eres un genio','bien hecho toki','buen chico','buena chica'],response:'¡Gracias, {nombre}! Eres el mejor amigo.'},
+
+  // ── Cuidados ─────────────────────────────────────────────
+  {id:'pet',patterns:['caricias','acariciar','te acaricio','mimos','mímame','mimame','te hago caricias'],response:'¡Ohhh! Qué gusto.'},
+  {id:'walk',patterns:['paseo','a pasear','vamos de paseo','al parque','paseito'],response:'¡Al parque! ¡Vamos!'},
+  {id:'bath',patterns:['baño','bañarte','ducha','te lavo','a la ducha'],response:'Me gusta el agua.'},
+
+  // ── Despedida ────────────────────────────────────────────
+  {id:'bye',patterns:['adios','adiós','chao','hasta luego','me voy','nos vemos','bye','hasta mañana'],response:'¡Hasta luego, {nombre}! ¡Te estaré esperando!'},
 ];
 
 function simpleLev(a,b){if(a===b)return 0;const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
@@ -91,11 +148,22 @@ function matchCommand(text){
   return null;
 }
 
+// Reemplaza {nombre} en el response con el nombre del niño. Se ejecuta antes
+// de mostrar el bocadillo y antes del TTS, así ambos dicen lo mismo.
+function personalizeResponse(resp, name) {
+  if (!resp) return resp;
+  if (!name) return resp.replace(/,?\s*\{nombre\}/g, '');
+  return resp.replace(/\{nombre\}/g, name);
+}
+
 export default function TokiPlayground({
   size = 380,
   feedMode = false,
   countdown = null,
   onContinue,
+  milestone = 0, // 0/100/200/300 — mayor logro alcanzado HOY
+  name = '',     // nombre del niño (para personalización)
+  userId = '',   // para persistir estado del escondite
 }) {
   const [state, setState] = useState("idle");
   const [isLying, setIsLying] = useState(false);
@@ -119,6 +187,14 @@ export default function TokiPlayground({
   const [bowlFed, setBowlFed] = useState(false);
 
   const [progress, setProgress] = useState(0);
+
+  // ── Escondite ──
+  // hsPhase: null | 'toki_count' | 'toki_seek' | 'child_count' | 'toki_hide'
+  const [hsPhase, setHsPhase] = useState(null);
+  const [hsHideSide, setHsHideSide] = useState(null); // 'top'|'bottom'|'left'|'right'
+  const hsTimers = useRef([]);
+  const hsSR = useRef(null);
+  const startHideSeekRef = useRef(null);
 
   const idleTimer = useRef(null);
   const barkTimer = useRef(null);
@@ -161,6 +237,22 @@ export default function TokiPlayground({
     resetIdleTimer();
     continueTimer.current = setTimeout(() => setShowContinue(true), 5000);
 
+    // Saludo de bienvenida según logro del día. Si aún no hay hit, Toki saluda normal.
+    // Se dispara una vez al entrar, con retraso para no pisar otras TTS.
+    const greetTimer = setTimeout(() => {
+      let greet = null;
+      if (milestone >= 300) greet = '¡Hoy has hecho trescientos ejercicios! Ahora te mereces un descanso bien merecido.';
+      else if (milestone >= 200) greet = '¡Doscientos ejercicios hoy! Estás que te sale todo.';
+      else if (milestone >= 100) greet = '¡Qué bien trabajas hoy! Llevas cien ejercicios.';
+      else if (feedMode) greet = '¡Guau! Tengo hambre. ¿Me das de comer?';
+      else greet = '¡Hola! Qué bien verte.';
+      if (greet) {
+        setSpeechBubble(greet);
+        sayFB(greet);
+        setTimeout(() => setSpeechBubble(null), 4500);
+      }
+    }, 800);
+
     if (typeof countdown === "number" && countdown > 0) {
       setProgress(0);
       const startedAt = Date.now();
@@ -174,11 +266,16 @@ export default function TokiPlayground({
 
     return () => {
       mountedRef.current = false;
+      clearTimeout(greetTimer);
       if (idleTimer.current) clearTimeout(idleTimer.current);
       if (barkTimer.current) clearTimeout(barkTimer.current);
       if (actionTimer.current) clearTimeout(actionTimer.current);
       if (continueTimer.current) clearTimeout(continueTimer.current);
       if (countdownInterval.current) clearInterval(countdownInterval.current);
+      // Escondite
+      hsTimers.current.forEach(t => clearTimeout(t));
+      hsTimers.current = [];
+      if (hsSR.current) { try { hsSR.current.abort(); } catch(e){} hsSR.current = null; }
       // Stop any TTS/audio that Toki might be producing
       try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e) {}
     };
@@ -331,15 +428,28 @@ export default function TokiPlayground({
   };
 
   // ── Voice command execution ───────────────────────────────
+  // Debounce por comando: evita el bucle en el que Toki se oye a sí mismo
+  // por el micrófono y vuelve a disparar el mismo comando ("hola Gui →
+  // hola Gui → hola Gui..."). Mismo cmd.id no se reactiva en 4 segundos.
+  const lastCmdAt = useRef({});
+  const ttsBusyUntil = useRef(0);
   const execCommand = (cmd) => {
+    const now = Date.now();
+    if (now - (lastCmdAt.current[cmd.id] || 0) < 4000) return; // debounce
+    lastCmdAt.current[cmd.id] = now;
+
     resetIdleTimer();
     if (actionTimer.current) clearTimeout(actionTimer.current);
 
-    // Show speech bubble AND say it out loud
+    // Show speech bubble AND say it out loud (con nombre del niño si corresponde)
     if (cmd.response) {
-      setSpeechBubble(cmd.response);
-      sayFB(cmd.response);
-      setTimeout(() => setSpeechBubble(null), 2500);
+      const resp = personalizeResponse(cmd.response, name);
+      setSpeechBubble(resp);
+      sayFB(resp);
+      // Marca cuándo termina el TTS aproximadamente para que startListening
+      // ignore lo que oiga durante ese tiempo (evita que el SR se oiga a sí mismo).
+      ttsBusyUntil.current = now + Math.max(2500, resp.length * 70);
+      setTimeout(() => setSpeechBubble(null), 2800);
     }
 
     switch (cmd.id) {
@@ -456,11 +566,68 @@ export default function TokiPlayground({
         }, 1000);
         break;
       case 'kiss':
+      case 'hug':
         setState('happy'); setEyesClosed(true); setTailFast(true); setPurrSpark(true);
         playWhine();
         actionTimer.current = setTimeout(() => {
           setState('idle'); setEyesClosed(false); setTailFast(false); setPurrSpark(false);
         }, 2500);
+        break;
+      case 'name':
+      case 'age':
+      case 'whatdoing':
+      case 'who_friend':
+      case 'me_quieres':
+      case 'tired':
+      case 'toki_praise':
+        // Diálogo: cara feliz, cola moviendo, sin ladrar para que el niño oiga bien la respuesta.
+        setState('happy'); setTailFast(true); setShowTongue(true); setPurrSpark(true);
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setShowTongue(false); setPurrSpark(false);
+        }, 3000);
+        break;
+      case 'pet':
+        setState('purr'); setEyesClosed(true); setPurrSpark(true); setTailFast(true);
+        playWhine();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setEyesClosed(false); setPurrSpark(false); setTailFast(false);
+        }, 2500);
+        break;
+      case 'walk':
+      case 'play_with_me':
+        setTrickAnim('jump');
+        setState('happy'); setTailFast(true); setMouthOpen(true); setShowWoof(true);
+        playBark();
+        actionTimer.current = setTimeout(() => {
+          setTrickAnim(null); setState('idle'); setTailFast(false); setMouthOpen(false); setShowWoof(false);
+        }, 2500);
+        break;
+      case 'play_hide':
+        // Arranca el mini-juego del escondite (state machine a parte)
+        if (startHideSeekRef.current) startHideSeekRef.current();
+        break;
+      case 'bath':
+        setState('happy'); setTailFast(true); setShowTongue(true);
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setShowTongue(false);
+        }, 2000);
+        break;
+      case 'wake':
+        setState('bark'); setMouthOpen(true); setShowWoof(true); setTailFast(true);
+        playBark();
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setMouthOpen(false); setShowWoof(false); setTailFast(false);
+        }, 1500);
+        break;
+      case 'quiet':
+        setState('idle'); setTailFast(false); setEyesClosed(false); setMouthOpen(false);
+        setShowWoof(false); setShowTongue(false);
+        break;
+      case 'bye':
+        setState('happy'); setTailFast(true); setMouthOpen(true);
+        actionTimer.current = setTimeout(() => {
+          setState('idle'); setTailFast(false); setMouthOpen(false);
+        }, 2000);
         break;
       default:
         bark();
@@ -483,6 +650,15 @@ export default function TokiPlayground({
       let handled = false;
       r.onresult = (e) => {
         handled = true;
+        // Si Toki está hablando, ignoramos lo que oye el SR (evita bucle de
+        // que se oiga a sí mismo). Reiniciamos el listener tras el TTS.
+        if (Date.now() < ttsBusyUntil.current) {
+          if (voiceTimeout.current) clearTimeout(voiceTimeout.current);
+          voiceTimeout.current = setTimeout(() => {
+            if (mountedRef.current && startListeningRef.current) startListeningRef.current();
+          }, Math.max(500, ttsBusyUntil.current - Date.now() + 200));
+          return;
+        }
         const alts = [];
         for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript.toLowerCase().trim());
         const text = alts.join(' ');
@@ -532,10 +708,191 @@ export default function TokiPlayground({
     setVoiceActive(false);
   }, []);
 
-  // Start voice listening on mount
+  // ── Juego del escondite ─────────────────────────────────────
+  // Arranca con el comando 'play_hide'. Turnos alternos persistentes por niño.
+  // Turno 'toki_counts' → Toki cuenta 1..10 y busca al niño.
+  // Turno 'child_counts' → Toki pide al niño que cuente y luego se esconde.
+  const hsWait = (ms) => new Promise(r => {
+    const t = setTimeout(() => { hsTimers.current = hsTimers.current.filter(x => x !== t); r(); }, ms);
+    hsTimers.current.push(t);
+  });
+  const hsSay = (text) => new Promise((resolve) => {
+    setSpeechBubble(text);
+    // Usamos sayFB y resolvemos al terminar (sayFB ya devuelve promesa)
+    Promise.resolve(sayFB(text)).then(() => resolve());
+  });
+  const hsClearAll = () => {
+    hsTimers.current.forEach(t => clearTimeout(t));
+    hsTimers.current = [];
+    if (hsSR.current) { try { hsSR.current.abort(); } catch(e){} hsSR.current = null; }
+  };
+  const hsEnd = () => {
+    hsClearAll();
+    setHsPhase(null);
+    setHsHideSide(null);
+    setSpeechBubble(null);
+    // Reanudar escucha normal
+    setTimeout(() => { if (mountedRef.current && startListeningRef.current) startListeningRef.current(); }, 600);
+  };
+  const hsGetTurn = () => {
+    try { return localStorage.getItem('toki_hide_turn_' + (userId||'_')) || 'toki_counts'; } catch(e) { return 'toki_counts'; }
+  };
+  const hsFlipTurn = () => {
+    try {
+      const cur = hsGetTurn();
+      localStorage.setItem('toki_hide_turn_' + (userId||'_'), cur === 'toki_counts' ? 'child_counts' : 'toki_counts');
+    } catch(e) {}
+  };
+
+  const hsTokiCountsAndSeeks = async () => {
+    setHsPhase('toki_count');
+    setState('idle'); setEyesClosed(true); setTailFast(false);
+    await hsSay('¡Vale! Cuento yo. Puedes contar conmigo.');
+    if (!mountedRef.current) return;
+    for (let i = 1; i <= 10; i++) {
+      if (!mountedRef.current) return;
+      await hsSay(String(i));
+      await hsWait(250);
+    }
+    if (!mountedRef.current) return;
+    await hsSay('¡El que no se haya escondido, tiempo ha tenido!');
+    if (!mountedRef.current) return;
+    // Toki busca
+    setHsPhase('toki_seek');
+    setState('idle'); setEyesClosed(false); setTailFast(false);
+    await hsWait(500);
+    await hsSay('No te veo. ¿Dónde estás?');
+    if (!mountedRef.current) return;
+    await hsWait(1500);
+    await hsSay('Oye, ¿estás ahí?');
+    if (!mountedRef.current) return;
+    hsListenChildReply();
+  };
+
+  const hsListenChildReply = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { hsTimers.current.push(setTimeout(() => hsTokiWins(), 4000)); return; }
+    try {
+      const r = new SR();
+      r.lang = 'es-ES'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 3;
+      let handled = false;
+      r.onresult = (e) => {
+        handled = true;
+        const alts = [];
+        for (let i = 0; i < e.results[0].length; i++) alts.push(e.results[0][i].transcript.toLowerCase());
+        const text = alts.join(' ');
+        // ¿El niño reclama que ha ganado?
+        if (/he\s+ganado\s+yo|yo\s+he\s+ganado|gano\s+yo|no\s+he\s+perdido|no\s+me\s+ha/i.test(text)) {
+          hsTokiConcedes();
+        } else {
+          hsTokiWins();
+        }
+      };
+      r.onerror = () => { if (!handled) hsTokiWins(); };
+      r.onend = () => {};
+      hsSR.current = r;
+      r.start();
+      // Fallback: si no contesta, Toki igualmente "encuentra"
+      hsTimers.current.push(setTimeout(() => {
+        if (!handled) { try { r.abort(); } catch(e){} hsTokiWins(); }
+      }, 7000));
+    } catch(e) { hsTokiWins(); }
+  };
+
+  const hsTokiWins = async () => {
+    if (!mountedRef.current) return;
+    setState('bark'); setMouthOpen(true); setShowWoof(true); setTailFast(true);
+    playBark();
+    await hsSay('¡Ya te veo! ¡Pillado! ¡He ganado!');
+    setState('idle'); setMouthOpen(false); setShowWoof(false); setTailFast(false);
+    hsFlipTurn();
+    await hsWait(700);
+    hsEnd();
+  };
+
+  const hsTokiConcedes = async () => {
+    if (!mountedRef.current) return;
+    setState('idle'); setTailFast(false);
+    await hsSay('Vale, has ganado tú. Pero no hagas trampa, que solo es un juego.');
+    hsFlipTurn();
+    await hsWait(600);
+    hsEnd();
+  };
+
+  const hsChildCountsAndTokiHides = async () => {
+    setHsPhase('child_count');
+    setState('happy'); setTailFast(true);
+    await hsSay('Te toca contar. Di: uno, dos, tres, cuatro, cinco, seis, siete, ocho, nueve, diez.');
+    if (!mountedRef.current) return;
+    await hsWait(9000); // tiempo para que el niño cuente en voz alta
+    if (!mountedRef.current) return;
+    await hsSay('Y ahora di: el que no se haya escondido, tiempo ha tenido.');
+    if (!mountedRef.current) return;
+    await hsWait(2500);
+    if (!mountedRef.current) return;
+    // Toki se esconde
+    setHsPhase('toki_hide');
+    const sides = ['top','bottom','left','right'];
+    const pick = sides[Math.floor(Math.random() * sides.length)];
+    setHsHideSide(pick);
+    setState('idle'); setTailFast(false); setEyesClosed(false);
+    // Si no le encuentran en 30s, Toki gana
+    hsTimers.current.push(setTimeout(() => {
+      if (!mountedRef.current) return;
+      (async () => {
+        setHsHideSide(null);
+        await hsSay('¡No me has encontrado! He ganado yo.');
+        hsFlipTurn();
+        await hsWait(600);
+        hsEnd();
+      })();
+    }, 30000));
+  };
+
+  const hsOnChildFindsToki = async () => {
+    if (hsPhase !== 'toki_hide') return;
+    hsClearAll();
+    setHsHideSide(null);
+    setState('happy'); setTailFast(true); setEyesClosed(true);
+    playWhine();
+    await hsSay('¡Me has encontrado! ¡Has ganado!');
+    hsFlipTurn();
+    await hsWait(700);
+    hsEnd();
+  };
+
+  const startHideSeek = () => {
+    if (hsPhase) return; // ya está en marcha
+    stopListening(); // pausa escucha normal mientras dure el juego
+    const turn = hsGetTurn();
+    setSpeechBubble(null);
+    if (turn === 'toki_counts') hsTokiCountsAndSeeks();
+    else hsChildCountsAndTokiHides();
+  };
+  startHideSeekRef.current = startHideSeek;
+
+  // Start voice listening on mount.
+  // Si venimos desde una sesión de ejercicios, otros SpeechRecognition pueden
+  // estar vivos y secuestrar el micro. Abortamos TTS + pedimos permiso micro
+  // explícitamente antes de iniciar el SR de Toki para que siempre arranque.
   useEffect(() => {
-    const timer = setTimeout(() => startListening(), 1200);
-    return () => { clearTimeout(timer); stopListening(); };
+    let cancelled = false;
+    (async () => {
+      try { stopVoice(); } catch(e) {}
+      try { window.dispatchEvent(new Event('toki-sos')); } catch(e) {}
+      // Re-ask mic permission: esto fuerza a cerrar cualquier SR previo retenido
+      // por otro componente que se haya desmontado sin limpiar.
+      try {
+        if (navigator.mediaDevices) {
+          const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+          s.getTracks().forEach(t => t.stop());
+        }
+      } catch(e) { /* usuario denegó o no hay permiso */ }
+      if (cancelled) return;
+      // Pequeño delay para asegurar que la limpieza previa terminó
+      setTimeout(() => { if (!cancelled) startListening(); }, 400);
+    })();
+    return () => { cancelled = true; stopListening(); };
   }, []);
 
   const renderEyes = () => {
@@ -594,6 +951,12 @@ export default function TokiPlayground({
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="Toki playground"
+        style={{
+          // Durante 'toki_hide' Toki ya no está en el centro: solo se ve el
+          // hocico asomando por un lateral. Ocultamos el SVG principal para
+          // que no aparezcan los dos a la vez (Toki en azul + hocico al lado).
+          visibility: hsPhase==='toki_hide' ? 'hidden' : 'visible',
+        }}
       >
         <style>{`
           .tp-bob{animation:tpBob 2.2s ease-in-out infinite;transform-origin:150px 180px}
@@ -685,7 +1048,50 @@ export default function TokiPlayground({
       {speechBubble&&(<div key={speechBubble} className="tp-bubble" style={{position:'absolute',top:'12%',left:'50%',transform:'translateX(-50%)',background:'#F0C850',color:'#1a1a2e',fontFamily:"'Fredoka'",fontWeight:700,fontSize:18,padding:'10px 20px',borderRadius:20,boxShadow:'0 4px 12px rgba(0,0,0,.3)',whiteSpace:'nowrap',zIndex:5,pointerEvents:'none'}}>{speechBubble}</div>)}
       {/* Voice hint */}
       <div className={voiceActive?'tp-mic-pulse':''} style={{position:'absolute',bottom:typeof countdown==='number'&&countdown>0?44:24,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.1)',backdropFilter:'blur(6px)',color:'#ECF0F1',fontFamily:"'Fredoka'",fontWeight:600,fontSize:15,padding:'8px 18px',borderRadius:999,border:voiceActive?'2px solid rgba(46,204,113,.5)':'2px solid rgba(255,255,255,.15)',cursor:'pointer',userSelect:'none'}} onClick={()=>{if(!voiceActive)startListening();else{stopListening();setVoiceHint('🎤 Háblale a Toki')}}}>{voiceHint}</div>
-      {showContinue&&(<button onClick={()=>{stopListening();onContinue&&onContinue()}} style={{position:"absolute",right:18,bottom:typeof countdown==="number"&&countdown>0?34:18,border:"none",borderRadius:999,padding:"10px 14px",background:"rgba(255,255,255,.12)",color:"#ECF0F1",backdropFilter:"blur(4px)",fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,cursor:"pointer"}}>¡Seguimos!</button>)}
+      {/* Escondite: hocico de Toki asomando por uno de los lados */}
+      {hsPhase==='toki_hide'&&hsHideSide&&(()=>{
+        // Posicionamiento según lado: hocico asomando ~40px desde el borde.
+        const base={position:'absolute',zIndex:20,cursor:'pointer',filter:'drop-shadow(0 4px 8px rgba(0,0,0,.4))'};
+        const wiggle={animation:'hsSnoutWiggle 1.2s ease-in-out infinite'};
+        const styleBy={
+          top:   {...base,top:0,left:'50%',transform:'translateX(-50%)',...wiggle},
+          bottom:{...base,bottom:0,left:'50%',transform:'translateX(-50%)',...wiggle},
+          left:  {...base,left:0,top:'50%',transform:'translateY(-50%)',...wiggle},
+          right: {...base,right:0,top:'50%',transform:'translateY(-50%)',...wiggle},
+        }[hsHideSide];
+        return <div style={styleBy} onClick={hsOnChildFindsToki} onTouchStart={hsOnChildFindsToki}>
+          <style>{`@keyframes hsSnoutWiggle{0%,100%{transform:${styleBy.transform||''} translate(0,0)}50%{transform:${styleBy.transform||''} translate(${hsHideSide==='left'?'4px':hsHideSide==='right'?'-4px':'0'},${hsHideSide==='top'?'4px':hsHideSide==='bottom'?'-4px':'0'})}}`}</style>
+          <svg width="88" height="70" viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg">
+            {/* Hocico + nariz */}
+            <ellipse cx="60" cy="55" rx="40" ry="26" fill="#C98A57"/>
+            <ellipse cx="60" cy="60" rx="26" ry="14" fill="#FFF6EF"/>
+            <ellipse cx="60" cy="45" rx="10" ry="7" fill="#1B1716"/>
+            <path d="M50 58 Q60 72 70 58" fill="none" stroke="#7A3E34" strokeWidth="4" strokeLinecap="round"/>
+            {/* Un ojo visible, asomando */}
+            <ellipse cx="42" cy="30" rx="5" ry="7" fill="#171717"/>
+            <circle cx="40" cy="28" r="1.8" fill="#fff"/>
+          </svg>
+        </div>;
+      })()}
+      {/* Botón "Volver al juego" — siempre visible cuando hay onContinue
+          (antes solo aparecía con showContinue tras un timer y el niño podía
+          quedar bloqueado sin poder salir). hsPhase oculta el botón solo
+          durante el mini-juego del escondite para no distraer. */}
+      {onContinue&&!hsPhase&&(
+        <button
+          onClick={()=>{stopListening();hsClearAll();onContinue()}}
+          style={{
+            position:'absolute',top:14,left:14,
+            border:'2px solid rgba(255,255,255,.25)',
+            borderRadius:999,padding:'8px 14px',
+            background:'rgba(0,0,0,.35)',color:'#fff',
+            backdropFilter:'blur(6px)',
+            fontFamily:"'Fredoka'",fontWeight:700,fontSize:14,
+            cursor:'pointer',zIndex:10,
+            boxShadow:'0 2px 8px rgba(0,0,0,.3)',
+          }}
+        >← Volver al juego</button>
+      )}
     </div>
   );
 }

@@ -168,7 +168,14 @@ export function useOralPhase(onOk){
   const triggerOral=useCallback((phrase,stars,attempts)=>{
     if(!oralEnabled()||!phrase){onOk(stars,attempts);return}
     pendingScore.current={stars,attempts};
-    setOralPhrase(phrase);
+    // Mayúscula inicial en la frase a repetir (Doc §3.3). Antes muchos
+    // módulos pasaban "son las 6 y media", "hay cinco manzanas", "los
+    // días de la semana"... que TTS y pantalla mostraban en minúsculas.
+    // Centralizamos la capitalización aquí para no tener que tocar cada
+    // módulo. Mantenemos el resto del case intacto (números, nombres
+    // propios, mayúsculas que ya estuvieran).
+    const cap=phrase.charAt(0).toUpperCase()+phrase.slice(1);
+    setOralPhrase(cap);
   },[onOk]);
   const resetOral=useCallback(()=>setOralPhrase(null),[]);
   return{oralPhrase,triggerOral,oralDone,resetOral}
@@ -592,12 +599,12 @@ export function AstronautOverlay({ phase, dailyCount, photo, onClose }) {
     { n: 4, label: '300+', title: 'Leyenda', emoji: '👑' },
   ];
   const cheers = {
-    1: ['¡Sigue, puedes hacerlo!', '¡Vamos a por los 100!', '¡Tú puedes!', '¡Arriba!', '¡Dale caña!', '¡Ánimo!'],
+    1: ['¡Tú puedes!', '¡Vamos a por los 100!', '¡Ánimo!', '¡Arriba!', '¡Dale caña!', '¡Lo estás haciendo bien!'],
     2: ['¡Bien hecho!', '¡Eres un campeón!', '¡Entrenamiento completado!', '¡Genial!', '¡Impresionante!', '¡Qué crack!'],
     3: ['¡Estás que te sales!', '¡Increíble esfuerzo!', '¡Máquina!', '¡Imparable!', '¡Brutal!', '¡Vas volando!'],
     4: ['¡Leyenda absoluta!', '¡Pero qué has comido hoy!', '¡Eres imparable!', '¡Récord histórico!', '¡Fuera de serie!', '¡De otro planeta!'],
   };
-  const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '¡Sigue así!';
+  const cheer = cheers[phase] ? cheers[phase][Math.floor(Math.random() * cheers[phase].length)] : '¡Muy bien!';
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'radial-gradient(ellipse at center, rgba(15,25,50,.97) 0%, rgba(0,0,0,.98) 100%)', zIndex: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>

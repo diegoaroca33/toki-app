@@ -43,7 +43,54 @@ export function applySettings(s){if(!s||typeof s!=='object')return;
   // Apply module levels
   Object.keys(s).filter(k=>k.startsWith('mod_lv_')).forEach(k=>{if(s[k]!==undefined)saveData(k,s[k])})}
 export function textKey(text){return 'ph_'+text.toLowerCase().replace(/[^a-záéíóúñü0-9\s]/g,'').trim().replace(/\s+/g,'_').slice(0,40)}
-export function personalize(text,u){if(!text||!u)return text||'';const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);const bdValid=u.birthdate&&!isNaN(new Date(u.birthdate).getTime());const edad=u.age||(bdValid?Math.max(1,Math.floor((Date.now()-new Date(u.birthdate).getTime())/31557600000)):'');const cumple=bdValid?new Date(u.birthdate).toLocaleDateString('es-ES',{day:'numeric',month:'long'}):'';const r=text.replace(/\{nombre\}/g,u.name||'Nico').replace(/\{apellidos\}/g,u.apellidos||'').replace(/\{padre\}/g,u.padre||'Paco').replace(/\{madre\}/g,u.madre||'Ana').replace(/\{hermano1\}/g,h[0]||'Miguel').replace(/\{hermana1\}/g,h[0]||'Sofía').replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0').replace(/\{direccion\}/g,u.direccion||'mi casa').replace(/\{colegio\}/g,u.colegio||'el cole').replace(/\{edad\}/g,String(edad)).replace(/\{cumple\}/g,cumple);return r.charAt(0).toUpperCase()+r.slice(1)}
+// Nombres inventados para cuando aún no hay amigos configurados en Mis Personas
+const FAKE_FRIENDS=['Luis','Marta','Sara','Pablo','Carlos','Ana','Clara','Diego','Elena','Hugo'];
+// Normaliza un nombre propio: primera letra de cada palabra en mayúscula,
+// el resto en minúscula. "diego aroca" → "Diego Aroca", "DIEGO" → "Diego".
+export function capName(n){
+  if(!n||typeof n!=='string')return n;
+  return n.trim().split(/\s+/).map(w=>{
+    if(!w)return w;
+    // Conectores se quedan en minúscula (excepto inicio de todo)
+    return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();
+  }).join(' ');
+}
+function pickFriendName(u){
+  try{
+    const personas=loadData('personas',[])||[];
+    const amigos=personas.filter(p=>p&&p.name&&(p.relation==='Amigo'||p.relation==='Amiga'));
+    if(amigos.length)return capName(amigos[Math.floor(Math.random()*amigos.length)].name);
+  }catch(e){}
+  const legacy=(u&&u.amigos||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(legacy.length)return capName(legacy[Math.floor(Math.random()*legacy.length)]);
+  return FAKE_FRIENDS[Math.floor(Math.random()*FAKE_FRIENDS.length)];
+}
+export function personalize(text,u){
+  if(!text||!u)return text||'';
+  const h=(u.hermanos||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const bdValid=u.birthdate&&!isNaN(new Date(u.birthdate).getTime());
+  const edad=u.age||(bdValid?Math.max(1,Math.floor((Date.now()-new Date(u.birthdate).getTime())/31557600000)):'');
+  const cumple=bdValid?new Date(u.birthdate).toLocaleDateString('es-ES',{day:'numeric',month:'long'}):'';
+  let r=text
+    .replace(/\{nombre\}/g,capName(u.name)||'Nico')
+    .replace(/\{apellidos\}/g,capName(u.apellidos)||'')
+    .replace(/\{padre\}/g,capName(u.padre)||'Paco')
+    .replace(/\{madre\}/g,capName(u.madre)||'Ana')
+    .replace(/\{hermano1\}/g,capName(h[0])||'Miguel')
+    .replace(/\{hermana1\}/g,capName(h[0])||'Sofía')
+    .replace(/\{tel_padre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0')
+    .replace(/\{tel_madre\}/g,u.telefono||'6.0.0.0.0.0.0.0.0')
+    .replace(/\{direccion\}/g,u.direccion||'mi casa')
+    .replace(/\{colegio\}/g,u.colegio||'el cole')
+    .replace(/\{edad\}/g,String(edad))
+    .replace(/\{cumple\}/g,cumple)
+    .replace(/\{nombre_amigo\}/g,pickFriendName(u))
+    .replace(/\{amigo\}/g,pickFriendName(u))
+    .replace(/\{amiga\}/g,pickFriendName(u));
+  // Red de seguridad para placeholders restantes
+  r=r.replace(/\{[^}]+\}|\[[^\]]+\]/g,()=>pickFriendName(u));
+  return r.charAt(0).toUpperCase()+r.slice(1);
+}
 export function srsUp(id,ok,u,stars,attempts){const d={...u};if(!d.srs)d.srs={};if(!d.srs[id])d.srs[id]={lv:0,t:0};d.srs[id].t=Date.now();
   if(!ok){d.srs[id].lv=Math.max(d.srs[id].lv-1,0)}
   else if(stars!==undefined&&attempts!==undefined){
@@ -205,19 +252,29 @@ export function updateRepCount(userId, phraseKey, stars) {
 }
 
 // M5: Adaptive TTS speed per phrase
+// MAX 0.92 — never faster than pausado-claro. If el niño acierta, sube de NIVEL
+// (más palabras), no de velocidad. Modelos más rápidos harían que se comiera sílabas.
+export const PHRASE_SPEEDS = [0.75, 0.85, 0.92];
+export const PHRASE_SPEED_MAX = 0.92;
+export const PHRASE_SPEED_DEFAULT = 0.85;
 export function getPhraseSpeed(userId, phraseKey) {
-  return loadData(`speed_${userId}_${phraseKey}`, 0.85);
+  const v = loadData(`speed_${userId}_${phraseKey}`, PHRASE_SPEED_DEFAULT);
+  // Clamp legacy stored values (pre-cap they could be 1.0 / 1.1)
+  if (typeof v !== 'number') return PHRASE_SPEED_DEFAULT;
+  if (v > PHRASE_SPEED_MAX) { saveData(`speed_${userId}_${phraseKey}`, PHRASE_SPEED_MAX); return PHRASE_SPEED_MAX; }
+  if (v < PHRASE_SPEEDS[0]) { saveData(`speed_${userId}_${phraseKey}`, PHRASE_SPEEDS[0]); return PHRASE_SPEEDS[0]; }
+  return v;
 }
 export function updatePhraseSpeed(userId, phraseKey, succeeded) {
-  const speeds = [0.7, 0.85, 1.0, 1.1];
+  const speeds = PHRASE_SPEEDS;
   const current = getPhraseSpeed(userId, phraseKey);
   const consecutiveKey = `speedstreak_${userId}_${phraseKey}`;
   let streak = loadData(consecutiveKey, {ok:0, fail:0});
   if (succeeded) { streak.ok++; streak.fail=0; }
   else { streak.fail++; streak.ok=0; }
   saveData(consecutiveKey, streak);
-  let idx = speeds.indexOf(current);
-  if (idx === -1) idx = 1;
+  // Find closest speed index (legacy values may not match exactly)
+  let idx = speeds.reduce((best,s,i)=>Math.abs(s-current)<Math.abs(speeds[best]-current)?i:best, 1);
   if (streak.ok >= 3) { idx = Math.min(idx + 1, speeds.length - 1); streak.ok = 0; saveData(consecutiveKey, streak); }
   if (streak.fail >= 2) { idx = Math.max(idx - 1, 0); streak.fail = 0; saveData(consecutiveKey, streak); }
   const newSpeed = speeds[idx];
@@ -292,6 +349,48 @@ export function canFeedDog(userId) {
   const today = new Date().toISOString().slice(0, 10);
   return last !== today;
 }
+// ── Milestones diarios: 100 / 200 / 300 ejercicios ──
+// Se guardan por día para que cuando el niño entre a Toki, éste pueda
+// recordarle su logro ("te mereces un descanso" al llegar a 300).
+const MILESTONE_TIERS = [100, 200, 300];
+export function getMilestoneReached(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const d = loadData(`milestone_${userId}`, { date: null, tier: 0 });
+  if (d.date !== today) return 0; // se resetea cada día
+  return d.tier;
+}
+export function setMilestoneReached(userId, tier) {
+  const today = new Date().toISOString().slice(0, 10);
+  saveData(`milestone_${userId}`, { date: today, tier });
+}
+export function checkMilestoneHit(userId, totalOkToday) {
+  const current = getMilestoneReached(userId);
+  for (const t of MILESTONE_TIERS) {
+    if (totalOkToday >= t && current < t) {
+      setMilestoneReached(userId, t);
+      return t;
+    }
+  }
+  return null;
+}
+
+// ── Comida de Toki: 1 ración por cada 100 ejercicios del día ──
+// Antes: 1 al día. Ahora: se gana una ración cada 100 ejercicios (hasta 3/día),
+// así el niño ve que su trabajo alimenta a Toki directamente.
+export function getDogFoodBalance(userId, totalOkToday) {
+  const today = new Date().toISOString().slice(0, 10);
+  const earned = Math.min(3, Math.floor((totalOkToday || 0) / 100));
+  const d = loadData(`dog_feeds_${userId}`, { date: null, used: 0 });
+  const used = d.date === today ? d.used : 0;
+  return { earned, used, available: Math.max(0, earned - used) };
+}
+export function consumeDogFood(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const d = loadData(`dog_feeds_${userId}`, { date: null, used: 0 });
+  const used = d.date === today ? d.used + 1 : 1;
+  saveData(`dog_feeds_${userId}`, { date: today, used });
+}
+
 export function feedDog(userId) {
   const today = new Date().toISOString().slice(0, 10);
   setDogLastFed(userId, today);
@@ -331,26 +430,116 @@ export function getDailyPhase(count) {
   return 1;
 }
 
-// Build GROUPS with dynamic Aprende modules from user.presentations
+// === ENTORNO TEST — variable de build VITE_IS_TEST ======================
+// Cuando el build se hace con VITE_IS_TEST=true (definido en el proyecto
+// Vercel "Toki Test"), todas las flags experimentales se activan por
+// DEFECTO sin tocar localStorage. El supervisor sigue pudiendo
+// desactivarlas explícitamente en Settings (override del usuario).
+//
+// Helper centralizado: lee la env var en build-time. En runtime es un
+// boolean estable (no cambia entre llamadas).
+export function isTestEnv(){
+  try{return import.meta.env.VITE_IS_TEST==='true'||import.meta.env.VITE_IS_TEST===true}
+  catch(e){return false}
+}
+// Lectura de un flag con override de usuario sobre default de entorno:
+//   - Si localStorage tiene 'true' o 'false' explícito → respeta al usuario
+//   - Si no hay nada en localStorage → usa el default del entorno
+//     (true si isTestEnv, false en producción)
+function flagWithEnvDefault(key){
+  try{
+    const v=localStorage.getItem(key);
+    if(v==='true')return true;
+    if(v==='false')return false;
+    return isTestEnv();
+  }catch(e){return false}
+}
+
+// === LAYOUT V2 — feature flag para la reorganización capa 2 (Doc §2) ====
+// Por defecto: false en producción, true en Toki Test.
+export function isLayoutV2(){return flagWithEnvDefault('toki_layout_v2')}
+export function setLayoutV2(v){
+  // Persistimos siempre el valor explícito ('true' o 'false') para que
+  // sobreescriba el default del entorno. Si quieres volver al default,
+  // usa removeItem en F12 o el botón "Restablecer" si lo añadimos.
+  try{localStorage.setItem('toki_layout_v2',v?'true':'false')}catch(e){}
+}
+export function resetLayoutV2(){try{localStorage.removeItem('toki_layout_v2')}catch(e){}}
+
+// === CIENCIAS PILOTO — feature flag para módulo Naturales Básico =========
+export function isCienciasPiloto(){return flagWithEnvDefault('toki_ciencias_piloto')}
+export function setCienciasPiloto(v){try{localStorage.setItem('toki_ciencias_piloto',v?'true':'false')}catch(e){}}
+export function resetCienciasPiloto(){try{localStorage.removeItem('toki_ciencias_piloto')}catch(e){}}
+
+// === RANDOM V2 — feature flag para Random ponderado por contenido =======
+export function isRandomV2(){return flagWithEnvDefault('toki_random_v2')}
+export function setRandomV2(v){try{localStorage.setItem('toki_random_v2',v?'true':'false')}catch(e){}}
+export function resetRandomV2(){try{localStorage.removeItem('toki_random_v2')}catch(e){}}
+// Backup defensivo del estado pre-migración. Se guarda con timestamp único
+// para que el supervisor pueda restaurar si algo va mal. No se borra
+// automáticamente: queda como cápsula de tiempo.
+export function backupBeforeMigration(tag){
+  try{
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const snapshot={};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('toki_')&&!k.startsWith('toki_backup_'))snapshot[k]=localStorage.getItem(k);
+    }
+    localStorage.setItem('toki_backup_'+tag+'_'+stamp,JSON.stringify(snapshot));
+    return stamp;
+  }catch(e){return null}
+}
+// Migración v2: la mayoría de los lvKeys NO cambian (solo cambia GROUPS).
+// Solo hay que asegurar que los lvKeys nuevos (tiempo_medidas) existen
+// en active_mods si el supervisor activó alguno de sus componentes
+// originales (clock, calendar, razona_temperatura).
+export function migrateLayoutV2(){
+  // Solo migramos una vez por dispositivo
+  if(localStorage.getItem('toki_migration_v2_done')==='true')return false;
+  try{
+    backupBeforeMigration('pre_v2');
+    const active=loadData('active_mods',{});
+    let changed=false;
+    // Si tenían clock/calendar/razona_temperatura activos, activar también
+    // tiempo_medidas (el contenedor de capa 2 nuevo)
+    if(active.clock||active.calendar||active.razona_temperatura){
+      if(!active.tiempo_medidas){active.tiempo_medidas=true;changed=true}
+    }
+    if(changed)saveData('active_mods',active);
+    localStorage.setItem('toki_migration_v2_done','true');
+    return true;
+  }catch(e){
+    console.warn('[migrateLayoutV2] error',e);
+    return false;
+  }
+}
+
+// Build GROUPS with dynamic Aprende modules from user.presentations.
+// IMPORTANTE: solo sustituye los módulos quiensoy del planeta APRENDE; el
+// resto (Ciencias, Hora, Calendario, Termómetro en GROUPS_V2) se conserva.
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;
   const pres=user.presentations||[];
   return GROUPS.map(g=>{
     if(g.id!=='aprende')return g;
-    // Build modules from user presentations
-    const mods=[];
+    // Módulos quiensoy dinámicos según presentaciones del perfil
+    const presMods=[];
     if(pres.length===0){
-      // No presentations yet - use default
-      mods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
+      presMods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     } else {
       pres.forEach((p,i)=>{
-        if(p.active===false)return; // skip inactive presentations
-        mods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
+        if(p.active===false)return;
+        presMods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
       });
-      // If all are inactive, keep at least a fallback
-      if(mods.length===0)mods.push({k:'quiensoy',l:pres[0].name||'Presentación 1',defLv:[1,2],lvKey:'pres_0',presIdx:0});
+      if(presMods.length===0)presMods.push({k:'quiensoy',l:pres[0].name||'Presentación 1',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     }
-    return {...g,modules:mods};
+    // Resto de módulos del planeta APRENDE (no-quiensoy) que se mantienen
+    // tal cual. Esto preserva las entradas de Ciencias / Hora / Calendario
+    // / Termómetro en GROUPS_V2 sin que las sobrescriba el ramificador
+    // dinámico de presentaciones.
+    const otherMods=g.modules.filter(m=>m.k!=='quiensoy');
+    return {...g,modules:[...presMods,...otherMods]};
   });
 }
 

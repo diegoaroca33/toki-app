@@ -19,7 +19,7 @@ export function genAddObjects(){const sh=a=>[...a].sort(()=>Math.random()-.5);co
     ops.push({q:`${a} + ${b}`,ans:a+b,a,b,emoji:em,mode:'add_objects'})}
   return sh(ops)}
 
-// Generate word problems with context (Pictociencia-inspired)
+// Generate word problems with context (problemas verbales curriculares)
 const WORD_PROB_TEMPLATES=[
   {t:'{N} tiene {a} {E} y le dan {b} más. ¿Cuántas tiene?',op:'+',oral:'{N} tiene {ans} {E} en total'},
   {t:'{N} tiene {a} {E} y pierde {b}. ¿Cuántas le quedan?',op:'-',oral:'Le quedan {ans} {E}'},
@@ -88,7 +88,8 @@ function ExCountObjects({ex,onOk,onSkip,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say('¿Cuántos '+ex.emoji+' hay?'),400);return()=>stopVoice()},[ex]);
   function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
-    say('Hay '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=(NUMS_1_100[ex.ans-1]||''+ex.ans).toLowerCase();triggerOral('hay '+nw,4,1)})}
+    // UN cheer + UN modelo+micro (antes decía 'Hay 5' + cheer + de nuevo 'hay cinco')
+    cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const nw=(NUMS_1_100[ex.ans-1]||''+ex.ans).toLowerCase();triggerOral('hay '+nw,4,1)})}
     else{setFb('no');stopVoice();sayFB('Cuenta bien, hay '+ex.ans);setTimeout(()=>setFb(null),2000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¿Cuántos hay?</p>
@@ -109,7 +110,8 @@ function ExAddObjects({ex,onOk,onSkip,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say(ex.a+' más '+ex.b+' es igual a...'),400);return()=>stopVoice()},[ex]);
   function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
-    say(ex.a+' más '+ex.b+' son '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();triggerOral(nw(ex.a)+' más '+nw(ex.b)+' son '+nw(ex.ans),4,1)})}
+    // UN cheer + UN modelo+micro (antes "2 más 3 son 5" + cheer + de nuevo en palabras)
+    cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();triggerOral(nw(ex.a)+' más '+nw(ex.b)+' son '+nw(ex.ans),4,1)})}
     else{setFb('no');stopVoice();sayFB('Cuenta todos: son '+ex.ans);setTimeout(()=>setFb(null),2000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <p style={{fontSize:22,fontWeight:700,color:GOLD,margin:'0 0 12px'}}>¿Cuántos hay en total?</p>
@@ -140,7 +142,8 @@ function ExWordProblem({ex,onOk,onSkip,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   useEffect(()=>{setAns('');setFb(null);resetOral();stopVoice();setTimeout(()=>say(ex.q),500);return()=>stopVoice()},[ex]);
   function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
-    say(ex.oral).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>triggerOral(ex.oral,4,1))}
+    // UN cheer + UN modelo+micro (antes ex.oral se decía dos veces seguidas)
+    cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>triggerOral(ex.oral,4,1))}
     else{setFb('no');stopVoice();sayFB('Piensa bien... la respuesta es '+ex.ans);setTimeout(()=>setFb(null),2500)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:'rgba(255,255,255,.06)',borderColor:'rgba(255,255,255,.15)'}}>
@@ -164,7 +167,10 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
   const{oralPhrase,triggerOral,oralDone,resetOral}=useOralPhase(onOk);
   const parts=ex.q.match(/(\d+)\s*([+\-])\s*(\d+)/);const a=parts?parseInt(parts[1]):0,op=parts?parts[2]:'+',b=parts?parseInt(parts[3]):0;
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);resetOral();const t=setTimeout(()=>{stopVoice();const opW=ex.q.replace('+',' más ').replace('-',' menos ')+' es igual a...';say(opW)},500);return()=>{clearTimeout(t);stopVoice()}},[ex]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();const opW=a+(op==='+'?' más ':' menos ')+b+' es igual a '+ex.ans;say(opW).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();const phrase=nw(a)+(op==='+'?' más ':' menos ')+nw(b)+' son '+nw(ex.ans);setTimeout(()=>triggerOral(phrase,4,1),250)})}else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
+    // UN cheer + UN modelo+micro (antes "2 más 3 es igual a 5" + cheer + de nuevo en palabras)
+    cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const nw=w=>(NUMS_1_100[w-1]||''+w).toLowerCase();const phrase=nw(a)+(op==='+'?' más ':' menos ')+nw(b)+' son '+nw(ex.ans);setTimeout(()=>triggerOral(phrase,4,1),250)})
+  }else{setFb('no');setShowHelp(true);stopVoice();sayFB('¡Vamos a contarlo juntos!')}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
     <div className="card" style={{padding:20,marginBottom:14,background:PURPLE+'0C',borderColor:PURPLE+'33'}}><p style={{fontSize:36,fontWeight:700,margin:0,fontFamily:'monospace'}}>{ex.q} = ?</p></div>
     {!showHelp&&!fb&&<div>
@@ -191,7 +197,7 @@ export function ExMath({ex,onOk,onSkip,sex,name,uid,vids}){
       <Fingers n={ex.ans} color={GREEN}/>
       <p style={{fontSize:24,color:GREEN,fontWeight:700,margin:'8px 0 0'}}>{a} {op} {b} = {ex.ans}</p>
       <button className="btn btn-g" onClick={()=>{setAns('');setFb(null);setShowHelp(false)}} style={{marginTop:12,fontSize:18}}>🔄 Intentar otra vez</button>
-      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Saltar</button>
     </div>}
     {idleMsg&&!fb&&!showHelp&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}

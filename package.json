@@ -11,7 +11,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "vitest run && vite build"
+    "check": "vitest run && vite build",
+    "extract-phrases": "node scripts/extract-phrases.mjs",
+    "apply-phrases": "node scripts/apply-phrases.mjs frases-para-revisar.md --apply",
+    "generate-phrases-docx": "node scripts/generate-phrases-docx.mjs",
+    "extract-toki-commands": "node scripts/extract-toki-commands.mjs",
+    "apply-toki-commands": "node scripts/apply-toki-commands.mjs"
   },
   "dependencies": {
     "firebase": "^12.11.0",
@@ -21,6 +26,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "docx": "^9.6.1",
     "vite": "^5.1.0",
     "vitest": "^4.1.1"
   }

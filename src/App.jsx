@@ -5,8 +5,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react'
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
-import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings } from './utils.js'
+import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS, GROUPS_V2 } from './constants.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings, getDogFoodBalance, consumeDogFood, getMilestoneReached, checkMilestoneHit, isLayoutV2, migrateLayoutV2, isCienciasPiloto } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, startTTSKeepAlive, stopTTSKeepAlive, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
@@ -24,6 +24,8 @@ import { clockText, genClock, ClockFace } from './modules/ExClock.jsx'
 import { genCalendar } from './modules/ExCalendar.jsx'
 import { genDistribute, BagSVG, CardSVG, dominoDots, DominoSVG } from './modules/ExDistribute.jsx'
 import { genWriting, LETTER_STROKE_PATHS, getCustomPhrases } from './modules/ExWriting.jsx'
+// Piloto Ciencias — sólo se ejecuta si flag toki_ciencias_piloto activo
+import { genCiencias } from './modules/ExCiencias.jsx'
 import { genPatterns, genRazona, SceneSVG, SpatialDrag } from './modules/ExRazona.jsx'
 import { genLee } from './modules/ExLee.jsx'
 import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres } from './modules/ExQuienSoy.jsx'
@@ -45,10 +47,14 @@ const ExWriting=React.lazy(()=>import('./modules/ExWriting.jsx').then(m=>({defau
 const ExRazona=React.lazy(()=>import('./modules/ExRazona.jsx').then(m=>({default:m.ExRazona})))
 const ExLee=React.lazy(()=>import('./modules/ExLee.jsx').then(m=>({default:m.ExLee})))
 const ExQuienSoyUnified=React.lazy(()=>import('./modules/ExQuienSoy.jsx').then(m=>({default:m.ExQuienSoyUnified})))
+// Piloto Ciencias — solo cargado bajo demanda (lazy) para no incluir las
+// imágenes en el bundle inicial cuando el flag está desactivado.
+const ExCiencias=React.lazy(()=>import('./modules/ExCiencias.jsx').then(m=>({default:m.ExCiencias})))
 
 function LazyFallback(){return<div style={{minHeight:'40vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10,background:'#080C18',color:'#fff',fontFamily:"'Fredoka'",borderRadius:24}}><div style={{fontSize:42}}>🐾</div><div style={{fontSize:20,fontWeight:700}}>Cargando...</div></div>}
 import { isCheckpointPending } from './components/ControlCheckpoint.jsx'
 import TokiWelcome from './components/TokiWelcome.jsx'
+import TestBadge from './components/TestBadge.jsx'
 import TokiLogoPro from './components/TokiLogoPro.jsx'
 // Personas helpers
 
@@ -127,7 +133,13 @@ export default function App(){
     return pp});
     if(changed){setProfs(updated);saveData('profiles',updated)}},[profs.length,fbUser?.email,personas]);
   // Dynamic GROUPS: Aprende modules generated from user.presentations
-  const dynGroups=useMemo(()=>getGroupsForUser(user,GROUPS),[user,user?.presentations])
+  // Layout V2 (capa 2 reorganizada, Doc §2). Activable con feature flag
+  // localStorage.setItem('toki_layout_v2','true'). Por defecto false.
+  const layoutV2=isLayoutV2();
+  const baseGroups=layoutV2?GROUPS_V2:GROUPS;
+  // Migración v2 al primer arranque con flag activa (idempotente).
+  useEffect(()=>{if(layoutV2)migrateLayoutV2()},[layoutV2]);
+  const dynGroups=useMemo(()=>getGroupsForUser(user,baseGroups),[user,user?.presentations,layoutV2])
   useEffect(()=>{const onResize=()=>setViewport({w:window.innerWidth,h:window.innerHeight});window.addEventListener('resize',onResize,{passive:true});window.addEventListener('orientationchange',onResize,{passive:true});return()=>{window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize)}},[])
   const isPhone=viewport.w<=480;const isTabletPortrait=viewport.w>=768&&viewport.w<=1023&&viewport.h>=viewport.w;const isTabletLandscape=viewport.w>=1024&&viewport.w<=1365&&viewport.w>viewport.h;const isDesktop=viewport.w>=1366;
   const gameShellStyle=useMemo(()=>({position:'relative',minHeight:'calc(100dvh - var(--safe-top) - var(--safe-bottom) - 8px)',display:'grid',gridTemplateRows:'auto auto auto minmax(0,1fr)',gap:isPhone?8:12,paddingBottom:'calc(var(--dock-h) + var(--safe-bottom) + 16px)'}),[isPhone]);
@@ -274,12 +286,12 @@ export default function App(){
   const[activeMods,setActiveMods]=useState(()=>loadData('active_mods',{}));const[sessionMode,setSessionMode]=useState(()=>loadData('session_mode','free'));const[guidedTasks,setGuidedTasks]=useState(()=>loadData('guided_tasks',[]));const[maxDaily,setMaxDaily]=useState(()=>loadData('max_daily',0));
   const[escribeCase,setEscribeCase]=useState(()=>loadData('escribe_case','upper'));
   const[escribeTypes,setEscribeTypes]=useState(()=>loadData('escribe_types',['letras']));
-  const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true}));
+  const[escribeGuide,setEscribeGuide]=useState(()=>loadData('escribe_guide',{letras:true,palabras:true,frases:true,misfrases:true}));
   const[escribePauta,setEscribePauta]=useState(()=>loadData('escribe_pauta_size',0));
   const[freeChoice,setFreeChoice]=useState(true);
   // M4: Burst mode state
   const[burstMode,setBurstMode]=useState(()=>loadData('burst_mode',true));
-  const[burstSpeed,setBurstSpeed]=useState(()=>loadData('burst_speed',1.0));
+  const[burstSpeed,setBurstSpeed]=useState(()=>Math.min(0.92,loadData('burst_speed',0.85)));
   const[burstReps,setBurstReps]=useState(()=>loadData('burst_reps',2));
   function toggleBurst(){const nv=!burstMode;setBurstMode(nv);saveData('burst_mode',nv)}
   function setBurstSpeedVal(v){setBurstSpeed(v);saveData('burst_speed',v)}
@@ -370,6 +382,14 @@ export default function App(){
   }catch(e){}},[profs]);
   useEffect(()=>{if(profs.length>0)saveData('profiles',profs)},[profs]);
   useEffect(()=>{saveData('session_mode',sessionMode)},[sessionMode]);
+  // Persistencia de preferencias de Escribe — antes solo se guardaban en estado
+  // de React, así que al cerrar Settings y entrar al juego buildQ leía los
+  // defaults ('upper' + ['letras']) y al niño le salían siempre letras
+  // mayúsculas con guía, ignorando lo que había configurado el supervisor.
+  useEffect(()=>{saveData('escribe_case',escribeCase)},[escribeCase]);
+  useEffect(()=>{saveData('escribe_types',escribeTypes)},[escribeTypes]);
+  useEffect(()=>{saveData('escribe_guide',escribeGuide)},[escribeGuide]);
+  useEffect(()=>{saveData('escribe_pauta_size',escribePauta)},[escribePauta]);
   // Auto-request mic permission on first touch
   useEffect(()=>{const requestMic=()=>{navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{s.getTracks().forEach(t=>t.stop())}).catch(()=>{});document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)};document.addEventListener('click',requestMic);document.addEventListener('touchstart',requestMic);return()=>{document.removeEventListener('click',requestMic);document.removeEventListener('touchstart',requestMic)}},[]);
   function timeUp(){if(sessionType==='goal')return false;const mins=sessionTime||sm||30;return ss&&mins>0&&activeMs.current>=(mins*60000)}
@@ -480,6 +500,10 @@ export default function App(){
     }
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return _noRepeat(genLee(slv))}
+    // Piloto Ciencias — solo si flag toki_ciencias_piloto activo
+    if(section==='ciencias_nat'&&isCienciasPiloto()){
+      return _noRepeat(genCiencias(slv));
+    }
     return[]}
   function startGame(overrideLv){
     // Always re-read level from storage to pick up Settings changes
@@ -617,12 +641,8 @@ export default function App(){
     if(u){const already=(u.hist||[]).some(h=>h.dt===ps.data.dt&&h.ok===ps.data.ok&&h.min===ps.data.min);
     if(!already){u.hist=[...(u.hist||[]),{ok:ps.data.ok,sk:ps.data.sk,dt:ps.data.dt,min:ps.data.min}];saveData('profiles',profs2.map(p=>p.id===u.id?u:p))}}
     saveData('partial_session',null)}}catch(e){}},[]);
-  // TokiBreak every 15 min for time mode
-  const lastBreakMin=useRef(0);
-  useEffect(()=>{if(scr!=='game'||!ss||sessionType!=='time')return;
-    const mins=Math.floor(elapsedSt/60);
-    if(mins>0&&mins%15===0&&mins!==lastBreakMin.current){lastBreakMin.current=mins;stopVoice();window.dispatchEvent(new Event('toki-pause'));setShowTokiBreak(true)}
-  },[elapsedSt,scr,ss,sessionType]);
+  // Eliminado: auto-break cada 15 min. Toki solo aparece cuando el niño lo pulsa
+  // en el mini-mascota. Las pausas son decisión del niño/supervisor, no del reloj.
   function saveP(u){const c={...u};const uLv=c.maxLv||c.level||1;const cur=EX.filter(e=>e.lv===uLv);const mas=cur.filter(e=>c.srs&&c.srs[e.id]&&c.srs[e.id].lv>=3).length;if(cur.length>0&&mas/cur.length>=.8&&uLv<5)c.maxLv=uLv+1;c.level=c.maxLv||c.level||1;setProfs(p=>p.map(x=>x.id===c.id?c:x))}
   function onOk(stars,attempts){pokeActive();setConf(true);setConsec(0);setMascotMood('happy');setTimeout(()=>{setConf(false);setMascotMood('idle')},2400);const e=queue[idx];const up=srsUp(e.id,true,user,stars,attempts);const s=typeof stars==='number'?stars:4;const repsCount=(burstMode&&burstReps>1)?burstReps:1;if(s>=3)up.totalStars3plus=(up.totalStars3plus||0)+repsCount;setUser(up);saveP(up);const nextSt={ok:st.ok+repsCount,sk:st.sk};setSt(nextSt);if(user&&sec){addGroupProgress(user.id,dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id||sec)}
     track('exercise_completed',{module:sec,stars:s,attempts,burst:burstMode,reps:repsCount})
@@ -632,10 +652,27 @@ export default function App(){
     if(user?.id){const newDaily=addDailyCount(user.id,repsCount);setDailyCount(newDaily);}
     // Streak & milestone tracking
     const newStreak=correctStreak+1;setCorrectStreak(newStreak);if(newStreak>maxStreak)setMaxStreak(newStreak);setSessionStars(s=>s+repsCount);
-    // Milestones ONLY at 100, 200, 300 (daily goals, not session noise)
-    const totalOk=nextSt.ok;const MS=[{n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Primer objetivo cumplido!'},{n:200,emoji:'👑',text:'¡Doscientos!',sub:'¡Eres un campeón!'},{n:300,emoji:'🌈',text:'¡Trescientos!',sub:'¡Récord absoluto!'}];
-    const hit=MS.find(m=>totalOk===m.n&&!milestoneShown.current.has(m.n));
-    if(hit){milestoneShown.current.add(hit.n);stopVoice();window.dispatchEvent(new Event('toki-pause'));const isHuge=hit.n>=100;setTimeout(()=>{setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub,huge:isHuge});setTimeout(()=>{setMilestone(null);setResumeKey(k=>k+1)},isHuge?4000:2500)},300)}
+    // Milestones diarios 100/200/300 — Toki felicita con voz + persistimos para
+    // que al entrar al playground siga recordando el logro del día.
+    const totalOkDay = user?.id ? getDailyCount(user.id) : nextSt.ok;
+    const MS=[
+      {n:100,emoji:'🏆',text:'¡Cien ejercicios!',sub:'¡Hoy trabajas mucho, eres un campeón!',voice:'¡Qué bien! Hoy trabajas mucho. Eres un campeón.'},
+      {n:200,emoji:'👑',text:'¡Doscientos!',sub:'¡Estás que te sale todo!',voice:'¡Doscientos ejercicios! Estás que te sale todo.'},
+      {n:300,emoji:'🌈',text:'¡Trescientos!',sub:'¡Ahora te mereces un descanso bien merecido!',voice:'¡Trescientos! Ahora te mereces un descanso bien merecido.'}
+    ];
+    const hit=MS.find(m=>totalOkDay>=m.n&&!milestoneShown.current.has(m.n));
+    if(hit){
+      milestoneShown.current.add(hit.n);
+      if(user?.id)checkMilestoneHit(user.id,totalOkDay);
+      stopVoice();window.dispatchEvent(new Event('toki-pause'));
+      const isHuge=hit.n>=100;
+      setTimeout(()=>{
+        setMilestone({emoji:hit.emoji,text:hit.text,sub:hit.sub,huge:isHuge});
+        // Toki lo dice en voz alta con una pequeña pausa para no pisar animación
+        setTimeout(()=>sayFB(hit.voice),600);
+        setTimeout(()=>{setMilestone(null);setResumeKey(k=>k+1)},isHuge?5500:3500);
+      },300);
+    }
     // M7a: Dynamic DILO tracking on success
     if(sec==='decir'&&user&&getDynamicDilo(user.id)){
       diloExCount.current++;
@@ -684,7 +721,7 @@ export default function App(){
   function chgLv(n){const up={...user,maxLv:n,level:n};setUser(up);saveP(up)}
   const cur=queue[idx];const vids=useMemo(()=>(user?.voices||[]).map(v=>v.id),[user?.voices]);const elapsed=elapsedSt;
 
-  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style>{showWelcome&&<TokiWelcome onDone={()=>setShowWelcome(false)}/>}{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))} shape={photoCrop.shape||'circle'}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?.photo||avStr(user?.av)} planetEmoji={dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={aprende:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
+  return <div onClick={tU} onTouchStart={tU}><style>{CSS}</style><TestBadge/>{showWelcome&&<TokiWelcome onDone={()=>setShowWelcome(false)}/>}{photoCrop&&<PhotoCropOverlay imageSrc={photoCrop.src} onSave={photoCrop.onSave} onCancel={photoCrop.onCancel||(() =>setPhotoCrop(null))} shape={photoCrop.shape||'circle'}/>}{scr==='game'&&user&&<EmergencyButton user={user} personas={personas} supPin={supPin}/>}<Confetti show={conf}/><RocketTransition show={showRocket} onDone={onRocketDone} avatar={user?.photo||avStr(user?.av)} planetEmoji={dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.emoji} planetColor={(()=>{const PCOL={aprende:'#E91E63',dilo:'#4CAF50',cuenta:'#FF9800',razona:'#42A5F5',escribe:'#AB47BC',lee:'#EF5350'};const gid=dynGroups.find(g=>g.modules.some(m=>m.k===sec))?.id;return PCOL[gid]||'#42A5F5'})()}/>
     {showRec&&user&&<Suspense fallback={<LazyFallback/>}><VoiceRec user={user} fbUser={fbUser} onBack={()=>setShowRec(false)} onSave={up=>{setUser(up);saveP(up);setShowRec(false)}}/></Suspense>}
     {trophy8&&<div className="ov" onClick={()=>setTrophy8(false)}><div className="ovp ab"><div style={{fontSize:80,marginBottom:12}}>🏆</div><h2 style={{fontSize:24,color:GOLD,margin:'0 0 8px'}}>¡Lo has hecho genial!</h2><p style={{fontSize:18,color:GREEN,fontWeight:700,margin:'0 0 6px'}}>Ejercicios: {st.ok} correctos</p><p style={{fontSize:16,color:DIM,margin:'0 0 16px'}}>de {st.ok+st.sk} intentados</p><Confetti show={true}/><button className="btn btn-gold" onClick={()=>setTrophy8(false)} style={{fontSize:20}}>¡Sigo!</button></div></div>}
     {showLvAdj&&<div className="ov"><div className="ovp"><div style={{fontSize:48,marginBottom:12}}>🤔</div><p style={{fontSize:20,fontWeight:700,margin:'0 0 10px'}}>¿Bajamos el nivel?</p><div style={{display:'flex',gap:10}}><button className="btn btn-g" style={{flex:1}} onClick={doLvDn}>Sí</button><button className="btn btn-ghost" style={{flex:1}} onClick={()=>{setShowLvAdj(false);setConsec(0);if(idx+1>=queue.length)fin(st);else setIdx(idx+1)}}>No</button></div></div></div>}
@@ -987,8 +1024,24 @@ export default function App(){
       <div style={{padding:'4px 4px 2px'}}>
         {/* Row 1: Dog | Avatar | Greeting | Stars counter + streak */}
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
-          <div style={{flexShrink:0,cursor:'pointer'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Compañía">
-            {(()=>{const daysSinceLastFed=(()=>{const last=getDogLastFed(user.id);if(!last)return 999;return Math.floor((Date.now()-new Date(last).getTime())/86400000)})();const dogMood=daysSinceLastFed>=2?'hungry':mascotMood;return <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>})()}
+          <div style={{flexShrink:0,cursor:'pointer',position:'relative'}} onClick={()=>{stopVoice();setShowCompanion(true)}} title="Toki">
+            {(()=>{
+              const food=getDogFoodBalance(user.id,dailyCount);
+              const milestone=getMilestoneReached(user.id);
+              const hasNotification=food.available>0||milestone>=300;
+              const dogMood=food.available>0?'hungry':mascotMood;
+              return <>
+                <DogMascot mood={dogMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={true} size={48}/>
+                {hasNotification&&<span style={{
+                  position:'absolute',top:-2,right:-2,
+                  minWidth:18,height:18,padding:'0 5px',
+                  borderRadius:999,background:RED,color:'#fff',
+                  fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',
+                  border:'2px solid '+BG,fontFamily:"'Fredoka'",pointerEvents:'none',
+                  boxShadow:'0 0 8px '+RED+'aa',
+                }}>{food.available>0?food.available:'!'}</span>}
+              </>;
+            })()}
           </div>
           <div style={{flexShrink:0,position:'relative'}}>
             <SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/>
@@ -1203,11 +1256,11 @@ export default function App(){
     </div>}
     {/* TokiBreak overlay */}
     {showTokiBreak&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowTokiBreak(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} name={user?.name||''} userId={user?.id||''} feedMode={user&&getDogFoodBalance(user.id,dailyCount).available>0} milestone={user?getMilestoneReached(user.id):0} onContinue={()=>{setShowTokiBreak(false);setResumeKey(k=>k+1);if(user&&getDogFoodBalance(user.id,dailyCount).available>0){consumeDogFood(user.id);feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {/* Companion screen - accessible from goals */}
     {showCompanion&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999}}>
-      <Suspense fallback={<LazyFallback/>}><TokiPlayground countdown={60} feedMode={user&&canFeedDog(user.id)} onContinue={()=>{setShowCompanion(false);setResumeKey(k=>k+1);if(user&&canFeedDog(user.id)){feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
+      <Suspense fallback={<LazyFallback/>}><TokiPlayground name={user?.name||''} userId={user?.id||''} feedMode={user&&getDogFoodBalance(user.id,dailyCount).available>0} milestone={user?getMilestoneReached(user.id):0} onContinue={()=>{setShowCompanion(false);setResumeKey(k=>k+1);if(user&&getDogFoodBalance(user.id,dailyCount).available>0){consumeDogFood(user.id);feedDog(user.id);setDogFedToday(true)}}}/></Suspense>
     </div>}
     {scr==='game'&&cur&&<div className="af" onClick={pokeActive} onTouchStart={pokeActive} style={gameShellStyle}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:isPhone?8:12,marginBottom:isPhone?6:8,flexWrap:'wrap'}}><div style={{display:'flex',alignItems:'center',gap:4}}><button style={{background:'none',border:'none',color:DIM,fontSize:isPhone?15:16,padding:'10px 8px',minHeight:48,cursor:'pointer',fontFamily:"'Fredoka'"}} onClick={()=>{if(randomActive){if(randomTimerRef.current)clearInterval(randomTimerRef.current);setRandomActive(false)}tryExit()}}>✕ Salir</button>{sec==='decir'&&user&&getDynamicDilo(user.id)&&!randomActive&&<span style={{fontSize:14,color:GOLD,fontWeight:700}} title={'Modo dinámico N'+getDynamicDiloLevel(user.id)}>🎯 N{getDynamicDiloLevel(user.id)}</span>}</div><div style={{display:'flex',alignItems:'center',gap:8}}><div style={{position:'relative',width:36,height:36}}><SpaceMascot mood={mascotMood} size={52} tier={getMascotTier(user?.totalStars3plus||0)} cycle={getMascotCycle(user?.totalStars3plus||0)}/></div>{user&&<DogMascot mood={mascotMood} phase={getDogPhase(getDogGrowth(user.id))} interactive={false} size={isPhone?34:isTabletLandscape?42:36}/>}{/* Avatar del niño con badge de evolución diaria */}
         <div style={{position:'relative',cursor:'pointer'}} onClick={()=>setShowAstroOverlay(true)}>
@@ -1257,6 +1310,7 @@ export default function App(){
         {cur.ty==='razona'&&<Suspense fallback={<LazyFallback/>}><ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
         {cur.ty==='lee'&&<Suspense fallback={<LazyFallback/>}><ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
         {cur.ty==='quiensoy'&&<Suspense fallback={<LazyFallback/>}><ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/></Suspense>}
+        {cur.ty==='ciencias'&&<Suspense fallback={<LazyFallback/>}><ExCiencias ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
       </div>
       {/* Global pause button — visible para TODOS los ejercicios no-orales.
           Los orales (SpeakPanel) ya tienen su propio dock con pausa integrada. */}

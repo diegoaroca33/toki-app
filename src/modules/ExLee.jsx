@@ -4,6 +4,21 @@ import { say, sayFB, stopVoice, starBeep, cheerOrSay } from '../voice.js'
 import { rnd, beep, mkPerfect } from '../utils.js'
 import { useIdle, OralPrompt, useOralPhase } from '../components/UIKit.jsx'
 import { Stars } from '../components/CelebrationOverlay.jsx'
+import { INTRUSO_BASICO, INTRUSO_AVANZADO, INTRUSO_MASTER } from '../data/intruso.js'
+import { COMPLETA_BASICO, COMPLETA_AVANZADO, COMPLETA_MASTER } from '../data/completa.js'
+import { LEE_ENTIENDE } from '../data/leeYEntiende.js'
+
+// Adapter: el corpus nuevo de INTRUSO usa formato {q, opts:[{l,isAns}], cat}.
+// El componente render actual espera {words:[string], ans:string, cat, q}.
+// Este adaptador permite reusar el render legacy sin tocar JSX.
+function intrusoToLegacy(item){
+  return {
+    q: item.q,
+    cat: item.cat,
+    words: item.opts.map(o=>o.l),
+    ans: item.opts.find(o=>o.isAns).l,
+  };
+}
 
 // ===== LEE MODULE =====
 const LEE_INTRUSO=[
@@ -148,6 +163,7 @@ const LEE_PREPOSICIONES=[
 ];
 
 export function genLee(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:rawLv)||1;const sh=a=>[...a].sort(()=>Math.random()-.5);
+  // Niveles legacy 1-8 mantenidos por compatibilidad
   if(lv===1)return sh(LEE_INTRUSO).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_'+i}));
   if(lv===2)return sh(LEE_WORD_IMG).map((d,i)=>({ty:'lee',mode:'word_img',data:d,id:'lee_wi_'+i}));
   if(lv===3)return sh(LEE_COMPLETE).map((d,i)=>({ty:'lee',mode:'complete',data:d,id:'lee_cmp_'+i}));
@@ -156,6 +172,17 @@ export function genLee(rawLv){const lv=parseInt(Array.isArray(rawLv)?rawLv[0]:ra
   if(lv===6)return sh(LEE_PREPOSICIONES.filter(d=>d.lv<=1)).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
   if(lv===7)return sh(LEE_PREPOSICIONES.filter(d=>d.lv<=2)).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
   if(lv===8)return sh(LEE_PREPOSICIONES).map((d,i)=>({ty:'lee',mode:'preposiciones',data:d,id:'lee_prep_'+i}));
+  // INTRUSO en 3 niveles (corpus nuevo, src/data/intruso.js). Doc §4.12.2.
+  if(lv===21)return sh(INTRUSO_BASICO.map(intrusoToLegacy)).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_b_'+i}));
+  if(lv===22)return sh(INTRUSO_AVANZADO.map(intrusoToLegacy)).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_a_'+i}));
+  if(lv===23)return sh(INTRUSO_MASTER.map(intrusoToLegacy)).map((d,i)=>({ty:'lee',mode:'intruso',data:d,id:'lee_int_m_'+i}));
+  // COMPLETA en 3 niveles (corpus nuevo, src/data/completa.js). Doc §4.12.3.
+  // mode 'completa_phrase' (distinto al legacy 'complete' de palabra con letra).
+  if(lv===24)return sh(COMPLETA_BASICO).map((d,i)=>({ty:'lee',mode:'completa_phrase',data:d,id:'lee_cph_b_'+i}));
+  if(lv===25)return sh(COMPLETA_AVANZADO).map((d,i)=>({ty:'lee',mode:'completa_phrase',data:d,id:'lee_cph_a_'+i}));
+  if(lv===26)return sh(COMPLETA_MASTER).map((d,i)=>({ty:'lee',mode:'completa_phrase',data:d,id:'lee_cph_m_'+i}));
+  // Lee y entiende (corpus nuevo, src/data/leeYEntiende.js). Doc §4.12.1.
+  if(lv===27)return sh(LEE_ENTIENDE).map((d,i)=>({ty:'lee',mode:'lee_entiende',data:d,id:'lee_ent_'+i}));
   return sh(LEE_READ_DO).map((d,i)=>({ty:'lee',mode:'read_do',data:d,id:'lee_rd_'+i}))}
 
 export function ExLee({ex,onOk,onSkip,name,uid,vids}){
@@ -187,7 +214,9 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say('La respuesta es '+ex.data.ans+'. '+ex.data.ans+' no es '+ex.data.cat).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}else{sayFB('Piensa: todos los demás son '+ex.data.cat+'s');setTimeout(()=>setFb(null),2000)}}}
     if(ex.mode==='word_img'){if(ans===ex.data.ans){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},2800)}else{sayFB('Fíjate, empieza por '+ex.data.word.charAt(0));setTimeout(()=>setFb(null),1500)}}}
-    if(ex.mode==='complete'){if(ans===ex.data.missing){const a=att+1;setFb('ok');setFilledLetter(ans);starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),300))}
+    if(ex.mode==='complete'){if(ans===ex.data.missing){const a=att+1;setFb('ok');setFilledLetter(ans);starBeep(4);
+      // UN cheer + UN modelo+micro (antes say(word) + cheer + triggerOral(word))
+      cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),300))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);if(na>=2){setFilledLetter(ex.data.missing);setFb('show');say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setTimeout(()=>onOk(2,na),400)},2800)}else{const letterHints={A:'Avión',B:'Balón',C:'Casa',D:'Dado',E:'Elefante',F:'Foca',G:'Gato',H:'Huevo',I:'Iguana',J:'Jirafa',K:'Koala',L:'León',M:'Manzana',N:'Nube',O:'Oso',P:'Perro',Q:'Queso',R:'Rana',S:'Sol',T:'Tigre',U:'Uva',V:'Vaca',W:'Wafle',X:'Xilófono',Y:'Yate',Z:'Zapato'};const ltr=ex.data.missing.toUpperCase();const hintWord=letterHints[ltr]||ltr;sayFB('Es la primera letra de '+hintWord);setTimeout(()=>setFb(null),2000)}}}
     if(ex.mode==='read_do'){const isCorrect=ex.data.opts[ans]?.correct;
       if(isCorrect){const a=att+1;setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
@@ -195,7 +224,9 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
         if(na>=2){say(ex.data.instruction).then(()=>setTimeout(()=>triggerOral(ex.data.instruction,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
         else{sayFB('Escucha otra vez: '+ex.data.instruction);setTimeout(()=>setFb(null),2500)}}}}
   function placeSyl(s){poke();const np=[...placed,s];setPlaced(np);setAvail(a=>a.filter(x=>x!==s));
-    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){const a=att+1;setFb('ok');starBeep(4);say(ex.data.word).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
+    if(np.length===ex.data.syllables.length){if(np.join('')===ex.data.syllables.join('')){const a=att+1;setFb('ok');starBeep(4);
+      // UN cheer + UN modelo+micro (antes say(word) + cheer + triggerOral(word))
+      cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),a===1?4:a===2?2:1,a),250))}
       else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
         if(na>=2){say(ex.data.word).then(()=>setTimeout(()=>triggerOral(ex.data.word,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},2800)}
         else{sayFB('La primera sílaba es '+ex.data.syllables[0]);setTimeout(()=>{setPlaced([]);setAvail([...ex.data.syllables].sort(()=>Math.random()-.5));setFb(null)},2000)}}}}
@@ -210,7 +241,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='word_img'&&<div>
       <div className="card" style={{padding:20,marginBottom:14}}><p style={{fontSize:36,fontWeight:700,margin:0,color:GOLD,letterSpacing:4}}>{ex.data.word}</p></div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-        {ex.data.imgs.map((img,i)=><button key={i} className={'btn '+(fb==='ok'&&i===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:56,padding:16,minHeight:90}}>{img}</button>)}
+        {/* Emojis a 72px (Doc §3.8: mín 48, mejor 64+ en básico) — palabras+imagen es básico */}
+        {ex.data.imgs.map((img,i)=><button key={i} className={'btn '+(fb==='ok'&&i===ex.data.ans?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:72,padding:18,minHeight:110}}>{img}</button>)}
       </div>
     </div>}
     {ex.mode==='complete'&&<div>
@@ -235,7 +267,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
     {ex.mode==='read_do'&&<div>
       <div className="card" style={{padding:24,marginBottom:14,background:GOLD+'0C',borderColor:GOLD+'33'}}><p style={{fontSize:32,fontWeight:700,margin:0,color:GOLD,letterSpacing:2}}>{ex.data.instruction}</p></div>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-        {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||56,padding:20,minHeight:90}}>{o.l}</button>)}
+        {/* Emojis Lee y haz a 72px (antes 56) para mejorar legibilidad */}
+        {ex.data.opts.map((o,i)=><button key={i} className={'btn '+(fb==='ok'&&o.correct?'btn-g':'btn-b')} onClick={()=>!fb&&pick(i)} style={{fontSize:o.sz||72,padding:22,minHeight:110}}>{o.l}</button>)}
       </div>
     </div>}
     {/* Preposiciones: drag preposition chips into blanks */}
@@ -248,7 +281,8 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
         const np={...prepFilled,[targetPos]:p};setPrepFilled(np);
         if(ex.data.blanks.every(b=>np[b.pos]!==undefined)){
           const allCorrect=ex.data.blanks.every(b=>np[b.pos]===b.ans);
-          if(allCorrect){setFb('ok');starBeep(4);say(ex.data.full).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
+          // UN cheer + UN modelo+micro (antes say(full) + cheer + triggerOral(full))
+          if(allCorrect){setFb('ok');starBeep(4);cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(getOralPhrase(),4,1),300))}
           else{const na=att+1;setAtt(na);setFb('no');beep(200,200);
             if(na>=2){sayFB('La frase es: '+ex.data.full).then(()=>setTimeout(()=>triggerOral(ex.data.full,1,na),300));setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000)}
             else{sayFB('Casi, prueba otra vez');setTimeout(()=>{setFb(null);setPrepFilled({})},1500)}}
@@ -293,6 +327,80 @@ export function ExLee({ex,onOk,onSkip,name,uid,vids}){
       </div>}
       {fb==='ok'&&<p style={{fontSize:20,color:GREEN,fontWeight:700,margin:'8px 0'}}>{ex.data.full}</p>}
     </div>})()}
+    {/* COMPLETA frase con conector/preposición/posesivo. Doc §4.12.3.
+        El niño elige la opción correcta de 4 alternativas. La frase tiene
+        un hueco "__" que se rellena visualmente al acertar. */}
+    {ex.mode==='completa_phrase'&&(()=>{
+      const showFilled = fb==='ok' || fb==='show';
+      // Render de la frase con el hueco resaltado o relleno
+      const renderPhrase = ()=>{
+        const parts = ex.data.q.split('__');
+        return <>
+          {parts[0]}
+          <span style={{
+            color: showFilled?GREEN:GOLD,
+            borderBottom: showFilled?'none':`3px solid ${GOLD}`,
+            padding:'0 8px',
+            fontWeight:800,
+          }}>
+            {showFilled ? ex.data.ans : '____'}
+          </span>
+          {parts[1]||''}
+        </>;
+      };
+      return <div style={{maxWidth:600,margin:'0 auto'}}>
+        <div className="card" style={{padding:24,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+          <p style={{fontSize:24,fontWeight:600,margin:0,lineHeight:1.5,color:'#fff'}}>{renderPhrase()}</p>
+        </div>
+        {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {ex.data.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+            poke();
+            if(o===ex.data.ans){const a=att+1;setFb('ok');starBeep(4);
+              cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(ex.data.q.replace('__',ex.data.ans),a===1?4:a===2?2:1,a),300));
+            } else {
+              const na=att+1;setAtt(na);setFb('no');beep(200,200);
+              if(na>=2){
+                setFb('show');
+                sayFB('La respuesta es: '+ex.data.ans);
+                setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},2800);
+              } else {
+                sayFB(ex.data.hint||'Lee la frase entera y piensa qué falta');
+                setTimeout(()=>setFb(null),2000);
+              }
+            }
+          }} style={{fontSize:22,padding:18,fontWeight:700,minHeight:64}}>{o}</button>)}
+        </div>}
+      </div>;
+    })()}
+    {/* LEE Y ENTIENDE — preguntas variadas con frases hasta 10 palabras.
+        7 tipos de pregunta (¿Qué dice?, ¿Qué hace?, ¿Dónde?, ¿Quién?,
+        ¿Cuándo?, ¿Por qué?, ¿Qué pasa si?). Doc §4.12.1. */}
+    {ex.mode==='lee_entiende'&&(()=>{
+      return <div style={{maxWidth:600,margin:'0 auto'}}>
+        <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
+          <p style={{fontSize:14,fontWeight:600,margin:'0 0 8px',color:DIM,letterSpacing:1}}>{ex.data.kind||'PREGUNTA'}</p>
+          <p style={{fontSize:24,fontWeight:700,margin:0,lineHeight:1.4,color:GOLD}}>{ex.data.q}</p>
+        </div>
+        {!fb&&<div style={{display:'grid',gridTemplateColumns:'1fr',gap:10}}>
+          {ex.data.opts.map(o=><button key={o} className="btn btn-b" onClick={()=>{
+            poke();
+            if(o===ex.data.ans){const a=att+1;setFb('ok');starBeep(4);
+              cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>setTimeout(()=>triggerOral(ex.data.ans,a===1?4:a===2?2:1,a),300));
+            } else {
+              const na=att+1;setAtt(na);setFb('no');beep(200,200);
+              if(na>=2){
+                sayFB('La respuesta es: '+ex.data.ans);
+                setTimeout(()=>{setFb(null);setTimeout(()=>onOk(2,na),400)},3000);
+              } else {
+                sayFB('Lee la pregunta otra vez con calma');
+                setTimeout(()=>setFb(null),2000);
+              }
+            }
+          }} style={{fontSize:20,padding:18,textAlign:'left',fontWeight:600,minHeight:60,lineHeight:1.3}}>{o}</button>)}
+        </div>}
+        {fb==='ok'&&<p style={{fontSize:22,color:GREEN,fontWeight:700,margin:'14px 0',textAlign:'center'}}>{ex.data.ans}</p>}
+      </div>;
+    })()}
     {fb==='ok'&&!oralPhrase&&<><div className="ab" style={{background:GREEN+'22',borderRadius:14,padding:18,marginTop:14}}><Stars n={4} sz={36}/></div></>}
     {oralPhrase&&<OralPrompt phrase={oralPhrase} onDone={oralDone}/>}
     {fb==='no'&&<div className="as" style={{background:RED+'22',borderRadius:14,padding:14,marginTop:14}}><p style={{fontSize:18,color:GOLD,fontWeight:600,margin:0}}>¡Casi! 💪</p></div>}

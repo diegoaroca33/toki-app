@@ -6,3 +6,9 @@ prev_session_msgs.txt
 .env
 
 .vercel
+
+# Backups locales generados por scripts de edición masiva
+*.bak
+
+# Backups locales del repo / working tree (no se publican)
+scripts/backups/

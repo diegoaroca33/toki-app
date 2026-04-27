@@ -1,0 +1,306 @@
+{
+  "version": "1.0",
+  "fecha": "2026-04-27",
+  "modulo": "ciencias",
+  "area": "naturales",
+  "nivel": "basico",
+  "total_laminas": 9,
+  "estado": "piloto",
+  "notas_generales": "Coordenadas en porcentajes 0-1 sobre la imagen, donde {x:0,y:0} es esquina superior izquierda y {x:1,y:1} es esquina inferior derecha. Las coordenadas son estimaciones iniciales de Claude tras inspección visual; ajustar fino con editor en tablet si hace falta. Layout indica dónde Code debe pintar el panel de etiquetas: 'panel-right' = columna derecha, 'panel-top' = fila superior, 'split-screen' = etiquetas distribuidas sobre la imagen. Modos: estudio, presentacion, rellena_pasada_1, rellena_pasada_2.",
+  "laminas": [
+    {
+      "id": "NAT_B_01",
+      "titulo": "Mi cuerpo y mis sentidos",
+      "mini": "Mini 1 — El cuerpo humano",
+      "lamina_en_mini": "1 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_01.png",
+      "layout": "panel-right",
+      "label_panel_zone": { "top": 0.05, "left": 0.62, "width": 0.36, "height": 0.9 },
+      "anchors": {
+        "cabeza":   { "x": 0.21, "y": 0.06, "panel_pos": { "x": 0.65, "y": 0.05 } },
+        "cara":     { "x": 0.21, "y": 0.13, "panel_pos": { "x": 0.65, "y": 0.13 } },
+        "ojos":     { "x": 0.21, "y": 0.15, "panel_pos": { "x": 0.65, "y": 0.21 } },
+        "nariz":    { "x": 0.21, "y": 0.18, "panel_pos": { "x": 0.65, "y": 0.29 } },
+        "boca":     { "x": 0.21, "y": 0.20, "panel_pos": { "x": 0.65, "y": 0.37 } },
+        "brazos":   { "x": 0.27, "y": 0.42, "panel_pos": { "x": 0.65, "y": 0.45 } },
+        "cuerpo":   { "x": 0.21, "y": 0.38, "panel_pos": { "x": 0.65, "y": 0.53 } },
+        "piernas":  { "x": 0.21, "y": 0.70, "panel_pos": { "x": 0.65, "y": 0.61 } },
+        "sentidos": { "x": 0.50, "y": 0.50, "panel_pos": { "x": 0.65, "y": 0.69 } }
+      },
+      "etiquetas_visibles_orden": ["cabeza", "cara", "ojos", "nariz", "boca", "brazos", "cuerpo", "piernas", "sentidos"],
+      "frases_base": [
+        "Tengo cabeza, brazos y piernas.",
+        "En la cara tengo ojos, nariz y boca.",
+        "Con los sentidos puedo ver, oír y tocar."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["brazos", "piernas"],
+          "frase_emergente": "Los brazos y las piernas son las extremidades."
+        },
+        "pasada_2": {
+          "huecos": ["ojos", "boca"],
+          "frase_emergente": "Por la boca como y hablo."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_02",
+      "titulo": "Mi esqueleto",
+      "mini": "Mini 1 — El cuerpo humano",
+      "lamina_en_mini": "2 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_02.png",
+      "layout": "panel-right",
+      "label_panel_zone": { "top": 0.10, "left": 0.55, "width": 0.43, "height": 0.85 },
+      "anchors": {
+        "cráneo":    { "x": 0.31, "y": 0.10, "panel_pos": { "x": 0.60, "y": 0.10 } },
+        "columna":   { "x": 0.30, "y": 0.55, "panel_pos": { "x": 0.60, "y": 0.25 } },
+        "costillas": { "x": 0.30, "y": 0.38, "panel_pos": { "x": 0.60, "y": 0.40 } },
+        "brazo":     { "x": 0.40, "y": 0.40, "panel_pos": { "x": 0.60, "y": 0.55 } },
+        "cadera":    { "x": 0.30, "y": 0.70, "panel_pos": { "x": 0.60, "y": 0.70 } },
+        "pierna":    { "x": 0.27, "y": 0.92, "panel_pos": { "x": 0.60, "y": 0.85 } }
+      },
+      "etiquetas_visibles_orden": ["cráneo", "columna", "costillas", "brazo", "cadera", "pierna"],
+      "frases_base": [
+        "El esqueleto sujeta mi cuerpo.",
+        "El cráneo protege la cabeza.",
+        "Las costillas protegen el corazón."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["cráneo", "costillas"],
+          "frase_emergente": "La columna está en la espalda."
+        },
+        "pasada_2": {
+          "huecos": ["brazo", "pierna"],
+          "frase_emergente": "El fémur es el hueso más largo."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_03",
+      "titulo": "Animales de casa",
+      "mini": "Mini 2 — Los animales",
+      "lamina_en_mini": "1 de 3",
+      "imagen": "/ciencias/naturales-basico/nat_b_03.png",
+      "layout": "panel-top",
+      "label_panel_zone": { "top": 0, "left": 0.05, "width": 0.9, "height": 0.18 },
+      "anchors": {
+        "perro":     { "x": 0.13, "y": 0.55, "panel_pos": { "x": 0.13, "y": 0.08 } },
+        "gato":      { "x": 0.31, "y": 0.62, "panel_pos": { "x": 0.31, "y": 0.08 } },
+        "periquito": { "x": 0.45, "y": 0.55, "panel_pos": { "x": 0.45, "y": 0.08 } },
+        "pez":       { "x": 0.61, "y": 0.65, "panel_pos": { "x": 0.61, "y": 0.08 } },
+        "hámster":   { "x": 0.78, "y": 0.72, "panel_pos": { "x": 0.78, "y": 0.08 } }
+      },
+      "etiquetas_visibles_orden": ["perro", "gato", "periquito", "pez", "hámster"],
+      "frases_base": [
+        "En casa puedo tener mascotas.",
+        "El perro y el gato son los más comunes.",
+        "El pez vive en el agua de la pecera."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["perro", "gato"],
+          "frase_emergente": "Las mascotas necesitan comida y agua."
+        },
+        "pasada_2": {
+          "huecos": ["pez", "periquito"],
+          "frase_emergente": "Las mascotas son nuestros amigos."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_04",
+      "titulo": "Animales de granja",
+      "mini": "Mini 2 — Los animales",
+      "lamina_en_mini": "2 de 3",
+      "imagen": "/ciencias/naturales-basico/nat_b_04.png",
+      "layout": "panel-top",
+      "label_panel_zone": { "top": 0, "left": 0.05, "width": 0.9, "height": 0.18 },
+      "anchors": {
+        "vaca":    { "x": 0.16, "y": 0.55, "panel_pos": { "x": 0.13, "y": 0.08 } },
+        "oveja":   { "x": 0.36, "y": 0.65, "panel_pos": { "x": 0.32, "y": 0.08 } },
+        "cerdo":   { "x": 0.50, "y": 0.65, "panel_pos": { "x": 0.50, "y": 0.08 } },
+        "gallina": { "x": 0.61, "y": 0.70, "panel_pos": { "x": 0.65, "y": 0.08 } },
+        "caballo": { "x": 0.83, "y": 0.45, "panel_pos": { "x": 0.83, "y": 0.08 } }
+      },
+      "etiquetas_visibles_orden": ["vaca", "oveja", "cerdo", "gallina", "caballo"],
+      "frases_base": [
+        "En la granja viven muchos animales.",
+        "La vaca nos da leche.",
+        "La gallina pone huevos."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["vaca", "oveja"],
+          "frase_emergente": "De la oveja sacamos lana."
+        },
+        "pasada_2": {
+          "huecos": ["gallina", "cerdo"],
+          "frase_emergente": "El caballo nos ayuda a trabajar."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_05",
+      "titulo": "Animales del bosque",
+      "mini": "Mini 2 — Los animales",
+      "lamina_en_mini": "3 de 3",
+      "imagen": "/ciencias/naturales-basico/nat_b_05.png",
+      "layout": "panel-top",
+      "label_panel_zone": { "top": 0, "left": 0.05, "width": 0.9, "height": 0.18 },
+      "anchors": {
+        "conejo":  { "x": 0.07, "y": 0.72, "panel_pos": { "x": 0.10, "y": 0.08 } },
+        "ardilla": { "x": 0.20, "y": 0.45, "panel_pos": { "x": 0.28, "y": 0.08 } },
+        "ciervo":  { "x": 0.40, "y": 0.55, "panel_pos": { "x": 0.45, "y": 0.08 } },
+        "zorro":   { "x": 0.65, "y": 0.65, "panel_pos": { "x": 0.65, "y": 0.08 } },
+        "búho":    { "x": 0.88, "y": 0.40, "panel_pos": { "x": 0.85, "y": 0.08 } }
+      },
+      "etiquetas_visibles_orden": ["conejo", "ardilla", "ciervo", "zorro", "búho"],
+      "frases_base": [
+        "En el bosque viven muchos animales salvajes.",
+        "El ciervo come hierba y hojas.",
+        "El búho duerme de día y caza de noche."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["conejo", "ardilla"],
+          "frase_emergente": "La ardilla sube por los árboles."
+        },
+        "pasada_2": {
+          "huecos": ["zorro", "búho"],
+          "frase_emergente": "El zorro caza por la noche."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_06",
+      "titulo": "Partes de la planta",
+      "mini": "Mini 3 — Plantas y comida",
+      "lamina_en_mini": "1 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_06.png",
+      "layout": "panel-right",
+      "label_panel_zone": { "top": 0.05, "left": 0.60, "width": 0.38, "height": 0.9 },
+      "anchors": {
+        "raíz":  { "x": 0.32, "y": 0.85, "panel_pos": { "x": 0.65, "y": 0.85 } },
+        "tallo": { "x": 0.36, "y": 0.45, "panel_pos": { "x": 0.65, "y": 0.55 } },
+        "hoja":  { "x": 0.22, "y": 0.42, "panel_pos": { "x": 0.65, "y": 0.40 } },
+        "flor":  { "x": 0.42, "y": 0.10, "panel_pos": { "x": 0.65, "y": 0.10 } },
+        "fruto": { "x": 0.40, "y": 0.32, "panel_pos": { "x": 0.65, "y": 0.25 } }
+      },
+      "etiquetas_visibles_orden": ["raíz", "tallo", "hoja", "flor", "fruto"],
+      "frases_base": [
+        "La planta tiene varias partes.",
+        "La raíz absorbe el agua de la tierra.",
+        "La flor se convierte en fruto."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["raíz", "tallo"],
+          "frase_emergente": "El tallo sostiene la planta."
+        },
+        "pasada_2": {
+          "huecos": ["flor", "fruto"],
+          "frase_emergente": "El fruto tiene semillas dentro."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_07",
+      "titulo": "Frutas y verduras",
+      "mini": "Mini 3 — Plantas y comida",
+      "lamina_en_mini": "2 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_07.png",
+      "layout": "panel-top",
+      "label_panel_zone": { "top": 0, "left": 0.03, "width": 0.94, "height": 0.15 },
+      "anchors": {
+        "manzana":   { "x": 0.13, "y": 0.32, "panel_pos": { "x": 0.13, "y": 0.07 } },
+        "plátano":   { "x": 0.36, "y": 0.32, "panel_pos": { "x": 0.36, "y": 0.07 } },
+        "naranja":   { "x": 0.59, "y": 0.32, "panel_pos": { "x": 0.59, "y": 0.07 } },
+        "fresa":     { "x": 0.83, "y": 0.32, "panel_pos": { "x": 0.83, "y": 0.07 } },
+        "tomate":    { "x": 0.13, "y": 0.72, "panel_pos": { "x": 0.13, "y": 0.50 } },
+        "zanahoria": { "x": 0.36, "y": 0.72, "panel_pos": { "x": 0.36, "y": 0.50 } },
+        "lechuga":   { "x": 0.59, "y": 0.72, "panel_pos": { "x": 0.59, "y": 0.50 } },
+        "patata":    { "x": 0.83, "y": 0.72, "panel_pos": { "x": 0.83, "y": 0.50 } }
+      },
+      "etiquetas_visibles_orden": ["manzana", "plátano", "naranja", "fresa", "tomate", "zanahoria", "lechuga", "patata"],
+      "frases_base": [
+        "Las frutas y verduras son sanas.",
+        "La manzana, el plátano, la naranja y la fresa son frutas.",
+        "El tomate, la zanahoria, la lechuga y la patata son verduras."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["manzana", "plátano"],
+          "frase_emergente": "Las frutas son dulces y jugosas."
+        },
+        "pasada_2": {
+          "huecos": ["zanahoria", "lechuga"],
+          "frase_emergente": "Las verduras tienen vitaminas."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_08",
+      "titulo": "Día y noche",
+      "mini": "Mini 4 — Sentidos y entorno",
+      "lamina_en_mini": "1 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_08.png",
+      "layout": "split-screen",
+      "label_panel_zone": null,
+      "anchors": {
+        "sol":   { "x": 0.10, "y": 0.10, "panel_pos": { "x": 0.20, "y": 0.05 } },
+        "día":   { "x": 0.25, "y": 0.50, "panel_pos": { "x": 0.25, "y": 0.92 } },
+        "luna":  { "x": 0.92, "y": 0.13, "panel_pos": { "x": 0.80, "y": 0.05 } },
+        "noche": { "x": 0.75, "y": 0.50, "panel_pos": { "x": 0.75, "y": 0.92 } }
+      },
+      "etiquetas_visibles_orden": ["sol", "día", "luna", "noche"],
+      "frases_base": [
+        "Es de día. Sale el sol.",
+        "Es de noche. Sale la luna.",
+        "De día jugamos y de noche dormimos."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["sol", "luna"],
+          "frase_emergente": "El sol está alto en el cielo durante el día."
+        },
+        "pasada_2": {
+          "huecos": ["día", "noche"],
+          "frase_emergente": "Por la noche brillan las estrellas."
+        }
+      }
+    },
+    {
+      "id": "NAT_B_09",
+      "titulo": "Frío y calor",
+      "mini": "Mini 4 — Sentidos y entorno",
+      "lamina_en_mini": "2 de 2",
+      "imagen": "/ciencias/naturales-basico/nat_b_09.png",
+      "layout": "split-screen",
+      "label_panel_zone": null,
+      "anchors": {
+        "calor":   { "x": 0.30, "y": 0.50, "panel_pos": { "x": 0.25, "y": 0.92 } },
+        "verano":  { "x": 0.10, "y": 0.10, "panel_pos": { "x": 0.10, "y": 0.05 } },
+        "frío":    { "x": 0.75, "y": 0.50, "panel_pos": { "x": 0.75, "y": 0.92 } },
+        "invierno":{ "x": 0.92, "y": 0.18, "panel_pos": { "x": 0.90, "y": 0.05 } }
+      },
+      "etiquetas_visibles_orden": ["calor", "verano", "frío", "invierno"],
+      "frases_base": [
+        "En verano hace calor.",
+        "En invierno hace frío.",
+        "Cambiamos la ropa según la estación."
+      ],
+      "rellena": {
+        "pasada_1": {
+          "huecos": ["calor", "frío"],
+          "frase_emergente": "En verano vamos en manga corta."
+        },
+        "pasada_2": {
+          "huecos": ["verano", "invierno"],
+          "frase_emergente": "En invierno nos abrigamos con bufanda y gorro."
+        }
+      }
+    }
+  ]
+}

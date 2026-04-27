@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { GOLD, GREEN, RED, BLUE, PURPLE, TXT, BUILD_OK, GOOD_MSG } from '../constants.js'
 import { say, sayFB, stopVoice, playRec, useSR, starBeep, cheerOrSay, cachedVoice } from '../voice.js'
-import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed } from '../utils.js'
+import { score, adjScore, splitSyllables, textKey, rnd, pickMsg, mkPerfect, beep, getExigencia, updateRepCount, getPhraseSpeed, updatePhraseSpeed, PHRASE_SPEED_MAX, PHRASE_SPEED_DEFAULT } from '../utils.js'
 import { track } from '../firebase.js'
 import { RecBtn, useIdle } from './UIKit.jsx'
 import { Stars } from './CelebrationOverlay.jsx'
@@ -171,37 +171,49 @@ export function SpeakPanel({text,exId,onOk,onSkip,sex,name,uid,vids,burstMode,bu
   // M5: Get adaptive speed for this phrase
   const phraseKey=useMemo(()=>textKey(text),[text]);
   function getAdaptiveRate(){
-    if(burstMode&&typeof burstSpeed==='number')return burstSpeed;
+    // NUNCA superamos 0.92 — es modelo pausado para niños con DI. Si acierta, que suba
+    // de nivel (más palabras), no de velocidad.
+    if(burstMode){
+      // Ráfaga: arranca en la velocidad adaptativa de la frase y sube ~0.035 por rep
+      const base=uid?getPhraseSpeed(uid,phraseKey):PHRASE_SPEED_DEFAULT;
+      return Math.min(PHRASE_SPEED_MAX, base + (burstRepsDone||0)*0.035);
+    }
     if(uid)return getPhraseSpeed(uid,phraseKey);
     return undefined; // use default
   }
   async function doSyllablePlay(){if(!alive.current)return;setSylShow(true);setSylIdx(-1);stopVoice();ttsPlaying.current=true;
-    // Use syllables (array of word arrays) to add EXTRA pause between words
+    // Use syllables (array of word arrays) to add pause between words.
+    // Rate 0.55: suficientemente lento para desglosar sin sonar "para tontos".
+    // Transformamos la sílaba a "speakable": quitar 'h' muda inicial ("ham" → "am")
+    // para evitar que el TTS de Chrome/Edge la pronuncie como palabra inglesa (/ham/).
+    const toSpeakable=(s)=>{
+      const t=s.replace(/^h/,'');
+      return t.length?t:s; // no vacíes por sílabas que son solo "h" (no existen, pero por seguridad)
+    };
     let flatIdx=0;
     for(let wi=0;wi<syllables.length;wi++){
       if(!alive.current)return;
       // Extra pause between WORDS (not first word)
-      if(wi>0)await new Promise(r=>setTimeout(r,600));
+      if(wi>0)await new Promise(r=>setTimeout(r,400));
       for(let si=0;si<syllables[wi].length;si++){
         if(!alive.current)return;
         const syl=syllables[wi][si];
         setSylIdx(flatIdx);flatIdx++;
         await new Promise(r=>{
-          const u=new SpeechSynthesisUtterance(syl);
+          const u=new SpeechSynthesisUtterance(toSpeakable(syl));
           u.lang='es-ES';
-          u.rate=0.35; // slower than before (was 0.45)
+          u.rate=0.55;
           u.pitch=1.0;u.volume=1.0;
-          // FORCE es-ES voice to prevent English pronunciation of syllables
           if(cachedVoice)u.voice=cachedVoice;
           let done=false;const fin=()=>{if(!done){done=true;r()}};
           u.onend=fin;u.onerror=fin;
           const ss=window.speechSynthesis;ss.cancel();
           if(typeof ss.resume==='function')ss.resume();
           setTimeout(()=>{ss.speak(u);setTimeout(()=>{if(ss.paused&&typeof ss.resume==='function')ss.resume()},120)},80);
-          setTimeout(fin,2000) // more time per syllable (was 1500)
+          setTimeout(fin,1500)
         });
-        // Pause between syllables of the SAME word
-        await new Promise(r=>setTimeout(r,400)); // was 300
+        // Pausa entre sílabas de la misma palabra
+        await new Promise(r=>setTimeout(r,250));
       }
     }
     ttsPlaying.current=false;setSylIdx(-1);await new Promise(r=>setTimeout(r,500));
@@ -357,10 +369,13 @@ export function ExFlu({ex,onOk,onSkip,sex,name,uid,vids,burstMode,burstSpeed,bur
 export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
   const[ph,sPh]=useState('build');const[pl,sPl]=useState([]);const[av,sAv]=useState([]);const[bf,sBf]=useState(null);
   const words=useMemo(()=>ex.fu.replace(/[¿?¡!,\.]/g,'').split(/\s+/),[ex.fu]);const{idleMsg,poke}=useIdle(name,ph==='build'&&!bf);
+  const colorSvg=useMemo(()=>getColoredObject(ex.fu,84),[ex.fu]);
   useEffect(()=>{sPh('build');sBf(null);let sh=[...words];if(sh.length>1){let tries=0;do{for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]]}tries++}while(tries<50&&sh.every((w,i)=>w===words[i]));if(sh.every((w,i)=>w===words[i])){const a=0,b=sh.length-1;[sh[a],sh[b]]=[sh[b],sh[a]]}}sAv(sh.map((w,i)=>({w,oi:i,i,u:false})));sPl(Array(words.length).fill(null))},[ex]);
   function place(item){poke();const s=pl.findIndex(p=>p===null);if(s===-1)return;const np=[...pl];np[s]=item;sPl(np);sAv(a=>a.map(x=>x.i===item.i?{...x,u:true}:x));if(np.every(p=>p!==null)){const built=np.map(p=>p.w.toLowerCase()).join(' ');const target=words.map(w=>w.toLowerCase()).join(' ');if(built===target){sBf('ok');(async()=>{stopVoice();await cheerOrSay(rnd(BUILD_OK),uid,vids,'build');await new Promise(r=>setTimeout(r,400));stopVoice();sPh('speak')})()}else{sBf('no');setTimeout(()=>{sPl(Array(words.length).fill(null));sAv(a=>a.map(x=>({...x,u:false})));sBf(null)},1000)}}}
   function undo(){poke();let li=-1;pl.forEach((p,i)=>{if(p)li=i});if(li===-1)return;const it=pl[li];const np=[...pl];np[li]=null;sPl(np);sAv(a=>a.map(x=>x.i===it.i?{...x,u:false}:x))}
-  return <div style={{textAlign:'center',padding:18}} onClick={poke}><div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>
+  return <div style={{textAlign:'center',padding:18}} onClick={poke}>{colorSvg
+    ?<div style={{marginBottom:16,display:'flex',justifyContent:'center',animation:'glow 3s infinite'}}>{colorSvg}</div>
+    :<div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em}</div>}
     {ph==='build'&&<div className="af"><div className="card" style={{marginBottom:16,background:BLUE+'0C',borderColor:BLUE+'33'}}><p style={{fontSize:22,fontWeight:600,margin:0,lineHeight:1.4,color:BLUE}}>{ex.q}</p></div>
       <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center',marginBottom:16,minHeight:56}}>{pl.map((p,i)=><div key={i} className={'ws '+(p?'ws-f':'ws-e')}>{p?p.w:'___'}</div>)}</div>
       <div style={{minHeight:60,marginBottom:14}}>
@@ -376,11 +391,14 @@ export function ExFrases({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
 
 export function ExFrasesBlank({ex,onOk,onSkip,sex,name,uid,vids,onPause}){
   const[ans,setAns]=useState('');const[fb,setFb]=useState(null);const[ph,sPh]=useState('fill');const{idleMsg,poke}=useIdle(name,ph==='fill'&&!fb);
+  const colorSvg=useMemo(()=>getColoredObject(ex.fu,84),[ex.fu]);
   useEffect(()=>{setAns('');setFb(null);sPh('fill');stopVoice();setTimeout(()=>{stopVoice();say('Completa la frase')},400);return()=>stopVoice()},[ex]);
   function check(){poke();if(ans.trim().toLowerCase()===ex.blank.toLowerCase()){setFb('ok');starBeep(4);stopVoice();cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{sPh('speak')})}
     else{setFb('no');beep(200,200);stopVoice();sayFB('La palabra es: '+ex.blank);setTimeout(()=>{setFb(null);setAns('')},2000)}}
   return <div style={{textAlign:'center',padding:18}} onClick={poke}>
-    <div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em||'📝'}</div>
+    {colorSvg
+      ?<div style={{marginBottom:16,display:'flex',justifyContent:'center',animation:'glow 3s infinite'}}>{colorSvg}</div>
+      :<div style={{fontSize:72,marginBottom:16,animation:'glow 3s infinite'}}>{ex.em||'📝'}</div>}
     {ph==='fill'&&<div className="af">
       <div className="card" style={{padding:20,marginBottom:14,background:BLUE+'0C',borderColor:BLUE+'33'}}>
         <p style={{fontSize:22,fontWeight:700,margin:0,lineHeight:1.4}}>{ex.words.map((w,i)=>w==='___'?<span key={i} style={{color:GOLD,borderBottom:'3px solid '+GOLD,padding:'0 8px'}}>____</span>:<span key={i}>{(i>0?' ':'')+w}</span>)}</p>

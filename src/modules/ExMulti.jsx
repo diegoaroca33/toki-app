@@ -22,7 +22,9 @@ export function ExMulti({ex,onOk,onSkip,name,uid,vids}){
   useEffect(()=>{setAns('');setFb(null);setShowHelp(false);setCountIdx(-1);if(countTimer.current)clearInterval(countTimer.current);resetOral();stopVoice();setTimeout(()=>say(ex.a+' por '+ex.b),400);return()=>{stopVoice();if(countTimer.current)clearInterval(countTimer.current)}},[ex]);
   // Start counting animation when help is shown
   useEffect(()=>{if(showHelp&&fb==='no'){setCountIdx(0);let c=0;countTimer.current=setInterval(()=>{c++;if(c>=totalItems){clearInterval(countTimer.current);countTimer.current=null;setCountIdx(totalItems-1)}else{setCountIdx(c)}},400)}return()=>{if(countTimer.current){clearInterval(countTimer.current);countTimer.current=null}}},[showHelp,fb]);
-  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();say(ex.a+' por '+ex.b+' es igual a '+ex.ans).then(()=>cheerOrSay(mkPerfect(name),uid,vids,'perfect')).then(()=>{const phrase=ex.a+' por '+ex.b+' son '+ex.ans;setTimeout(()=>triggerOral(phrase,4,1),250)})}
+  function check(){poke();const n=parseInt(ans);if(n===ex.ans){setFb('ok');starBeep(4);stopVoice();
+    // UN cheer + UN modelo+micro (antes decía "X por Y es igual a Z" + cheer + de nuevo)
+    cheerOrSay(mkPerfect(name),uid,vids,'perfect').then(()=>{const phrase=ex.a+' por '+ex.b+' son '+ex.ans;setTimeout(()=>triggerOral(phrase,4,1),250)})}
   else{setFb('no');setShowHelp(true);stopVoice();const sumText=Array(ex.b).fill(ex.a).join(' más ')+' es igual a '+ex.ans;say('Mira: '+ex.a+' por '+ex.b+' es '+sumText,0.75)}}
   // Render items with counting highlight
   const renderGroups=(highlighted)=>{let globalIdx=0;return groups.map(g=><div key={g} style={{display:'flex',gap:2,background:CARD,border:'2px solid '+(highlighted&&countIdx>=g*ex.a&&countIdx<(g+1)*ex.a?GOLD:BORDER),borderRadius:10,padding:'6px 10px',transition:'border-color .2s'}}>{Array.from({length:ex.a},(_,j)=>{const myIdx=globalIdx++;const isHighlighted=highlighted&&myIdx<=countIdx;const isCurrent=highlighted&&myIdx===countIdx;return <span key={j} style={{fontSize:isHighlighted?24:20,transition:'font-size .15s, opacity .15s',opacity:isHighlighted?1:highlighted?0.4:1,filter:isCurrent?'drop-shadow(0 0 6px '+GOLD+')':'none'}}>{em}</span>})}</div>)};
@@ -41,7 +43,7 @@ export function ExMulti({ex,onOk,onSkip,name,uid,vids}){
       <p style={{fontSize:18,fontWeight:600,margin:'0 0 12px',color:GOLD}}>¡Vamos a contarlos!</p>
       <p style={{fontSize:20,color:TXT,margin:'0 0 8px'}}>{Array(ex.b).fill(ex.a).join(' + ')} = <span style={{color:GREEN,fontWeight:700}}>{ex.ans}</span></p>
       <button className="btn" onClick={()=>{setAns('');setFb(null);setShowHelp(false);setCountIdx(-1);if(countTimer.current){clearInterval(countTimer.current);countTimer.current=null}}} style={{marginTop:12,fontSize:16,padding:'10px 28px',borderRadius:14,background:GREEN,color:'#FFF',fontWeight:600}}>🔄 Intentar</button>
-      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Siguiente</button>
+      <button className="btn btn-ghost skip-btn" onClick={()=>{stopVoice();onSkip()}} style={{marginTop:8,fontSize:16}}>⏭️ Saltar</button>
     </div>}
     {idleMsg&&!fb&&!showHelp&&<div className="af" style={{background:GOLD+'15',borderRadius:14,padding:14,marginBottom:14}}><p style={{fontSize:18,fontWeight:600,margin:0,color:GOLD}}>{idleMsg}</p></div>}
   </div>}

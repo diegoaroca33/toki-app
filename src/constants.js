@@ -13,6 +13,11 @@ body{margin:0;font-family:'Fredoka',sans-serif;color:${TXT};min-height:100vh;min
 :root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px);--dock-h:104px;--game-topbar-h:112px;--game-feedback-h:84px;--root-pad-x:clamp(12px,3vw,28px);--root-pad-y:clamp(10px,2.4vw,22px);--planet-size:82px;--tap-target:48px}
 body.sky-morning{background:linear-gradient(180deg,#1a3a6a 0%,#2e6bb5 40%,#5ba3d9 100%)}
 body.sky-afternoon{background:linear-gradient(180deg,#1a2744 0%,#c0392b 30%,#e67e22 60%,#f39c12 100%)}
+/* Contraste WCAG sobre fondo naranja del atardecer (Doc §3.5):
+   añadimos sombra fina oscura a los textos directos del body para que
+   el contraste suba a 7:1+ aunque sean amarillos/dorados (antes ~2:1).
+   No afecta morning (azul) ni night (oscuro), donde ya hay contraste. */
+body.sky-afternoon h1,body.sky-afternoon h2,body.sky-afternoon h3,body.sky-afternoon h4,body.sky-afternoon p,body.sky-afternoon span{text-shadow:0 1px 3px rgba(0,0,0,.55)}
 body.sky-night{background:${BG}}
 body.sky-night::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(1px 1px at 10% 20%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 30% 50%,#fff6 0,transparent 100%),radial-gradient(1.5px 1.5px at 50% 10%,#fff9 0,transparent 100%),radial-gradient(1px 1px at 70% 40%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 90% 70%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 15% 80%,#fff8 0,transparent 100%),radial-gradient(1px 1px at 45% 65%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 80% 15%,#fff7 0,transparent 100%),radial-gradient(1.5px 1.5px at 60% 85%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 25% 35%,#fff6 0,transparent 100%),radial-gradient(1px 1px at 85% 55%,#fff4 0,transparent 100%),radial-gradient(1.5px 1.5px at 5% 60%,#fff7 0,transparent 100%),radial-gradient(1px 1px at 95% 25%,#fff5 0,transparent 100%),radial-gradient(1px 1px at 40% 90%,#fff6 0,transparent 100%);animation:twinkle 8s ease-in-out infinite alternate}
 @keyframes twinkle{0%{opacity:.7}100%{opacity:1}}
@@ -29,6 +34,59 @@ input::placeholder{color:${DIM}}
 .btn-o{background:#E67E22;border-color:#d35400;box-shadow:4px 4px 0 #a04000}
 .btn-gold{background:${GOLD};border-color:#d4ac0d;box-shadow:4px 4px 0 #b7950b;color:#1a1a2e}
 .btn-ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);box-shadow:none;color:${DIM};font-size:16px}
+/* Botón Saltar — flotante junto al de Pausa, abajo izquierda. Antes era
+   un botón ancho de lado a lado con icono diminuto que descolocaba el
+   layout. Ahora siempre en el mismo sitio, redondo y reconocible.
+   Doc §3 (feedback Diego 26/04).
+
+   Selector .btn.skip-btn (mismo elemento, no descendiente): solo aplica
+   a los botones de módulo que tienen ambas clases. Los .skip-btn sueltos
+   del dock oral de SpeakPanel (al lado del micro) NO se reposicionan,
+   conservan su layout en la fila del micro. */
+.btn.skip-btn{
+  position:fixed!important;
+  left:calc(var(--safe-left) + 84px)!important;
+  bottom:calc(var(--safe-bottom) + 14px)!important;
+  width:60px!important;
+  height:60px!important;
+  min-height:60px!important;
+  max-width:60px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:50%!important;
+  font-size:24px!important;
+  font-weight:700!important;
+  background:rgba(0,0,0,.55)!important;
+  border:2px solid rgba(255,255,255,.25)!important;
+  color:#fff!important;
+  z-index:20!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  /* Texto "Saltar" se trunca, solo se ve el icono ⏭️ — el botón ya es
+     reconocible por posición y forma redonda. */
+  white-space:nowrap;overflow:hidden;
+}
+.btn.skip-btn:active{transform:scale(.92)}
+/* Stack flotante centrado para acciones secundarias (Pista, Empezar de nuevo,
+   Borrar) — sigue al centro, debajo de la zona principal del ejercicio,
+   donde después aparecen las estrellas y el micro. Cuando aparece el
+   OralPrompt el módulo retira la clase para que no se solapen. Doc §3.6. */
+.fab-center-stack{
+  position:fixed!important;
+  left:50%!important;
+  bottom:calc(var(--safe-bottom) + 18px)!important;
+  transform:translateX(-50%)!important;
+  z-index:15!important;
+  display:flex!important;
+  gap:12px!important;
+  pointer-events:auto!important;
+  /* Fondo translúcido para no perder los botones encima del módulo */
+  background:rgba(0,0,0,.30)!important;
+  border-radius:16px!important;
+  padding:6px 8px!important;
+  backdrop-filter:blur(6px)!important;
+}
 .btn-half{display:inline-block;width:48%;font-size:18px;padding:12px 0}
 .btn-word{display:inline-block;width:auto;padding:12px 18px;font-size:20px}
 .card{background:${CARD};border:2px solid ${BORDER};border-radius:18px;padding:20px}
@@ -129,8 +187,12 @@ export const PERFECT_T=['¡Muy bien {N}!','¡Eres un crack {N}!','¡Genial {N}, 
 export const GOOD_MSG=['¡Bien!','¡Genial!','¡Muy bien!','¡Fenomenal!','¡Estupendo!','¡Olé!'];
 export const RETRY_MSG=['Otra vez','Venga, otra','Una más','Casi casi'];
 export const FAIL_MSG=['Poco a poco','No pasa nada','Seguimos','Ánimo'];
-export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Fenómeno!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!','¡Genial!','¡Muy bien!'];
-export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Sigue!','¡Dale!','¡Ánimo!','¡Vamos!','¡Tú puedes!'];
+// "Sigue" eliminado de las listas de cheers porque cuando aparece justo antes
+// del micrófono para repetir frase ("Sigue" → frase + 🎤) confunde: el niño
+// piensa "continúa al siguiente" cuando en realidad se le pide repetir.
+// Doc §3.6.
+export const SHORT_OK=['¡Bravo!','¡Venga!','¡Va!','¡Eso es!','¡Dale!','¡Fenómeno!','¡Vamos!','¡Bien!','¡Eso!','¡Olé!','¡Genial!','¡Muy bien!'];
+export const SHORT_FAIL=['¡Casi!','¡Venga!','¡Va!','¡Otra vez!','¡Dale!','¡Ánimo!','¡Vamos!','¡Tú puedes!'];
 export const MODULE_MSG={decir:['¡Dilo!','¡Dilo tú!','¡Dilo otra vez!','¡Venga, dilo!'],frase:['¡Dilo!','¡Dilo tú!','¡Venga, dilo!'],math:['¡Cuenta!','¡Cuenta conmigo!','¡Cuenta otra vez!'],multi:['¡Cuenta!','¡Cuenta conmigo!'],frac:['¡Cuenta!','¡Cuenta otra vez!'],contar:['¡Cuenta!','¡Cuenta conmigo!'],writing:['¡Escríbelo!','¡Escribe otra vez!'],calendar:['¡Piensa!','¡Tú puedes!','¡Razona!'],distribute:['¡Piensa!','¡Tú puedes!'],clock:['¡Piensa!','¡Razona!'],money:['¡Piensa!','¡Tú puedes!'],quiensoy:['¡Dilo!','¡Dilo tú!'],razona:['¡Piensa!','¡Tú puedes!','¡Razona!','¡Piensa bien!'],lee:['¡Léelo!','¡Lee otra vez!','¡Tú sabes leer!','¡Venga, lee!']};
 export const CHEER_ALL=[...PERFECT_T,...GOOD_MSG,...RETRY_MSG,...FAIL_MSG,...BUILD_OK,...SHORT_OK];
 
@@ -168,12 +230,12 @@ export const LV_OPTS={
   quiensoy:[{n:1,l:'Estudio'},{n:2,l:'Presentación'}],
   razona_spatial:[{n:1,l:'Elige'},{n:2,l:'Arrastra'}],
   razona_series:[{n:6,l:'Colores'},{n:7,l:'Formas'},{n:8,l:'Combinado'}],
-  razona_piensa:[{n:4,l:'Causa-efecto'}],
+  razona_piensa:[{n:4,l:'Básico'},{n:16,l:'Avanzado'},{n:17,l:'Master'}],
   razona_clasifica:[{n:3,l:'Clasifica'}],
-  razona_emociones:[{n:5,l:'Emociones'}],
+  razona_emociones:[{n:5,l:'Básico'},{n:18,l:'Avanzado'},{n:19,l:'Master'}],
   razona_numeros:[{n:9,l:'Series numéricas'}],
   razona_compara:[{n:10,l:'Comparar cantidades'}],
-  razona_secuencias:[{n:11,l:'Ordenar rutinas'}],
+  razona_secuencias:[{n:11,l:'Básico'},{n:14,l:'Avanzado'},{n:15,l:'Master'}],
   razona_anterior_posterior:[{n:12,l:'Anterior y posterior'}],
   razona_temperatura:[{n:13,l:'Termómetro'}],
   decir:[{n:1,l:'N1'},{n:2,l:'N2'},{n:3,l:'N3'},{n:4,l:'N4'},{n:5,l:'N5'}],
@@ -182,24 +244,50 @@ export const LV_OPTS={
   math:[{n:5,l:'🐥 Contar objetos'},{n:6,l:'🍎 Sumas visual'},{n:7,l:'📖 Problemas'},{n:1,l:'Sumas fácil'},{n:2,l:'Sumas+'},{n:3,l:'Restas'},{n:4,l:'Mezcla'}],
   multi:[{n:1,l:'x2/x3'},{n:2,l:'x5/x10'},{n:3,l:'Mezcla'}],
   frac:[{n:1,l:'Reconocer'},{n:2,l:'Notación'},{n:3,l:'Equivalencias'},{n:4,l:'Sumar'},{n:5,l:'Sumar/Restar'}],
-  money:[{n:1,l:'Reconocer'},{n:2,l:'Sumar'},{n:3,l:'Pagar'},{n:4,l:'Cambio'}],
+  // Monedas reestructurado en 3 niveles pedagógicos (Doc §4.10).
+  // Básico: ¿Cuánto vale? + ¿Cuánto cuesta? + ¿Cuál vale más?
+  // Avanzado: ¿Cuál vale más? mezclado + Pagar exacto + ¿Te llega?
+  // Master: Equivalencia €/cts + ¿Cuánto devuelven? + Pagar combinando.
+  money:[{n:1,l:'Básico'},{n:2,l:'Avanzado'},{n:3,l:'Master'},{n:4,l:'Cambio (legacy)'}],
   clock:[{n:1,l:'En punto'},{n:2,l:'Media'},{n:3,l:'Cuarto'}],
-  calendar:[{n:1,l:'Días'},{n:2,l:'Meses'},{n:3,l:'Antes/Desp.'},{n:4,l:'Ayer/Mañ.'}],
+  // Calendario rediseñado en 3 niveles (Doc §4.11.2). Antes/después
+  // (Básico), 3 huecos consecutivos (Avanzado), ordenar completo (Master).
+  calendar:[{n:1,l:'Básico'},{n:2,l:'Avanzado'},{n:3,l:'Master'}],
   distribute:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}],
-  writing_1:[{n:1,l:'Con guía'},{n:2,l:'Libre'}],
-  writing_3:[{n:3,l:'Con guía'},{n:4,l:'Libre'}],
-  writing_5:[{n:5,l:'Con guía'},{n:51,l:'Libre'}],
-  writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
-  writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
-  writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
-  lee_intruso:[{n:1,l:'Intruso'}],
+  // Letras — Básico mayús con guía, Avanzado minús con guía, Master sin guía.
+  // En GROUPS_V2 estas tres columnas viven todas bajo writing_1 como sub-niveles.
+  writing_1:[{n:1,l:'Básico (MAYÚS con guía)'},{n:3,l:'Avanzado (minús con guía)'},{n:2,l:'Master sin guía MAYÚS'},{n:4,l:'Master sin guía minús'}],
+  writing_3:[{n:3,l:'Con guía minús'},{n:4,l:'Libre minús'}],
+  // Palabras — Básico mayús cortas guía, Avanzado minús con guía, Master sin guía.
+  writing_5:[{n:5,l:'Básico (MAYÚS con guía)'},{n:52,l:'Avanzado (minús con guía)'},{n:51,l:'Master sin guía MAYÚS'},{n:53,l:'Master sin guía minús'}],
+  writing_52:[{n:52,l:'Con guía minús'},{n:53,l:'Libre minús'}],
+  // Frases — Avanzado mayús cortas guía, Master mayús/minús sin guía hasta 8 palabras
+  writing_6:[{n:6,l:'Avanzado (MAYÚS cortas con guía)'},{n:61,l:'Master sin guía'},{n:62,l:'Master minús con guía'},{n:63,l:'Master minús sin guía'}],
+  writing_62:[{n:62,l:'Con guía minús'},{n:63,l:'Libre minús'}],
+  // Mis frases — perfil del niño + extras del supervisor. Solo Master.
+  writing_misfrases:[{n:7,l:'MAYÚS con guía'},{n:71,l:'MAYÚS sin guía'},{n:72,l:'minús con guía'},{n:73,l:'minús sin guía'}],
+  // Niveles legacy 1-8 (Intruso simple, Palabra+Imagen, Completa palabra, etc.)
+  lee_intruso:[{n:1,l:'Básico (legacy)'},{n:21,l:'Básico'},{n:22,l:'Avanzado'},{n:23,l:'Master'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
-  lee_complete:[{n:3,l:'Completa'}],
+  lee_complete:[{n:3,l:'Letra que falta (legacy)'}],
   lee_syllables:[{n:4,l:'Ordena sílabas'}],
   lee_read_do:[{n:5,l:'Lee y haz'}],
   lee_prep1:[{n:6,l:'1 preposición'}],
   lee_prep2:[{n:7,l:'2 preposiciones'}],
   lee_prep3:[{n:8,l:'3 preposiciones'}],
+  // Nuevos lvKeys del Bloque 5 — Lee y entiende + COMPLETA con conectores
+  // (corpus en src/data/leeYEntiende.js y completa.js, doc §4.12.1/§4.12.3).
+  lee_completa:[{n:24,l:'Básico'},{n:25,l:'Avanzado'},{n:26,l:'Master'}],
+  lee_y_entiende:[{n:27,l:'Master'}],
+  // Tiempo y medidas (GROUPS_V2): contenedor virtual que agrupa los lvs
+  // de clock/calendar/termometro. Cuando el supervisor activa este lvKey,
+  // App.jsx lo expande a los lvs reales {clock:[1..3], calendar:[1..3],
+  // razona_temperatura:[13]} en la sesión.
+  tiempo_medidas:[{n:1,l:'Hora'},{n:2,l:'Calendario'},{n:3,l:'Termómetro'}],
+  // Ciencias Naturales Básico — piloto (Doc 27/04). 9 láminas con 4 modos
+  // (estudio/presentación/rellena1/rellena2). Solo accesible si flag
+  // toki_ciencias_piloto está activo en localStorage.
+  ciencias_nat_basico:[{n:1,l:'Mini 1 — Cuerpo humano'},{n:2,l:'Mini 2 — Animales'},{n:3,l:'Mini 3 — Plantas y comida'},{n:4,l:'Mini 4 — Sentidos y entorno'}],
 };
 
 export const GROUPS=[
@@ -213,22 +301,22 @@ export const GROUPS=[
   {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
     {k:'math',l:'Sumas y Restas',defLv:5,lvKey:'math'},
     {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
-    {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'}]},
-  {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
-    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
-    {k:'razona',l:'Series',defLv:6,lvKey:'razona_series'},
-    {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
-    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
-    {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'},
     {k:'razona',l:'Series numéricas',defLv:9,lvKey:'razona_numeros'},
     {k:'razona',l:'Compara cantidades',defLv:10,lvKey:'razona_compara'},
-    {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'},
     {k:'razona',l:'Anterior y posterior',defLv:12,lvKey:'razona_anterior_posterior'},
     {k:'razona',l:'Termómetro',defLv:13,lvKey:'razona_temperatura'},
     {k:'money',l:'Monedas y Billetes',defLv:1,lvKey:'money'},
     {k:'clock',l:'La Hora',defLv:1,lvKey:'clock'},
     {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
     {k:'distribute',l:'Reparte y Cuenta',defLv:1,lvKey:'distribute'}]},
+  {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
+    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
+    {k:'razona',l:'Series',defLv:6,lvKey:'razona_series'},
+    {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
+    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
+    {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'}]},
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
     {k:'writing',l:'Escritura',defLv:1,lvKey:'writing_1'}]},
   {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
@@ -240,6 +328,85 @@ export const GROUPS=[
     {k:'lee',l:'Preposiciones 1',defLv:6,lvKey:'lee_prep1'},
     {k:'lee',l:'Preposiciones 2',defLv:7,lvKey:'lee_prep2'},
     {k:'lee',l:'Preposiciones 3',defLv:8,lvKey:'lee_prep3'}]},
+];
+
+// === GROUPS_V2 — capa 2 alineada con TOKI-planetas-completo.xlsx (27/04) ==
+// Activable con feature flag toki_layout_v2 = true en localStorage.
+// Si está activo, App.jsx usa GROUPS_V2 en lugar de GROUPS.
+//
+// Estructura definitiva del xlsx (fuente de verdad):
+//   DILO (4): Aprende a decirlo · Forma la frase · Cuenta conmigo · Mis frases
+//   APRENDE (6): Presentaciones · Ciencias Naturales · Ciencias Sociales ·
+//                Hora · Calendario · Termómetro
+//   CUENTA (7): Números y series · Sumas y restas · Comparar ·
+//               Multiplicaciones · Fracciones · Poner y repartir · Monedas
+//   RAZONA (6): ¿Dónde está? · Series lógicas · Piensa · Emociones ·
+//               Clasifica · Ordena rutinas
+//   LEE (3): LEE · INTRUSO · COMPLETA
+//   ESCRIBE (4): Letras · Palabras · Frases · Mis frases
+//
+// Cada celda del xlsx (Básico / Avanzado / Master) corresponde a un nivel
+// interno (lv) en LV_OPTS. El supervisor activa los toggles que quiera.
+// Capa 1 (preset global) = atajo que activa columna entera.
+// Capa 2 (toggles individuales) = grano fino combinable.
+export const GROUPS_V2 = [
+  {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones, ciencias y tiempo',dynamic:true,modules:[
+    {k:'quiensoy',l:'Presentaciones',defLv:[1,2],lvKey:'pres_0',presIdx:0},
+    // Ciencias Naturales: piloto Básico (9 láminas) si toki_ciencias_piloto
+    // activo. Pendiente: 8 minis adicionales (Avanzado + Master) cuando
+    // estén las imágenes (44 láminas restantes).
+    {k:'ciencias_nat',l:'Ciencias Naturales',defLv:1,lvKey:'ciencias_nat_basico',pilot:'ciencias'},
+    // Ciencias Sociales: pendiente todas las imágenes (12 minis × 2-3 láminas)
+    {k:'ciencias_soc',l:'Ciencias Sociales',defLv:1,lvKey:'ciencias_soc',disabled:true},
+    // Hora / Calendario / Termómetro: entradas separadas según xlsx,
+    // no agrupadas en "Tiempo y medidas". Cada una con sus 3 niveles.
+    {k:'clock',l:'Hora',defLv:1,lvKey:'clock'},
+    {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
+    {k:'razona',l:'Termómetro',defLv:13,lvKey:'razona_temperatura'},
+  ]},
+  {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
+    {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
+    {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
+    {k:'contar',l:'Cuenta conmigo',defLv:1,lvKey:'contar'},
+    {k:'misfrases_dilo',l:'Mis frases',defLv:1,lvKey:'misfrases_dilo'},
+  ]},
+  {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
+    // Números y series — fusiona series numéricas y anterior/posterior
+    // (4 niveles xlsx: Posterior 10/20, Anterior+Posterior 20, Series N1-N4)
+    {k:'razona',l:'Números y series',defLv:9,lvKey:'razona_numeros'},
+    // Sumas y restas — math contiene los 7 modos del xlsx
+    {k:'math',l:'Sumas y restas',defLv:5,lvKey:'math'},
+    // Comparar — entrada propia (xlsx la separa de Sumas)
+    {k:'razona',l:'Comparar',defLv:10,lvKey:'razona_compara'},
+    {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
+    {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'},
+    // Poner y repartir — fusiona Poner + Repartir según xlsx
+    {k:'distribute',l:'Poner y repartir',defLv:1,lvKey:'distribute'},
+    {k:'money',l:'Monedas',defLv:1,lvKey:'money'},
+  ]},
+  {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
+    {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
+    {k:'razona',l:'Series lógicas',defLv:6,lvKey:'razona_series'},
+    {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
+    {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
+    {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'},
+  ]},
+  // ESCRIBE — 4 entradas según xlsx: Letras, Palabras, Frases, Mis frases.
+  // Cada una con 3 columnas (B/A/M) en LV_OPTS. Los lvKeys writing_*
+  // existentes ya cubren bien la matriz; se mantienen.
+  {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
+    {k:'writing',l:'Letras',defLv:1,lvKey:'writing_1'},
+    {k:'writing',l:'Palabras',defLv:5,lvKey:'writing_5'},
+    {k:'writing',l:'Frases',defLv:6,lvKey:'writing_6'},
+    {k:'writing',l:'Mis frases',defLv:7,lvKey:'writing_misfrases'},
+  ]},
+  // LEE — 3 entradas según xlsx. Cada una con sus niveles B/A/M en LV_OPTS.
+  {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
+    {k:'lee',l:'LEE',defLv:2,lvKey:'lee_word_img'},
+    {k:'lee',l:'INTRUSO',defLv:21,lvKey:'lee_intruso'},
+    {k:'lee',l:'COMPLETA',defLv:24,lvKey:'lee_completa'},
+  ]},
 ];
 
 // 🌱🌿🌳 Competency level presets — configure all modules at once
