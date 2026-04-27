@@ -101,3 +101,4 @@ Pasos manuales (intervención humana en cuenta de Vercel) en
 - `public/ciencias/` — imágenes del piloto Ciencias.
 - `public/fonts/escolar*.ttf` — caligrafía escolar española usada en
   ESCRIBE minúsculas.
+ 
