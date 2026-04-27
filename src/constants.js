@@ -254,12 +254,18 @@ export const LV_OPTS={
   // (Básico), 3 huecos consecutivos (Avanzado), ordenar completo (Master).
   calendar:[{n:1,l:'Básico'},{n:2,l:'Avanzado'},{n:3,l:'Master'}],
   distribute:[{n:1,l:'Poner'},{n:2,l:'Repartir'},{n:3,l:'Comparar'}],
-  writing_1:[{n:1,l:'Con guía'},{n:2,l:'Libre'}],
-  writing_3:[{n:3,l:'Con guía'},{n:4,l:'Libre'}],
-  writing_5:[{n:5,l:'Con guía'},{n:51,l:'Libre'}],
-  writing_52:[{n:52,l:'Con guía'},{n:53,l:'Libre'}],
-  writing_6:[{n:6,l:'Con guía'},{n:61,l:'Libre'}],
-  writing_62:[{n:62,l:'Con guía'},{n:63,l:'Libre'}],
+  // Letras — Básico mayús con guía, Avanzado minús con guía, Master sin guía.
+  // En GROUPS_V2 estas tres columnas viven todas bajo writing_1 como sub-niveles.
+  writing_1:[{n:1,l:'Básico (MAYÚS con guía)'},{n:3,l:'Avanzado (minús con guía)'},{n:2,l:'Master sin guía MAYÚS'},{n:4,l:'Master sin guía minús'}],
+  writing_3:[{n:3,l:'Con guía minús'},{n:4,l:'Libre minús'}],
+  // Palabras — Básico mayús cortas guía, Avanzado minús con guía, Master sin guía.
+  writing_5:[{n:5,l:'Básico (MAYÚS con guía)'},{n:52,l:'Avanzado (minús con guía)'},{n:51,l:'Master sin guía MAYÚS'},{n:53,l:'Master sin guía minús'}],
+  writing_52:[{n:52,l:'Con guía minús'},{n:53,l:'Libre minús'}],
+  // Frases — Avanzado mayús cortas guía, Master mayús/minús sin guía hasta 8 palabras
+  writing_6:[{n:6,l:'Avanzado (MAYÚS cortas con guía)'},{n:61,l:'Master sin guía'},{n:62,l:'Master minús con guía'},{n:63,l:'Master minús sin guía'}],
+  writing_62:[{n:62,l:'Con guía minús'},{n:63,l:'Libre minús'}],
+  // Mis frases — perfil del niño + extras del supervisor. Solo Master.
+  writing_misfrases:[{n:7,l:'MAYÚS con guía'},{n:71,l:'MAYÚS sin guía'},{n:72,l:'minús con guía'},{n:73,l:'minús sin guía'}],
   // Niveles legacy 1-8 (Intruso simple, Palabra+Imagen, Completa palabra, etc.)
   lee_intruso:[{n:1,l:'Básico (legacy)'},{n:21,l:'Básico'},{n:22,l:'Avanzado'},{n:23,l:'Master'}],
   lee_word_img:[{n:2,l:'Palabra+Imagen'}],
@@ -324,71 +330,79 @@ export const GROUPS=[
     {k:'lee',l:'Preposiciones 3',defLv:8,lvKey:'lee_prep3'}]},
 ];
 
-// === GROUPS_V2 — capa 2 reorganizada (Doc §2) =============================
+// === GROUPS_V2 — capa 2 alineada con TOKI-planetas-completo.xlsx (27/04) ==
 // Activable con feature flag toki_layout_v2 = true en localStorage.
 // Si está activo, App.jsx usa GROUPS_V2 en lugar de GROUPS.
 //
-// Mapa final del doc consolidado del 25/04:
-//   DILO (4): Aprende a decirlo, Forma la frase, Mis frases, Cuenta conmigo
-//   APRENDE (4): Presentaciones, Ciencias Naturales, Ciencias Sociales,
-//                Tiempo y medidas (Hora + Calendario + Termómetro)
-//   CUENTA (5): Asociación numérica, Operaciones, Multi, Fracciones, Monedas
-//   RAZONA (4): ¿Dónde está?, Series lógicas, Piensa, Comparar y repartir
-//   LEE (3): LEE, INTRUSO, COMPLETA
-//   ESCRIBE (1): Escritura
+// Estructura definitiva del xlsx (fuente de verdad):
+//   DILO (4): Aprende a decirlo · Forma la frase · Cuenta conmigo · Mis frases
+//   APRENDE (6): Presentaciones · Ciencias Naturales · Ciencias Sociales ·
+//                Hora · Calendario · Termómetro
+//   CUENTA (7): Números y series · Sumas y restas · Comparar ·
+//               Multiplicaciones · Fracciones · Poner y repartir · Monedas
+//   RAZONA (6): ¿Dónde está? · Series lógicas · Piensa · Emociones ·
+//               Clasifica · Ordena rutinas
+//   LEE (3): LEE · INTRUSO · COMPLETA
+//   ESCRIBE (4): Letras · Palabras · Frases · Mis frases
 //
-// Movimientos respecto a GROUPS:
-//   - Hora/Calendario/Termómetro pasan de CUENTA a APRENDE (Tiempo y medidas)
-//   - Reparte y Cuenta vuelve a RAZONA fusionado con Compara cantidades
-//   - Series numéricas + Anterior/posterior fusionados en CUENTA "Asociación
-//     numérica" (apuntan al lvKey razona_numeros que ya soporta ambos)
-//   - LEE consolida 8 entradas en 3 (LEE, INTRUSO, COMPLETA)
-//   - Ciencias Naturales/Sociales son placeholders sin implementar (bloqueado
-//     por contenido de imágenes externo)
+// Cada celda del xlsx (Básico / Avanzado / Master) corresponde a un nivel
+// interno (lv) en LV_OPTS. El supervisor activa los toggles que quiera.
+// Capa 1 (preset global) = atajo que activa columna entera.
+// Capa 2 (toggles individuales) = grano fino combinable.
 export const GROUPS_V2 = [
   {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones, ciencias y tiempo',dynamic:true,modules:[
     {k:'quiensoy',l:'Presentaciones',defLv:[1,2],lvKey:'pres_0',presIdx:0},
     // Ciencias Naturales: piloto Básico (9 láminas) si toki_ciencias_piloto
-    // activo. El supervisor puede subir más al ir cargándose imágenes.
-    {k:'ciencias_nat',l:'Ciencias Naturales (piloto)',defLv:1,lvKey:'ciencias_nat_basico',pilot:'ciencias'},
-    // Sociales: aún placeholder — pendiente de imágenes
+    // activo. Pendiente: 8 minis adicionales (Avanzado + Master) cuando
+    // estén las imágenes (44 láminas restantes).
+    {k:'ciencias_nat',l:'Ciencias Naturales',defLv:1,lvKey:'ciencias_nat_basico',pilot:'ciencias'},
+    // Ciencias Sociales: pendiente todas las imágenes (12 minis × 2-3 láminas)
     {k:'ciencias_soc',l:'Ciencias Sociales',defLv:1,lvKey:'ciencias_soc',disabled:true},
-    // Tiempo y medidas: agrupa Hora + Calendario + Termómetro como sub-niveles
-    {k:'tiempo_medidas',l:'Tiempo y medidas',defLv:1,lvKey:'tiempo_medidas'},
+    // Hora / Calendario / Termómetro: entradas separadas según xlsx,
+    // no agrupadas en "Tiempo y medidas". Cada una con sus 3 niveles.
+    {k:'clock',l:'Hora',defLv:1,lvKey:'clock'},
+    {k:'calendar',l:'Calendario',defLv:1,lvKey:'calendar'},
+    {k:'razona',l:'Termómetro',defLv:13,lvKey:'razona_temperatura'},
   ]},
   {id:'dilo',name:'DILO',emoji:'🎤',color:GREEN,desc:'Todo lo de hablar',modules:[
     {k:'decir',l:'Aprende a decirlo',defLv:1,lvKey:'decir'},
     {k:'frase',l:'Forma la frase',defLv:1,lvKey:'frase'},
-    {k:'misfrases_dilo',l:'Mis frases',defLv:1,lvKey:'misfrases_dilo'},
     {k:'contar',l:'Cuenta conmigo',defLv:1,lvKey:'contar'},
+    {k:'misfrases_dilo',l:'Mis frases',defLv:1,lvKey:'misfrases_dilo'},
   ]},
   {id:'cuenta',name:'CUENTA',emoji:'🧮',color:'#E67E22',desc:'Todo lo de números',modules:[
-    // Asociación numérica fusiona Series numéricas + Anterior/posterior
-    {k:'razona',l:'Asociación numérica',defLv:9,lvKey:'razona_numeros'},
-    {k:'math',l:'Operaciones',defLv:5,lvKey:'math'},
+    // Números y series — fusiona series numéricas y anterior/posterior
+    // (4 niveles xlsx: Posterior 10/20, Anterior+Posterior 20, Series N1-N4)
+    {k:'razona',l:'Números y series',defLv:9,lvKey:'razona_numeros'},
+    // Sumas y restas — math contiene los 7 modos del xlsx
+    {k:'math',l:'Sumas y restas',defLv:5,lvKey:'math'},
+    // Comparar — entrada propia (xlsx la separa de Sumas)
+    {k:'razona',l:'Comparar',defLv:10,lvKey:'razona_compara'},
     {k:'multi',l:'Multiplicaciones',defLv:1,lvKey:'multi'},
     {k:'frac',l:'Fracciones',defLv:1,lvKey:'frac'},
-    {k:'money',l:'Monedas y dinero',defLv:1,lvKey:'money'},
+    // Poner y repartir — fusiona Poner + Repartir según xlsx
+    {k:'distribute',l:'Poner y repartir',defLv:1,lvKey:'distribute'},
+    {k:'money',l:'Monedas',defLv:1,lvKey:'money'},
   ]},
   {id:'razona',name:'RAZONA',emoji:'🧠',color:BLUE,desc:'Lógica y razonamiento',modules:[
     {k:'razona',l:'¿Dónde está?',defLv:1,lvKey:'razona_spatial'},
     {k:'razona',l:'Series lógicas',defLv:6,lvKey:'razona_series'},
     {k:'razona',l:'Piensa',defLv:4,lvKey:'razona_piensa'},
-    // Comparar y repartir: agrupa Compara + Reparte y Ordena rutinas
-    // (lvKey razona_secuencias ya cubre rutinas en 3 niveles)
-    {k:'razona',l:'Comparar y repartir',defLv:10,lvKey:'razona_compara'},
-    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
     {k:'razona',l:'Emociones',defLv:5,lvKey:'razona_emociones'},
+    {k:'razona',l:'Clasifica',defLv:3,lvKey:'razona_clasifica'},
     {k:'razona',l:'Ordena rutinas',defLv:11,lvKey:'razona_secuencias'},
-    {k:'distribute',l:'Reparte y cuenta',defLv:1,lvKey:'distribute'},
   ]},
+  // ESCRIBE — 4 entradas según xlsx: Letras, Palabras, Frases, Mis frases.
+  // Cada una con 3 columnas (B/A/M) en LV_OPTS. Los lvKeys writing_*
+  // existentes ya cubren bien la matriz; se mantienen.
   {id:'escribe',name:'ESCRIBE',emoji:'✏️',color:PURPLE,desc:'Caligrafía y escritura',modules:[
-    {k:'writing',l:'Escritura',defLv:1,lvKey:'writing_1'},
+    {k:'writing',l:'Letras',defLv:1,lvKey:'writing_1'},
+    {k:'writing',l:'Palabras',defLv:5,lvKey:'writing_5'},
+    {k:'writing',l:'Frases',defLv:6,lvKey:'writing_6'},
+    {k:'writing',l:'Mis frases',defLv:7,lvKey:'writing_misfrases'},
   ]},
+  // LEE — 3 entradas según xlsx. Cada una con sus niveles B/A/M en LV_OPTS.
   {id:'lee',name:'LEE',emoji:'📖',color:'#E91E63',desc:'Lectura y comprensión',modules:[
-    // LEE agrupa Palabra+Imagen, Ordena sílabas, Lee y haz, Lee y entiende
-    // como sub-niveles. Por ahora apuntamos al primer lvKey y los demás
-    // siguen accesibles con sus lvs internos (2,4,5,27).
     {k:'lee',l:'LEE',defLv:2,lvKey:'lee_word_img'},
     {k:'lee',l:'INTRUSO',defLv:21,lvKey:'lee_intruso'},
     {k:'lee',l:'COMPLETA',defLv:24,lvKey:'lee_completa'},
