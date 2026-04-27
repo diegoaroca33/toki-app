@@ -506,26 +506,31 @@ export function migrateLayoutV2(){
   }
 }
 
-// Build GROUPS with dynamic Aprende modules from user.presentations
+// Build GROUPS with dynamic Aprende modules from user.presentations.
+// IMPORTANTE: solo sustituye los módulos quiensoy del planeta APRENDE; el
+// resto (Ciencias, Hora, Calendario, Termómetro en GROUPS_V2) se conserva.
 export function getGroupsForUser(user,GROUPS){
   if(!user)return GROUPS;
   const pres=user.presentations||[];
   return GROUPS.map(g=>{
     if(g.id!=='aprende')return g;
-    // Build modules from user presentations
-    const mods=[];
+    // Módulos quiensoy dinámicos según presentaciones del perfil
+    const presMods=[];
     if(pres.length===0){
-      // No presentations yet - use default
-      mods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
+      presMods.push({k:'quiensoy',l:'Mi presentación',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     } else {
       pres.forEach((p,i)=>{
-        if(p.active===false)return; // skip inactive presentations
-        mods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
+        if(p.active===false)return;
+        presMods.push({k:'quiensoy',l:p.name||`Presentación ${i+1}`,defLv:[1,2],lvKey:`pres_${i}`,presIdx:i});
       });
-      // If all are inactive, keep at least a fallback
-      if(mods.length===0)mods.push({k:'quiensoy',l:pres[0].name||'Presentación 1',defLv:[1,2],lvKey:'pres_0',presIdx:0});
+      if(presMods.length===0)presMods.push({k:'quiensoy',l:pres[0].name||'Presentación 1',defLv:[1,2],lvKey:'pres_0',presIdx:0});
     }
-    return {...g,modules:mods};
+    // Resto de módulos del planeta APRENDE (no-quiensoy) que se mantienen
+    // tal cual. Esto preserva las entradas de Ciencias / Hora / Calendario
+    // / Termómetro en GROUPS_V2 sin que las sobrescriba el ramificador
+    // dinámico de presentaciones.
+    const otherMods=g.modules.filter(m=>m.k!=='quiensoy');
+    return {...g,modules:[...presMods,...otherMods]};
   });
 }
 
