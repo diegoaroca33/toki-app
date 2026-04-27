@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } fr
 import { AREAS, EX } from './exercises.js'
 import { auth, db, storage, hasConfig, fbSignIn, fbSignUp, fbSignOut, fbSignInWithGoogle, fbOnAuth, fbGetProfile, fbSaveProfile, fbUpdateProfile, fbListUsers, fbRevokeUser, fbUnrevokeUser, fbUploadPhoto, fbUploadVoice, fbDeleteFile, compressImage, STORAGE_LIMIT, fbCreateShareCode, fbGetSharedProfile, fbLinkToSharedProfile, fbRevokeShareLink, fbUploadPublicVoice, fbGetBestVoice, fbUploadUserVoice, trimSilence, validateVoiceDuration, track, saveDailyMetrics } from './firebase.js'
 import { BG, BG2, BG3, GOLD, GREEN, RED, BLUE, PURPLE, TXT, DIM, CARD, BORDER, VER, ADMIN_EMAIL, SUPPORT_EMAIL, CSS, AVS, CLS, SESSION_TIMES, SESSION_GOALS, PERSONA_RELATIONS, BUILD_OK, PERFECT_T, GOOD_MSG, RETRY_MSG, FAIL_MSG, SHORT_OK, SHORT_FAIL, MODULE_MSG, CHEER_ALL, NUMS_1_100, QUIEN_SOY, LV_OPTS, GROUPS, GROUPS_V2 } from './constants.js'
-import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings, getDogFoodBalance, consumeDogFood, getMilestoneReached, checkMilestoneHit, isLayoutV2, migrateLayoutV2 } from './utils.js'
+import { isSober, lev, digToText, score, getExigencia, adjScore, cap, saveData, loadData, textKey, personalize, srsUp, needsRev, getModuleLv, getModuleLvOrDef, setModuleLv, beep, countdownBeep, getTimeOfDay, getSkyClass, getGreeting, getStreak, getTotalStars, getGroupProgress, addGroupProgress, getGroupStatus, splitSyllables, rnd, tdy, avStr, pickMsg, mkPerfect, cheerIdx, getGroupsForUser, getMascotTier, getMascotCycle, CYCLE_COLORS, CYCLE_NAMES, getDynamicDilo, getDynamicDiloLevel, pushDynamicDiloResult, checkDynamicDiloLevel, getDynamicDiloSessions, setDynamicDiloSessions, getDogGrowth, getDogPhase, canFeedDog, feedDog, getDogLastFed, getRecentExerciseKeys, markExerciseUsed, getDailyCount, addDailyCount, getDailyPhase, gatherSettings, applySettings, getDogFoodBalance, consumeDogFood, getMilestoneReached, checkMilestoneHit, isLayoutV2, migrateLayoutV2, isCienciasPiloto } from './utils.js'
 import { voiceProfile, cachedVoice, setVoiceProfile, getVP, pickVoice, say, sayFB, sayFast, stopVoice, warmUpTTS, startTTSKeepAlive, stopTTSKeepAlive, _publicVoiceCache, playRec, playRecLocal, SR_AVAILABLE, useSR, listenQuick, starBeep, victoryJingle, cheerOrSay } from './voice.js'
 import { processImage, cloudSaveProfile, cloudLoadProfile, cloudListUsers, cloudRevokeUser, cloudUnrevokeUser, generateAutoPresentation } from './cloud.js'
 import { SpaceMascot, Confetti, Ring, Tower, RecBtn, useIdle, NumPad, AbacusHelp, AstronautAvatar, DogMascot, getSeason, AstronautDaily, AstronautOverlay } from './components/UIKit.jsx'
@@ -24,6 +24,8 @@ import { clockText, genClock, ClockFace } from './modules/ExClock.jsx'
 import { genCalendar } from './modules/ExCalendar.jsx'
 import { genDistribute, BagSVG, CardSVG, dominoDots, DominoSVG } from './modules/ExDistribute.jsx'
 import { genWriting, LETTER_STROKE_PATHS, getCustomPhrases } from './modules/ExWriting.jsx'
+// Piloto Ciencias — sólo se ejecuta si flag toki_ciencias_piloto activo
+import { genCiencias } from './modules/ExCiencias.jsx'
 import { genPatterns, genRazona, SceneSVG, SpatialDrag } from './modules/ExRazona.jsx'
 import { genLee } from './modules/ExLee.jsx'
 import { QSTimeBar, ExQuienSoyEstudio, ExQuienSoyPres } from './modules/ExQuienSoy.jsx'
@@ -45,6 +47,9 @@ const ExWriting=React.lazy(()=>import('./modules/ExWriting.jsx').then(m=>({defau
 const ExRazona=React.lazy(()=>import('./modules/ExRazona.jsx').then(m=>({default:m.ExRazona})))
 const ExLee=React.lazy(()=>import('./modules/ExLee.jsx').then(m=>({default:m.ExLee})))
 const ExQuienSoyUnified=React.lazy(()=>import('./modules/ExQuienSoy.jsx').then(m=>({default:m.ExQuienSoyUnified})))
+// Piloto Ciencias — solo cargado bajo demanda (lazy) para no incluir las
+// imágenes en el bundle inicial cuando el flag está desactivado.
+const ExCiencias=React.lazy(()=>import('./modules/ExCiencias.jsx').then(m=>({default:m.ExCiencias})))
 
 function LazyFallback(){return<div style={{minHeight:'40vh',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10,background:'#080C18',color:'#fff',fontFamily:"'Fredoka'",borderRadius:24}}><div style={{fontSize:42}}>🐾</div><div style={{fontSize:20,fontWeight:700}}>Cargando...</div></div>}
 import { isCheckpointPending } from './components/ControlCheckpoint.jsx'
@@ -494,6 +499,10 @@ export default function App(){
     }
     if(section==='razona'){return genRazona(slv)}
     if(section==='lee'){return _noRepeat(genLee(slv))}
+    // Piloto Ciencias — solo si flag toki_ciencias_piloto activo
+    if(section==='ciencias_nat'&&isCienciasPiloto()){
+      return _noRepeat(genCiencias(slv));
+    }
     return[]}
   function startGame(overrideLv){
     // Always re-read level from storage to pick up Settings changes
@@ -1300,6 +1309,7 @@ export default function App(){
         {cur.ty==='razona'&&<Suspense fallback={<LazyFallback/>}><ExRazona ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
         {cur.ty==='lee'&&<Suspense fallback={<LazyFallback/>}><ExLee ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
         {cur.ty==='quiensoy'&&<Suspense fallback={<LazyFallback/>}><ExQuienSoyUnified ex={cur} onOk={onOk} onSkip={onSk} sex={user.sex} name={user.name} uid={user.id} vids={vids} presentation={cur.presentation||null} canToggle={cur.canToggle!==undefined?cur.canToggle:true} defaultMode={cur.defaultMode||'estudio'} burstMode={burstMode} burstSpeed={burstSpeed} burstReps={burstReps}/></Suspense>}
+        {cur.ty==='ciencias'&&<Suspense fallback={<LazyFallback/>}><ExCiencias ex={cur} onOk={onOk} onSkip={onSk} name={user.name} uid={user.id} vids={vids} onPause={pauseSession}/></Suspense>}
       </div>
       {/* Global pause button — visible para TODOS los ejercicios no-orales.
           Los orales (SpeakPanel) ya tienen su propio dock con pausa integrada. */}

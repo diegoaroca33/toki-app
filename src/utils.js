@@ -442,6 +442,18 @@ export function setLayoutV2(v){
     else localStorage.removeItem('toki_layout_v2');
   }catch(e){}
 }
+// === CIENCIAS PILOTO — feature flag para módulo Naturales Básico =========
+// Si toki_ciencias_piloto es true, App.jsx muestra la entrada del piloto
+// dentro del planeta APRENDE (solo en GROUPS_V2). Por defecto false.
+export function isCienciasPiloto(){
+  try{return localStorage.getItem('toki_ciencias_piloto')==='true'}catch(e){return false}
+}
+export function setCienciasPiloto(v){
+  try{
+    if(v) localStorage.setItem('toki_ciencias_piloto','true');
+    else localStorage.removeItem('toki_ciencias_piloto');
+  }catch(e){}
+}
 // === RANDOM V2 — feature flag para Random ponderado por contenido =======
 // Si toki_random_v2 es true, App.jsx usa el algoritmo de src/randomV2.js
 // para distribuir ejercicios. Por defecto false (usa el actual).

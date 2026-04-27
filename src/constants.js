@@ -278,6 +278,10 @@ export const LV_OPTS={
   // App.jsx lo expande a los lvs reales {clock:[1..3], calendar:[1..3],
   // razona_temperatura:[13]} en la sesión.
   tiempo_medidas:[{n:1,l:'Hora'},{n:2,l:'Calendario'},{n:3,l:'Termómetro'}],
+  // Ciencias Naturales Básico — piloto (Doc 27/04). 9 láminas con 4 modos
+  // (estudio/presentación/rellena1/rellena2). Solo accesible si flag
+  // toki_ciencias_piloto está activo en localStorage.
+  ciencias_nat_basico:[{n:1,l:'Mini 1 — Cuerpo humano'},{n:2,l:'Mini 2 — Animales'},{n:3,l:'Mini 3 — Plantas y comida'},{n:4,l:'Mini 4 — Sentidos y entorno'}],
 };
 
 export const GROUPS=[
@@ -344,8 +348,10 @@ export const GROUPS=[
 export const GROUPS_V2 = [
   {id:'aprende',name:'APRENDE',emoji:'📚',color:'#E91E63',desc:'Presentaciones, ciencias y tiempo',dynamic:true,modules:[
     {k:'quiensoy',l:'Presentaciones',defLv:[1,2],lvKey:'pres_0',presIdx:0},
-    // Ciencias placeholder — pendiente de carga de imágenes (Bloque pendiente)
-    {k:'ciencias_nat',l:'Ciencias Naturales',defLv:1,lvKey:'ciencias_nat',disabled:true},
+    // Ciencias Naturales: piloto Básico (9 láminas) si toki_ciencias_piloto
+    // activo. El supervisor puede subir más al ir cargándose imágenes.
+    {k:'ciencias_nat',l:'Ciencias Naturales (piloto)',defLv:1,lvKey:'ciencias_nat_basico',pilot:'ciencias'},
+    // Sociales: aún placeholder — pendiente de imágenes
     {k:'ciencias_soc',l:'Ciencias Sociales',defLv:1,lvKey:'ciencias_soc',disabled:true},
     // Tiempo y medidas: agrupa Hora + Calendario + Termómetro como sub-niveles
     {k:'tiempo_medidas',l:'Tiempo y medidas',defLv:1,lvKey:'tiempo_medidas'},
