@@ -3,6 +3,24 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import { track } from './firebase.js'
 
+// === Branding del entorno: si build con VITE_IS_TEST=true, mostramos
+// "Toki Test" en el título de pestaña, theme-color naranja y manifest
+// PWA distinto. La instalación PWA usa el manifest que esté declarado
+// en el momento de la instalación: lo cambiamos lo antes posible. ===
+;(function applyEnvBranding(){
+  try{
+    const isTest = import.meta.env.VITE_IS_TEST === 'true';
+    if (!isTest) return;
+    document.title = 'Toki Test — Pruebas';
+    const theme = document.querySelector('meta[name="theme-color"]');
+    if (theme) theme.setAttribute('content', '#FF6B00');
+    const apple = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (apple) apple.setAttribute('content', 'Toki Test');
+    const m = document.querySelector('link[rel="manifest"]');
+    if (m) m.setAttribute('href', '/manifest-test.json');
+  }catch(e){console.warn('[applyEnvBranding] error', e)}
+})();
+
 class ErrorBoundary extends React.Component{
   constructor(props){super(props);this.state={hasError:false}}
   static getDerivedStateFromError(){return{hasError:true}}

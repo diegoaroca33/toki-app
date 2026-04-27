@@ -430,42 +430,51 @@ export function getDailyPhase(count) {
   return 1;
 }
 
+// === ENTORNO TEST — variable de build VITE_IS_TEST ======================
+// Cuando el build se hace con VITE_IS_TEST=true (definido en el proyecto
+// Vercel "Toki Test"), todas las flags experimentales se activan por
+// DEFECTO sin tocar localStorage. El supervisor sigue pudiendo
+// desactivarlas explícitamente en Settings (override del usuario).
+//
+// Helper centralizado: lee la env var en build-time. En runtime es un
+// boolean estable (no cambia entre llamadas).
+export function isTestEnv(){
+  try{return import.meta.env.VITE_IS_TEST==='true'||import.meta.env.VITE_IS_TEST===true}
+  catch(e){return false}
+}
+// Lectura de un flag con override de usuario sobre default de entorno:
+//   - Si localStorage tiene 'true' o 'false' explícito → respeta al usuario
+//   - Si no hay nada en localStorage → usa el default del entorno
+//     (true si isTestEnv, false en producción)
+function flagWithEnvDefault(key){
+  try{
+    const v=localStorage.getItem(key);
+    if(v==='true')return true;
+    if(v==='false')return false;
+    return isTestEnv();
+  }catch(e){return false}
+}
+
 // === LAYOUT V2 — feature flag para la reorganización capa 2 (Doc §2) ====
-// Si toki_layout_v2 es true, App.jsx pasa GROUPS_V2 en vez de GROUPS.
-// Por defecto es false para no romper perfiles activos sin aviso.
-export function isLayoutV2(){
-  try{return localStorage.getItem('toki_layout_v2')==='true'}catch(e){return false}
-}
+// Por defecto: false en producción, true en Toki Test.
+export function isLayoutV2(){return flagWithEnvDefault('toki_layout_v2')}
 export function setLayoutV2(v){
-  try{
-    if(v) localStorage.setItem('toki_layout_v2','true');
-    else localStorage.removeItem('toki_layout_v2');
-  }catch(e){}
+  // Persistimos siempre el valor explícito ('true' o 'false') para que
+  // sobreescriba el default del entorno. Si quieres volver al default,
+  // usa removeItem en F12 o el botón "Restablecer" si lo añadimos.
+  try{localStorage.setItem('toki_layout_v2',v?'true':'false')}catch(e){}
 }
+export function resetLayoutV2(){try{localStorage.removeItem('toki_layout_v2')}catch(e){}}
+
 // === CIENCIAS PILOTO — feature flag para módulo Naturales Básico =========
-// Si toki_ciencias_piloto es true, App.jsx muestra la entrada del piloto
-// dentro del planeta APRENDE (solo en GROUPS_V2). Por defecto false.
-export function isCienciasPiloto(){
-  try{return localStorage.getItem('toki_ciencias_piloto')==='true'}catch(e){return false}
-}
-export function setCienciasPiloto(v){
-  try{
-    if(v) localStorage.setItem('toki_ciencias_piloto','true');
-    else localStorage.removeItem('toki_ciencias_piloto');
-  }catch(e){}
-}
+export function isCienciasPiloto(){return flagWithEnvDefault('toki_ciencias_piloto')}
+export function setCienciasPiloto(v){try{localStorage.setItem('toki_ciencias_piloto',v?'true':'false')}catch(e){}}
+export function resetCienciasPiloto(){try{localStorage.removeItem('toki_ciencias_piloto')}catch(e){}}
+
 // === RANDOM V2 — feature flag para Random ponderado por contenido =======
-// Si toki_random_v2 es true, App.jsx usa el algoritmo de src/randomV2.js
-// para distribuir ejercicios. Por defecto false (usa el actual).
-export function isRandomV2(){
-  try{return localStorage.getItem('toki_random_v2')==='true'}catch(e){return false}
-}
-export function setRandomV2(v){
-  try{
-    if(v) localStorage.setItem('toki_random_v2','true');
-    else localStorage.removeItem('toki_random_v2');
-  }catch(e){}
-}
+export function isRandomV2(){return flagWithEnvDefault('toki_random_v2')}
+export function setRandomV2(v){try{localStorage.setItem('toki_random_v2',v?'true':'false')}catch(e){}}
+export function resetRandomV2(){try{localStorage.removeItem('toki_random_v2')}catch(e){}}
 // Backup defensivo del estado pre-migración. Se guarda con timestamp único
 // para que el supervisor pueda restaurar si algo va mal. No se borra
 // automáticamente: queda como cápsula de tiempo.
